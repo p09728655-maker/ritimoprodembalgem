@@ -751,17 +751,53 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-crono .ucv-acao.troca .ucv-acao-t{color:var(--acc)}
 #sec-crono .ucv-acao.ainda{border-left-color:var(--txt2);background:var(--surface)}
 #sec-crono .ucv-acao.ainda .ucv-acao-t{color:var(--txt2)}
-#sec-crono .ucv-troca-bt{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-top:14px}
-#sec-crono .ucv-troca-bt .btn{height:40px;padding:0 18px;font-size:11px;letter-spacing:1.2px;border-radius:7px;white-space:nowrap}
-#sec-crono .ucv-troca-bt span{flex:1 1 300px;font-family:var(--font-b);font-size:12px;color:var(--txt2)}
 #sec-crono #uep-conv-i-msg{margin:0 0 12px;font-family:var(--font-b);font-size:13.5px;color:var(--txt)}
 #sec-crono #uep-conv-i-msg:empty{display:none}
-#sec-crono #uep-conv-t-msg{margin-top:10px;font-family:var(--font-b);font-size:13.5px;color:var(--txt)}
-#sec-crono .ucv-prontas{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin-bottom:14px;padding:10px 14px;border:1px solid rgba(255,92,31,.35);border-left:4px solid var(--acc);border-radius:8px}
-#sec-crono .ucv-prontas-t{font-family:var(--font-d);font-size:10px;letter-spacing:1.6px;color:var(--acc);margin-right:4px}
-#sec-crono .ucv-pronta{font-family:var(--font-b);font-size:12.5px;color:var(--txt);background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:6px 11px;cursor:pointer}
-#sec-crono .ucv-pronta:hover{border-color:var(--acc)}
-#sec-crono .ucv-pronta b{color:var(--acc);margin-left:6px}
+/* A TRAVA DA UEP (v7.233.0) */
+#sec-crono .ucv-tv-regra{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
+@media (max-width:1100px){#sec-crono .ucv-tv-regra{grid-template-columns:1fr}}
+#sec-crono .ucv-tv-r{border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:12px 16px}
+#sec-crono .ucv-tv-r b{display:block;font-family:var(--font-d);font-size:10px;font-weight:400;letter-spacing:1.6px;color:var(--txt2);margin-bottom:6px}
+#sec-crono .ucv-tv-r p{margin:0;font-family:var(--font-b);font-size:13.5px;line-height:1.5;color:var(--txt)}
+#sec-crono .ucv-tv-r em{font-style:normal;color:var(--acc)}
+#sec-crono .ucv-tv-sec{margin:18px 0 8px;display:flex;align-items:baseline;flex-wrap:wrap;gap:10px;font-family:var(--font-h);font-size:19px;font-weight:700;letter-spacing:.5px;color:var(--txt)}
+#sec-crono .ucv-tv-sec span{font-family:var(--font-b);font-size:13px;font-weight:400;letter-spacing:0;color:var(--txt2)}
+#sec-crono .ucv-tv-sec .ucv-tv-n{font-family:var(--font-d);font-size:11px;letter-spacing:1px;border:1px solid var(--border);border-radius:20px;padding:2px 10px}
+#sec-crono .ucv-tv-tab td{vertical-align:middle}
+#sec-crono .ucv-tv-tab td small{display:block;margin-top:3px;font-size:11px;color:var(--txt2);white-space:normal}
+#sec-crono .ucv-tv-tab td.ucv-tv-pr{white-space:normal;min-width:220px}
+#sec-crono .ucv-tv-tab td.ucv-tv-pr b{font-weight:600}
+#sec-crono .ucv-tv-vol{font-family:var(--font-d);font-size:10px;letter-spacing:1px;color:var(--txt2);border:1px solid var(--border);border-radius:4px;padding:1px 6px;margin-left:4px}
+#sec-crono .ucv-tv-tab td.ucv-tv-u{font-family:var(--font-h);font-size:17px;font-weight:700}
+#sec-crono .ucv-tv-tab td.ucv-tv-dz,#sec-crono .ucv-tv-tab td.ucv-tv-fl{white-space:normal;min-width:160px}
+#sec-crono .ucv-tv-tab small.ucv-tv-red,#sec-crono .ucv-tv-red{color:var(--red)}
+#sec-crono .ucv-tv-tab td.ucv-tv-fl small{color:var(--red)}
+#sec-crono .ucv-tv-borda,#sec-crono .ucv-tv-tab small.ucv-tv-borda{color:var(--warn)}
+#sec-crono .ucv-tv-dim{color:var(--txt2)}
+#sec-crono .ucv-tv-tab tr.troca td{background:rgba(255,92,31,.04)}
+#sec-crono .ucv-tv-bt{font-family:var(--font-d);font-size:10.5px;letter-spacing:1px;padding:7px 12px;border-radius:7px;cursor:pointer;white-space:nowrap;background:none;border:1px solid var(--border);color:var(--txt)}
+#sec-crono .ucv-tv-bt:hover:not(:disabled){border-color:var(--txt2)}
+#sec-crono .ucv-tv-bt.acc{border-color:var(--acc);color:#fff;background:var(--acc)}
+#sec-crono .ucv-tv-bt:disabled{opacity:.45;cursor:default}
+#sec-crono .ucv-tv-bt small,#sec-crono .ucv-tv-tab td .ucv-tv-bt small{display:block;font-family:var(--font-b);font-size:10px;letter-spacing:0;opacity:.85;margin-top:2px;color:inherit}
+#sec-crono .ucv-tv-vazio{border:1px dashed var(--border);border-radius:10px;padding:14px 18px;font-family:var(--font-b);font-size:13.5px;color:var(--txt2)}
+#sec-crono .ucv-tv-vazio b{color:var(--txt)}
+#sec-crono .ucv-tv-pe{margin-top:14px;font-family:var(--font-b);font-size:12.5px;color:var(--txt2);line-height:1.6}
+#sec-crono .ucv-tv-msg{margin-bottom:12px;font-family:var(--font-b);font-size:13.5px;color:var(--txt)}
+#sec-crono .ucv-pill.trava{color:#8FB8FF;border-color:rgba(120,165,255,.5);background:rgba(120,165,255,.08)}
+#sec-crono .ucv-regs-r.trava{border-left-color:#78A5FF}
+#sec-crono .ucv-acao.trava{border-left-color:#78A5FF;background:rgba(120,165,255,.06)}
+#sec-crono .ucv-acao.trava .ucv-acao-t{color:#8FB8FF}
+#sec-crono .ucv-acao p.ucv-tv-red{margin-top:6px;color:var(--red)}
+#sec-crono .ucv-tv-dest{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;font-family:var(--font-b);font-size:12.5px;color:var(--txt2)}
+#modal-trava .ucv-dlg-sub{font-family:var(--font-b);font-size:13px;color:var(--txt2);margin:4px 0 14px;line-height:1.5}
+#modal-trava .ucv-dlg-op{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin-bottom:10px;font-family:var(--font-b);font-size:13.5px;color:var(--txt);cursor:pointer}
+#modal-trava .ucv-dlg-op.on{border-color:var(--acc);background:rgba(255,92,31,.07)}
+#modal-trava .ucv-dlg-op input{margin-top:3px;accent-color:var(--acc)}
+#modal-trava .ucv-dlg-op b{font-family:var(--font-h);font-size:17px}
+#modal-trava .ucv-dlg-op i{font-style:normal;font-family:var(--font-d);font-size:9.5px;letter-spacing:1px;color:var(--acc);margin-left:8px}
+#modal-trava .ucv-dlg-op small{display:block;color:var(--txt2);font-size:12px;margin-top:3px}
+#modal-trava .ucv-dlg-nota{font-family:var(--font-b);font-size:12px;color:var(--txt2);line-height:1.5;margin-top:6px}
 #sec-crono .ucv-app-w{margin-bottom:14px;padding:12px 14px;border:1px solid var(--border);border-radius:8px}
 #sec-crono .ucv-app-w.novo{border-color:rgba(255,92,31,.35);border-left:4px solid var(--acc)}
 #sec-crono .ucv-app-w .ucv-regs-w{margin-top:8px}
@@ -2515,7 +2551,7 @@ if (_v7Instalado()) _v7EscondeBotao();
   <button class="tab"    data-tab="programacao" onclick="setTab('programacao')">📅 PROGRAMAÇÃO</button>
   <button class="tab"    data-tab="plano" onclick="setTab('plano')" title="Qualidade do plano: onde a meta de cada dia cai na capacidade que a linha já demonstrou">📐 PLANO</button>
   <button class="tab"    data-tab="uep" onclick="setTab('uep')" title="UEP de hoje: ritmo, hora a hora, o mix que explica o número e o quanto dele é medido — e as RÉGUAS: caixas × pontos × UEP, qual mede o esforço da linha">⚖ UEP</button>
-  <button class="tab"    data-tab="crono" onclick="setTab('crono')" title="Cronoanálise → UEP: o tempo por volume medido no tablet convertido em UEP contra a base (MADERO). O 💾 REGISTRAR guarda a medição; o ✓ TROCAR A UEP grava a UEP quando as medições registradas liberam. E ONDE O TEMPO VAI: estudo × produção × meta.">⏱ CRONOANÁLISE</button>
+  <button class="tab"    data-tab="crono" onclick="setTab('crono')" title="Cronoanálise → UEP: o tempo por volume medido no tablet convertido em UEP contra a base (MADERO). O 💾 REGISTRAR guarda a medição; na TRAVA DA UEP o PPCP troca (ou mantém) e trava a UEP quando as medições cumprem a regra. E ONDE O TEMPO VAI: estudo × produção × meta.">⏱ CRONOANÁLISE</button>
   <button class="tab"    data-tab="producaohora" onclick="setTab('producaohora')">🕐 PRODUÇÃO/HORA</button>
   <button class="tab"    data-tab="paradas" onclick="setTab('paradas')">⏸ PARADAS</button>
   <button class="tab"    data-tab="perdas"  onclick="setTab('perdas')">🎯 GESTÃO DE PERDAS</button>
@@ -3402,15 +3438,15 @@ if (_v7Instalado()) _v7EscondeBotao();
 <!-- ═══ ABA CRONOANÁLISE → UEP (v7.144.0) ═══ PPCP, 19/10/2026: "colocar uma tela
      separada para isso". O conversor saiu da aba ⚖ UEP (onde era um bloco que
      abria e fechava) para a aba dele. Mesmos ids e mesmas funções (_uepConv*);
-     só o gerencial do PC. v7.158.0: o ✓ TROCAR A UEP grava a UEP quando as
-     medições registradas liberam (30 volumes ou mais, do mesmo lado); a
-     CONFERÊNCIA DAS TROCAS acompanha a produção depois, sem alterar nada. -->
+     só o gerencial do PC. v7.233.0: a UEP só muda na TRAVA DA UEP, pelo PPCP
+     (com o código dele), quando as medições cumprem a regra; a CONFERÊNCIA
+     DAS TROCAS acompanha a produção depois, sem alterar nada. -->
 <section id="sec-crono" class="sec">
   <!-- v7.197.0 (PPCP 03/11/2026: "está muito cheia a tela, tem que enxugar, deixar mais dinâmica"):
        sub-abas por tarefa — MEDIR · O QUE MEDIR · MEDIÇÕES · TROCAS —, cada uma com o seu número, e as
        quatro impressões num menu só. Os ids, as leituras e as contas são os mesmos de antes. -->
   <div class="tbl-hdr ucv-hdr">
-    <span class="tbl-hdr-ttl" title="O tempo por volume medido no tablet, convertido em UEP contra a base — a UEP do cadastro só muda pelo ✓ TROCAR A UEP, com as medições registradas">⏱ CRONOANÁLISE → UEP</span>
+    <span class="tbl-hdr-ttl" title="O tempo por volume medido no tablet, convertido em UEP contra a base — a UEP do cadastro só muda pela TRAVA DA UEP, com as medições registradas e o código do PPCP">⏱ CRONOANÁLISE → UEP</span>
     <div class="ucv-hdr-bts">
       <!-- v7.216.0 (PPCP: "importa pdf não faz mais sentido?"): desde o app v2.103 a medição analisada chega sozinha
            (com o nome de quem analisou, app v2.103.2) — o PDF virou contingência, discreto -->
@@ -3433,6 +3469,7 @@ if (_v7Instalado()) _v7EscondeBotao();
       <button type="button" class="ucv-sb on" data-sub="medir" role="tab" aria-selected="true" onclick="_ucvSub('medir')"><b>MEDIR</b><span id="uep-conv-sb-medir">escolha o produto</span></button>
       <button type="button" class="ucv-sb" data-sub="princ" role="tab" aria-selected="false" onclick="_ucvSub('princ')"><b>O QUE MEDIR</b><span id="uep-conv-sb-princ">…</span></button>
       <button type="button" class="ucv-sb" data-sub="regs" role="tab" aria-selected="false" onclick="_ucvSub('regs')"><b>MEDIÇÕES</b><span id="uep-conv-sb-regs">…</span></button>
+      <button type="button" class="ucv-sb" data-sub="trava" role="tab" aria-selected="false" onclick="_ucvSub('trava')"><b>🔒 TRAVA DA UEP</b><span id="uep-conv-sb-trava">…</span></button>
       <button type="button" class="ucv-sb" data-sub="trocas" role="tab" aria-selected="false" onclick="_ucvSub('trocas')"><b>TROCAS</b><span id="uep-conv-sb-trocas">…</span></button>
       <button type="button" class="ucv-sb" data-sub="tempo" role="tab" aria-selected="false" onclick="_ucvSub('tempo')"><b>ONDE O TEMPO VAI</b><span id="uep-conv-sb-tempo">…</span></button>
     </div>
@@ -3454,7 +3491,6 @@ if (_v7Instalado()) _v7EscondeBotao();
         <div class="uep-nota" id="uep-conv-guia"></div>
       </div>
       <div id="uep-conv-res"></div>
-      <div class="uep-nota" id="uep-conv-t-msg"></div>
       <div id="uep-conv-reg" class="uep-card" style="display:none">
         <div class="ucv-reg-t" title="Guarda na planilha (aba CRONOANALISE) os segundos da medição e a UEP que eles dão">REGISTRAR ESTA MEDIÇÃO <span>a UEP do cadastro não muda</span></div>
         <div class="ucv-reg-f">
@@ -3474,6 +3510,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     </div>
     <div class="ucv-pn" data-sub="princ"><div id="uep-conv-princ"></div></div>
     <div class="ucv-pn" data-sub="regs"><div id="uep-conv-regs"></div></div>
+    <div class="ucv-pn" data-sub="trava"><div id="uep-conv-trava"></div></div>
     <div class="ucv-pn" data-sub="trocas"><div id="uep-conv-conf"></div></div>
     <!-- ═══ ONDE O TEMPO VAI (v7.194.0 bloco; v7.196.0 aba própria; v7.207.0 sub-aba) ═══
          PPCP, 03/11/2026: "não achei legal junto com a cronoanálise, parece um excel melhorado"
@@ -3964,6 +4001,16 @@ if (_v7Instalado()) _v7EscondeBotao();
     </div>
   </div>
 </div>
+<!-- A TRAVA DA UEP (v7.233.0): o diálogo do PPCP — o conteúdo é do _ucvTravaDlgHtml -->
+<div class="modal-over" id="modal-trava">
+  <div class="modal" style="width:640px">
+    <div id="modal-trava-c"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="fecharTrava()">VOLTAR</button>
+      <button class="btn btn-acc" id="modal-trava-ok" onclick="_ucvTravaEnviar()">🔒 TRAVAR</button>
+    </div>
+  </div>
+</div>
 
 <div class="modal-over" id="modal-he">
   <div class="modal" style="width:420px">
@@ -4044,14 +4091,14 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.232.0';
+const APP_VER   = '7.233.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
 // .gs v5.57) e o rodapé compara: o GitHub e o editor do Apps Script não se
 // falam, e sem isso ninguém via qual .gs estava rodando. Mudou o .gs? Suba este
 // número junto com o GS_VERSAO de lá (o apps-script.test.js confere).
-const GS_REPO   = '5.63';
+const GS_REPO   = '5.64';
 let GS_IMPL;   // undefined = ainda não leu · null = o .gs implantado não informa (antes da v5.57)
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -6434,7 +6481,7 @@ function _ucvAgendaDocHtml(M, ctx){
     + (lin ? '<table><colgroup><col style="width:13%"><col style="width:33%"><col style="width:22%"><col style="width:10%"><col style="width:8%"><col style="width:14%"></colgroup>'
       + '<thead><tr><th>QUANDO</th><th>PRODUTO · VOLUME</th><th>SITUAÇÃO</th><th class="n">UEP NA JANELA</th><th class="n">UEP/CX</th><th>MEDIDO EM / POR</th></tr></thead>'
       + `<tbody>${lin}</tbody></table>` : '')
-    + `<div class="ag-nota">A cronoanálise só acontece com o produto na linha: siga a ordem da programação. Medido = a base, UEP trocada pela cronoanálise ou medições que conferem com ${UCV_TROCA_MIN_VOL}+ volumes (PRONTA PARA TROCAR já tem a medição: falta o ✓ TROCAR A UEP no painel). UEP NA JANELA = caixas de jornada × UEP do cadastro nos últimos ${CRONO_LINHA_DIAS} dias fechados; classe A = entre os volumes que somam ${UCV_PRINC_PCT}% da UEP.`
+    + `<div class="ag-nota">A cronoanálise só acontece com o produto na linha: siga a ordem da programação. Medido = a base, a UEP travada pelo PPCP, a UEP trocada pela cronoanálise ou a regra cumprida com a UEP que fica (PPCP DECIDE já tem a medição: falta a decisão na TRAVA DA UEP). UEP NA JANELA = caixas de jornada × UEP do cadastro nos últimos ${CRONO_LINHA_DIAS} dias fechados; classe A = entre os volumes que somam ${UCV_PRINC_PCT}% da UEP.`
     + (M.nSemNada != null ? ` Fora da agenda: ${plural(M.nSemNada, 'volume do cadastro', 'volumes do cadastro')} que não ${M.nSemNada === 1 ? 'rodou' : 'rodaram'} nem ${M.nSemNada === 1 ? 'está' : 'estão'} na programação.` : '')
     + ' Fonte: HORA_A_HORA (as horas), CRONOANALISE (as medições), PRODUTO_CODIGO (o cadastro) e a programação.</div>'
     + `<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem · AGENDA DA CRONOANÁLISE</span><span>retrato de ${e(ctx.data)} às ${e(ctx.hora)}</span></div>`;
@@ -6550,6 +6597,7 @@ function _uepConvProdutos(cat){
     const p = P[k] = P[k] || { chave:k, modelo:cod.slice(0, 6), nome, rot:cod.slice(0, 6) + ' · ' + nome, nVol:1, cods:[] };
     p.nVol = Math.max(p.nVol, nVol);
     p.cods.push({ cod, vol, cor:String(c.cor || '').trim(), uep:Number(c.uep) > 0 ? Number(c.uep) : null, vig:String(c.uepVig || '').trim(),
+                  trava:c.uepTrava == null ? null : String(c.uepTrava).trim(),   // v7.233.0: null = cadastro sem a coluna (o .gs antes da v5.64)
                   vel:Number(c.velocidade) > 0 ? Number(c.velocidade) : null, entre:c.entrePeca === '' || c.entrePeca == null ? null : Number(c.entrePeca) });
   });
   // v7.143.2 (PPCP: "tenho que ver qual volume é"): produto de N volumes ganha
@@ -6649,10 +6697,10 @@ function _uepConvDigitar(p, cad, uepVol, uepJogo){
 // getHorasCrono), ou o estado da leitura ('lendo' · 'falhou' · 'sem-endpoint' ·
 // 'nao-lida') — é de onde sai o NA PRODUÇÃO (% do padrão, volume sozinho).
 // regLista (v7.158.0): as medições registradas (getCronoRegistros), ou null
-// enquanto não foram lidas. É delas — não do tempo digitado — que sai a troca:
-// R.regRes (a regra contra o cadastro de AGORA) e, quando ela deixa, R.troca
-// (a média das medições e o que gravar em cada código).
-function _uepConvMontar(prods, txt, seg, baseSeg, metaUep, tolPct, linhaHoras, regLista){
+// enquanto não foram lidas. É delas — não do tempo digitado — que sai a regra:
+// R.regRes (_ucvRegraUep, contra o cadastro de AGORA). travas (v7.233.0): as da
+// UEP_TRAVAS — R.trava (_ucvTravaDe) diz se o PPCP já travou o volume.
+function _uepConvMontar(prods, txt, seg, baseSeg, metaUep, tolPct, linhaHoras, regLista, travas){
   const base = _uepConvBaseDe(baseSeg, metaUep, tolPct);
   if(!prods || !prods.length) return { estado:'sem-cadastro', base };
   const a = _uepConvAchar(prods, txt);
@@ -6670,15 +6718,14 @@ function _uepConvMontar(prods, txt, seg, baseSeg, metaUep, tolPct, linhaHoras, r
     R.relEst = _ucvRelEst(R.relCad);
   }
   R.regs = Array.isArray(regLista) ? _ucvRegsDoProduto(regLista, p) : null;
-  R.regRes = R.regs ? _ucvRegsResumo(R.regs, cad.volCad) : null;
-  if(!R.ehBase && R.regRes && R.regRes.veredito === 'trocar'){
-    const u = R.regRes.uepMed;
-    R.troca = { uep:u, antes:cad.volCad, difPct:(u / cad.volCad - 1) * 100, digitar:_uepConvDigitar(p, cad, u, u * p.nVol) };
-  }
+  R.regRes = R.regs ? _ucvRegraUep(R.regs, cad.volCad) : null;
+  R.trava = _ucvTravaDe(p, travas);
   const s = Number(seg);
   if(!(s > 0)) return R;
   R.estado = 'ok'; R.seg = s;
   R.uepVol = s / base.seg; R.uepJogo = R.uepVol * p.nVol;
+  // travada (v7.233.0): o que esta medição dá contra a UEP TRAVADA — só informa
+  if(R.trava && R.trava.travada){ const ut = R.trava.T && R.trava.T.uep > 0 ? R.trava.T.uep : R.trava.cad; R.travaDif = ut > 0 ? (R.uepVol / ut - 1) * 100 : null; }
   // com a UEP como a tela mostra (duas casas): o cartão fecha com a linha registrada da lista
   if(Array.isArray(linhaHoras)){
     R.padrao = _ucvPadraoDe(linhaHoras, cods, Math.round(R.uepVol * 100) / 100, base.meta);
@@ -6746,7 +6793,7 @@ function _uepConvNotasHtml(base){
       : base.tol > 0 ? `${tol} de fadiga e movimentação, no produto e na base: tempo padrão = medido × ${String(base.tolFator).replace('.', ',')}. A mesma tolerância nos dois se cancela na UEP.`
       : 'zero: o tempo padrão é o próprio medido.');
   const regua = _uepConvRegua(base) + '.' + (base.daMeta ? ' Com a base pela meta, o tempo é o NO PERÍODO (paradas dentro).' : ' Com a base cronometrada, o tempo é o SEM AS LACUNAS (paradas marcadas e lacunas fora), nos dois.');
-  return '<div class="ucv-info">' + [['TOLERÂNCIA', tolLinha], ['RÉGUA', regua], ['GRAVAÇÃO', `O 💾 REGISTRAR MEDIÇÃO guarda a medição na aba CRONOANALISE (a UEP não muda). A UEP do cadastro muda pelo ✓ TROCAR A UEP quando as medições registradas somam ${UCV_TROCA_MIN_VOL} volumes ou mais e apontam o mesmo lado — ou digitada na PRODUTO_CODIGO.`]]
+  return '<div class="ucv-info">' + [['TOLERÂNCIA', tolLinha], ['RÉGUA', regua], ['GRAVAÇÃO', `O 💾 REGISTRAR MEDIÇÃO guarda a medição na aba CRONOANALISE (a UEP não muda). A UEP do cadastro muda na TRAVA DA UEP, pelo PPCP, quando as medições registradas cumprem a regra (${UCV_REGRA_MIN_MED} válidas — ${UCV_MED_MIN_VOL}+ volumes e lacunas até ${UCV_MED_MAX_LAC}% cada — somando ${UCV_REGRA_MIN_VOL} volumes). Travada, não muda mais.`]]
     .map(l => `<span>${l[0]}</span><p>${l[1]}</p>`).join('') + '</div>';
 }
 // A própria base medida: ela continua 1,00; o que se lê é a distância para a
@@ -6775,44 +6822,43 @@ function _uepConvTrocaHtml(R){
     + _ucvCard('DIFERENÇA', R.difPct == null ? '—' : (R.difPct > 0 ? '+' : '') + fmtP(R.difPct), difSub, R.difPct == null ? '' : R.confere ? 'ok' : 'warn')
     + '</div>'
     + (R.confRegua ? '<div class="uep-conv-av"><span><b>CONFIRA O TEMPO ANTES DE TROCAR</b> — o tempo é o POR VOLUME NO PERÍODO (paradas dentro)? O SEM AS LACUNAS (ou o RODANDO) deixa o produto mais leve do que é: a base pela meta tem as paradas dentro.</span></div>' : '')
-    // v7.158.0: QUEM decide a troca são as medições REGISTRADAS (a regra), não o
-    // tempo digitado — antes o PARA TROCAR mostrava só a medição dos campos
-    // (1,57 da STRASS) ao lado da média das registradas (1,51) na lista.
-    + (R.troca ? _ucvTrocaHtml(R)
-      : R.confere ? `<div class="ucv-acao ok"><div class="ucv-acao-t">✓ NÃO PRECISA TROCAR</div><p>A UEP do cadastro confere com a medição (${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}%). ${R.jaReg ? 'Ela já está registrada (veio do app).' : 'Registre a medição para ela ficar guardada.'}</p></div>`
-      : _ucvAindaHtml(R));
+    // QUEM decide são as medições REGISTRADAS (a regra) e o PPCP (a trava), não o
+    // tempo digitado — v7.233.0: a caixa diz o estado da regra e da trava.
+    + _ucvRegraBoxHtml(R, true);
 }
 // A lista do que muda em cada código (a mesma da troca e do "esta medição dá").
-// "113 volumes" · "11 volumes (a troca pede 30)"
-function _ucvVolTxt(n){ return `${fmtN(n)} volume${n === 1 ? '' : 's'}${n < UCV_TROCA_MIN_VOL ? ` (a troca pede ${UCV_TROCA_MIN_VOL})` : ''}`; }
 function _ucvListaHtml(p, digitar){
   return '<ul class="ucv-lista">' + digitar.map(g => `<li>${p.nVol > 1 ? `<span class="ucv-vol">VOL ${g.vol}</span>` : ''}<b>${_ucvU2(g.uep)}</b><span>${g.cods.map(c => _uepConvCod(c.cod) + (c.cor ? ' ' + _rpEsc(c.cor) : '')).join(' · ')}</span></li>`).join('') + '</ul>';
 }
-// PODE TROCAR (v7.158.0): as medições registradas deixam — a média delas e o
-// botão. O botão é só da tela; no papel fica o número e a regra.
-function _ucvTrocaHtml(R){
-  const S = R.regRes, T = R.troca;
-  return `<div class="ucv-acao troca"><div class="ucv-acao-t">PODE TROCAR · PELAS MEDIÇÕES REGISTRADAS</div>`
-    + `<p><b>${plural(S.n, 'medição', 'medições')} · ${fmtN(S.nVol)} volumes</b> (${S.datas.join(', ')}) apontam o mesmo lado. UEP média <b>${_ucvU2(T.uep)}</b> por volume — cadastro ${_ucvU2(T.antes)}, ${T.difPct > 0 ? '+' : ''}${fmtP(T.difPct)}${R.p.nVol > 1 && R.completo ? ', repartida entre os volumes como já está no cadastro' : ''}:</p>`
-    + _ucvListaHtml(R.p, T.digitar)
-    + `<div class="ucv-troca-bt so-tela"><button type="button" class="btn btn-acc" id="uep-conv-troca" onclick="_ucvTrocar()"${UCV_TROCANDO ? ' disabled' : ''}>${UCV_TROCANDO ? 'TROCANDO…' : '✓ TROCAR A UEP NO CADASTRO'}</button>`
-    + `<span>grava na coluna UEP da PRODUTO_CODIGO, vigência hoje (DIGITADA), com registro na UEP_VERSOES. Depois a CONFERÊNCIA DAS TROCAS acompanha a produção.</span></div></div>`;
-}
-// AINDA NÃO TROQUE (v7.158.0): o que esta medição dá, e por que ainda não.
-const UCV_AINDA = {
-  'nao-lidas':     'as medições registradas ainda não foram lidas.',
-  'nenhuma':       'nenhuma medição registrada deste volume. Registre esta (💾 REGISTRAR MEDIÇÃO): a troca sai das medições registradas.',
-  'pouca-amostra': 'as medições registradas somam poucos volumes. Meça mais volumes — pode ser no mesmo dia — e registre.',
-  'discordam':     'as medições registradas discordam entre si. Meça de novo, ou exclua a que estiver errada.',
-  'confere':       'as medições registradas conferem com o cadastro. Esta sozinha não muda isso.',
-  'sem-volumes':   'as medições registradas não têm VOLUMES MEDIDOS. Registre de novo com os volumes.',
-  'sem-medicao':   'as medições registradas não têm o tempo SEM AS LACUNAS.',
-  'sem-cadastro':  'o volume está sem UEP no cadastro para comparar — digite na coluna UEP da PRODUTO_CODIGO.' };
-function _ucvAindaHtml(R){
-  const S = R.regRes, k = !R.regs ? 'nao-lidas' : !S ? 'nenhuma' : S.veredito;
-  return `<div class="ucv-acao ainda"><div class="ucv-acao-t">AINDA NÃO TROQUE</div>`
-    + `<p>${UCV_AINDA[k] || ''}${S && S.nVol ? ` Registradas: ${plural(S.n, 'medição', 'medições')}, ${_ucvVolTxt(S.nVol)}.` : ` A troca pede ${UCV_TROCA_MIN_VOL} volumes medidos ou mais.`} Esta medição dá:</p>`
-    + _ucvListaHtml(R.p, R.digitar) + '</div>';
+// A CAIXA DA REGRA no MEDIR (v7.233.0): o estado do volume — TRAVADA pelo PPCP ·
+// REGRA CUMPRIDA (o PPCP decide na TRAVA DA UEP) · AINDA NÃO CUMPRE (o que
+// falta). comMedicao: com o tempo digitado, "esta medição dá" (a lista do que
+// ficaria em cada código). O botão só na tela; no papel ficam o número e a regra.
+function _ucvRegraBoxHtml(R, comMedicao){
+  const S = R.regRes, tr = R.trava, F = UEP_PAD_FAIXA;
+  const dig = comMedicao && R.digitar ? '<p>Esta medição dá:</p>' + _ucvListaHtml(R.p, R.digitar) : '';
+  // o JOGO (os volumes juntos) antes de tudo: a trava de um volume dele não é a do jogo
+  if(R.p && R.p.nVol > 1 && !R.p.volSel) return `<div class="ucv-acao ainda"><div class="ucv-acao-t">A TRAVA É POR VOLUME</div><p>Esta é a medição do JOGO (os volumes juntos). A regra e a trava da UEP são de cada volume: meça e registre cada VOL separado — na lista, ${_rpEsc(R.p.rot)} · VOL 1/${R.p.nVol} e os outros.</p>${dig}</div>`;
+  if(tr && tr.travada){
+    const t = tr.T, u = t && t.uep > 0 ? t.uep : tr.cad, dif = comMedicao ? R.travaDif : null;
+    return `<div class="ucv-acao trava"><div class="ucv-acao-t">🔒 UEP TRAVADA · ${u != null ? _ucvU2(u) : '—'}</div>`
+      + `<p>Travada pelo PPCP${t ? ` em ${_rpEsc(String(t.em).slice(0, 10))} pelas ${plural(t.medicoes, 'medição válida', 'medições válidas')} (${fmtN(t.volumes)} volumes, média ${_ucvU2(t.medida)})` : tr.carimbo ? ` (${_rpEsc(tr.carimbo)})` : ''}.`
+      + ` A medição nova pode ser registrada: ela fica na lista e <b>não muda a UEP</b>.${dif != null ? ` Esta dá ${_ucvU2(R.uepVol)} (${_ucvDifTxt(dif)}) — só informa.` : ''}</p>`
+      + (tr.mudou ? `<p class="ucv-tv-red">A UEP do cadastro (${_ucvU2(tr.cad)}) não é a travada — alguém mudou na planilha. Confira.</p>` : '')
+      + (tr.parcial ? '<p class="ucv-tv-red">Entrou código novo neste volume, sem a trava. Destrave e trave de novo para ele entrar.</p>' : '')
+      + `<div class="ucv-tv-dest so-tela"><button type="button" class="btn btn-ghost" onclick="_ucvSub('trava')">🔓 DESTRAVAR NA TRAVA DA UEP</button>só o PPCP, com o código dele e o motivo.</div></div>`;
+  }
+  if(!R.regs) return dig || R.regsFalha ? `<div class="ucv-acao ainda"><div class="ucv-acao-t">${R.regsFalha ? 'AS MEDIÇÕES REGISTRADAS NÃO FORAM LIDAS' : 'LENDO AS MEDIÇÕES REGISTRADAS'}</div>${R.regsFalha ? '<p>A regra deste volume aparece quando a leitura vier — tenta de novo em 1 min.</p>' : ''}${dig}</div>` : '';
+  if(S && S.cumpre){
+    const troca = S.veredito === 'troca';
+    return `<div class="ucv-acao troca"><div class="ucv-acao-t">✓ REGRA CUMPRIDA · O PPCP DECIDE</div>`
+      + `<p><b>${plural(S.nVal, 'medição válida', 'medições válidas')} · ${fmtN(S.nVol)} volumes</b> (${_rpEsc(S.datas.join(', '))}). UEP medida <b>${_ucvU2(S.uepMed)}</b> — cadastro ${R.volCad != null ? _ucvU2(R.volCad) : 'sem UEP'}${S.difPct != null ? `, ${_ucvDifTxt(S.difPct)}` : ''}. `
+      + `A regra diz <b>${troca ? 'TROCA PARA ' + _ucvU2(S.uepMed) : 'FICA ' + _ucvU2(R.volCad)}</b>${troca ? '' : ` (dentro de ${F[0]}–${F[1]}%)`}${S.borda ? ' — na borda da faixa' : ''}. Quem troca (ou mantém) e trava é o PPCP.</p>`
+      + `<div class="ucv-tv-dest so-tela"><button type="button" class="btn btn-acc" onclick="_ucvSub('trava')">🔒 ABRIR NA TRAVA DA UEP</button>com o código do PPCP.</div>${dig}</div>`;
+  }
+  const falta = !S ? `nenhuma medição registrada deste volume. A regra pede ${UCV_REGRA_MIN_MED} medições válidas (${UCV_MED_MIN_VOL}+ volumes e lacunas até ${UCV_MED_MAX_LAC}% cada), somando ${UCV_REGRA_MIN_VOL} volumes.`
+    : `${plural(S.nVal, 'medição válida', 'medições válidas')} de ${S.n}, ${plural(S.nVol, 'volume', 'volumes')}: ${_rpEsc(S.faltaTxt)}.${S.inv.length ? ` Não vale: ${S.inv.map(v => _rpEsc(String(v.data).slice(0, 5) + ' ' + v.mot)).join(' · ')}.` : ''}`;
+  return `<div class="ucv-acao ainda"><div class="ucv-acao-t">A REGRA AINDA NÃO SE CUMPRE</div><p>${falta}${R.jaReg ? ' Esta medição já está registrada (veio do app).' : ''}</p>${dig}</div>`;
 }
 // O resultado, por estado. Fora do estado ok não há a linha TOLERÂNCIA, e a
 // régua já mostra o tempo padrão: o aviso de tolerância inválida vai à parte.
@@ -6830,7 +6876,7 @@ function _uepConvHtml(R, tela){
   if(R.estado !== 'ok'){
     const cad = _uepConvCadTxt(R);
     return tit + `<div class="uep-nota">${R.ehBase ? 'Digite o tempo por volume dela para comparar com a régua da meta.'
-      : `No cadastro: ${cad.n} UEP por volume (${cad.sub}). Digite o tempo por volume medido.`}</div>` + (R.troca ? _ucvTrocaHtml(R) : '') + _ucvLinhaHtml(R) + foraNota;
+      : `No cadastro: ${cad.n} UEP por volume (${cad.sub}). Digite o tempo por volume medido.`}</div>` + (R.ehBase ? '' : _ucvRegraBoxHtml(R, false)) + _ucvLinhaHtml(R) + foraNota;
   }
   return tit + (R.ehBase ? _uepConvBaseHtml(R) : _uepConvTrocaHtml(R)) + _ucvLinhaHtml(R) + (tela ? '' : _uepConvNotasHtml(R.base));
 }
@@ -6938,6 +6984,7 @@ function _uepConvEntradas(){
   // sem algarismo (o _pgSimNum devolveria 0): NaN, que a conta troca pelo padrão e a tela avisa
   return { txt:elP ? elP.value : '', seg:_pgSimNum(elS ? elS.value : ''), base:bTxt ? _pgSimNum(bTxt) : UEP_BASE_MEDIDA.seg, meta, linha:_ucvLinhaItens(),
            regs:UCV_REGS && Array.isArray(UCV_REGS.lista) ? UCV_REGS.lista : null,
+           travas:UCV_REGS && Array.isArray(UCV_REGS.travas) ? UCV_REGS.travas : null,   // v7.233.0
            tol:tTxt === '' ? UEP_CONV_TOL_PADRAO : /\d/.test(tTxt) ? _pgSimNum(tTxt) : NaN };
 }
 function _uepConvTol(){
@@ -6969,13 +7016,14 @@ function _uepConvAtualiza(){
     fx.disabled = o.acao === 'sem-base'; }
   const guia = _ucvEl('guia');
   try{
-    const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol, E.linha, E.regs);
+    const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol, E.linha, E.regs, E.travas);
     const ja = _ucvAppJa(UCV_APP_ABERTA, R, E.regs);   // v7.218.0: a medição do app aberta já está registrada
-    if(ja) R.jaReg = true;                            // o NÃO PRECISA TROCAR não manda registrar de novo
+    if(ja) R.jaReg = true;                            // a caixa da regra não manda registrar de novo
     if(guia) guia.innerHTML = _uepConvQualCurto(R.base);   // a MESMA régua da conta (com a tolerância da meta)
     // v7.197.0: os três cartões, o porquê e as notas no ⓘ COMO LER (só o miolo é refeito: aberto, ele não fecha a cada tecla)
     const ler = _ucvEl('ler-c'); if(ler) ler.innerHTML = _uepConvQual(R.base) + _uepConvGuia(R.base.daMeta) + (R.estado === 'ok' ? _uepConvNotasHtml(R.base) : '');
     const rot = _ucvEl('seg-rot'); if(rot) rot.textContent = R.base.daMeta ? 's/VOLUME NO PERÍODO' : 's/VOLUME SEM AS LACUNAS';
+    R.regsFalha = UCV_REGS && !UCV_REGS.lista ? UCV_REGS.falha : null;   // v7.233.0: a caixa da regra diz NÃO FORAM LIDAS, não LENDO
     res.innerHTML = _uepConvHtml(R, true);
     const fl = _ucvEl('reg-falta'); if(fl){ fl.textContent = ja ? _ucvAppJaTxt(ja) : _ucvRegFalta(R, E); fl.classList.toggle('ja', !!ja); }
     _ucvRegPintar(R, ja);
@@ -7018,7 +7066,7 @@ function _uepConvFixarBase(){
 // para todo estudo) e o MEDIDO POR (a mesma pessoa mede vários; o registro e a
 // importação em lote também o mantêm). Nada é gravado nem apagado na planilha.
 const UCV_LIMPAR_CAMPOS = ['prod', 'seg', 'r-data', 'r-per', 'r-rod', 'r-vol', 'r-vel'];
-const UCV_LIMPAR_MSGS = ['i-msg', 't-msg', 'r-msg', 'x-msg'];
+const UCV_LIMPAR_MSGS = ['i-msg', 'r-msg', 'x-msg'];
 function _ucvLimpar(){
   UCV_APP_ABERTA = null;
   UCV_LIMPAR_CAMPOS.forEach(n => { const el = _ucvEl(n); if(el) el.value = ''; });
@@ -7055,14 +7103,12 @@ function _uepConvBase(){
 // As colunas LINHA_* da aba ficam vazias desde a v7.160.0 (eram o s/cx). Os
 // SEGUNDOS são o que importa: base nova ou esteira em outra velocidade, a UEP
 // de todo produto se refaz pela conta, sem medir de novo.
-// A troca da UEP é pelo ✓ TROCAR A UEP (v7.158.0), pela regra de amostra.
+// A troca da UEP é do PPCP, na TRAVA DA UEP (v7.233.0), pela regra (_ucvRegraUep).
 const CRONO_LINHA_DIAS = 30;
 const CRONO_REG_TTL = 2 * 60 * 1000;
 let UCV_LINHA = null, UCV_LINHA_VOO = null;   // { de, ate, horas, falha, ts }
-let UCV_REGS = null, UCV_REGS_VOO = null;     // { lista, falha, ts }
+let UCV_REGS = null, UCV_REGS_VOO = null;     // { lista, travas, falha, ts }
 let UCV_EXCL = null;                          // REG_ID da medição sendo excluída (v7.157.0)
-let UCV_TROCANDO = false;                     // troca da UEP em curso (v7.158.0): uma de cada vez
-let UCV_PRONTAS = [];                         // os volumes que a regra deixa trocar (a lista PRONTAS PARA TROCAR)
 let UCV_CONF = null, UCV_CONF_VOO = null;     // a CONFERÊNCIA DAS TROCAS: { trocas, falha, ts }
 let UCV_APP = [], UCV_APP_ABERTA = null;     // CHEGARAM DO APP (v7.218.0): as linhas da faixa e a aberta no MEDIR { regId, rot, seg }
 let UCV_APP_TODAS = false;                    // a faixa com todas as da janela (VER TODAS)
@@ -7134,6 +7180,8 @@ function _ucvRegsStatus(regs, trocas, prods){
   return (regs || []).map(r => {
     const vigor = hoje(r);
     if(String(r.modelo || '') === UEP_BASE.modelo && _uepConvNorm(r.produto) === _uepConvNorm(UEP_BASE.nome)) return { est:'base', vigor };
+    const mv = _ucvMedValida(r);   // v7.233.0: a medição que não vale não conta na regra — e a lista diz por quê
+    if(!mv.ok) return { est:'nao-vale', mot:mv.mot, vigor };
     const t = T[String(r.modelo || '') + '|' + _uepConvNorm(r.produto) + '|' + String(r.volume || '')];
     const antes = t ? med(t.codigos || [], 'antes') : null;
     if(t && antes != null && Math.abs(antes - Number(r.uepCad)) < 0.005) return { est:'trocada', antes, depois:med(t.codigos || [], 'uep'), vig:t.vig, vigor };
@@ -7215,16 +7263,16 @@ function _ucvRegsCarregar(forcar){
   if(!forcar && UCV_REGS && Date.now() - UCV_REGS.ts < (UCV_REGS.falha ? 60000 : CRONO_REG_TTL)) return Promise.resolve();
   UCV_REGS_VOO = (async () => {
     const url = CFG.sheetsUrl + (CFG.sheetsUrl.includes('?') ? '&' : '?') + 'action=getCronoRegistros';
-    let lista = null, falha = 'sem-resposta';
+    let lista = null, travas = null, falha = 'sem-resposta';   // travas null = .gs antes da v5.64
     for(let t = 1; t <= 2; t++){
       try{
         const r = await jsonpFetch(url);
-        if(r && r.ok && Array.isArray(r.registros)){ lista = r.registros; falha = null; }
+        if(r && r.ok && Array.isArray(r.registros)){ lista = r.registros; travas = Array.isArray(r.travas) ? r.travas : null; falha = null; }
         else falha = r && r.ok === false ? 'erro' : 'sem-endpoint';   // .gs antigo cai no getDados
         break;
       }catch(e){ if(t < 2) await new Promise(ok => setTimeout(ok, 2000)); }
     }
-    UCV_REGS = { lista:lista || (UCV_REGS && UCV_REGS.lista) || null, falha, ts:Date.now() };
+    UCV_REGS = { lista:lista || (UCV_REGS && UCV_REGS.lista) || null, travas:lista ? travas : (UCV_REGS && UCV_REGS.travas) || null, falha, ts:Date.now() };
   })().finally(() => { UCV_REGS_VOO = null; if(_ucvAbaOn()) _uepConvAtualiza(); });
   return UCV_REGS_VOO;
 }
@@ -7245,7 +7293,7 @@ const UCV_REG_ROD_MAX = 3;        // RODANDO até 3× o SEM AS LACUNAS (lacunas 
 // v7.158.0: DATA e VOLUMES são obrigatórios. A data vazia virava HOJE — e a
 // medição de papel lançada depois ficava com a data do lançamento (a 2ª da
 // STRASS saiu 26/10 sem o produto ter rodado no dia). Os volumes são a amostra
-// da regra da troca (UCV_TROCA_MIN_VOL): sem eles a medição não conta.
+// da regra (UCV_MED_MIN_VOL por medição): sem eles a medição não conta.
 function _ucvRegValida(seg, F, hoje){
   const num = v => { const t = String(v == null ? '' : v).trim(); return t === '' ? null : /^\d+([.,]\d+)?$/.test(t) ? _pgSimNum(t) : NaN; };
   if(!(seg > 0) || seg > UCV_REG_SEG_MAX) return { erro:`SEM AS LACUNAS de ${_taktTxt(seg)} por volume não parece certo: o Volume a volume mostra segundos por volume (ex.: 6,7). Confira o campo s/VOLUME SEM AS LACUNAS.` };
@@ -7289,64 +7337,95 @@ function _ucvRegsDoProduto(lista, p){
   const k = _uepConvNorm(p.nome), v = _ucvRegVol(p);
   return (lista || []).filter(r => String(r.modelo || '') === p.modelo && _uepConvNorm(r.produto) === k && String(r.volume || '') === v);
 }
-// A REGRA DA TROCA. v7.150.0 (PPCP, 20/10/2026): duas medições em DIAS
-// diferentes. v7.158.0 (PPCP, 26/10/2026: "não dá para travar em duas datas
-// diferentes o mesmo produto, isso vai demorar muito"): AMOSTRA — as medições
-// do volume somam UCV_TROCA_MIN_VOL volumes ou mais (pode ser num dia só) e
-// TODAS apontam o mesmo lado da faixa do CONFERE (UEP_PAD_FAIXA) contra o
-// cadastro de AGORA (cadAtual; sem ele, o da hora do registro). Mais volumes
-// tiram o erro de uma caixa para outra; o efeito do dia (equipe, lote) não —
-// é por isso que a faixa de ±10% continua. Medição sem VOLUMES MEDIDOS não
-// entra. A UEP média é pesada pelos volumes, cada medição pelos SEGUNDOS, não
-// pela UEP já arredondada (1,46 e 1,57 davam 1,52; os segundos dão 1,51). O .gs
-// confere a mesma regra antes de gravar (_cronoTrocaRegra) — o teste roda as duas.
-// v7.200.0 (PPCP, 04/11/2026: "sem lacunas e acrescente 15%"): a UEP de cada
-// medição é SEM AS LACUNAS ÷ a base SEM AS LACUNAS (UEP_BASE_MEDIDA.seg, 6,7 s)
-// — a régua de HOJE para todas, as antigas inclusive (as 39 até 03/11 têm o
-// campo). A UEP_CRONO e a BASE_S gravadas na linha são o retrato do registro (a
-// régua rodando, até a v7.199) e não entram mais em conta nenhuma: é por esta
-// função que a lista, a coluna TROCA, o NA PRODUÇÃO e a regra leem a UEP. Sem
-// o SEM AS LACUNAS a medição não conta (nunca cai na UEP gravada). Os 15% de
-// tolerância entram nos dois lados e se cancelam: não aparecem aqui.
-const UCV_TROCA_MIN_VOL = 30;
+// A UEP DE UMA MEDIÇÃO. v7.200.0 (PPCP, 04/11/2026: "sem lacunas e acrescente
+// 15%"): SEM AS LACUNAS ÷ a base SEM AS LACUNAS (UEP_BASE_MEDIDA.seg, 6,7 s) —
+// a régua de HOJE para todas, as antigas inclusive. A UEP_CRONO e a BASE_S
+// gravadas na linha são o retrato do registro e não entram em conta nenhuma: é
+// por esta função que a lista, a coluna TROCA, o NA PRODUÇÃO e a regra leem a
+// UEP. Sem o SEM AS LACUNAS a medição não conta. Os 15% de tolerância entram
+// nos dois lados e se cancelam: não aparecem aqui.
 function _ucvRegUep(r){ const l = Number(r && r.sLac); return l > 0 ? l / UEP_BASE_MEDIDA.seg : 0; }
-function _ucvRegsResumo(regs, cadAtual){
+// ── A REGRA DA UEP (v7.233.0 / .gs v5.64) ─────────────────────────────────
+// PPCP, 12/11/2026: "o que precisamos hoje é de ter limite de medição. Se não
+// tiver um limite toda hora vai dar diferenças" → "manter 6,7, colocar um
+// carimbo em cada produto que já cumpriu a regra e travar a uep, mas essa trava
+// passa por mim" → "depois de travada por mim posso pegar tempos mas não
+// altera" → "sim mas eu valido a troca". Revoga a regra da v7.158.0 (30
+// volumes somados, todas do mesmo lado, ✓ TROCAR de qualquer um):
+//   1. a MEDIÇÃO VALE com UCV_MED_MIN_VOL volumes ou mais e lacunas até
+//      UCV_MED_MAX_LAC % do tempo rodando (1 − sem as lacunas ÷ rodando, uma
+//      casa). Medido em 83 medições do app (19/10–12/11): de uma medição para
+//      outra do mesmo produto o tempo varia 5,9% (p90 9,8%) — uma só não decide.
+//   2. a REGRA SE CUMPRE com UCV_REGRA_MIN_MED medições válidas ou mais,
+//      somando UCV_REGRA_MIN_VOL volumes. UEP medida = a média pelos volumes,
+//      cada uma pelos SEGUNDOS (1,46 e 1,57 davam 1,52; os segundos dão 1,51).
+//   3. dentro da faixa (UEP_PAD_FAIXA) do cadastro de AGORA a regra diz FICA;
+//      fora, TROCA para a média. QUEM DECIDE É O PPCP (TRAVA DA UEP): troca ou
+//      mantém, com o código dele, e a UEP TRAVA. Travada, medição nova só informa.
+// A base (MADERO, 6,7 s) e o JOGO ficam fora. O .gs confere a MESMA regra antes
+// de gravar (_cronoRegraUep) — o teste roda as duas nos mesmos casos.
+const UCV_MED_MIN_VOL = 30;       // volumes por medição
+const UCV_MED_MAX_LAC = 15;       // % do tempo rodando em lacunas, no máximo
+const UCV_REGRA_MIN_MED = 2;      // medições válidas
+const UCV_REGRA_MIN_VOL = 100;    // volumes somados das válidas
+const UCV_REGRA_BORDA = 2;        // pontos de % em volta da faixa: "na borda — decida"
+// % do tempo rodando que foi lacuna, com uma casa (o que a tela mostra decide)
+function _ucvLacPct(r){ const R = Number(r && r.sRod), L = Number(r && r.sLac); return R > 0 && L > 0 ? Math.round((1 - L / R) * 1000) / 10 : null; }
+// Conta pura: a medição vale? k é o motivo (o mesmo do .gs), mot o texto.
+function _ucvMedValida(r){
+  const v = Number(r && r.volumes) > 0 ? Math.round(Number(r.volumes)) : 0, lac = _ucvLacPct(r), u = _ucvRegUep(r);
+  const nao = (k, mot) => ({ ok:false, k, mot, v, lac });
+  if(!(u > 0)) return nao('sem-lacunas', 'sem o SEM AS LACUNAS');
+  if(!v) return nao('sem-volumes', 'sem VOLUMES MEDIDOS');
+  if(v < UCV_MED_MIN_VOL) return nao('poucos-volumes', `${fmtN(v)} volumes (pede ${UCV_MED_MIN_VOL})`);
+  if(lac == null) return nao('sem-rodando', 'sem o RODANDO');
+  if(lac > UCV_MED_MAX_LAC) return nao('lacunas', `lacunas ${fmt1(lac)}% (até ${UCV_MED_MAX_LAC}%)`);
+  return { ok:true, v, lac, u };
+}
+// Conta pura: a regra de um volume. regs = as medições dele; cadAtual = a UEP/
+// volume do cadastro de agora. veredito: falta · fica · troca (sem UEP no
+// cadastro, cumprida a regra, é TROCA: não há o que manter).
+function _ucvRegraUep(regs, cadAtual){
   if(!regs || !regs.length) return null;
-  const dias = {}, lados = {};
-  let nVol = 0, soma = 0, semVol = 0;
+  const F = UEP_PAD_FAIXA, dias = {}, inv = [];
+  let nVal = 0, nVol = 0, soma = 0;
   regs.forEach(r => {
+    const m = _ucvMedValida(r);
+    if(!m.ok){ inv.push({ data:r.data || '', mot:m.mot, k:m.k }); return; }
+    nVal++; nVol += m.v; soma += m.u * m.v;
     if(r.data) dias[r.data] = 1;
-    const u = _ucvRegUep(r), v = Number(r.volumes) > 0 ? Math.round(Number(r.volumes)) : 0;
-    if(!(u > 0)) return;
-    if(!v){ semVol++; return; }
-    nVol += v; soma += u * v;
-    const cad = Number(cadAtual) > 0 ? Number(cadAtual) : Number(r.uepCad) || 0;
-    if(cad > 0){ const pct = u / cad * 100; lados[pct > UEP_PAD_FAIXA[1] ? 'pesado' : pct < UEP_PAD_FAIXA[0] ? 'leve' : 'confere'] = 1; }
   });
-  const L = Object.keys(lados);
-  const veredito = !nVol ? (semVol ? 'sem-volumes' : 'sem-medicao') : !L.length ? 'sem-cadastro'
-    : L.length > 1 ? 'discordam' : L[0] === 'confere' ? 'confere' : nVol < UCV_TROCA_MIN_VOL ? 'pouca-amostra' : 'trocar';
-  const datas = Object.keys(dias).sort((a, b) => _cartNum(a) - _cartNum(b));
-  return { n:regs.length, nDias:datas.length, datas, nVol, semVol, lado:L.length === 1 ? L[0] : null, uepMed:nVol ? soma / nVol : null, veredito };
+  const uepMed = nVol ? soma / nVol : null, cad = Number(cadAtual) > 0 ? Number(cadAtual) : null;
+  const pct = uepMed != null && cad ? uepMed / cad * 100 : null;
+  const cumpre = nVal >= UCV_REGRA_MIN_MED && nVol >= UCV_REGRA_MIN_VOL;
+  const veredito = !cumpre ? 'falta' : pct != null && pct >= F[0] && pct <= F[1] ? 'fica' : 'troca';
+  const faltaMed = Math.max(0, UCV_REGRA_MIN_MED - nVal), faltaVol = Math.max(0, UCV_REGRA_MIN_VOL - nVol);
+  const faltaTxt = [faltaMed ? (faltaMed === 1 ? 'falta 1 medição válida' : `faltam ${faltaMed} medições válidas`) : '',
+                    faltaVol ? `faltam ${fmtN(faltaVol)} volumes` : ''].filter(Boolean).join(' · ');
+  const dif = pct != null ? pct - 100 : null;
+  return { n:regs.length, nVal, nInv:inv.length, inv, datas:Object.keys(dias).sort((a, b) => _cartNum(a) - _cartNum(b)),
+           nVol, uepMed, cad, difPct:dif, cumpre, veredito, faltaMed, faltaVol, faltaTxt,
+           borda:cumpre && dif != null && Math.abs(Math.abs(dif) - (100 - F[0])) <= UCV_REGRA_BORDA };
 }
 // ── Desenho (sem conta) ────────────────────────────────────────────────────
+// A linha de cima das MEDIÇÕES do volume: o que a regra diz agora.
 const UCV_REG_VEREDITO = {
-  'pouca-amostra':['warn', 'amostra pequena — meça mais volumes (pode ser no mesmo dia) antes de trocar a UEP'],
-  'confere':     ['ok',   'as medições conferem com o cadastro — a UEP fica'],
-  'trocar':      ['troca', 'as medições apontam o mesmo lado, com amostra suficiente — pode trocar a UEP (✓ TROCAR A UEP, acima)'],
-  'discordam':   ['warn', 'as medições discordam entre si — meça de novo ou exclua a errada'],
-  'sem-volumes': ['warn', 'medição sem VOLUMES MEDIDOS não entra na regra — registre de novo com os volumes'],
-  'sem-medicao': ['warn', 'medição sem o tempo SEM AS LACUNAS — registre de novo com ele'],
-  'sem-cadastro':['warn', 'sem UEP no cadastro para comparar'] };
+  'falta':        ['warn', 'a regra ainda não se cumpre'],
+  'fica':         ['ok',   'a regra se cumpre: a UEP FICA — o PPCP trava na TRAVA DA UEP'],
+  'troca':        ['troca', 'a regra se cumpre: TROCA — o PPCP decide e trava na TRAVA DA UEP'],
+  'travada':      ['trava', 'UEP TRAVADA pelo PPCP — medição nova só informa'],
+  'jogo':         ['', 'medição do JOGO — a regra e a trava da UEP são por volume'] };
 // A célula TROCA da lista: o resultado pronto do _ucvRegsStatus.
-const UCV_ST = { 'nao-troca':['ok', 'NÃO TROCA'], fora:['warn', 'FORA DA FAIXA'], trocada:['troca', 'TROCADA'], base:['', 'BASE'], 'sem-cadastro':['', '—'] };
+const UCV_ST = { 'nao-troca':['ok', 'NÃO TROCA'], fora:['warn', 'FORA DA FAIXA'], trocada:['troca', 'TROCADA'], base:['', 'BASE'], 'sem-cadastro':['', '—'],
+  'nao-vale':['warn', 'NÃO VALE'] };
 function _ucvStatusCel(x){
   if(!x) return '';
   const E = UCV_ST[x.est], F = UEP_PAD_FAIXA, dif = x.dif != null ? (x.dif >= 0 ? '+' : '−') + fmt1(Math.abs(x.dif)) + '%' : '';
   const sub = x.est === 'trocada' ? `${_rpEsc(String(x.vig || '').slice(0, 5))} · ${_ucvU2(x.antes)} → ${_ucvU2(x.depois)}`
     : x.est === 'nao-troca' ? `variou ${dif} · dentro de ${F[0]}–${F[1]}%`
     : x.est === 'fora' ? `variou ${dif} · fora de ${F[0]}–${F[1]}%`
-    : x.est === 'base' ? 'a régua das outras' : '';
+    : x.est === 'base' ? 'a régua das outras'
+    : x.est === 'nao-vale' ? _rpEsc(x.mot || '') : '';
   return `<span class="ucv-pill ${E[0]}">${E[1]}</span>${sub ? `<small>${sub}</small>` : ''}`;
 }
 // A célula NA PRODUÇÃO da lista: o resultado pronto do _ucvRegsPadrao (ou o estado da leitura).
@@ -7361,18 +7440,23 @@ function _ucvPadCel(x){
 // resRegs (v7.172.0, a impressão dos ESTUDOS DO DIA): as medições que o resumo
 // (a regra da troca) conta — todas as do volume, quando a tabela mostra só as
 // de um dia. Sem ele, as da tabela, como sempre.
-function _ucvRegsHtml(regs, p, est, excl, cadAtual, pads, sts, resRegs){
+// trava (v7.233.0): o _ucvTravaDe do volume — travada, a linha de cima diz isso.
+function _ucvRegsHtml(regs, p, est, excl, cadAtual, pads, sts, resRegs, trava){
   const tit = `<div class="ucv-regs-t">MEDIÇÕES REGISTRADAS${p ? ` · ${_rpEsc(p.rot)}` : ' · AS ÚLTIMAS'}</div>`;
   if(est === 'sem-endpoint') return tit + '<div class="uep-nota">O Apps Script ainda não tem o registro da cronoanálise: cole o .gs v5.30 no editor e re-deploye.</div>';
   if(!regs) return tit + `<div class="uep-nota">${est ? 'As medições não foram lidas — tenta de novo em 1 min.' : 'Lendo as medições registradas…'}</div>`;
   if(!regs.length) return tit + `<div class="uep-nota">${p ? 'Nenhuma medição registrada deste produto ainda.' : 'Nenhuma medição registrada ainda.'}</div>`;
-  const S = p ? _ucvRegsResumo(resRegs || regs, cadAtual) : null, V = S ? UCV_REG_VEREDITO[S.veredito] : null;
+  const S = p ? _ucvRegraUep(resRegs || regs, cadAtual) : null;
+  const jogo = p && p.nVol > 1 && !p.volSel;
+  const V = S ? UCV_REG_VEREDITO[jogo ? 'jogo' : trava && trava.travada ? 'travada' : S.veredito] : null;
   const n = x => x == null ? '—' : String(x).replace('.', ',');
   const sg = x => x == null ? '—' : _taktTxt(x);
   return tit
-    + (S ? `<div class="ucv-regs-r ${V[0]}"><b>${plural(S.n, 'medição', 'medições')} · ${_ucvVolTxt(S.nVol)}</b>${S.uepMed != null ? ` · UEP média ${_ucvU2(S.uepMed)}` : ''} — ${V[1]}</div>` : '')
+    + (S ? `<div class="ucv-regs-r ${V[0]}"><b>${plural(S.n, 'medição', 'medições')} · ${plural(S.nVal, 'válida', 'válidas')}, ${plural(S.nVol, 'volume', 'volumes')}</b>`
+      + `${S.uepMed != null ? ` · UEP medida ${_ucvU2(S.uepMed)}${S.difPct != null ? ` (${S.difPct > 0 ? '+' : S.difPct < 0 ? '−' : ''}${fmt1(Math.abs(S.difPct))}% do cadastro)` : ''}` : ''}`
+      + ` — ${V[1]}${!jogo && !(trava && trava.travada) && S.veredito === 'falta' && S.faltaTxt ? ': ' + S.faltaTxt : ''}</div>` : '')
     + '<div class="ucv-regs-w"><table class="ucv-regs"><thead><tr><th>DATA</th>' + (p ? '' : '<th>PRODUTO</th>')
-    + `<th>VOLUME</th><th class="n">RODANDO</th><th class="n">NO PERÍODO</th><th class="n">SEM LACUNAS</th><th class="n">VOLUMES</th><th class="n" title="SEM AS LACUNAS ÷ ${_taktTxt(UEP_BASE_MEDIDA.seg)} da ${_uepBaseCurto()} sem as lacunas — a régua de hoje, também para as medições registradas antes dela">UEP</th><th title="Cada medição contra o cadastro que ela viu: dentro de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% não troca; fora, a troca é decidida pela regra do volume (todas as medições). TROCADA = o ✓ TROCAR A UEP já gravou a UEP nova a partir deste cadastro.">TROCA</th><th class="n" title="A UEP do cadastro com que a medição foi comparada (a que estava em vigor quando ela entrou no painel). EM VIGOR = ainda é a de hoje; ANTERIOR = já foi trocada — o valor novo está na coluna TROCA.">VERSÃO DO<br>CADASTRO</th><th class="n" title="Na produção dos últimos ${CRONO_LINHA_DIAS} dias fechados, só nas horas em que o volume rodou SOZINHO, SEM as paradas apontadas, com a UEP desta medição, contra a ${_uepBaseCurto()} nas mesmas condições. 100% = rendeu o mesmo que a ${_uepBaseCurto()}; ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% a produção confirma. As paradas são perda à parte.">NA PRODUÇÃO</th><th>BASE</th><th>MEDIDO POR</th><th class="ucv-x-c"></th></tr></thead><tbody>`
+    + `<th>VOLUME</th><th class="n">RODANDO</th><th class="n">NO PERÍODO</th><th class="n">SEM LACUNAS</th><th class="n">VOLUMES</th><th class="n" title="SEM AS LACUNAS ÷ ${_taktTxt(UEP_BASE_MEDIDA.seg)} da ${_uepBaseCurto()} sem as lacunas — a régua de hoje, também para as medições registradas antes dela">UEP</th><th title="Cada medição contra o cadastro que ela viu: dentro de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% não troca; fora, quem decide é a regra do volume (a média das válidas) e o PPCP, na TRAVA DA UEP. NÃO VALE = menos de ${UCV_MED_MIN_VOL} volumes ou lacunas acima de ${UCV_MED_MAX_LAC}%: não entra na regra. TROCADA = a UEP já foi trocada a partir deste cadastro.">TROCA</th><th class="n" title="A UEP do cadastro com que a medição foi comparada (a que estava em vigor quando ela entrou no painel). EM VIGOR = ainda é a de hoje; ANTERIOR = já foi trocada — o valor novo está na coluna TROCA.">VERSÃO DO<br>CADASTRO</th><th class="n" title="Na produção dos últimos ${CRONO_LINHA_DIAS} dias fechados, só nas horas em que o volume rodou SOZINHO, SEM as paradas apontadas, com a UEP desta medição, contra a ${_uepBaseCurto()} nas mesmas condições. 100% = rendeu o mesmo que a ${_uepBaseCurto()}; ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% a produção confirma. As paradas são perda à parte.">NA PRODUÇÃO</th><th>BASE</th><th>MEDIDO POR</th><th class="ucv-x-c"></th></tr></thead><tbody>`
     + regs.slice(0, 15).map((r, i) => `<tr><td>${_rpEsc(r.data || '')}</td>${p ? '' : `<td class="ucv-pr">${_rpEsc(r.modelo || '')} · ${_rpEsc(r.produto || '')}</td>`}`
       + `<td>${_rpEsc(r.volume || '')}</td><td class="n">${sg(r.sRod)}</td><td class="n">${sg(r.sPer)}</td><td class="n"><b>${sg(r.sLac)}</b></td>`
       + `<td class="n">${n(r.volumes)}</td><td class="n"><b>${_ucvRegUep(r) > 0 ? _ucvU2(_ucvRegUep(r)) : '—'}</b></td><td class="ucv-st">${_ucvStatusCel(sts && sts[i])}</td><td class="n ucv-vc">${r.uepCad > 0 ? _ucvU2(r.uepCad) : '—'}${sts && sts[i] && sts[i].vigor != null ? `<small>${sts[i].vigor ? 'em vigor' : 'anterior'}</small>` : ''}</td>`
@@ -7389,20 +7473,22 @@ function _ucvRegPintar(R, ja){
   const c0 = R.p ? R.p.cods.find(c => c.vel > 0) : null, vl = _ucvEl('r-vel');
   if(vl) vl.placeholder = c0 ? 'cadastro: ' + String(c0.vel).replace('.', ',') : '';
   const L = UCV_REGS && UCV_REGS.lista;
-  UCV_PRONTAS = L ? _ucvProntas(L, UEP_CONV_PRODS) : [];
+  // a TRAVA DA UEP (v7.233.0): as mesmas medições e cadastro, mais as travas
+  const TRV = UCV_REGS && UCV_REGS.travas;
+  UCV_TRAVA = _ucvTravaMontar(L, UEP_CONV_PRODS, TRV);
+  const tv = _ucvEl('trava'); if(tv) tv.innerHTML = _ucvTravaHtml(UCV_TRAVA, UCV_REGS && UCV_REGS.falha);
   // CHEGARAM DO APP (v7.218.0): no topo do MEDIR, as medições que o app mandou nos últimos dias
   const A = _ucvAppRecentes(L, UEP_CONV_PRODS, UCV_CONF && UCV_CONF.trocas, hojeStr(), UCV_APP_DIAS, UCV_APP_TODAS ? Infinity : UCV_APP_MAX);
   UCV_APP = A ? A.linhas : [];
   const ap = _ucvEl('app'); if(ap) ap.innerHTML = _ucvAppHtml(A, UCV_REGS && UCV_REGS.falha, ja ? ja.regId : null, UCV_APP_TODAS);
   // v7.197.0 (sub-abas): no MEDIR, as medições do volume escolhido (a regra da troca dele);
-  // no MEDIÇÕES, as últimas de todos, com as PRONTAS PARA TROCAR em cima
+  // no MEDIÇÕES, as últimas de todos
   const lst = _ucvEl('regs'), lstP = _ucvEl('regs-p');
   const RL = L && R.p ? _ucvRegsDoProduto(L, R.p) : null, LH = _ucvLinhaItens();
   const ref = Array.isArray(LH) ? _ucvRefDe(LH, UEP_CONV_PRODS, R.base.meta) : null;
   if(lstP) lstP.innerHTML = !R.p ? '' : _ucvRegsHtml(L ? RL : null, R.p, UCV_REGS && UCV_REGS.falha, UCV_EXCL, R.volCad, _ucvRegsPadrao(RL && RL.slice(0, 15), LH, R.base.meta, ref),
-        _ucvRegsStatus(RL && RL.slice(0, 15), UCV_CONF && UCV_CONF.trocas, UEP_CONV_PRODS));
-  if(lst) lst.innerHTML = _ucvProntasHtml(UCV_PRONTAS)
-    + _ucvRegsHtml(L, null, UCV_REGS && UCV_REGS.falha, UCV_EXCL, null, _ucvRegsPadrao(L && L.slice(0, 15), LH, R.base.meta, ref),
+        _ucvRegsStatus(RL && RL.slice(0, 15), UCV_CONF && UCV_CONF.trocas, UEP_CONV_PRODS), null, R.trava);
+  if(lst) lst.innerHTML = _ucvRegsHtml(L, null, UCV_REGS && UCV_REGS.falha, UCV_EXCL, null, _ucvRegsPadrao(L && L.slice(0, 15), LH, R.base.meta, ref),
         _ucvRegsStatus(L && L.slice(0, 15), UCV_CONF && UCV_CONF.trocas, UEP_CONV_PRODS));
   const C = UCV_CONF && UCV_CONF.trocas ? _ucvConfMontar(UCV_CONF.trocas, R.base.meta, LH, UEP_CONV_PRODS) : null;
   // os principais para a análise de tempo (v7.189.0): as mesmas horas, medições e cadastro
@@ -7417,7 +7503,7 @@ function _ucvRegPintar(R, ja){
   const tp = _ucvEl('tempo'); if(tp) tp.innerHTML = _ucvTempoHtml(TV, LH, R.p ? R.p.chave : null, UCV_TEMPO_TODOS);
   const cf = _ucvEl('conf'); if(cf) cf.innerHTML = _ucvConfHtml(C, UCV_CONF && UCV_CONF.falha);
   const av = _ucvEl('conf-av'); if(av) av.innerHTML = _ucvConfAvisoHtml(C);
-  _ucvSubPintar(_ucvSubMontar({ p:R.p, M, LH, L, prontas:UCV_PRONTAS, regsFalha:UCV_REGS && UCV_REGS.falha, C, confFalha:UCV_CONF && UCV_CONF.falha, T:TV, app:A }));
+  _ucvSubPintar(_ucvSubMontar({ p:R.p, M, LH, L, trava:UCV_TRAVA, regsFalha:UCV_REGS && UCV_REGS.falha, C, confFalha:UCV_CONF && UCV_CONF.falha, T:TV, app:A }));
 }
 // ── Sub-abas da ⏱ CRONOANÁLISE (v7.197.0) ──────────────────────────────────
 // PPCP, 03/11/2026: "está muito cheia a tela, tem que enxugar, deixar mais
@@ -7425,11 +7511,11 @@ function _ucvRegPintar(R, ja){
 // uma na tela por vez. Cada botão diz o seu número, para escolher para onde ir
 // sem abrir. Os blocos, ids e leituras são os de antes: só a moldura mudou.
 // v7.207.0 (PPCP 06/11/2026, "A1 E A2"): a 5ª é o ONDE O TEMPO VAI, que era aba.
-const UCV_SUBS = ['medir', 'princ', 'regs', 'trocas', 'tempo'];
+const UCV_SUBS = ['medir', 'princ', 'regs', 'trava', 'trocas', 'tempo'];   // v7.233.0: a TRAVA DA UEP
 let UCV_SUB = 'medir';
 // O texto de cada botão: só lê o que o _ucvRegPintar já montou (nenhuma conta).
 function _ucvSubMontar(o){
-  const p = o.p, M = o.M, L = o.L, C = o.C, np = (o.prontas || []).length;
+  const p = o.p, M = o.M, L = o.L, C = o.C, TR = o.trava;
   const lendo = x => x === 'sem-endpoint' ? 'falta o .gs novo' : x === 'falhou' ? 'a produção não foi lida' : '…';
   return {
     // v7.218.0: sem produto escolhido, quantas medições chegaram do app hoje
@@ -7438,8 +7524,11 @@ function _ucvSubMontar(o){
     // v7.216.0: o que falta medir na programação (a agenda), e quanto da UEP já está medido
     princ:  M ? { txt:(M.progLida ? (M.nProg ? `${M.nProg} a medir na programação` : 'nada a medir na programação') : `${M.nPend} a medir`) + (M.cobertura != null ? ` · ${fmtP(M.cobertura)} da UEP medida` : ''), cls:M.nPend ? '' : 'ok' }
               : { txt:Array.isArray(o.LH) ? '…' : lendo(o.LH), cls:'' },
-    regs:   L ? { txt:plural(L.length, 'registrada', 'registradas') + (np ? ` · ${plural(np, 'pronta', 'prontas')} para trocar` : ''), cls:np ? 'acc' : '' }
+    regs:   L ? { txt:plural(L.length, 'registrada', 'registradas'), cls:'' }
               : { txt:o.regsFalha ? (o.regsFalha === 'sem-endpoint' ? 'falta o .gs novo' : 'não foram lidas') : '…', cls:'' },
+    // v7.233.0: quantos cumpriram a regra (esperando o PPCP) e quantos ele já travou
+    trava:  TR ? { txt:`${plural(TR.cumpriu.length, 'cumpriu', 'cumpriram')} · ${plural(TR.travadas.length, 'travada', 'travadas')}` + (TR.travasLidas ? '' : ' · falta o .gs novo'), cls:TR.cumpriu.length ? 'acc' : '' }
+              : { txt:o.regsFalha ? (o.regsFalha === 'sem-endpoint' ? 'falta o .gs novo' : 'medições não lidas') : '…', cls:'' },
     trocas: C ? { txt:(C.lista.length ? plural(C.lista.length, 'troca', 'trocas') : 'nenhuma troca') + (C.nAlerta ? ` · ${plural(C.nAlerta, 'alerta', 'alertas')}` : C.lista.length ? ' · nenhum alerta' : ''), cls:C.nAlerta ? 'warn' : '' }
               : { txt:o.confFalha ? (o.confFalha === 'sem-endpoint' ? 'falta o .gs novo' : 'não foi lida') : '…', cls:'' },
     // ONDE O TEMPO VAI: o número do 1º cartão (diferença estudo × produção). Sem cor:
@@ -7496,7 +7585,7 @@ async function _ucvRegistrar(){
   const diz = t => { if(msg) msg.textContent = t; };
   if(!CFG.sheetsUrl){ alert('Sem a URL do Apps Script nas configurações (⚙).'); return; }
   const E = _uepConvEntradas();
-  const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol, E.linha, E.regs);
+  const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol, E.linha, E.regs, E.travas);
   if(R.estado !== 'ok'){ alert('Escolha o produto e digite o tempo SEM AS LACUNAS antes de registrar.'); return; }
   if(!R.base.medida){ alert('Não registra: ' + _ucvRegBaseTxt() + '.'); return; }
   const V = _ucvRegValida(R.seg, _ucvRegCampos(), hojeStr());
@@ -7702,7 +7791,7 @@ function _ucvImportItem(x, prods, E, hoje, quem){
   if(!a.p) return { x, erro:a.motivo ? a.motivo + ' — importe este sozinho e escolha na lista PRODUTO'
                                     : a.n > 1 ? `${a.n} produtos do cadastro têm "${x.produto}" — importe este sozinho e escolha na lista PRODUTO`
                                     : `"${x.produto}" não está no cadastro — importe este sozinho e escolha na lista PRODUTO` };
-  const R = _uepConvMontar(prods, a.p.rot, x.lac, E.base, E.meta, E.tol, E.linha, E.regs);
+  const R = _uepConvMontar(prods, a.p.rot, x.lac, E.base, E.meta, E.tol, E.linha, E.regs, E.travas);
   if(!R.base.medida) return { x, R, erro:_ucvRegBaseTxt() };
   const txt = v => v == null ? '' : String(v);
   const V = _ucvRegValida(x.lac, { data:x.data, per:txt(x.per), rod:txt(x.rod), vol:txt(x.vol), vel:'', quem:quem || '' }, hoje);
@@ -7718,7 +7807,7 @@ ${ok.map(i => `${i.R.p.rot} · ${i.D.data} · ${i.D.volumes} volumes · sem lacu
 Ficam de fora (${ruins.length}):
 ${ruins.map(i => `${i.x.arquivo}: ${i.erro}`).join('\n')}` : ''}
 
-A UEP do cadastro NÃO muda: a troca é pelo ✓ TROCAR A UEP.`;
+A UEP do cadastro NÃO muda: a troca é do PPCP, na TRAVA DA UEP.`;
 }
 async function _ucvImportar(files){
   const msg = _ucvEl('i-msg'), diz = t => { if(msg) msg.textContent = t; };
@@ -7769,79 +7858,263 @@ async function _ucvImportar(files){
     await _ucvRegsCarregar(true);
   } finally { UCV_IMPORTANDO = false; }
 }
-// ── TROCAR A UEP PELAS MEDIÇÕES (v7.158.0 / .gs v5.34) ─────────────────────
-// PPCP, 26/10/2026: "deixa pronto para trocar já no app a uep que puder". O
-// ✓ TROCAR A UEP aparece quando as medições REGISTRADAS do volume liberam
-// (_ucvRegsResumo: 30 volumes ou mais, todas do mesmo lado da faixa) e grava a
-// média delas na PRODUTO_CODIGO pelo trocarUepCrono, que confere a regra de
-// novo contra a planilha antes de gravar. Vigência hoje, DIGITADA (o carimbo da
-// digitação), versão na UEP_VERSOES. A UEP TRAVADA continua para o GRAVAR UEP
-// (estudo pelo ritmo): isto é a cronoanálise, o único caminho que ficou aberto.
-// Conta pura: os volumes que a regra deixa trocar, de todas as medições — a
-// lista PRONTAS PARA TROCAR. A base (MADERO) nunca entra.
-function _ucvProntas(lista, prods){
-  const G = {};
-  (lista || []).forEach(r => { const k = String(r.modelo || '') + '|' + _uepConvNorm(r.produto) + '|' + String(r.volume || ''); (G[k] = G[k] || []).push(r); });
-  const out = [];
-  Object.keys(G).forEach(k => {
-    const r0 = G[k][0];
-    const p = (prods || []).find(x => x.modelo === String(r0.modelo || '') && _uepConvNorm(x.nome) === _uepConvNorm(r0.produto) && _ucvRegVol(x) === String(r0.volume || ''));
-    if(!p || _uepEhBase(p)) return;
-    const cad = _uepConvCadastro(p), S = _ucvRegsResumo(G[k], cad.volCad);
-    if(S && S.veredito === 'trocar') out.push({ p, S, antes:cad.volCad, uep:S.uepMed });
+// ── A TRAVA DA UEP (v7.233.0 / .gs v5.64) ──────────────────────────────────
+// PPCP, 12/11/2026: "colocar um carimbo em cada produto que já cumpriu a regra
+// e travar a uep, mas essa trava passa por mim" → "eu valido a troca". A regra
+// (_ucvRegraUep) põe o CARIMBO; quem troca (ou mantém) e TRAVA é o PPCP, com o
+// código dele — o Apps Script confere o código (Propriedades do script, nunca
+// no painel, que é público), refaz a regra contra a planilha e grava. Travada:
+// a medição nova é registrada e só informa; o GRAVAR UEP pula o código; a
+// digitação de uma célula na planilha é desfeita. Só o PPCP destrava, com motivo.
+// Revoga o ✓ TROCAR A UEP e as PRONTAS PARA TROCAR (v7.158.0).
+// A trava mora no CADASTRO (coluna UEP_TRAVA — é ela que o .gs confere); o
+// detalhe (quando, a decisão, a amostra) na aba UEP_TRAVAS. Conta pura: o estado
+// da trava de um volume. p = a linha do volume (_uepConvProdutos); travas = as
+// linhas da UEP_TRAVAS (getCronoRegistros), ou null sem elas. Cadastro antigo
+// (sem a coluna no getProdutos): vale o registro.
+function _ucvTravaDe(p, travas){
+  if(!p) return null;
+  const cods = p.cods || [], conhece = cods.some(c => c.trava != null), presos = cods.filter(c => c.trava);
+  const vol = _ucvRegVol(p);
+  const T = Array.isArray(travas) ? travas.find(t => t && t.modelo === p.modelo && _uepConvNorm(t.produto) === _uepConvNorm(p.nome) && t.volume === vol && !t.destravadaEm) || null : null;
+  // parcial (revisão): uma cor nova entra no cadastro de um volume travado — a trava
+  // continua valendo nos códigos antigos e o .gs recusa travar de novo; aqui ela conta
+  // como TRAVADA (com o 🔓 DESTRAVAR, que solta os presos) e a tela diz para travar de novo.
+  const travada = conhece ? presos.length > 0 : !!T;
+  if(!travada && !presos.length && !T) return null;
+  const cad = _uepConvCadastro(p).volCad;
+  return { travada, T, cad, carimbo:presos.length ? presos[0].trava : '',
+           parcial:conhece && presos.length > 0 && presos.length < cods.length,
+           apagada:conhece && !presos.length && !!T,
+           mudou:travada && !!T && T.uep > 0 && cad != null && Math.abs(cad - T.uep) >= 0.005 };
+}
+let UCV_TRAVA = null;          // a TRAVA DA UEP montada (o diálogo lê dela pelo índice)
+let UCV_TRAVA_DLG = null;      // { x, acao:'travar'|'destravar', modo } do diálogo aberto
+let UCV_TRAVANDO = false;      // uma gravação de cada vez
+let UCV_TRAVA_MSG = '';        // a última resposta, na sub-aba
+// Conta pura: a sub-aba. lista = as medições; prods = _uepConvProdutos; travas
+// = a UEP_TRAVAS. Por VOLUME (produto de 1 volume, ou cada VOL de N): TRAVADAS ·
+// CUMPRIRAM A REGRA (esperando o PPCP) · AINDA NÃO CUMPRIRAM. A base e o JOGO
+// (a UEP é por volume) ficam fora, contados.
+function _ucvTravaMontar(lista, prods, travas){
+  if(!Array.isArray(lista) || !prods || !prods.length) return null;
+  const G = {}, chave = (m, n, v) => String(m || '') + '|' + _uepConvNorm(n) + '|' + String(v || '');
+  lista.forEach(r => { const k = chave(r.modelo, r.produto, r.volume); (G[k] = G[k] || []).push(r); });
+  const out = { travadas:[], cumpriu:[], falta:[], base:false, jogos:0, semCad:0, travasLidas:Array.isArray(travas) };
+  const usado = {};
+  prods.filter(p => p.volSel || p.nVol === 1).forEach(p => {
+    const k = chave(p.modelo, p.nome, _ucvRegVol(p)), regs = G[k] || [], tr = _ucvTravaDe(p, travas);
+    if(!regs.length && !tr) return;
+    usado[k] = 1;
+    if(_uepEhBase(p)){ out.base = true; return; }
+    const cad = _uepConvCadastro(p), S = _ucvRegraUep(regs, cad.volCad);
+    const x = { p, S, cad:cad.volCad, tr };
+    if(tr && tr.travada){
+      const desde = tr.T ? _ucvGravNum(tr.T.em) : 0;   // as registradas DEPOIS da trava: só informam
+      x.novas = desde ? _ucvRegraUep(regs.filter(r => _ucvGravNum(r.em) > desde), tr.T.uep || cad.volCad) : null;
+      out.travadas.push(x); return;
+    }
+    if(S && S.cumpre){
+      x.digitar = _uepConvDigitar(p, cad, S.uepMed, S.uepMed * p.nVol);
+      out.cumpriu.push(x);
+    } else out.falta.push(x);
   });
-  return out.sort((a, b) => a.p.rot.localeCompare(b.p.rot));
+  Object.keys(G).forEach(k => { if(!usado[k]) /\|JOGO /.test(k) ? out.jogos += G[k].length : out.semCad++; });   // jogos = medições; semCad = volumes
+  const ad = x => x.S.difPct == null ? 99 : Math.abs(x.S.difPct);
+  out.cumpriu.sort((a, b) => (b.S.veredito === 'troca') - (a.S.veredito === 'troca') || b.S.borda - a.S.borda || ad(b) - ad(a) || a.p.rot.localeCompare(b.p.rot));
+  out.travadas.sort((a, b) => (b.tr.T ? _ucvGravNum(b.tr.T.em) : 0) - (a.tr.T ? _ucvGravNum(a.tr.T.em) : 0) || a.p.rot.localeCompare(b.p.rot));
+  const perto = x => x.S && x.S.nVal >= 1 && x.S.nVol >= UCV_REGRA_MIN_VOL ? 0 : x.S && x.S.nVal ? 1 : 2;
+  out.falta.sort((a, b) => perto(a) - perto(b) || (b.S ? b.S.nVol : 0) - (a.S ? a.S.nVol : 0) || a.p.rot.localeCompare(b.p.rot));
+  return out;
 }
-// O texto da confirmação: o que muda, de onde vem e quando vale.
-function _ucvTrocaConfirmaTxt(R, hoje){
-  const S = R.regRes, T = R.troca;
-  return `Trocar a UEP no cadastro (PRODUTO_CODIGO)?
-
-${R.p.rot}
-${_ucvU2(T.antes)} → ${_ucvU2(T.uep)} por volume (${T.difPct > 0 ? '+' : ''}${fmtP(T.difPct)})
-${T.digitar.map(g => (R.p.nVol > 1 ? 'VOL ' + g.vol + ': ' : '') + _ucvU2(g.uep) + ' — ' + g.cods.map(c => _uepConvCod(c.cod) + (c.cor ? ' ' + c.cor : '')).join(' · ')).join('\n')}
-
-Pelas medições registradas: ${plural(S.n, 'medição', 'medições')}, ${fmtN(S.nVol)} volumes (${S.datas.join(', ')}) — sem as lacunas ÷ ${_taktTxt(UEP_BASE_MEDIDA.seg)} da ${_uepBaseCurto()} sem as lacunas.
-
-Vale a partir de hoje (${hoje}): a UEP de hoje inteira já sai com o número novo; os dias fechados não mudam.
-Atualize a aba UEP da sua planilha de programação hoje.`;
+// ── Desenho (sem conta): tudo pronto do _ucvTravaMontar ────────────────────
+const _ucvDifTxt = d => d == null ? '—' : (Math.round(d * 10) > 0 ? '+' : Math.round(d * 10) < 0 ? '−' : '') + fmt1(Math.abs(d)) + '%';
+function _ucvTravaRot(p){
+  const m = p.rot.match(/^(\d+) · (.*?)( · (VOL \d+\/\d+))?$/) || [null, p.modelo, p.nome, null, null];
+  return `<b>${_rpEsc(m[2])}</b>${m[4] ? ` <span class="ucv-tv-vol">${m[4]}</span>` : ''}<small>${_rpEsc(m[1])}</small>`;
 }
-// O que a resposta do trocarUepCrono diz. Recusa vem com ok:true (o
-// jsonpEscrita não retenta uma coisa que não vai mudar). Sem `trocado` nem
-// `recusado`, o Apps Script é anterior à v5.34: caiu no getDados, nada gravou.
-// v7.200.0 / .gs v5.44: o .gs da régua SEM AS LACUNAS responde `regua:'lac'`. A
-// recusa sem ela é o .gs antigo conferindo pela régua RODANDO (a média não bate
-// com a que o painel mandou): é re-deploy, não "tela desatualizada".
-function _ucvTrocaResposta(r){
-  if(r && r.trocado && r.jaTrocado) return { tipo:'ja', txt:'✓ A UEP já estava trocada no cadastro.' };
-  if(r && r.trocado) return { tipo:'ok', txt:`✓ UEP trocada no cadastro: ${r.n} código${r.n === 1 ? '' : 's'}, vigência ${r.vigencia || 'hoje'} (DIGITADA). Atualize a aba UEP da sua planilha de programação hoje.`
-    + (r.versaoErro ? ` ⚠ A MUDANÇA NÃO FICOU REGISTRADA na UEP_VERSOES (${r.versaoErro}) — a CONFERÊNCIA DAS TROCAS não vai achar esta troca.` : '') };
-  if(r && r.recusado && r.regua !== 'lac') return { tipo:'velho', txt:'O Apps Script ainda confere a troca pela régua antiga (o tempo RODANDO): cole o .gs v5.44 no editor e re-deploye. Nada foi gravado.' };
-  if(r && r.recusado) return { tipo:'recusou', txt:`O Apps Script não trocou: ${r.erro || r.motivo}. Nada foi gravado — a tela foi relida.` };
-  return { tipo:'velho', txt:'O Apps Script ainda não tem a troca (.gs v5.34): cole o .gs no editor e re-deploye. Nada foi gravado.' };
+function _ucvTravaHtml(T, est){
+  if(!T) return `<div class="uep-nota">${est === 'sem-endpoint' ? 'O Apps Script ainda não tem o registro da cronoanálise: cole o .gs no editor e re-deploye.'
+    : est ? 'As medições não foram lidas — tenta de novo em 1 min.' : 'Lendo as medições e o cadastro…'}</div>`;
+  const F = UEP_PAD_FAIXA, msg = UCV_TRAVA_MSG ? `<div class="uep-nota ucv-tv-msg">${_rpEsc(UCV_TRAVA_MSG)}</div>` : '';
+  const regra = `<div class="ucv-tv-regra">
+  <div class="ucv-tv-r"><b>1 · A MEDIÇÃO VALE</b><p>com <em>${UCV_MED_MIN_VOL} volumes</em> ou mais e lacunas de até <em>${UCV_MED_MAX_LAC}%</em> do tempo rodando.</p></div>
+  <div class="ucv-tv-r"><b>2 · A REGRA SE CUMPRE</b><p>com <em>${UCV_REGRA_MIN_MED} medições válidas</em> ou mais, somando <em>${UCV_REGRA_MIN_VOL} volumes</em>. UEP = média pelos volumes (sem as lacunas ÷ ${_taktTxt(UEP_BASE_MEDIDA.seg)} da ${_uepBaseCurto()}).</p></div>
+  <div class="ucv-tv-r"><b>3 · O PPCP DECIDE E TRAVA</b><p>Dentro de <em>${F[0]}–${F[1]}%</em> do cadastro a regra diz FICA; fora, TROCA para a média. Travada, medição nova só informa.</p></div></div>`;
+  const velho = T.travasLidas ? '' : '<div class="uep-conv-av"><span><b>FALTA O .gs v5.64</b> — cole o arquivo no editor do Apps Script e re-deploye (e crie a propriedade PPCP_CODIGO). Antes dele a trava não grava nada.</span></div>';
+  const tit = (t, n, sub) => `<div class="ucv-tv-sec">${t} <span class="ucv-tv-n">${n}</span>${sub ? `<span>${sub}</span>` : ''}</div>`;
+  const aviso = x => !x.tr ? '' : x.tr.apagada ? '<small class="ucv-tv-red">a trava foi apagada na planilha — confira</small>' : '';
+  const nT = T.cumpriu.filter(x => x.S.veredito === 'troca').length;
+  const linhaC = (x, i) => {
+    const S = x.S, troca = S.veredito === 'troca';
+    const dz = troca ? `<span class="ucv-pill troca">TROCA PARA ${_ucvU2(S.uepMed)}</span><small>${x.cad != null ? `fora de ${F[0]}–${F[1]}% do cadastro` : 'sem UEP no cadastro'}</small>`
+      : `<span class="ucv-pill ok">FICA ${_ucvU2(x.cad)}</span>${S.borda ? `<small class="ucv-tv-borda">na borda: ${_ucvDifTxt(S.difPct)} — decida</small>` : `<small>dentro de ${F[0]}–${F[1]}%</small>`}`;
+    const bt = `<button type="button" class="ucv-tv-bt${troca ? ' acc' : ''}" onclick="_ucvTravaAbrir(${i})"${UCV_TRAVANDO ? ' disabled' : ''}>🔒 ${troca ? 'TROCAR E TRAVAR' : 'TRAVAR'}<small>em ${_ucvU2(troca ? S.uepMed : x.cad)}</small></button>`;
+    return `<tr class="${troca ? 'troca' : ''}"><td class="ucv-tv-pr">${_ucvTravaRot(x.p)}${aviso(x)}</td>`
+      + `<td class="ucv-tv-md">${plural(S.nVal, 'válida', 'válidas')}${S.nInv ? ` de ${S.n}` : ''}<small>${_rpEsc(S.datas.map(d => d.slice(0, 5)).join(', '))}</small></td>`
+      + `<td class="n">${fmtN(S.nVol)}</td><td class="n ucv-tv-u">${_ucvU2(S.uepMed)}</td><td class="n">${x.cad != null ? _ucvU2(x.cad) : '—'}</td><td class="n">${_ucvDifTxt(S.difPct)}</td>`
+      + `<td class="ucv-tv-dz">${dz}</td><td>${bt}</td></tr>`;
+  };
+  const cumpriu = tit('CUMPRIRAM A REGRA · ESPERANDO O PPCP', T.cumpriu.length, T.cumpriu.length ? `${plural(nT, 'pede troca', 'pedem troca')} · ${plural(T.cumpriu.length - nT, 'fica como está', 'ficam como estão')}` : '')
+    + (T.cumpriu.length ? '<div class="uep-card ucv-regs-w"><table class="ucv-regs ucv-tv-tab"><thead><tr><th>PRODUTO · VOLUME</th><th>MEDIÇÕES</th><th class="n">VOLUMES</th>'
+      + `<th class="n" title="A média das medições válidas, pesada pelos volumes: sem as lacunas ÷ ${_taktTxt(UEP_BASE_MEDIDA.seg)} da ${_uepBaseCurto()}">UEP MEDIDA</th><th class="n">CADASTRO</th><th class="n">DIFERENÇA</th><th>A REGRA DIZ</th><th></th></tr></thead><tbody>`
+      + T.cumpriu.map(linhaC).join('') + '</tbody></table></div>'
+      : '<div class="ucv-tv-vazio">Nenhum volume cumpre a regra agora.</div>');
+  const linhaT = (x, i) => {
+    const tr = x.tr, t = tr.T, nv = x.novas;
+    const dec = t ? `${/TROCOU/.test(t.decisao) ? `trocou de ${t.antes > 0 ? _ucvU2(t.antes) : '—'}` : 'manteve'}${/CONTRA/.test(t.decisao) ? ' · <span class="ucv-tv-borda">contra a regra</span>' : ''}` : '—';
+    const depois = !nv ? '<span class="ucv-tv-dim">nenhuma</span>'
+      : `${plural(nv.n, 'medição', 'medições')}${nv.nVal ? ` · média ${_ucvU2(nv.uepMed)} (${_ucvDifTxt(nv.difPct)})` : ' · nenhuma válida'}<small>só informa — a UEP não muda</small>`;
+    return `<tr><td class="ucv-tv-pr">${_ucvTravaRot(x.p)}${tr.mudou ? `<small class="ucv-tv-red">a UEP mudou na planilha (${_ucvU2(tr.cad)}) — confira</small>` : ''}`
+      + `${tr.parcial ? '<small class="ucv-tv-red">entrou código novo no volume, sem a trava — destrave e trave de novo</small>' : ''}</td>`
+      + `<td class="n ucv-tv-u">${t && t.uep > 0 ? _ucvU2(t.uep) : tr.cad != null ? _ucvU2(tr.cad) : '—'}</td>`
+      + `<td>${t ? _rpEsc(String(t.em).slice(0, 10)) : _rpEsc(String(tr.carimbo).slice(0, 10))}<small>${dec}</small></td>`
+      + `<td>${t ? `${plural(t.medicoes, 'medição', 'medições')} · ${fmtN(t.volumes)} vol.` : '—'}<small>${t && t.medida > 0 ? 'média ' + _ucvU2(t.medida) : ''}${t && t.motivo ? ' · ' + _rpEsc(t.motivo) : ''}</small></td>`
+      + `<td class="ucv-tv-dz">${depois}</td>`
+      + `<td><button type="button" class="ucv-tv-bt" onclick="_ucvDestravaAbrir(${i})"${UCV_TRAVANDO ? ' disabled' : ''}>🔓 DESTRAVAR<small>só o PPCP</small></button></td></tr>`;
+  };
+  const travadas = tit('TRAVADAS PELO PPCP', T.travadas.length, T.travadas.length ? 'a UEP não muda — medição nova só informa' : '')
+    + (T.travadas.length ? '<div class="uep-card ucv-regs-w"><table class="ucv-regs ucv-tv-tab"><thead><tr><th>PRODUTO · VOLUME</th><th class="n">UEP TRAVADA</th><th>TRAVADA EM</th><th>NA TRAVA</th><th>DEPOIS DA TRAVA</th><th></th></tr></thead><tbody>'
+      + T.travadas.map(linhaT).join('') + '</tbody></table></div>'
+      : '<div class="ucv-tv-vazio"><b>Nenhuma ainda.</b> Travada, a UEP não muda: a medição nova é registrada e aparece aqui com a diferença, sem botão de troca. Só o PPCP destrava.</div>');
+  const linhaF = x => {
+    const S = x.S;
+    return `<tr><td class="ucv-tv-pr">${_ucvTravaRot(x.p)}${aviso(x)}</td><td class="n">${S ? `${S.nVal} de ${S.n}` : '—'}</td><td class="n">${S ? fmtN(S.nVol) : '—'}</td>`
+      + `<td class="n">${S && S.uepMed != null ? _ucvU2(S.uepMed) : '—'}</td><td class="n">${x.cad != null ? _ucvU2(x.cad) : '—'}</td>`
+      + `<td class="ucv-tv-fl">${S ? _rpEsc(S.faltaTxt) : ''}${S && S.inv.length ? `<small>não vale: ${S.inv.map(v => _rpEsc(String(v.data).slice(0, 5) + ' ' + v.mot)).join(' · ')}</small>` : ''}</td></tr>`;
+  };
+  const falta = tit('AINDA NÃO CUMPRIRAM', T.falta.length, T.falta.length ? 'a UEP deles continua como está no cadastro' : '')
+    + (T.falta.length ? '<div class="uep-card ucv-regs-w"><table class="ucv-regs ucv-tv-tab"><thead><tr><th>PRODUTO · VOLUME</th><th class="n">VÁLIDAS</th><th class="n">VOLUMES</th><th class="n">UEP ATÉ AGORA</th><th class="n">CADASTRO</th><th>O QUE FALTA</th></tr></thead><tbody>'
+      + T.falta.map(linhaF).join('') + '</tbody></table></div>' : '<div class="ucv-tv-vazio">Nada.</div>');
+  const pe = [T.base ? `<b>${_rpEsc(UEP_BASE.nome)}</b> — a base, ${_taktTxt(UEP_BASE_MEDIDA.seg)} congelados` : '',
+              T.jogos ? `${plural(T.jogos, 'medição de JOGO', 'medições de JOGO')} — a trava é por volume` : '',
+              T.semCad ? `${plural(T.semCad, 'volume fora do cadastro', 'volumes fora do cadastro')}` : ''].filter(Boolean);
+  return regra + velho + msg + cumpriu + travadas + falta + (pe.length ? `<div class="ucv-tv-pe">Fora da regra: ${pe.join(' · ')}.</div>` : '');
 }
-// Sem resposta ≠ não trocou: o cadastro relido decide (todos os códigos com a
-// UEP nova). Cadastro que não veio não decide nada — e diz isso.
-function _ucvTrocaConfere(cat, digitar){
-  if(!Array.isArray(cat)) return { tipo:'incerto', txt:'Sem resposta do Apps Script e o cadastro não foi relido: não dá para saber se trocou. Confira a coluna UEP na PRODUTO_CODIGO.' };
-  const U = {}; cat.forEach(c => { U[String(c && c.codigo || '').replace(/\D/g, '')] = Number(c && c.uep) || 0; });
-  const todos = digitar.every(g => g.cods.every(c => Math.round((U[c.cod] || 0) * 100) === Math.round(g.uep * 100)));
-  return todos ? { tipo:'trocou', txt:'✓ A UEP foi trocada (o Apps Script demorou a responder, mas gravou).' }
-               : { tipo:'nao', txt:'Não trocou (sem resposta do Apps Script). Tente de novo — repetir é seguro.' };
+// ── O diálogo do PPCP ──────────────────────────────────────────────────────
+// Desenho: o que a regra diz em destaque (A REGRA), a outra opção marcada como
+// contra a regra, o código e o motivo. Na destrava o motivo é obrigatório.
+function _ucvTravaDlgHtml(D){
+  const x = D.x, S = x.S, p = x.p;
+  if(D.acao === 'destravar'){
+    const t = x.tr.T;
+    return `<div class="modal-ttl">🔓 DESTRAVAR A UEP · ${_rpEsc(p.rot)}</div>`
+      + `<div class="ucv-dlg-sub">Travada${t ? ` em ${_rpEsc(String(t.em).slice(0, 10))} · ${_ucvU2(t.uep)}` : ''}. Destravada, a regra volta a valer para este volume — a UEP do cadastro não muda agora.</div>`
+      + `<div class="frm-row"><div class="frm-grp"><label class="frm-lbl">CÓDIGO DO PPCP</label><input class="frm-inp" id="ucv-dlg-cod" type="password" autocomplete="off" onkeydown="if(event.key==='Enter')_ucvTravaEnviar()"></div>`
+      + `<div class="frm-grp" style="flex:2"><label class="frm-lbl">MOTIVO (obrigatório)</label><input class="frm-inp" id="ucv-dlg-mot" maxlength="200" placeholder="ex.: mudou a embalagem do produto" onkeydown="if(event.key==='Enter')_ucvTravaEnviar()"></div></div>`;
+  }
+  const troca = S.veredito === 'troca', semCad = x.cad == null;
+  const op = (modo, tit, sub, regra) => `<label class="ucv-dlg-op${D.modo === modo ? ' on' : ''}"><input type="radio" name="ucv-dlg-modo" value="${modo}"${D.modo === modo ? ' checked' : ''} onchange="_ucvTravaModo('${modo}')"><span><b>${tit}</b>${regra ? '<i>A REGRA</i>' : ''}<small>${sub}</small></span></label>`;
+  const nC = p.cods.length;
+  const opTroca = op('trocar', `TROCAR PARA ${_ucvU2(S.uepMed)} E TRAVAR`, `grava ${_ucvU2(S.uepMed)} ${nC === 1 ? 'no código' : `nos ${nC} códigos`} (vigência hoje) e trava.${troca ? '' : ' Contra a regra — fica registrado.'}`, troca);
+  const opManter = semCad ? '' : op('manter', `TRAVAR EM ${_ucvU2(x.cad)}, COMO ESTÁ`, troca ? 'contra a regra — fica registrado que o PPCP escolheu manter.' : 'a UEP do cadastro fica e trava.', !troca);
+  return `<div class="modal-ttl">🔒 TRAVAR A UEP · ${_rpEsc(p.rot)}</div>`
+    + `<div class="ucv-dlg-sub">${plural(S.nVal, 'medição válida', 'medições válidas')} (${_rpEsc(S.datas.map(d => d.slice(0, 5)).join(', '))}) · ${fmtN(S.nVol)} volumes · média ${_ucvU2(S.uepMed)} · cadastro ${semCad ? '—' : _ucvU2(x.cad)}${S.difPct != null ? ` (${_ucvDifTxt(S.difPct)})` : ''}</div>`
+    + (troca ? opTroca + opManter : opManter + opTroca)
+    + `<div class="frm-row" style="margin-top:12px"><div class="frm-grp"><label class="frm-lbl">CÓDIGO DO PPCP</label><input class="frm-inp" id="ucv-dlg-cod" type="password" autocomplete="off" onkeydown="if(event.key==='Enter')_ucvTravaEnviar()"></div>`
+    + `<div class="frm-grp" style="flex:2"><label class="frm-lbl">MOTIVO (opcional)</label><input class="frm-inp" id="ucv-dlg-mot" maxlength="200" placeholder="ex.: 4 medições de 03/11" onkeydown="if(event.key==='Enter')_ucvTravaEnviar()"></div></div>`
+    + `<div class="ucv-dlg-nota">O código é conferido pelo Apps Script — ele não fica no painel. Travada, a medição nova é registrada e não muda a UEP.</div>`;
 }
-function _ucvProntasHtml(L){
-  if(!L || !L.length) return '';
-  return `<div class="ucv-prontas"><span class="ucv-prontas-t">PRONTAS PARA TROCAR</span>`
-    + L.map((x, i) => `<button type="button" class="ucv-pronta" onclick="_ucvAbrirPronta(${i})" title="Abrir este volume: o ✓ TROCAR A UEP aparece no resultado">${_rpEsc(x.p.rot)} <b>${_ucvU2(x.antes)} → ${_ucvU2(x.uep)}</b></button>`).join('')
-    + '</div>';
+// ── Tela (DOM) ─────────────────────────────────────────────────────────────
+function _ucvTravaPinta(){
+  const D = UCV_TRAVA_DLG, c = document.getElementById('modal-trava-c'), b = document.getElementById('modal-trava-ok');
+  if(!D || !c) return;
+  c.innerHTML = _ucvTravaDlgHtml(D);
+  if(b) b.textContent = UCV_TRAVANDO ? 'GRAVANDO…' : D.acao === 'destravar' ? '🔓 DESTRAVAR' : '🔒 TRAVAR';
+  if(b) b.disabled = UCV_TRAVANDO;
 }
-function _ucvAbrirPronta(i){
-  const x = UCV_PRONTAS[i], elP = _ucvEl('prod'), elS = _ucvEl('seg');
-  if(!x || !elP) return;
-  _ucvSub('medir'); UCV_APP_ABERTA = null;
-  elP.value = x.p.rot; if(elS) elS.value = '';
+function _ucvTravaAbrir(i){
+  const x = UCV_TRAVA && UCV_TRAVA.cumpriu[i]; if(!x || UCV_TRAVANDO) return;
+  UCV_TRAVA_DLG = { x, acao:'travar', modo:x.S.veredito === 'troca' || x.cad == null ? 'trocar' : 'manter' };
+  _ucvTravaPinta();
+  const m = document.getElementById('modal-trava'); if(m) m.classList.add('on');
+  const e = document.getElementById('ucv-dlg-cod'); if(e) e.focus();
+}
+function _ucvDestravaAbrir(i){
+  const x = UCV_TRAVA && UCV_TRAVA.travadas[i]; if(!x || UCV_TRAVANDO) return;
+  UCV_TRAVA_DLG = { x, acao:'destravar' };
+  _ucvTravaPinta();
+  const m = document.getElementById('modal-trava'); if(m) m.classList.add('on');
+  const e = document.getElementById('ucv-dlg-cod'); if(e) e.focus();
+}
+function _ucvTravaModo(modo){
+  if(!UCV_TRAVA_DLG) return;
+  const cod = document.getElementById('ucv-dlg-cod'), mot = document.getElementById('ucv-dlg-mot');
+  const v = [cod ? cod.value : '', mot ? mot.value : ''];
+  UCV_TRAVA_DLG.modo = modo; _ucvTravaPinta();
+  const c2 = document.getElementById('ucv-dlg-cod'), m2 = document.getElementById('ucv-dlg-mot');
+  if(c2) c2.value = v[0]; if(m2) m2.value = v[1];
+}
+function fecharTrava(){ if(UCV_TRAVANDO) return; const m = document.getElementById('modal-trava'); if(m) m.classList.remove('on'); UCV_TRAVA_DLG = null; }
+// A URL da gravação: os códigos do volume com a UEP de cada um (trocar = a da
+// média, repartida como o cadastro reparte; manter = só os códigos).
+function _ucvTravaUrl(D, codigo, motivo, id){
+  const p = D.x.p, base = CFG.sheetsUrl + (CFG.sheetsUrl.includes('?') ? '&' : '?');
+  const cods = D.acao === 'travar' && D.modo === 'trocar' ? D.x.digitar.map(g => g.cods.map(c => c.cod + ':' + g.uep.toFixed(2)).join(',')).join(',')
+    : p.cods.map(c => c.cod).join(',');
+  return base + 'action=' + (D.acao === 'destravar' ? 'destravarUep' : 'travarUep')
+    + '&modelo=' + encodeURIComponent(p.modelo) + '&produto=' + encodeURIComponent(p.nome) + '&volume=' + encodeURIComponent(_ucvRegVol(p))
+    + (D.acao === 'travar' ? '&modo=' + D.modo + '&travaId=' + encodeURIComponent(id) : '')
+    + '&cods=' + encodeURIComponent(cods) + '&codigo=' + encodeURIComponent(codigo) + '&motivo=' + encodeURIComponent(motivo);
+}
+// O que a resposta diz. Recusa vem com ok:true (o jsonpEscrita não retenta o que
+// não vai mudar). Sem `travado`/`destravado` nem `recusado`: o .gs é anterior à
+// v5.64 (caiu no getDados) — nada gravou.
+function _ucvTravaResposta(r, acao){
+  const k = acao === 'destravar' ? 'destravado' : 'travado';
+  if(r && r[k] && (r.jaTravada || r.jaDestravada)) return { tipo:'ja', txt:acao === 'destravar' ? '✓ O volume já estava destravado.' : '✓ O volume já estava travado.' };
+  if(r && r[k] && acao === 'destravar') return { tipo:'ok', txt:'✓ Destravado. A regra volta a valer para este volume.' };
+  if(r && r[k]) return { tipo:'ok', txt:`✓ ${r.decisao === 'TROCOU' ? `UEP trocada para ${_ucvU2(r.uep)} e travada` : `UEP ${_ucvU2(r.uep)} travada`} (${plural(r.n, 'código', 'códigos')}).`
+    + (r.decisao === 'TROCOU' ? ' Atualize a aba UEP da sua planilha de programação hoje.' : '')
+    + (r.logErro ? ` ⚠ O REGISTRO NA UEP_TRAVAS FALHOU (${r.logErro}) — a trava vale (coluna UEP_TRAVA), sem o detalhe.` : '')
+    + (r.versaoErro ? ` ⚠ A MUDANÇA NÃO FICOU NA UEP_VERSOES (${r.versaoErro}).` : '') };
+  if(r && r.recusado) return { tipo:'recusou', txt:`O Apps Script não ${acao === 'destravar' ? 'destravou' : 'travou'}: ${r.erro || r.motivo}. Nada foi gravado.` };
+  return { tipo:'velho', txt:'O Apps Script ainda não tem a trava (.gs v5.64): cole o .gs no editor e re-deploye. Nada foi gravado.' };
+}
+// Sem resposta ≠ não gravou: o cadastro relido decide (a coluna UEP_TRAVA dos códigos).
+// msg: o erro do servidor (ok:false), quando houve — dito junto, nunca "sem resposta".
+function _ucvTravaConfere(cat, D, msg){
+  const pq = msg ? ` — o Apps Script respondeu: ${msg}` : ' (sem resposta do Apps Script)';
+  if(!Array.isArray(cat)) return `${msg ? 'O Apps Script respondeu com erro (' + msg + ')' : 'Sem resposta do Apps Script'} e o cadastro não foi relido: não dá para saber. Confira a coluna UEP_TRAVA na PRODUTO_CODIGO.`;
+  const T = {}; cat.forEach(c => { T[String(c && c.codigo || '').replace(/\D/g, '')] = String(c && c.uepTrava || '').trim(); });
+  const presos = D.x.p.cods.filter(c => T[c.cod]).length, todos = presos === D.x.p.cods.length;
+  if(D.acao === 'destravar') return !presos ? '✓ Destravado (o Apps Script demorou a responder, mas gravou).' : `Não destravou${pq}. Tente de novo.`;
+  return todos ? '✓ Travado (o Apps Script demorou a responder, mas gravou).' : `Não travou${pq}. Tente de novo — repetir é seguro.`;
+}
+async function _ucvTravaEnviar(){
+  const D = UCV_TRAVA_DLG; if(!D || UCV_TRAVANDO) return;
+  if(!CFG.sheetsUrl){ alert('Sem a URL do Apps Script nas configurações (⚙).'); return; }
+  const cod = (document.getElementById('ucv-dlg-cod') || {}).value || '', mot = String((document.getElementById('ucv-dlg-mot') || {}).value || '').trim();
+  if(!String(cod).trim()){ alert('Digite o código do PPCP.'); return; }
+  if(D.acao === 'destravar' && mot.length < 3){ alert('Escreva o motivo para destravar.'); return; }
+  const id = 't' + _ucvHash([D.x.p.rot, D.modo, Date.now()].join('|'));
+  UCV_TRAVANDO = true; _ucvTravaPinta();
+  let txt;
+  try{
+    const r = await jsonpEscrita(_ucvTravaUrl(D, cod, mot, id), i => { UCV_TRAVA_MSG = i > 1 ? `Gravando… tentativa ${i} de 3` : 'Gravando…'; _uepConvAtualiza(); });
+    const R = _ucvTravaResposta(r, D.acao); txt = R.txt;
+    if(R.tipo === 'recusou' && r && /^codigo-/.test(r.motivo || '')){   // código errado: o diálogo fica aberto
+      UCV_TRAVANDO = false; UCV_TRAVA_MSG = ''; _ucvTravaPinta(); _uepConvAtualiza(); alert(txt);   // a sub-aba sai do "Gravando…" (revisão)
+      const e = document.getElementById('ucv-dlg-cod'); if(e){ e.value = ''; e.focus(); }
+      return;
+    }
+  }catch(e){
+    // o jsonpEscrita lança no ok:false (com a mensagem do servidor) e no timeout: o cadastro relido decide
+    // a falha de transporte do jsonpFetch (Timeout — … / Erro ao carregar script) não é resposta; o resto é a mensagem do servidor
+    const msg = e && e.message && !/^(Timeout — o Apps Script não respondeu|Erro ao carregar script)/.test(e.message) ? e.message : '';
+    UCV_TRAVA_MSG = (msg ? 'O Apps Script respondeu com erro' : 'Sem resposta do Apps Script') + ' — relendo o cadastro…'; _uepConvAtualiza();
+    await _capBuscar();
+    txt = _ucvTravaConfere(CAP_FALHA ? null : CAP_RAW, D, msg);
+  }finally{ UCV_TRAVANDO = false; }
+  UCV_TRAVA_MSG = txt;
+  const m = document.getElementById('modal-trava'); if(m) m.classList.remove('on');
+  UCV_TRAVA_DLG = null;
+  // em sequência (o Apps Script atende uma execução por vez): o cadastro, as medições
+  // (com as travas) e a conferência relidos
+  await _capBuscar();
+  await _ucvRegsCarregar(true);
+  await _ucvConfCarregar(true);
   _uepConvAtualiza();
-  const res = _ucvEl('res'); if(res && res.scrollIntoView) res.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 // ── CHEGARAM DO APP (v7.218.0) ─────────────────────────────────────────────
 // PPCP, 09/11/2026, com o MEDIR vazio na tela: "nessa tela tem como vir o que
@@ -7930,37 +8203,6 @@ function _ucvAbrirApp(i){
   _uepConvAtualiza();
   const res = _ucvEl('res'); if(res && res.scrollIntoView) res.scrollIntoView({ behavior:'smooth', block:'start' });
 }
-async function _ucvTrocar(){
-  const msg = _ucvEl('t-msg'), diz = t => { if(msg) msg.textContent = t; };
-  if(UCV_TROCANDO) return;
-  if(!CFG.sheetsUrl){ alert('Sem a URL do Apps Script nas configurações (⚙).'); return; }
-  const E = _uepConvEntradas();
-  const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol, E.linha, E.regs);
-  if(!R.troca){ diz('As medições registradas não liberam a troca deste volume agora.'); _uepConvAtualiza(); return; }
-  if(!confirm(_ucvTrocaConfirmaTxt(R, hojeStr()))) return;
-  const p = R.p, T = R.troca;
-  UCV_TROCANDO = true; _uepConvAtualiza();
-  let txt;
-  try{
-    const url = CFG.sheetsUrl + (CFG.sheetsUrl.includes('?') ? '&' : '?') + 'action=trocarUepCrono'
-      + '&modelo=' + encodeURIComponent(p.modelo) + '&produto=' + encodeURIComponent(p.nome) + '&volume=' + encodeURIComponent(_ucvRegVol(p))
-      + '&cods=' + encodeURIComponent(T.digitar.map(g => g.cods.map(c => c.cod + ':' + g.uep.toFixed(2)).join(',')).join(',')) + '&regua=lac';
-    const r = await jsonpEscrita(url, i => diz(i > 1 ? `Trocando… tentativa ${i} de 3` : 'Trocando…'));
-    txt = _ucvTrocaResposta(r).txt;
-  }catch(e){
-    UCV_TROCANDO = false;
-    diz('Sem resposta do Apps Script — relendo o cadastro…');
-    await _capBuscar();
-    txt = _ucvTrocaConfere(CAP_FALHA ? null : CAP_RAW, T.digitar).txt + (e && e.message && !/timeout/i.test(e.message) ? ' (' + e.message + ')' : '');
-  }finally{ UCV_TROCANDO = false; }
-  diz(txt);
-  // em sequência (o Apps Script atende uma execução por vez): o cadastro, as
-  // medições e a conferência relidos — o volume sai das PRONTAS e entra na CONFERÊNCIA
-  await _capBuscar();
-  await _ucvRegsCarregar(true);
-  await _ucvConfCarregar(true);
-  _uepConvAtualiza();
-}
 // ── CONFERÊNCIA DAS TROCAS (v7.158.0 / .gs v5.34) ──────────────────────────
 // PPCP, 26/10/2026: "deixar uma conferência para que quando passar o produto
 // outras vezes criar alerta sem alterar se sobe ou desce a uep". Para cada
@@ -8007,7 +8249,7 @@ function _ucvConfHtml(C, falha){
     if(falha === 'sem-endpoint') return tit + '<div class="uep-nota">O Apps Script ainda não tem a conferência: cole o .gs v5.36 no editor e re-deploye.</div>';
     return falha ? tit + '<div class="uep-nota">A conferência não foi lida — tenta de novo em 1 min.</div>' : '';
   }
-  if(!C.lista.length) return tit + '<div class="uep-nota">Nenhuma UEP trocada pelo ✓ TROCAR A UEP ainda.</div>';
+  if(!C.lista.length) return tit + '<div class="uep-nota">Nenhuma UEP trocada pela cronoanálise ainda.</div>';
   const h = _ucvHoras, B = _uepBaseCurto();
   return tit + `<div class="ucv-regs-w"><table class="ucv-regs ucv-conf"><thead><tr><th>PRODUTO</th><th class="n">TROCA</th><th>DEPOIS DA TROCA (só o volume na linha)</th><th class="n" title="sem as paradas apontadas, contra a ${B} nas mesmas condições — 100% = rendeu o mesmo que a ${B}">NA PRODUÇÃO</th><th>ALERTA</th></tr></thead><tbody>`
     + C.lista.map(x => {
@@ -8054,11 +8296,12 @@ function _ucvConfCarregar(forcar){
 // NA PRODUÇÃO, nenhuma leitura nova —, com a situação da análise de tempo de
 // cada um. A COBERTURA (% da UEP da janela em volume já medido) é o número que
 // diz quando rever a referência.
-// Medido = a base (MADERO, cronometrada em 20/10) · UEP trocada (vigência
-// DIGITADA em todos os códigos do volume: o ✓ TROCAR A UEP carimba assim, como a
-// digitação na planilha) · medições que conferem com o cadastro COM a amostra da
-// troca (UCV_TROCA_MIN_VOL volumes: confirmar a UEP pede a mesma amostra que
-// trocá-la). PRONTA PARA TROCAR ainda não é medido: o cadastro segue o antigo.
+// Medido = a base (MADERO, cronometrada em 20/10) · TRAVADA pelo PPCP (v7.233.0:
+// a coluna UEP_TRAVA do cadastro) · UEP trocada (vigência DIGITADA em todos os
+// códigos do volume — a troca pela cronoanálise e a digitação na planilha
+// carimbam assim) · a regra cumprida com a UEP que FICA (a média dentro da faixa:
+// o cadastro já é o medido). REGRA CUMPRIDA com TROCA ainda não é medido: o
+// cadastro segue o antigo até o PPCP trocar e travar.
 // v7.190.0 (PPCP, 30/10/2026: "sim" para pôr o NA PRODUÇÃO na lista): a ordem
 // do que falta medir é PESO × SUSPEITA. O NA PRODUÇÃO de cada volume é a régua
 // do cartão (_ucvPadraoDe + _ucvRel: o volume sozinho, sem as paradas, contra a
@@ -8072,6 +8315,8 @@ let UCV_PRINC = [], UCV_PRINC_TODOS = false, UCV_PRINC_M = null;   // UCV_PRINC_
 // Conta pura: a situação da análise de tempo de um volume (p, do _uepConvProdutos).
 function _ucvPrincEstado(p, regs){
   if(_uepEhBase(p)) return { sit:'base', medido:true };
+  const tr = _ucvTravaDe(p, null);   // v7.233.0: a trava do cadastro (UEP_TRAVA)
+  if(tr && tr.travada) return { sit:'travada', medido:true, vig:String(tr.carimbo || '').slice(0, 10) };
   const cs = p.cods.filter(c => c.uep > 0);
   if(cs.length && cs.every(c => /DIGITADA\s*$/i.test(c.vig))){
     const n = Math.max(...cs.map(c => _cartNum((c.vig.match(/\d{1,2}\/\d{1,2}\/\d{4}/) || [''])[0]) || 0));
@@ -8080,8 +8325,8 @@ function _ucvPrincEstado(p, regs){
   if(!Array.isArray(regs)) return { sit:'lendo', medido:false };
   const R = _ucvRegsDoProduto(regs, p);
   if(!R.length) return { sit:'falta', medido:false };
-  const S = _ucvRegsResumo(R, _uepConvCadastro(p).volCad), conf = S.veredito === 'confere' && S.nVol >= UCV_TROCA_MIN_VOL;
-  return { sit:S.veredito === 'trocar' ? 'pronta' : conf ? 'confere' : 'medindo', medido:conf, S };
+  const S = _ucvRegraUep(R, _uepConvCadastro(p).volCad);
+  return { sit:S.cumpre ? 'cumpriu' : 'medindo', medido:S.cumpre && S.veredito === 'fica', S };
 }
 // Conta pura. horas: as do getHorasCrono (array); prods: _uepConvProdutos;
 // regs: as medições registradas (null = não lidas); ehHE(rótulo): a hora é
@@ -8208,19 +8453,16 @@ function _ucvPrincipais(horas, prods, regs, ehHE, meta, prog, hojeNum){
            cobertura:uepTot > 0 && Array.isArray(regs) ? uepMed / uepTot * 100 : null, cxSemUep, cxFora };
 }
 // ── Desenho (sem conta): tudo pronto do _ucvPrincipais ─────────────────────
-const UCV_PRINC_SIT = { falta:['warn', 'FALTA MEDIR'], medindo:['', 'MEDINDO'], pronta:['troca', 'PRONTA PARA TROCAR'],
-  confere:['ok', '✓ CONFERE'], trocada:['ok', '✓ TROCADA'], base:['ok', '✓ BASE'], lendo:['', '…'] };
+const UCV_PRINC_SIT = { falta:['warn', 'FALTA MEDIR'], medindo:['', 'MEDINDO'], cumpriu:['troca', 'PPCP DECIDE'],
+  travada:['trava', '🔒 TRAVADA'], trocada:['ok', '✓ TROCADA'], base:['ok', '✓ BASE'], lendo:['', '…'] };
 function _ucvPrincSub(g){
-  const S = g.S, V = UCV_TROCA_MIN_VOL;
+  const S = g.S;
   if(g.sit === 'base') return 'cronometrada em ' + _rpEsc(UEP_BASE_MEDIDA.data.slice(0, 5));
+  if(g.sit === 'travada') return g.vig ? 'pelo PPCP em ' + _rpEsc(g.vig.slice(0, 5)) : 'pelo PPCP';
   if(g.sit === 'trocada') return g.vig ? 'UEP nova desde ' + _rpEsc(g.vig.slice(0, 5)) : 'UEP nova no cadastro';
-  if(g.sit === 'confere') return `${fmtN(S.nVol)} volumes — a UEP fica`;
-  if(g.sit === 'pronta') return `${fmtN(S.nVol)} volumes — falta o ✓ TROCAR A UEP`;
+  if(g.sit === 'cumpriu') return `a regra diz ${S.veredito === 'troca' ? 'TROCA para ' + _ucvU2(S.uepMed) : 'FICA'} — na TRAVA DA UEP`;
   if(g.sit !== 'medindo') return '';
-  return S.veredito === 'discordam' ? 'as medições discordam — meça de novo'
-    : S.veredito === 'sem-volumes' ? 'medição sem VOLUMES MEDIDOS'
-    : S.veredito === 'sem-cadastro' ? 'sem UEP no cadastro para comparar'
-    : `${fmtN(S.nVol)} de ${V} volumes${S.veredito === 'confere' ? ' · confere até agora' : ''}`;
+  return S.faltaTxt + (S.nInv ? ` · ${plural(S.nInv, 'não vale', 'não valem')}` : '');
 }
 // A célula NA PROGRAMAÇÃO (v7.191.0): tudo pronto do _ucvProgDe.
 // progEst: 'lendo' | 'falhou' — quando a programação ainda não está no painel.
@@ -8234,7 +8476,7 @@ function _ucvProgCel(x, M, progEst){
 // Os grupos da agenda (v7.216.0): o título de cada um na tela e no papel.
 const UCV_AGENDA_GRP = { prog:['NA PROGRAMAÇÃO', 'medir quando rodar — a ordem da programação'],
   rodou:['RODOU NOS ÚLTIMOS ' + CRONO_LINHA_DIAS + ' DIAS, FORA DA PROGRAMAÇÃO', 'medir quando voltar — primeiro a produção fora da faixa, depois o mais pesado'],
-  medido:['JÁ MEDIDOS', 'a base, UEP trocada ou medições que conferem'] };
+  medido:['JÁ MEDIDOS', 'a base, travada pelo PPCP, UEP trocada ou a regra cumprida com a UEP que fica'] };
 // O peso de uma linha da agenda (tela e papel): a UEP na janela, ou por que não tem.
 function _ucvAgendaPeso(g){
   return g.semProd ? { n:'—', sub:`não rodou em ${CRONO_LINHA_DIAS} dias` }
@@ -8281,7 +8523,7 @@ function _ucvPrincHtml(M, est, sel, todos, progEst){
     }).join('')
     + '</tbody></table></div>'
     + (M.lista.length > UCV_PRINC_LINHAS ? `<div class="ucv-princ-mais"><button type="button" class="btn btn-ghost" onclick="_ucvPrincTodos()">${todos ? 'VER MENOS' : `VER TODOS (${M.lista.length})`}</button></div>` : '')
-    + `<div class="uep-nota">Medido = a base, UEP trocada pela cronoanálise ou medições que conferem com ${UCV_TROCA_MIN_VOL}+ volumes. NA PRODUÇÃO só ordena a fila, não substitui a cronoanálise${M.semBase ? ` — a ${_uepBaseCurto()} não rodou sozinha na janela: sem referência, todos sem leitura` : ''}.`
+    + `<div class="uep-nota">Medido = a base, travada pelo PPCP, UEP trocada pela cronoanálise ou a regra cumprida com a UEP que fica. NA PRODUÇÃO só ordena a fila, não substitui a cronoanálise${M.semBase ? ` — a ${_uepBaseCurto()} não rodou sozinha na janela: sem referência, todos sem leitura` : ''}.`
     + (M.nSemNada != null ? ` Fora da agenda: ${plural(M.nSemNada, 'volume do cadastro', 'volumes do cadastro')} que não ${M.nSemNada === 1 ? 'rodou' : 'rodaram'} nos últimos ${CRONO_LINHA_DIAS} dias e não ${M.nSemNada === 1 ? 'está' : 'estão'} na programação.` : '')
     + `${M.cxFora > 0 ? ` ${fmtN(M.cxFora)} cx de código fora do cadastro (sem produto para medir).` : ''} 🖨 IMPRIMIR → AGENDA DA CRONOANÁLISE leva esta lista para a linha.</div>`;
 }
@@ -8353,7 +8595,7 @@ function _ucvTempoMontar(regs, prods, horas, meta){
       uep, metaS, cx, horasSoz:tem ? P.minRod / 60 : null, prod:P, real, realSem, parS, gapS,
       gapPct:gapS != null ? (realSem / sRod - 1) * 100 : null, folgaS,
       hGap:gapS != null ? gapS * cx / 3600 : null, hPar:parS != null ? parS * cx / 3600 : null, hFolga:folgaS != null ? folgaS * cx / 3600 : null,
-      curta:nVol < UCV_TROCA_MIN_VOL || !tem || !!P.pouco, dentro:false });
+      curta:nVol < UCV_MED_MIN_VOL || !tem || !!P.pouco, dentro:false });
   });
   // o volume que um JOGO do mesmo produto já cobre: na tabela, fora dos totais
   linhas.forEach(l => { l.dentro = !!l.p.volSel && linhas.some(o => o !== l && !o.p.volSel && o.p.modelo === l.p.modelo && o.p.nome === l.p.nome); });
@@ -8460,7 +8702,7 @@ function _ucvTempoHtml(T, est, sel, todos, papel){
   const hcel = l => l.hGap == null ? '—' : `<span class="ucv-tp-h">${sn(l.hGap)} h<i><span class="${l.hGap < 0 ? 'g' : ''}" style="width:${T.hMax > 0 ? Math.max(3, Math.abs(l.hGap) / T.hMax * 100).toFixed(0) : 3}%"></span></i></span>`;
   const tab = `<div class="ucv-tp-tw"><div class="ucv-regs-t">ONDE PERDE, VOLUME A VOLUME <span>segundos por caixa · ordem: horas a mais que o estudo em ${CRONO_LINHA_DIAS} dias${papel ? '' : ' · toque na linha abre o volume no MEDIR'}</span></div>`
     + '<div class="ucv-regs-w"><table class="ucv-regs ucv-tp-tab"><thead><tr><th>VOLUME</th>'
-    + `<th title="BASE = a MADERO, régua da UEP · DENTRO DO JOGO = o JOGO do mesmo produto já conta estas caixas (fora dos totais) · AMOSTRA CURTA = menos de ${UCV_TROCA_MIN_VOL} volumes nos estudos ou menos de ${UEP_PAD_MIN_MIN / 60} h sozinho">OBS.</th>`
+    + `<th title="BASE = a MADERO, régua da UEP · DENTRO DO JOGO = o JOGO do mesmo produto já conta estas caixas (fora dos totais) · AMOSTRA CURTA = menos de ${UCV_MED_MIN_VOL} volumes nos estudos ou menos de ${UEP_PAD_MIN_MIN / 60} h sozinho">OBS.</th>`
     + '<th class="n" title="Média das medições registradas, pesada pelos volumes medidos">ESTUDO<br>RODANDO</th>'
     + `<th class="n" title="Só nas horas em que o volume rodou SOZINHO na linha, sem as paradas apontadas, nos últimos ${CRONO_LINHA_DIAS} dias fechados. As microparadas que ninguém apontou continuam dentro">PRODUÇÃO SEM<br>PARADAS APONTADAS</th>`
     + '<th class="n" title="Produção sem as paradas − estudo rodando: o que a produção tem e o estudo não (não é perda pronta: diz onde procurar)">DIFERENÇA</th>'
@@ -8481,7 +8723,7 @@ function _ucvTempoHtml(T, est, sel, todos, papel){
   const ganha = T.ganha.length ? `<div class="ucv-tp-ganha"><span class="t">ONDE GANHA</span><span class="q">a produção repete o estudo (até ${UCV_TEMPO_GANHA_PCT}% acima) ou cabe na meta:</span>`
     + T.ganha.map(l => `<span class="g"><b>${_rpEsc(l.p.nome)}${l.p.volSel ? ' · VOL ' + l.p.volSel + '/' + l.p.nVolTot : ''}</b> <span>${sn(l.gapPct, 0)}% · ${Math.abs(l.folgaS) < 0.05 ? 'na meta' : `${v1(Math.abs(l.folgaS))} s/cx ${l.folgaS >= 0 ? 'mais rápida' : 'mais lenta'} que a meta`}${l.curta ? ' · amostra curta' : ''}</span></span>`).join('') + '</div>' : '';
   const itens = '<li><b>Diferença não é perda.</b> Junta o que a produção tem e o estudo não: troca de cor dentro do lote, começo de lote, ritmo, microparada não apontada e caixa lançada na hora seguinte. Diz onde procurar.</li>'
-    + `<li><b>Produção</b> = só as horas em que o volume rodou sozinho na linha (sem outro produto nem o outro volume), nos últimos ${CRONO_LINHA_DIAS} dias fechados. AMOSTRA CURTA = menos de ${UCV_TROCA_MIN_VOL} volumes nos estudos ou menos de ${UEP_PAD_MIN_MIN / 60} h sozinho na produção.</li>`
+    + `<li><b>Produção</b> = só as horas em que o volume rodou sozinho na linha (sem outro produto nem o outro volume), nos últimos ${CRONO_LINHA_DIAS} dias fechados. AMOSTRA CURTA = menos de ${UCV_MED_MIN_VOL} volumes nos estudos ou menos de ${UEP_PAD_MIN_MIN / 60} h sozinho na produção.</li>`
     + '<li><b>Horas a mais</b> = diferença por caixa × todas as caixas do volume na janela — extrapolação das horas sozinho.</li>'
     + `<li><b>Meta por caixa</b> = ${UEP_MIN_DIA} min × 60 ÷ ${fmtN(T.meta)} = ${T.sUep.toFixed(2).replace('.', ',')} s por UEP × a UEP do cadastro de hoje.</li>`
     + '<li><b>Produção real × meta</b>: a produção com as paradas, por caixa, contra a meta. <b>Mais rápida</b> = cabe na meta; <b>mais lenta</b> = passa dela. A meta segue a UEP do cadastro: quando a cronoanálise troca a UEP, ela muda junto — a diferença e as horas a mais não.</li>'
@@ -8818,7 +9060,8 @@ function _capJornImprimir(qual){
 function gerarRelatorioCrono(){
   _uepConvAtualiza();                       // a tela fica com o MESMO retrato que vai ao papel
   const E = _uepConvEntradas();
-  const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol, E.linha, E.regs);
+  const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol, E.linha, E.regs, E.travas);
+  R.regsFalha = UCV_REGS && !UCV_REGS.lista ? UCV_REGS.falha : null;
   const ja = _ucvAppJa(UCV_APP_ABERTA, R, E.regs);   // v7.218.0: o papel diz o mesmo que a tela
   if(ja) R.jaReg = true;
   if(R.estado !== 'ok'){
@@ -8853,19 +9096,20 @@ function gerarRelatorioCrono(){
 // janela abre no clique. Folha DEITADA (as 12 colunas da lista).
 // Conta pura. trocas = as do getConferenciaCrono (null = não lidas); horas = o
 // _ucvLinhaItens (a lista de horas ou o estado da leitura).
-function _ucvDiaMontar(lista, dia, prods, trocas, horas, meta){
+// travas (v7.233.0): as da UEP_TRAVAS — cada volume leva a dele (o papel diz UEP TRAVADA como a tela).
+function _ucvDiaMontar(lista, dia, prods, trocas, horas, meta, travas){
   const chave = r => String(r.modelo || '') + '|' + _uepConvNorm(r.produto) + '|' + String(r.volume || '');
   const L = Array.isArray(lista) ? lista : [], doDia = L.filter(r => String(r.data || '') === dia), G = {};
   doDia.forEach(r => { (G[chave(r)] = G[chave(r)] || []).push(r); });
   const ref = Array.isArray(horas) ? _ucvRefDe(horas, prods, meta) : null;
-  const est = { 'nao-troca':0, fora:0, trocada:0, base:0, 'sem-cadastro':0 };
+  const est = { 'nao-troca':0, fora:0, trocada:0, base:0, 'sem-cadastro':0, 'nao-vale':0 };
   const grupos = Object.keys(G).map(k => {
     const regs = G[k], r0 = regs[0], sts = _ucvRegsStatus(regs, trocas, prods);
     const p = (prods || []).find(x => x.modelo === String(r0.modelo || '') && _uepConvNorm(x.nome) === _uepConvNorm(r0.produto) && _ucvRegVol(x) === String(r0.volume || '')) || null;
     const todas = L.filter(r => chave(r) === k);
     sts.forEach(x => { est[x.est]++; });
     return { p, rot:p ? p.rot : String(r0.modelo || '') + ' · ' + String(r0.produto || '') + (r0.volume && r0.volume !== 'VOL 1/1' ? ' · ' + r0.volume : ''),
-             regs, todas, outras:todas.length - regs.length, cad:p ? _uepConvCadastro(p).volCad : null,
+             regs, todas, outras:todas.length - regs.length, cad:p ? _uepConvCadastro(p).volCad : null, trava:p ? _ucvTravaDe(p, travas) : null,
              pads:_ucvRegsPadrao(regs, horas, meta, ref), sts,
              nVol:regs.reduce((a, r) => a + (Number(r.volumes) > 0 ? Math.round(Number(r.volumes)) : 0), 0) };
   }).sort((a, b) => a.rot.localeCompare(b.rot));
@@ -8933,15 +9177,16 @@ function _ucvDiaHtml(D, ctx){
   const B = _uepBaseCurto(), F = UEP_PAD_FAIXA, e = D.est, nT = D.trocasDia ? D.trocasDia.length : null;
   const card = (l, v, s) => `<div class="kpi-card"><div class="kpi-lbl">${l}</div><div class="kpi-val">${v}</div><div class="kpi-sub">${s}</div></div>`;
   const res = [e['nao-troca'] ? `${e['nao-troca']} dentro de ${F[0]}–${F[1]}%` : '', e.fora ? `${e.fora} fora da faixa` : '',
-               e.trocada ? `${e.trocada} já trocada${e.trocada === 1 ? '' : 's'}` : '', e.base ? `${e.base} da base` : '', e['sem-cadastro'] ? `${e['sem-cadastro']} sem cadastro` : ''].filter(Boolean).join(' · ');
+               e.trocada ? `${e.trocada} já trocada${e.trocada === 1 ? '' : 's'}` : '', e.base ? `${e.base} da base` : '', e['sem-cadastro'] ? `${e['sem-cadastro']} sem cadastro` : '',
+               e['nao-vale'] ? `${e['nao-vale']} não ${e['nao-vale'] === 1 ? 'vale' : 'valem'}` : ''].filter(Boolean).join(' · ');
   return '<div class="kpi-grid c4">'
     + card('MEDIÇÕES DO DIA', fmtN(D.n), res || 'pela DATA DA MEDIÇÃO')
     + card('VOLUMES ESTUDADOS', fmtN(D.grupos.length), 'produto · volume')
-    + card('VOLUMES MEDIDOS', fmtN(D.nVol), `a amostra do dia — a troca pede ${UCV_TROCA_MIN_VOL} por volume, somando as medições`)
-    + card('UEP TROCADA NO CADASTRO', nT == null ? '—' : fmtN(nT), nT == null ? 'as trocas não foram lidas' : nT ? 'pelo ✓ TROCAR A UEP, neste dia' : 'nenhuma neste dia')
+    + card('VOLUMES MEDIDOS', fmtN(D.nVol), `a amostra do dia — a medição vale com ${UCV_MED_MIN_VOL}+ volumes; a regra pede ${UCV_REGRA_MIN_MED} válidas somando ${UCV_REGRA_MIN_VOL}`)
+    + card('UEP TROCADA NO CADASTRO', nT == null ? '—' : fmtN(nT), nT == null ? 'as trocas não foram lidas' : nT ? 'pela cronoanálise, neste dia' : 'nenhuma neste dia')
     + '</div>'
     + '<div class="rp-sec-ttl">AS MEDIÇÕES DO DIA, POR VOLUME</div>'
-    + D.grupos.map(g => '<div class="ucv-dia-g">' + _ucvRegsHtml(g.regs, g.p || { rot:g.rot }, null, null, g.cad, g.pads, g.sts, g.todas)
+    + D.grupos.map(g => '<div class="ucv-dia-g">' + _ucvRegsHtml(g.regs, g.p || { rot:g.rot }, null, null, g.cad, g.pads, g.sts, g.todas, g.trava)
       + (g.outras > 0 ? `<div class="uep-nota">O resumo é a regra da troca com as ${plural(g.todas.length, 'medição', 'medições')} registradas do volume — ${plural(g.outras, 'é de outro dia', 'são de outros dias')}.</div>` : '')
       + '</div>').join('')
     + (nT ? '<div class="rp-sec-ttl">UEP TROCADA NO CADASTRO NESTE DIA</div>'
@@ -8951,10 +9196,10 @@ function _ucvDiaHtml(D, ctx){
         + `<td class="ucv-dia-cods">${t.cods.map(c => `${_rpEsc(_uepConvCod(c.cod))} <b>${c.uep != null ? _ucvU2(c.uep) : '—'}</b>`).join(' · ')}</td><td>${_rpEsc(t.amostra)}</td></tr>`).join('')
       + '</tbody></table><div class="uep-nota">Confira a aba UEP da planilha de programação com estes códigos. A UEP de hoje inteira já sai com o número novo; os dias fechados não mudam.</div>' : '')
     + '<div class="rp-sec-ttl">COMO LER</div><div class="ucv-info">'
-    + `<span>TROCA</span><p>Cada medição contra o cadastro que ela viu: dentro de ${F[0]}–${F[1]}% não troca. A UEP do volume só troca com ${UCV_TROCA_MIN_VOL} volumes ou mais, somando as medições, todas do mesmo lado.</p>`
+    + `<span>TROCA</span><p>Cada medição contra o cadastro que ela viu: dentro de ${F[0]}–${F[1]}% não troca; NÃO VALE = menos de ${UCV_MED_MIN_VOL} volumes ou lacunas acima de ${UCV_MED_MAX_LAC}%. A regra do volume: ${UCV_REGRA_MIN_MED} medições válidas somando ${UCV_REGRA_MIN_VOL} volumes, pela média; quem troca (ou mantém) e trava é o PPCP.</p>`
     + `<span>NA PRODUÇÃO</span><p>${D.lido ? `Últimos ${CRONO_LINHA_DIAS} dias fechados, só as horas com o volume sozinho na linha, sem as paradas apontadas, contra a ${B} nas mesmas condições (100% = rendeu o mesmo). * = menos de ${_ucvHoras(UEP_PAD_MIN_MIN)}.`
         : 'A produção ainda não tinha sido lida quando o papel saiu (…): espere a aba terminar de ler e imprima de novo.'}</p>`
-    + `<span>UEP</span><p>SEM AS LACUNAS ÷ ${_taktTxt(UEP_BASE_MEDIDA.seg)} da ${B} sem as lacunas, por volume — a régua de hoje, também nas medições registradas antes dela. A UEP do cadastro só muda pelo ✓ TROCAR A UEP.</p></div>`
+    + `<span>UEP</span><p>SEM AS LACUNAS ÷ ${_taktTxt(UEP_BASE_MEDIDA.seg)} da ${B} sem as lacunas, por volume — a régua de hoje, também nas medições registradas antes dela. A UEP do cadastro só muda pela TRAVA DA UEP, com o código do PPCP.</p></div>`
     + '<div class="rp-sec-ttl">CONFERÊNCIA</div><div class="ucv-reg">' + UCV_DIA_CAMPOS.map(l => `<div><span>${l}</span><i></i></div>`).join('') + '</div>'
     + `<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem · estudos de cronoanálise do dia</span><span>gerado ${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)} · só gerencial</span></div>`;
 }
@@ -8967,7 +9212,7 @@ function gerarRelatorioCronoDia(){
         : 'As medições registradas ainda não foram lidas. Tente em alguns segundos.');
     return;
   }
-  const D = _ucvDiaMontar(L, dia, UEP_CONV_PRODS, UCV_CONF && UCV_CONF.trocas, _ucvLinhaItens(), PONTOS_DIA.metaUep);
+  const D = _ucvDiaMontar(L, dia, UEP_CONV_PRODS, UCV_CONF && UCV_CONF.trocas, _ucvLinhaItens(), PONTOS_DIA.metaUep, UCV_REGS && UCV_REGS.travas);
   if(!D.n){ alert(`Nenhuma medição registrada com a DATA DA MEDIÇÃO ${dia}.` + (D.ultimo ? `\nA última registrada é de ${D.ultimo} — escolha o dia ao lado do botão.` : '')); return; }
   // A janela abre NO CLIQUE (nenhuma leitura antes): o navegador não bloqueia.
   const win = window.open('', '_blank', 'width=1100,height=800');
@@ -15232,7 +15477,7 @@ let CAP_RAW=null;
 let CAP_FALHA=null, CAP_BUSCANDO=false, CAP_CAT_ORIGEM='';
 const CAP_LS='rpe_cap_cat';
 function _capGuardar(prods){
-  try{ localStorage.setItem(CAP_LS, JSON.stringify({ts:Date.now(), p:prods.map(x=>({codigo:x.codigo,desc:x.desc,cor:x.cor,uep:x.uep,uepVig:x.uepVig,pontos:x.pontos,medida:x.medida,velocidade:x.velocidade,entrePeca:x.entrePeca}))})); }catch(e){}
+  try{ localStorage.setItem(CAP_LS, JSON.stringify({ts:Date.now(), p:prods.map(x=>({codigo:x.codigo,desc:x.desc,cor:x.cor,uep:x.uep,uepVig:x.uepVig,uepTrava:x.uepTrava,pontos:x.pontos,medida:x.medida,velocidade:x.velocidade,entrePeca:x.entrePeca}))})); }catch(e){}
 }
 function _capDoLocal(){
   try{ const o=JSON.parse(localStorage.getItem(CAP_LS)||'null'); if(o&&Array.isArray(o.p)&&o.p.length) return o; }catch(e){}

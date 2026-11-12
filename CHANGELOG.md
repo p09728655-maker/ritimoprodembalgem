@@ -42,7 +42,64 @@ gravado no VOL 1/2 pelo bipe: o registro de produção não diz se o código vei
 do bipe ou do toque. O operador só recebe a correção do cadastro ao entrar de
 novo no app.
 
----
+## v7.233.0 — 12/11/2026 · A TRAVA DA UEP · ⚠ re-deploy (.gs v5.64)
+
+PPCP: *"o que precisamos hoje é de ter limite de medição. Se não tiver um
+limite, toda hora vai dar diferenças"* → *"manter 6,7, colocar um carimbo em
+cada produto que já cumpriu a regra e travar a uep, mas essa trava passa por
+mim"* → *"depois de travada por mim posso pegar tempos mas não altera"* →
+*"eu valido a troca"*.
+
+- **A regra (o limite de medição):**
+  1. **a medição vale** com 30 volumes ou mais e lacunas de até 15% do tempo
+     rodando;
+  2. **a regra se cumpre** com 2 medições válidas ou mais, somando 100 volumes.
+     A UEP é a média delas pelos volumes (sem as lacunas ÷ 6,7 s da MADERO);
+  3. dentro de 90–110% do cadastro a regra diz **FICA**; fora, **TROCA** para
+     a média.
+- **Sub-aba 🔒 TRAVA DA UEP** na ⏱ CRONOANÁLISE, com três listas:
+  **CUMPRIRAM A REGRA · ESPERANDO O PPCP** (o carimbo), **TRAVADAS PELO PPCP**
+  e **AINDA NÃO CUMPRIRAM** (o que falta e qual medição não vale, com o porquê).
+- **Quem troca é o PPCP.** O botão abre um diálogo com o que a regra diz em
+  destaque e a outra opção (contra a regra fica registrado), o código do PPCP
+  e o motivo. O código é conferido pelo Apps Script; ele não fica no painel.
+  Errar 5 vezes bloqueia por 15 minutos.
+- **Travada, a UEP não muda.** A medição nova é registrada e aparece só como
+  informação (DEPOIS DA TRAVA). O GRAVAR UEP pula o código, e digitar uma
+  célula da coluna UEP na planilha é desfeito. Só o PPCP destrava, com motivo.
+- **No MEDIR**, a caixa diz o estado do volume: 🔒 UEP TRAVADA · REGRA CUMPRIDA
+  (o PPCP decide) · A REGRA AINDA NÃO SE CUMPRE (o que falta).
+- **Na lista de medições**, a medição que não vale sai **NÃO VALE** com o
+  porquê (ex.: *lacunas 25,3% (até 15%)*).
+- **No O QUE MEDIR**, entraram as situações 🔒 TRAVADA e PPCP DECIDE.
+- **Atenção:**
+  - **saiu o ✓ TROCAR A UEP** (v7.158.0: 30 volumes somados, todas as medições
+    do mesmo lado, qualquer pessoa no painel) e saiu a lista **PRONTAS PARA
+    TROCAR**;
+  - **a regra mudou.** Com os dados de 12/11/2026:
+    - **SAPATEIRA VIVARE** (1,89 → 2,16, +14,3%) e **PENTEADEIRA PRINCESA**
+      (1,90 → 2,14, +12,7%) cumprem e pedem troca. Pela regra antiga as duas
+      "discordavam";
+    - **ESCRIVANINHA TAURUS** (+9,7%) cumpre e **fica**, na borda;
+    - outros 8 volumes cumprem e ficam;
+  - **medições que agora não valem:**
+    - a da **MESA CABECEIRA SLEEP** de 09/11 (25,3% de lacunas);
+    - três das quatro da **HOME ANGEL 1.8** (19% a 34% de lacunas);
+  - **a cobertura do O QUE MEDIR** passa a contar a UEP travada e a regra
+    cumprida que fica; volume com uma medição só deixou de ser "medido";
+  - **a própria base MADERO** tem 15,2% e 15,6% de lacunas e não passaria na
+    regra. Ela continua congelada em 6,7 s, por decisão do PPCP.
+- **.gs v5.64** (⚠ **re-deploy**; e criar **Configurações do projeto →
+  Propriedades do script → `PPCP_CODIGO`** com o código do PPCP):
+  - `travarUep` e `destravarUep` (o código, a regra refeita contra a planilha,
+    sob o lock);
+  - a coluna `UEP_TRAVA` na PRODUTO_CODIGO (`getProdutos` devolve `uepTrava`) e
+    a aba `UEP_TRAVAS`;
+  - o `getCronoRegistros` devolve as travas;
+  - o `trocarUepCrono` sempre recusa;
+  - o `setUepCatalogo` e a estimativa pulam o código travado;
+  - o `onEdit` desfaz a digitação de uma célula em código travado.
+  - Antes do re-deploy, a sub-aba diz *FALTA O .gs v5.64* e nada é gravado.
 
 ## v7.232.0 — 12/11/2026 · TAKT DA SEMANA enxuto
 
