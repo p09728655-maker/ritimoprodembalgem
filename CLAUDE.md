@@ -49,9 +49,10 @@ via Google Apps Script (JSONP).
   páginas, o atingimento e os dias na meta, a referência de UEP de cada data e
   o que investigar): motivos, ordem e janela da fila; e os 18 dias reais de 21/09 a 16/10
   (5 discordâncias, todas pela meta em caixas alta); e o ⏱ CRONOANÁLISE → UEP
-  (Armário Encanto de 19/10: 27,8 s → 2,22), mais a regra da troca por
-  amostra, o ✓ TROCAR A UEP, as PRONTAS, a CONFERÊNCIA DAS TROCAS, a paridade
-  da regra com o `.gs`, o NA PRODUÇÃO (o volume sozinho, SEM as paradas, contra
+  (Armário Encanto de 19/10: 27,8 s → 2,22), mais a regra da UEP e a TRAVA
+  DA UEP (v7.233.0; até a v7.232.0, a regra da troca por amostra, o ✓ TROCAR
+  A UEP e as PRONTAS), a CONFERÊNCIA DAS TROCAS, a paridade da regra com o
+  `.gs`, o NA PRODUÇÃO (o volume sozinho, SEM as paradas, contra
   a MADERO — com o log e as paradas reais da ELOA e da MADERO de 26/09–25/10) e
   o 📄 IMPORTAR PDF (com o texto do PDF real
   de 26/10, o nome do app com "caixa 2/2" e o de 03/11 com o VOL 1/3 no título), os PRINCIPAIS PARA ANÁLISE DE
@@ -62,7 +63,10 @@ via Google Apps Script (JSONP).
   RODANDO obrigatório no registro, a base que não é a medida não registra, a
   base antiga guardada apagada) e o CHEGARAM DO APP do MEDIR (v7.218.0: as
   medições reais do app de 06 e 09/11, a janela, a linha aberta, o 💾 que
-  some com a medição já registrada): `node uep-relatorios.test.js`.
+  some com a medição já registrada) e a TRAVA DA UEP (v7.233.0: a regra —
+  medição válida, 2 válidas somando 100 volumes, FICA/TROCA e a borda — com os
+  casos reais de 12/11, a paridade com o `.gs`, a sub-aba, o diálogo do PPCP,
+  as respostas e o fluxo real do `_ucvTravaEnviar`): `node uep-relatorios.test.js`.
 - `programacao.test.js` — produção ADIANTADA, coluna ENCERRAR e aviso de cor
   errada do app. Carrega o `.gs` **inteiro** numa planilha de mentira e roda o
   caminho real (calcular → gravar saldo → arquivar → recalcular), e a ORDEM do
@@ -95,8 +99,8 @@ via Google Apps Script (JSONP).
   de mentira (aba nasce sozinha, REG_ID não duplica, grava pelo nome da coluna,
   vazio fica vazio) e o EXCLUIR (`excluirCrono`, v5.33: cópia na
   `CRONO_EXCLUIDOS` antes de apagar, retentativa, lock de pé, a última linha
-  não congelada), o `trocarUepCrono` (v5.34: grava, recusa, semente da
-  `UEP_VERSOES`, idempotente), o `getConferenciaCrono` (só as horas do volume
+  não congelada), o `trocarUepCrono` (v5.34 gravava; desde a v5.64 sempre
+  recusa — a troca é o `travarUep`), o `getConferenciaCrono` (só as horas do volume
   sozinho, depois da troca, hoje fora — até a v5.35; na v5.36 só a troca) e o
   `getHorasCrono` (v5.35: o log da janela hora a hora, código por código; v5.36:
   as paradas apontadas de cada hora, por tipo) e a régua SEM AS LACUNAS (v5.44:
@@ -104,7 +108,12 @@ via Google Apps Script (JSONP).
   a UEP gravada, toda resposta diz `regua:'lac'`) e a MEDIÇÃO DO APP (v5.58: o
   rótulo vira modelo, volume, códigos e UEP do cadastro pela régua do painel, as
   recusas, a mesma medição app × PDF não duplica, a paridade com o `_capNome`,
-  a base e os limites do painel): `node crono-registro.test.js`.
+  a base e os limites do painel) e a TRAVA DA UEP (v5.64: `travarUep` troca ou
+  mantém e trava, o código do PPCP — sem a propriedade, errado, 5 erros
+  bloqueiam —, a regra refeita contra a planilha, a `UEP_TRAVA` e a
+  `UEP_TRAVAS`, o idempotente, o `destravarUep` com motivo, o `trocarUepCrono`
+  que sempre recusa, o GRAVAR UEP que pula o travado e o `onEdit` que desfaz a
+  digitação de uma célula): `node crono-registro.test.js`.
 - `pontos.test.js` — PONTOS do passado congelados (`.gs` v5.40): o dia e o
   período somam o PONTOS gravado no lançamento, não o cadastro de agora. Roda o
   `.gs` inteiro (lançar, trocar o cadastro, lançar de novo):
@@ -4935,12 +4944,13 @@ feito e dá ar de verdade ao que sobrou.
 - **O PADRÃO:**
   1. base MESA CABECEIRA MADERO = 1,00 UEP/cx; meta 2.530 na jornada normal;
   2. UEP de cada código = a do cadastro; a aba UEP da planilha é cópia dele;
-  3. só muda por cronoanálise — ~~duas medições em dias diferentes~~ (desde a
-     v7.158.0: **30 volumes medidos ou mais**, qualquer data, todas do mesmo
-     lado), ~~rodando, contra a MADERO (7,9 s)~~ **sem as lacunas, contra a
-     MADERO sem as lacunas (6,7 s)** desde a v7.200.0 —, gravada no cadastro (✓ TROCAR
-     A UEP ou digitada) e na planilha no mesmo dia. Nunca trocar de base nem
-     recalcular pelo ritmo (UEP TRAVADA segue);
+  3. só muda por cronoanálise — ~~duas medições em dias diferentes~~ ~~30
+     volumes, todas do mesmo lado (v7.158.0)~~ desde a v7.233.0 **a regra da
+     TRAVA DA UEP**: medição válida (30+ volumes, lacunas até 15%), 2 válidas
+     somando 100 volumes, a média **sem as lacunas, contra a MADERO sem as
+     lacunas (6,7 s)**, e **o PPCP troca (ou mantém) e trava**, com o código
+     dele — e na planilha no mesmo dia. Nunca trocar de base nem recalcular
+     pelo ritmo (UEP TRAVADA segue);
   4. o passado não se regrava (esta volta foi a última exceção);
   5. produto novo entra com a estimada nos dois lugares, marcado.
 - Código: `UEP_BASE` MADERO, `UEP_META_PADRAO`/`UEP_META_PADRAO_GS` 2530,
@@ -5977,6 +5987,11 @@ feito e dá ar de verdade ao que sobrou.
   na `main` (PR mínimo como este).
 
 ## TROCAR A UEP PELA CRONOANÁLISE, IMPORTAR PDF e CONFERÊNCIA (v7.158.0 / `.gs` v5.34)
+- ⚠ **A REGRA DA TROCA, o ✓ TROCAR A UEP e as PRONTAS PARA TROCAR abaixo
+  saíram na v7.233.0 / `.gs` v5.64** — a troca é do PPCP, na TRAVA DA UEP (ver
+  *A TRAVA DA UEP*). O `trocarUepCrono` sempre recusa. O resto desta seção
+  (IMPORTAR PDF, a DATA e os VOLUMES obrigatórios, a CONFERÊNCIA DAS TROCAS, o
+  ✕ LIMPAR) continua valendo.
 - PPCP, 26/10/2026, com a STRASS VOL 2/2 na tela: *"qual UEP colocar?"* — o
   PARA TROCAR dizia **1,57** (só a medição dos campos) e a lista **UEP média
   1,52**. Depois, na mesma conversa: *"faz as duas correções"*, *"deixa pronto
@@ -6108,6 +6123,126 @@ feito e dá ar de verdade ao que sobrou.
   depois do 📌 FIXAR e virou o último foco: o `_uepConvTecla` (Tab volta ao
   PRODUTO) passou para ele. Medido no Chromium: a linha de campos cabe em 1920,
   1366 e 1280. Campo novo no estudo? Entra na lista do LIMPAR.
+
+## A TRAVA DA UEP (v7.233.0 / `.gs` v5.64)
+- PPCP, 12/11/2026: *"o que precisamos hoje é de ter limite de medição. Se não
+  tiver um limite toda hora vai dar diferenças, mas ainda dependemos do tempo
+  do madero"* → *"não alterar nada"* → *"sugestão"* → *"manter 6,7 monta a
+  prévia, colocar um carimbo em cada produto que já cumpriu a regra e travar a
+  uep, mas essa trava passa por mim"* → *"depois de travada por mim posso pegar
+  tempos mas não altera"* → *"sim mas eu valido a troca"*.
+- **Por que um limite** (medido nas 83 medições do app, 19/10–12/11): de uma
+  medição para outra do MESMO produto o tempo varia **5,9%** (p90 9,8%, máx.
+  13,3%); o erro de amostragem é só ~2,8% — o resto é a sessão (equipe, lote,
+  regulagem). Uma medição só não decide nada; a média de duas, com 100
+  volumes, tira metade disso.
+- **A regra** (`_ucvRegraUep`, a medição por `_ucvMedValida`; no `.gs`
+  `_cronoRegraUep`/`_cronoMedValida`, o teste roda as duas nos mesmos casos e
+  prende as constantes iguais):
+  1. **a medição vale** com `UCV_MED_MIN_VOL`=30 volumes ou mais e lacunas até
+     `UCV_MED_MAX_LAC`=15% do tempo rodando (`_ucvLacPct` = 1 − sem as lacunas ÷
+     rodando, **uma casa** — o que a tela mostra decide: 15,2% não vale). Sem o
+     RODANDO não dá para medir as lacunas: não vale;
+  2. **a regra se cumpre** com `UCV_REGRA_MIN_MED`=2 válidas somando
+     `UCV_REGRA_MIN_VOL`=100 volumes. UEP medida = a média das válidas pelos
+     volumes, pelos segundos (sem as lacunas ÷ 6,7 s);
+  3. **dentro de 90–110%** (`UEP_PAD_FAIXA`) do cadastro de agora a regra diz
+     **FICA**; fora, **TROCA** para a média. Sem UEP no cadastro, cumprida =
+     TROCA (não há o que manter). **NA BORDA**: a diferença a até
+     `UCV_REGRA_BORDA`=2 pontos do limite (8–12%) — a tela diz *"decida"*.
+  - ⚠ Não é mais "todas do mesmo lado": a MÉDIA decide (com a regra antiga a
+    VIVARE e a PRINCESA "discordavam" para sempre).
+  - ⚠ Os PDFs não guardam a hora da medição: "2 medições" são 2 registros
+    diferentes, podem ser do mesmo dia (a TAURUS tem 4 do mesmo 27/10). Exigir
+    2 dias diferentes foi recusado pelo PPCP em 26/10 (*"vai demorar muito"*).
+- **Quem decide é o PPCP.** Sub-aba **🔒 TRAVA DA UEP** (`UCV_SUBS` + `trava`,
+  depois das MEDIÇÕES): as 3 regras, **CUMPRIRAM A REGRA · ESPERANDO O PPCP**
+  (o carimbo: TROCA primeiro, depois a borda, depois a maior diferença),
+  **TRAVADAS PELO PPCP** (a UEP, quando, trocou ou manteve, contra a regra, a
+  amostra, e **DEPOIS DA TRAVA**: as medições registradas depois — pelo
+  REGISTRADO_EM — com a média contra a travada, *"só informa"*) e **AINDA NÃO
+  CUMPRIRAM** (o que falta e a medição que não vale, com o porquê). A base e o
+  JOGO ficam fora, contados no rodapé. Conta `_ucvTravaMontar` (pura, com o
+  `_ucvTravaDe`), desenho `_ucvTravaHtml`/`_ucvTravaDlgHtml` (sem conta, o teste
+  prende).
+  - **O diálogo** (`#modal-trava`, `_ucvTravaAbrir(i)`/`_ucvDestravaAbrir(i)`
+    pelo índice): o que a regra diz em cima (**A REGRA**), a outra opção
+    embaixo (*contra a regra — fica registrado*), **CÓDIGO DO PPCP** (senha) e
+    MOTIVO (obrigatório para destravar). `_ucvTravaEnviar` → `jsonpEscrita` →
+    `_ucvTravaResposta`; código errado deixa o diálogo aberto e limpa o campo;
+    sem resposta ≠ não gravou (`_ucvTravaConfere`: a `uepTrava` do cadastro
+    relido). Depois relê cadastro → medições → conferência, em sequência.
+  - ⚠ **O código do PPCP mora nas Propriedades do script (`PPCP_CODIGO`)**,
+    nunca no painel (público na Vercel) nem no repositório; o painel não guarda
+    o que foi digitado. Ele viaja na URL do JSONP (como todo parâmetro). Errado
+    `TRAVA_ERROS_MAX`=5 vezes → 15 min sem aceitar, nem o certo (contador
+    global no `CacheService`).
+- **Onde a trava mora**: a coluna **`UEP_TRAVA`** da PRODUTO_CODIGO
+  (`dd/MM/yyyy PPCP`, criada na 1ª trava; é ela que o `.gs` confere, e o
+  `getProdutos` devolve `uepTrava`) e a aba **`UEP_TRAVAS`** (só acréscimo:
+  TRAVA_ID, TRAVADA_EM, MODELO, PRODUTO, VOLUME, CODIGOS `cód:UEP`, UEP,
+  UEP_ANTES, UEP_MEDIDA, DIFERENCA_PCT, REGRA, DECISAO, MEDICOES, VOLUMES,
+  MOTIVO, DESTRAVADA_EM, MOTIVO_DESTRAVA), que o `getCronoRegistros` devolve
+  em `travas`. O painel lê a trava do **cadastro** (`_ucvTravaDe`; sem a coluna
+  — `.gs` antigo — vale o registro) e o detalhe do registro; registro ativo com
+  o cadastro sem carimbo = **trava apagada na planilha**; cadastro ≠ a UEP
+  travada = **a UEP mudou na planilha**. Os dois em vermelho.
+- **`.gs` v5.64**:
+  - `travarUep` (sob o lock): o código → o idempotente (`travaId`, cache 2 h)
+    → as medições e o cadastro direto da planilha → a regra refeita
+    (`falta` recusa; manter sem UEP no cadastro recusa) → trocar confere a
+    média enviada (±0,01) → grava UEP + vigência `DIGITADA` (só trocar), o
+    carimbo, a linha da `UEP_TRAVAS` e a versão na `UEP_VERSOES` com ORIGEM
+    `CRONOANÁLISE · … · TRAVA PPCP` (a CONFERÊNCIA DAS TROCAS acha por ela).
+    Já travada = `jaTravada`; parte dos códigos travada à mão = recusa
+    `parcial`. Base e JOGO recusam. Recusa com `ok:true` (não retenta).
+  - `destravarUep`: o código e o motivo; limpa a `UEP_TRAVA` e preenche
+    DESTRAVADA_EM na linha ativa. A UEP não muda.
+  - `trocarUepCrono`: sempre `recusado`, `use-trava` (o painel antigo em cache).
+  - `setUepCatalogo` (`travados`) e a estimativa pulam o código travado.
+  - `onEdit` → `_travaDesfazEdicao`: a digitação de UMA célula na coluna UEP
+    (ou UEP_TRAVA) de um código travado volta ao valor da trava (a
+    `UEP_TRAVAS` guarda o de cada código) com uma nota. Colagem de várias
+    células não tem o valor de antes: fica, e o painel acusa. Sem o registro da
+    trava, também fica.
+- **No MEDIR** (`_ucvRegraBoxHtml`, no lugar do PODE TROCAR / AINDA NÃO
+  TROQUE / NÃO PRECISA TROCAR): 🔒 UEP TRAVADA (com o que esta medição dá
+  contra a travada, `R.travaDif`, só informa) · ✓ REGRA CUMPRIDA · O PPCP
+  DECIDE (botão para a TRAVA DA UEP) · A REGRA AINDA NÃO SE CUMPRE (o que falta)
+  · LENDO. A lista de medições: **NÃO VALE** com o porquê na coluna TROCA, e a
+  linha de cima segue a regra nova (ou *UEP TRAVADA*).
+- **No O QUE MEDIR**: 🔒 TRAVADA (medido) e **PPCP DECIDE** (a regra cumprida;
+  medido só quando FICA — com TROCA o cadastro ainda é o antigo).
+- **Com os dados de 12/11/2026** (68 medições): 11 volumes cumprem — VIVARE
+  1,89 → 2,16 (+14,3%) e PRINCESA 1,90 → 2,14 (+12,7%) pedem troca; TAURUS
+  +9,7% fica, na borda; 8 ficam. 25 ainda não cumprem. Não valem: a SLEEP de
+  09/11 (25,3%), três da HOME ANGEL (19–34%). ⚠ **A própria MADERO** (15,2% e
+  15,6%) não passaria — fica congelada em 6,7 s por decisão do PPCP.
+- **Da revisão (antes de publicar)**:
+  - **travada em parte** (uma cor nova entra num volume travado: a trava segue
+    nos códigos antigos e o `.gs` recusa travar de novo, `parcial`) conta como
+    **TRAVADA**, com o 🔓 DESTRAVAR e o aviso *"entrou código novo… destrave e
+    trave de novo"* — sem isso o volume não tinha saída;
+  - o **JOGO** (os volumes juntos) não trava: a caixa do MEDIR diz *A TRAVA É
+    POR VOLUME* e a lista diz o mesmo (antes mandava para a TRAVA, que não o
+    lista); o rodapé da TRAVA conta as **medições** de JOGO;
+  - código errado tira a sub-aba do *"Gravando…"* (repinta); erro do servidor
+    (`ok:false`, o `jsonpEscrita` lança com a mensagem) diz a mensagem dele, não
+    *"sem resposta"* — só a falha de transporte do `jsonpFetch` (*Timeout — …*,
+    *Erro ao carregar script*) é "sem resposta";
+  - o 🖨 ESTUDOS DO DIA passa a trava (`_ucvDiaMontar(…, travas)`), e a caixa
+    do MEDIR diz *NÃO FORAM LIDAS* quando a leitura falhou (`R.regsFalha`);
+  - na `UEP_TRAVAS` o texto vai como texto (`TRAVA_TEXTO`, `setNumberFormat('@')`):
+    `501082001:1.70` o Sheets leria como duração e um motivo `12/11` como data.
+  - ⚠ **Ficou aberto**: com o registro da UEP_TRAVAS falhando (`logErro`) a
+    trava vale pelo cadastro, mas o `onEdit` não tem para onde voltar e o painel
+    não acusa a UEP mudada (o `mudou` compara com o registro). E o contador de 5
+    erros é global: quem tem a URL `/exec` pode bloquear o PPCP por 15 min.
+- ⚠ **re-deploy manual** e criar a propriedade `PPCP_CODIGO`. Antes do
+  re-deploy a sub-aba diz *FALTA O .gs v5.64* e nada grava; sem a propriedade,
+  o Apps Script recusa dizendo onde configurar.
+- Testes: `crono-registro.test.js` (o `.gs` inteiro) e `uep-relatorios.test.js`
+  (a regra, a paridade, a sub-aba, o diálogo, o fluxo); conferidos por mutação.
 
 ## A MEDIÇÃO VEM SOZINHA DO APP DE CRONOANÁLISE (v7.208.0 / `.gs` v5.58 / app 2.103.0)
 - ⚠ **Estado em 06/11/2026**: `.gs` v5.58 **implantado** (conferido: o
@@ -6611,6 +6746,9 @@ feito e dá ar de verdade ao que sobrou.
   ordenados pela UEP, os que entram até cruzar `UCV_PRINC_PCT`=80% (o que
   cruza entra). Código sem UEP ou fora do cadastro fica fora, contado (vai
   para a 🖨 FILA DE CRONOANÁLISE).
+- ⚠ **Desde a v7.233.0 a situação segue a regra da TRAVA DA UEP**: ✓ BASE ·
+  🔒 TRAVADA · ✓ TROCADA · PPCP DECIDE (regra cumprida) · MEDINDO · FALTA
+  MEDIR — o CONFERE e o PRONTA PARA TROCAR abaixo saíram.
 - **Situação**: ✓ BASE (MADERO) · ✓ TROCADA (vigência DIGITADA em todos os
   códigos do volume — o ✓ TROCAR A UEP e a digitação na planilha carimbam
   igual) · ✓ CONFERE (medições conferem com **30+ volumes**) · PRONTA PARA
@@ -6671,6 +6809,8 @@ feito e dá ar de verdade ao que sobrou.
 - PPCP, 03/11/2026: *"está muito cheia a tela, tem que enxugar, deixar mais
   dinâmica"* → escolheu **sub-abas por tarefa** e **um menu de impressão**. A
   aba tinha ~2.950 px (três telas a 1920) e ~1.500 palavras empilhadas.
+- ⚠ Desde a v7.233.0 há a sub-aba **🔒 TRAVA DA UEP** (`trava`) depois das
+  MEDIÇÕES — ver *A TRAVA DA UEP*. As PRONTAS PARA TROCAR saíram das MEDIÇÕES.
 - Faixa `#uep-conv-sub` com quatro botões (`.ucv-sb`, `data-sub`) e quatro
   painéis (`.ucv-pn`, a mesma chave): **MEDIR** (`medir`: campos, resultado,
   💾, as medições do volume em `#uep-conv-regs-p`, ⓘ COMO LER) · **O QUE MEDIR**

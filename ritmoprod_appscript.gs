@@ -1,5 +1,20 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.64 — A TRAVA DA UEP: a troca passa pelo PPCP (travarUep).
+//               PPCP, 12/11/2026: "limite de medição" → "colocar um carimbo em
+//               cada produto que já cumpriu a regra e travar a uep, mas essa
+//               trava passa por mim" → "eu valido a troca". A medição vale com
+//               30 volumes e lacunas até 15%; a regra se cumpre com 2 válidas
+//               somando 100 volumes (média pelos volumes, sem as lacunas ÷
+//               6,7 s); dentro de 90–110% do cadastro FICA, fora TROCA. O PPCP
+//               decide com o código dele (Propriedades do script → PPCP_CODIGO)
+//               e a UEP trava (coluna UEP_TRAVA da PRODUTO_CODIGO + aba
+//               UEP_TRAVAS). Travada, nada do painel muda a UEP: o
+//               trocarUepCrono sempre recusa, o GRAVAR UEP pula o código e a
+//               digitação de uma célula na planilha é desfeita. destravarUep:
+//               o código e o motivo. getCronoRegistros devolve as travas e o
+//               getProdutos o uepTrava de cada código.
+//               ⚠ re-deploy manual, e criar a propriedade PPCP_CODIGO.
 // Versão: 5.63 — O TAKT DA SEMANA JUNTO COM OS TEMPOS-ALVO (getTemposAlvo).
 //               PPCP, 11/11/2026: o tablet mostrava o takt da semana POR VOLUME,
 //               igual para todo produto (16,4 s), e a MESA CABECEIRA SLEEP no
@@ -551,7 +566,7 @@
 
 // A versão deste arquivo, a mesma do cabeçalho (v5.58). Vai no getDados para o
 // rodapé do painel dizer qual .gs está implantado — o GitHub não sabe.
-const GS_VERSAO = '5.63';
+const GS_VERSAO = '5.64';
 
 const SHEET_DADOS     = 'HORA_A_HORA';
 const SHEET_HIST      = 'HISTORICO';
@@ -1323,7 +1338,8 @@ const CACHE_TTL_LEITURA = {
 
 const ACOES_ESCRITA = ['saveDay', 'addHE', 'saveParadas', 'endParada',
   'saveRealizado', 'setTurnoInicio', 'setProdutoAtual', 'setConfigPainel', 'setUepCatalogo',
-  'excluirLancamento', 'trocarProdutoLancamento', 'registrarCrono', 'excluirCrono', 'trocarUepCrono'];
+  'excluirLancamento', 'trocarProdutoLancamento', 'registrarCrono', 'excluirCrono', 'trocarUepCrono',
+  'travarUep', 'destravarUep'];
 
 // ════════════════════════════════════════════════════════
 // LEITURA DE ABA — memo por EXECUÇÃO
@@ -1448,7 +1464,8 @@ const CACHE_INV_ESCRITA = {
   saveDay: ['prod'], addHE: ['prod'], saveRealizado: ['prod'], setTurnoInicio: ['prod'],
   setProdutoAtual: ['prod'], excluirLancamento: ['prod'], trocarProdutoLancamento: ['prod'],
   saveParadas: ['par'], endParada: ['par'], setConfigPainel: ['cfg'], setUepCatalogo: ['cat'],
-  registrarCrono: ['crono'], excluirCrono: ['crono'], trocarUepCrono: ['cat', 'crono']
+  registrarCrono: ['crono'], excluirCrono: ['crono'], trocarUepCrono: ['cat', 'crono'],
+  travarUep: ['cat', 'crono'], destravarUep: ['cat', 'crono']   // v5.64
 };
 function _cacheGens(cache, grupos) {
   const chaves = grupos.map(function (g) { return 'rp_gen_' + g; });
@@ -1554,7 +1571,9 @@ function doGet(e) {
     else if (act === 'registrarCrono')     result = registrarCrono(p);       // v5.30
     else if (act === 'getCronoRegistros')  result = getCronoRegistros();     // v5.30
     else if (act === 'excluirCrono')       result = excluirCrono(p);         // v5.33
-    else if (act === 'trocarUepCrono')     result = trocarUepCrono(p);       // v5.34
+    else if (act === 'trocarUepCrono')     result = trocarUepCrono(p);       // v5.34; v5.64: sempre recusa (a troca é na trava)
+    else if (act === 'travarUep')          result = travarUep(p);            // v5.64
+    else if (act === 'destravarUep')       result = destravarUep(p);         // v5.64
     else if (act === 'getConferenciaCrono') result = getConferenciaCrono();  // v5.34
     else if (act === 'getHorasCrono')      result = getHorasCrono(p);        // v5.35
     else if (act === 'setTurnoInicio')result = setTurnoInicio(p);
@@ -2820,7 +2839,10 @@ function _registrarCronoCore(p, doApp) {
 // Sem a aba (nada registrado ainda) é lista vazia, não erro.
 function getCronoRegistros() {
   const v = _valores(SHEET_CRONO);
-  if (!v || v.length < 2) return { ok: true, registros: [] };
+  // v5.64: as travas da UEP vão junto (a aba UEP_TRAVAS é pequena)
+  let travas = [];
+  try { travas = _travasLer(); } catch (e) { travas = null; }
+  if (!v || v.length < 2) return { ok: true, registros: [], travas: travas };
   const hdr = v[0].map(function (t) { return String(t).trim().toUpperCase(); });
   const out = [];
   for (let i = v.length - 1; i >= 1 && out.length < CRONO_LER_MAX; i--) {
@@ -2838,7 +2860,7 @@ function getCronoRegistros() {
     });
     out.push(o);
   }
-  return { ok: true, registros: out };
+  return { ok: true, registros: out, travas: travas };
 }
 
 // ── EXCLUIR UMA MEDIÇÃO (v5.33) ────────────────────────────────────────────
@@ -2915,66 +2937,79 @@ function _cronoJaExcluida(shX, regId) {
   return false;
 }
 
-// ── TROCAR A UEP PELA CRONOANÁLISE (v5.34) ─────────────────────────────────
-// PPCP, 26/10/2026: "deixa pronto para trocar já no app a uep que puder" e "a
-// medição não dá para travar em duas datas diferentes o mesmo produto, isso vai
-// demorar muito". A regra deixou de ser DUAS DATAS e passou a ser AMOSTRA: as
-// medições registradas do produto e volume somam CRONO_TROCA_MIN_VOL_GS volumes
-// ou mais (pode ser num dia só) e TODAS apontam o mesmo lado da faixa 90–110%
-// contra o cadastro ATUAL. A UEP nova é a média das medições pesada pelos
-// volumes medidos, cada uma pelos SEGUNDOS — não pela UEP já arredondada da
-// linha. v5.44: SEM AS LACUNAS ÷ CRONO_BASE_S_GS (a base sem as lacunas), em
-// todas as medições — a BASE_S e a UEP_CRONO da linha são da régua antiga.
-// A regra é do painel (_ucvRegsResumo); esta é a cópia que CONFERE antes de
-// gravar, contra a planilha de agora: a tela pode estar com o cadastro ou a
-// lista de medições velhos (outro computador trocou, alguém excluiu uma
-// medição). O teste roda as duas contra os mesmos casos.
-// O painel manda os códigos com a UEP nova de cada um (a repartição entre
-// cores e volumes é a do cadastro, a mesma do PARA TROCAR); aqui se confere:
-// os códigos estão nas medições (coluna CODIGOS), a média deles bate com a das
-// medições e a regra deixa. Recusa NÃO é erro (ok:true, trocado:false): o
-// painel não retenta uma coisa que não vai mudar.
-// Grava a UEP, a UEP_VIGENCIA "dd/MM/yyyy DIGITADA" (o mesmo carimbo da
-// digitação: a FILA DE CRONOANÁLISE tira o produto) e uma versão por código na
-// UEP_VERSOES, ORIGEM "CRONOANÁLISE · modelo · produto · volume · amostra" — é
-// por ela que a CONFERÊNCIA (getConferenciaCrono) acha a troca depois.
-// Idempotente: a UEP já igual responde jaTrocado (a retentativa por timeout).
-const CRONO_TROCA_MIN_VOL_GS = 30;      // = UCV_TROCA_MIN_VOL do painel (o teste prende)
-const CRONO_TROCA_FAIXA_GS = [90, 110]; // = UEP_PAD_FAIXA do painel (o teste prende)
-const CRONO_BASE_S_GS = 6.7;            // = UEP_BASE_MEDIDA.seg do painel: a MADERO sem as lacunas (o teste prende)
+// ── A TRAVA DA UEP (v5.64) ─────────────────────────────────────────────────
+// PPCP, 12/11/2026: "o que precisamos hoje é de ter limite de medição. Se não
+// tiver um limite toda hora vai dar diferenças" → "manter 6,7, colocar um
+// carimbo em cada produto que já cumpriu a regra e travar a uep, mas essa trava
+// passa por mim" → "depois de travada por mim posso pegar tempos mas não altera"
+// → "sim mas eu valido a troca". Revoga a troca da v5.34 (30 volumes, todas as
+// medições do mesmo lado, qualquer um no painel). Agora:
+//   1. a MEDIÇÃO vale com TRAVA_MED_MIN_VOL_GS volumes ou mais e lacunas até
+//      TRAVA_MED_MAX_LAC_GS % do tempo rodando (1 − sem as lacunas ÷ rodando, uma
+//      casa). Medida em 83 medições de 19/10–12/11: de uma medição para outra do
+//      mesmo produto o tempo varia 5,9% (p90 9,8%) — uma só não decide nada.
+//   2. a REGRA se cumpre com TRAVA_MIN_MED_GS medições válidas ou mais, somando
+//      TRAVA_MIN_VOL_GS volumes. UEP medida = a média delas pesada pelos volumes,
+//      cada uma pelos SEGUNDOS (sem as lacunas ÷ CRONO_BASE_S_GS).
+//   3. dentro de TRAVA_FAIXA_GS do cadastro a regra diz FICA; fora, TROCA para a
+//      média. QUEM DECIDE É O PPCP: travarUep, com o código dele, troca (ou
+//      mantém) e TRAVA. Ele pode decidir contra a regra — fica registrado.
+// Travada, a UEP não muda por nada do painel: o trocarUepCrono não existe mais,
+// o GRAVAR UEP (setUepCatalogo, estimar) pula o código, e a digitação de UMA
+// célula na planilha é desfeita (onEdit). Medição nova continua sendo
+// registrada e só informa. Só o PPCP destrava (destravarUep, com motivo).
+// O CÓDIGO DO PPCP mora em Propriedades do script (PPCP_CODIGO) — nunca no
+// painel, que é público na Vercel. Errado TRAVA_ERROS_MAX vezes → 15 min sem
+// aceitar. A trava mora na coluna UEP_TRAVA da PRODUTO_CODIGO (é ela que o
+// servidor confere) e o detalhe na aba UEP_TRAVAS (só acréscimo; a destrava
+// preenche DESTRAVADA_EM na linha). A base (MADERO, 6,7 s) e o JOGO ficam fora.
+// A regra é do painel (_ucvRegraUep); esta é a cópia que CONFERE antes de
+// gravar, contra a planilha de agora — o teste roda as duas nos mesmos casos.
+const TRAVA_MED_MIN_VOL_GS = 30;      // = UCV_MED_MIN_VOL do painel (o teste prende)
+const TRAVA_MED_MAX_LAC_GS = 15;      // = UCV_MED_MAX_LAC
+const TRAVA_MIN_MED_GS = 2;           // = UCV_REGRA_MIN_MED
+const TRAVA_MIN_VOL_GS = 100;         // = UCV_REGRA_MIN_VOL
+const TRAVA_FAIXA_GS = [90, 110];     // = UEP_PAD_FAIXA
+const CRONO_BASE_S_GS = 6.7;          // = UEP_BASE_MEDIDA.seg do painel: a MADERO sem as lacunas (o teste prende)
+const TRAVA_BASE_GS = { modelo: '501149', nome: 'MESA CABECEIRA MADERO' };   // = UEP_BASE do painel
+const TRAVA_PROP_CODIGO = 'PPCP_CODIGO';
+const TRAVA_ERROS_MAX = 5, TRAVA_BLOQ_S = 900;
+const SHEET_UEP_TRAVAS = 'UEP_TRAVAS';
+const TRAVA_TEXTO = { TRAVA_ID: 1, TRAVADA_EM: 1, MODELO: 1, PRODUTO: 1, VOLUME: 1, CODIGOS: 1, REGRA: 1, DECISAO: 1, MOTIVO: 1, DESTRAVADA_EM: 1, MOTIVO_DESTRAVA: 1 };
+const TRAVA_COL = 'UEP_TRAVA';
+const TRAVA_HDR = ['TRAVA_ID', 'TRAVADA_EM', 'MODELO', 'PRODUTO', 'VOLUME', 'CODIGOS', 'UEP', 'UEP_ANTES', 'UEP_MEDIDA',
+  'DIFERENCA_PCT', 'REGRA', 'DECISAO', 'MEDICOES', 'VOLUMES', 'MOTIVO', 'DESTRAVADA_EM', 'MOTIVO_DESTRAVA'];
 const CRONO_ORIGEM = 'CRONOANÁLISE';
 
-// Conta pura (cópia da _ucvRegsResumo do painel): regs [{data, sLac, uepCad,
-// volumes}] e a UEP/volume do cadastro de agora. A UEP de cada medição é a do
-// _ucvRegUep: sem as lacunas ÷ a base sem as lacunas; sem o campo, não conta.
-function _cronoTrocaRegra(regs, cadAtual) {
-  const F = CRONO_TROCA_FAIXA_GS, dias = {}, lados = {};
-  let nVol = 0, soma = 0, semVol = 0;
-  (regs || []).forEach(function (r) {
-    if (r.data) dias[r.data] = 1;
-    const sL = Number(r.sLac) || 0;
-    const u = sL > 0 ? sL / CRONO_BASE_S_GS : 0;
-    const v = Number(r.volumes) > 0 ? Math.round(Number(r.volumes)) : 0;
-    if (!(u > 0)) return;
-    if (!v) { semVol++; return; }
-    nVol += v; soma += u * v;
-    const cad = Number(cadAtual) > 0 ? Number(cadAtual) : Number(r.uepCad) || 0;
-    if (cad > 0) { const pct = u / cad * 100; lados[pct > F[1] ? 'pesado' : pct < F[0] ? 'leve' : 'confere'] = 1; }
-  });
-  const L = Object.keys(lados);
-  const veredito = !nVol ? (semVol ? 'sem-volumes' : 'sem-medicao') : !L.length ? 'sem-cadastro'
-    : L.length > 1 ? 'discordam' : L[0] === 'confere' ? 'confere' : nVol < CRONO_TROCA_MIN_VOL_GS ? 'pouca-amostra' : 'trocar';
-  return { nVol: nVol, semVol: semVol, nDias: Object.keys(dias).length, lado: L.length === 1 ? L[0] : null,
-           uepMed: nVol ? soma / nVol : null, veredito: veredito };
+// Uma medição vale? (cópia do _ucvMedValida). r: {sRod, sLac, volumes}.
+function _cronoMedValida(r) {
+  const R = Number(r && r.sRod) || 0, L = Number(r && r.sLac) || 0;
+  const v = Number(r && r.volumes) > 0 ? Math.round(Number(r.volumes)) : 0;
+  const lac = R > 0 && L > 0 ? Math.round((1 - L / R) * 1000) / 10 : null;
+  if (!(L > 0)) return { ok: false, mot: 'sem-lacunas', v: v, lac: lac };
+  if (!v) return { ok: false, mot: 'sem-volumes', v: v, lac: lac };
+  if (v < TRAVA_MED_MIN_VOL_GS) return { ok: false, mot: 'poucos-volumes', v: v, lac: lac };
+  if (lac === null) return { ok: false, mot: 'sem-rodando', v: v, lac: lac };
+  if (lac > TRAVA_MED_MAX_LAC_GS) return { ok: false, mot: 'lacunas', v: v, lac: lac };
+  return { ok: true, v: v, lac: lac, u: L / CRONO_BASE_S_GS };
 }
-const CRONO_TROCA_RECUSA = {
-  'sem-medicao':   'nenhuma medição registrada deste produto e volume com o SEM AS LACUNAS, na aba CRONOANALISE',
-  'sem-volumes':   'as medições não têm VOLUMES MEDIDOS — sem a amostra não dá para trocar',
-  'sem-cadastro':  'o volume está sem UEP no cadastro para comparar — digite na PRODUTO_CODIGO',
-  'discordam':     'as medições discordam entre si (uma confere com o cadastro, outra não)',
-  'confere':       'as medições conferem com o cadastro de agora — a UEP fica',
-  'pouca-amostra': 'as medições somam menos de ' + CRONO_TROCA_MIN_VOL_GS + ' volumes'
-};
+// A regra (cópia do _ucvRegraUep). regs [{data, sRod, sLac, volumes}], cadAtual =
+// a UEP/volume do cadastro de agora. veredito: falta · fica · troca (sem UEP no
+// cadastro, cumprida a regra, é TROCA: não há o que manter).
+function _cronoRegraUep(regs, cadAtual) {
+  let nVal = 0, nVol = 0, soma = 0;
+  (regs || []).forEach(function (r) {
+    const m = _cronoMedValida(r);
+    if (!m.ok) return;
+    nVal++; nVol += m.v; soma += m.u * m.v;
+  });
+  const uepMed = nVol ? soma / nVol : null, cad = Number(cadAtual) > 0 ? Number(cadAtual) : null;
+  const pct = uepMed !== null && cad ? uepMed / cad * 100 : null;
+  const cumpre = nVal >= TRAVA_MIN_MED_GS && nVol >= TRAVA_MIN_VOL_GS;
+  const veredito = !cumpre ? 'falta' : pct !== null && pct >= TRAVA_FAIXA_GS[0] && pct <= TRAVA_FAIXA_GS[1] ? 'fica' : 'troca';
+  return { nVal: nVal, nVol: nVol, uepMed: uepMed, pct: pct, veredito: veredito,
+           faltaMed: Math.max(0, TRAVA_MIN_MED_GS - nVal), faltaVol: Math.max(0, TRAVA_MIN_VOL_GS - nVol) };
+}
 // A UEP de um conjunto de códigos como o painel lê (_uepConvCadastro): a média
 // das cores de cada volume, e a média dos volumes. Volume sem UEP → null.
 function _cronoUepVolumes(lista) {
@@ -3001,31 +3036,43 @@ function _cronoOrigemLer(s) {
   return { modelo: p[1], produto: p[2], volume: p[3], amostra: p.slice(4).join(' · ') };
 }
 
-function trocarUepCrono(p) {
-  p = p || {};
-  const lock = LockService.getScriptLock();
-  lock.waitLock(30000);
-  try { return _trocarUepCronoCore(p); }
-  finally { lock.releaseLock(); }
+// v5.64: a troca SEM o PPCP acabou. A ação continua respondendo (o painel antigo,
+// em cache num computador, ainda pode chamar) — e nunca grava.
+function trocarUepCrono() {
+  return { ok: true, trocado: false, recusado: true, motivo: 'use-trava', regua: 'lac',
+           erro: 'a troca da UEP agora é na TRAVA DA UEP (⏱ CRONOANÁLISE), validada pelo PPCP — atualize o painel' };
 }
 
-function _trocarUepCronoCore(p) {
-  // v5.44: toda resposta diz a régua — o painel reconhece o .gs antigo pela falta dela
-  const recusa = function (motivo, txt) { return { ok: true, trocado: false, recusado: true, motivo: motivo, erro: txt, regua: 'lac' }; };
-  const modelo = codKey(p.modelo).slice(0, 6), produto = String(p.produto || '').trim(), volume = String(p.volume || '').trim();
-  if (modelo.length !== 6 || !produto || !volume) return { ok: false, erro: 'Faltou o produto (modelo, nome e volume).' };
-  const alvo = {};
-  String(p.cods || '').split(',').forEach(function (x) {
-    const m = x.split(':'), c = codKey(m[0]), u = Number(String(m[1] || '').replace(',', '.'));
-    if (c && u > 0 && u <= 20) alvo[c] = Math.round(u * 100) / 100;
-  });
-  const cAlvo = Object.keys(alvo);
-  if (!cAlvo.length) return { ok: false, erro: 'Nenhum código com a UEP nova.' };
-  if (cAlvo.some(function (c) { return c.slice(0, 6) !== modelo; })) return recusa('outro-modelo', 'há código de outro modelo na lista');
-  const norm = function (s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim(); };
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+// O código do PPCP. 'ok' · 'sem-codigo' (a propriedade não existe) · 'errado' ·
+// 'bloqueado' (TRAVA_ERROS_MAX erros seguidos: 15 min sem aceitar, nem o certo).
+function _travaCodigo(codigo) {
+  const certo = String(PropertiesService.getScriptProperties().getProperty(TRAVA_PROP_CODIGO) || '').trim();
+  if (!certo) return 'sem-codigo';
+  let cache = null;
+  try { cache = CacheService.getScriptCache(); } catch (e) { cache = null; }
+  const nErr = cache ? Number(cache.get('rp_trava_err') || 0) : 0;
+  if (nErr >= TRAVA_ERROS_MAX) return 'bloqueado';
+  if (String(codigo == null ? '' : codigo).trim() === certo) {
+    if (cache && nErr) try { cache.remove('rp_trava_err'); } catch (e) { /* segue */ }
+    return 'ok';
+  }
+  if (cache) try { cache.put('rp_trava_err', String(nErr + 1), TRAVA_BLOQ_S); } catch (e) { /* segue */ }
+  return nErr + 1 >= TRAVA_ERROS_MAX ? 'bloqueado' : 'errado';
+}
+const TRAVA_RECUSA_COD = {
+  'sem-codigo': 'o código do PPCP não está configurado no Apps Script (Configurações do projeto → Propriedades do script → PPCP_CODIGO)',
+  'errado': 'código do PPCP errado',
+  'bloqueado': 'código errado ' + TRAVA_ERROS_MAX + ' vezes — espere 15 minutos'
+};
+const TRAVA_RECUSA_REGRA = {
+  'falta': 'a regra ainda não se cumpre para este volume',
+  'sem-cadastro': 'o volume está sem UEP no cadastro — só dá para trocar (e travar)'
+};
 
-  // As medições do produto e volume — direto da planilha (quem escreve não lê do memo).
+function _travaNorm(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim(); }
+// As medições do volume, direto da planilha (quem escreve não lê do memo), e os
+// códigos que aparecem na coluna CODIGOS delas.
+function _travaMedicoes(ss, modelo, produto, volume) {
   const shC = ss.getSheetByName(SHEET_CRONO);
   const vC = shC ? shC.getDataRange().getValues() : [];
   const hC = (vC[0] || []).map(function (t) { return String(t).trim().toUpperCase(); });
@@ -3033,59 +3080,240 @@ function _trocarUepCronoCore(p) {
   const regs = [], medidos = {};
   for (let i = 1; i < vC.length; i++) {
     const r = vC[i];
-    if (codKey(r[ix('MODELO')]).slice(0, 6) !== modelo || norm(r[ix('PRODUTO')]) !== norm(produto) || String(r[ix('VOLUME')] || '').trim() !== volume) continue;
+    if (codKey(r[ix('MODELO')]).slice(0, 6) !== modelo || _travaNorm(r[ix('PRODUTO')]) !== _travaNorm(produto) || String(r[ix('VOLUME')] || '').trim() !== volume) continue;
     const num = function (n) { const j = ix(n); return j < 0 || r[j] === '' || r[j] == null ? 0 : _numBR(r[j]); };
-    regs.push({ data: fmtDataBR(r[ix('DATA_MEDICAO')]), sLac: num('S_SEM_LACUNAS'),
-                uepCad: num('UEP_CADASTRO'), volumes: num('VOLUMES_MEDIDOS') });
+    regs.push({ data: fmtDataBR(r[ix('DATA_MEDICAO')]), sRod: num('S_RODANDO'), sLac: num('S_SEM_LACUNAS'), volumes: num('VOLUMES_MEDIDOS') });
     String(ix('CODIGOS') >= 0 ? r[ix('CODIGOS')] : '').split(/[\s,;]+/).forEach(function (c) { c = codKey(c); if (c) medidos[c] = 1; });
   }
-  if (!regs.length) return recusa('sem-medicao', CRONO_TROCA_RECUSA['sem-medicao']);
-  const fora = cAlvo.filter(function (c) { return !medidos[c]; });
-  if (fora.length) return recusa('codigo-fora', 'código que não está nas medições: ' + fora.join(', '));
-
-  // O cadastro, direto.
+  return { regs: regs, medidos: medidos };
+}
+// O cadastro dos códigos pedidos, direto. Cria a coluna UEP_TRAVA quando `criar`.
+function _travaCadastro(ss, cods, criar) {
   const sh = ss.getSheetByName(SHEET_PRODUTOS);
-  if (!sh) return { ok: false, erro: 'aba ' + SHEET_PRODUTOS + ' não encontrada' };
+  if (!sh) return { erro: 'aba ' + SHEET_PRODUTOS + ' não encontrada' };
   const v = sh.getDataRange().getValues();
   const hdr = (v[0] || []).map(function (c) { return String(c).trim().toUpperCase().replace(/\s+/g, ' '); });
   const iCod = hdr.indexOf('CODIGO'), iDesc = hdr.indexOf('DESCRICAO'), iUep = hdr.indexOf('UEP');
   const iVig = hdr.findIndex(function (h) { return h.indexOf('UEP_VIG') === 0; });
-  if (iCod < 0 || iUep < 0) return { ok: false, erro: 'cadastro sem as colunas CODIGO e UEP' };
+  let iTr = hdr.indexOf(TRAVA_COL);
+  if (iCod < 0 || iUep < 0) return { erro: 'cadastro sem as colunas CODIGO e UEP' };
+  if (iTr < 0 && criar) { iTr = hdr.length; sh.getRange(1, iTr + 1).setValue(TRAVA_COL); }
+  const quer = {}; cods.forEach(function (c) { quer[c] = 1; });
   const L = {}, semente = [];
   for (let i = 1; i < v.length; i++) {
     const raw = String(v[i][iCod] == null ? '' : v[i][iCod]).trim(), c = codKey(raw);
     if (!c) continue;
     const u = _numBR(v[i][iUep]);
     if (u > 0) semente.push([raw, u, iVig >= 0 ? v[i][iVig] : '']);
-    if (alvo[c] !== undefined) L[c] = { linha: i + 1, raw: raw, antes: u, vol: _cronoVolDaDesc(iDesc >= 0 ? v[i][iDesc] : '') };
+    if (quer[c]) L[c] = { linha: i + 1, raw: raw, antes: u, vol: _cronoVolDaDesc(iDesc >= 0 ? v[i][iDesc] : ''),
+                          trava: iTr >= 0 && iTr < v[i].length ? String(v[i][iTr] == null ? '' : v[i][iTr]).trim() : '' };
   }
-  const semCad = cAlvo.filter(function (c) { return !L[c]; });
+  return { sh: sh, iUep: iUep, iVig: iVig, iTr: iTr, L: L, semente: semente };
+}
+// A aba UEP_TRAVAS (criada na 1ª trava; só acréscimo).
+function _travaAba(ss) {
+  let sh = ss.getSheetByName(SHEET_UEP_TRAVAS);
+  if (!sh) { sh = ss.insertSheet(SHEET_UEP_TRAVAS); sh.appendRow(TRAVA_HDR); sh.setFrozenRows(1); }
+  return sh;
+}
+// Os códigos do pedido: "código:UEP,código:UEP" (trocar) ou "código,código" (manter).
+function _travaCods(s) {
+  const alvo = {};
+  String(s || '').split(',').forEach(function (x) {
+    const m = x.split(':'), c = codKey(m[0]);
+    if (!c) return;
+    const u = Number(String(m[1] == null ? '' : m[1]).replace(',', '.'));
+    alvo[c] = u > 0 && u <= 20 ? Math.round(u * 100) / 100 : null;
+  });
+  return alvo;
+}
+
+function travarUep(p) { return _comLock(_travarUepCore, p || {}); }
+function _travarUepCore(p) {
+  const recusa = function (motivo, txt) { return { ok: true, travado: false, recusado: true, motivo: motivo, erro: txt }; };
+  const modelo = codKey(p.modelo).slice(0, 6), produto = String(p.produto || '').trim(), volume = String(p.volume || '').trim();
+  const modo = p.modo === 'trocar' || p.modo === 'manter' ? p.modo : '';
+  if (modelo.length !== 6 || !produto || !volume) return { ok: false, erro: 'Faltou o produto (modelo, nome e volume).' };
+  if (!modo) return { ok: false, erro: 'Faltou a decisão (trocar ou manter).' };
+  if (/^JOGO/i.test(volume)) return recusa('jogo', 'a trava é por volume — o JOGO não trava');
+  if (modelo === TRAVA_BASE_GS.modelo && _travaNorm(produto) === _travaNorm(TRAVA_BASE_GS.nome))
+    return recusa('base', 'a ' + TRAVA_BASE_GS.nome + ' é a base da UEP (' + String(CRONO_BASE_S_GS).replace('.', ',') + ' s congelados) — não trava');
+  const cod = _travaCodigo(p.codigo);
+  if (cod !== 'ok') return recusa('codigo-' + cod, TRAVA_RECUSA_COD[cod]);
+  // idempotente: a retentativa por timeout devolve a resposta da 1ª
+  const tId = String(p.travaId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40);
+  let cache = null;
+  try { cache = CacheService.getScriptCache(); } catch (e) { cache = null; }
+  if (tId && cache) { const s = cache.get('rp_trava:' + tId); if (s) { try { return JSON.parse(s); } catch (e) { /* segue */ } } }
+
+  const alvo = _travaCods(p.cods), cAlvo = Object.keys(alvo);
+  if (!cAlvo.length) return { ok: false, erro: 'Nenhum código do volume.' };
+  if (cAlvo.some(function (c) { return c.slice(0, 6) !== modelo; })) return recusa('outro-modelo', 'há código de outro modelo na lista');
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const M = _travaMedicoes(ss, modelo, produto, volume);
+  if (!M.regs.length) return recusa('falta', 'nenhuma medição registrada deste produto e volume, na aba CRONOANALISE');
+  const fora = cAlvo.filter(function (c) { return !M.medidos[c]; });
+  if (fora.length) return recusa('codigo-fora', 'código que não está nas medições: ' + fora.join(', '));
+  const C = _travaCadastro(ss, cAlvo, false);
+  if (C.erro) return { ok: false, erro: C.erro };
+  const semCad = cAlvo.filter(function (c) { return !C.L[c]; });
   if (semCad.length) return recusa('codigo-fora', 'código fora do cadastro: ' + semCad.join(', '));
-  if (cAlvo.every(function (c) { return _uepIgual(L[c].antes, alvo[c]); })) return { ok: true, trocado: true, jaTrocado: true, n: 0, regua: 'lac' };
+  if (cAlvo.every(function (c) { return C.L[c].trava; })) return { ok: true, travado: true, jaTravada: true, n: cAlvo.length };
+  if (cAlvo.some(function (c) { return C.L[c].trava; })) return recusa('parcial', 'parte dos códigos deste volume já está travada — destrave antes');
 
-  const cadAtual = _cronoUepVolumes(cAlvo.map(function (c) { return { vol: L[c].vol, uep: L[c].antes }; }));
-  const regra = _cronoTrocaRegra(regs, cadAtual);
-  if (regra.veredito !== 'trocar') return recusa(regra.veredito, CRONO_TROCA_RECUSA[regra.veredito] || regra.veredito);
-  const novoMed = _cronoUepVolumes(cAlvo.map(function (c) { return { vol: L[c].vol, uep: alvo[c] }; }));
-  if (!(novoMed > 0) || Math.abs(novoMed - regra.uepMed) > 0.01)
-    return recusa('nao-bate', 'a UEP enviada (' + (novoMed || 0).toFixed(2) + ') não bate com a média das medições (' + regra.uepMed.toFixed(2) + ') — a tela estava desatualizada');
+  const cadAtual = _cronoUepVolumes(cAlvo.map(function (c) { return { vol: C.L[c].vol, uep: C.L[c].antes }; }));
+  const regra = _cronoRegraUep(M.regs, cadAtual);
+  if (regra.veredito === 'falta') return recusa('falta', TRAVA_RECUSA_REGRA.falta);
+  if (modo === 'manter' && !(cadAtual > 0)) return recusa('sem-cadastro', TRAVA_RECUSA_REGRA['sem-cadastro']);
+  const novo = {};
+  if (modo === 'trocar') {
+    if (cAlvo.some(function (c) { return !(alvo[c] > 0); })) return { ok: false, erro: 'Faltou a UEP nova de algum código.' };
+    const novoMed = _cronoUepVolumes(cAlvo.map(function (c) { return { vol: C.L[c].vol, uep: alvo[c] }; }));
+    if (!(novoMed > 0) || Math.abs(novoMed - regra.uepMed) > 0.01)
+      return recusa('nao-bate', 'a UEP enviada (' + (novoMed || 0).toFixed(2) + ') não bate com a média das medições (' + regra.uepMed.toFixed(2) + ') — a tela estava desatualizada');
+    cAlvo.forEach(function (c) { novo[c] = alvo[c]; });
+  } else cAlvo.forEach(function (c) { novo[c] = C.L[c].antes; });
 
+  // grava: a UEP (só trocar), a vigência e a trava no cadastro; depois o registro e a versão
+  const C2 = _travaCadastro(ss, cAlvo, true);
   const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
-  const mud = [], cods = [];
+  const carimbo = hoje + ' PPCP', mud = [];
   cAlvo.forEach(function (c) {
-    const l = L[c];
-    sh.getRange(l.linha, iUep + 1).setValue(alvo[c]);
-    if (iVig >= 0) sh.getRange(l.linha, iVig + 1).setValue(hoje + ' DIGITADA');
-    cods.push({ cod: c, antes: l.antes, depois: alvo[c] });
-    if (!_uepIgual(l.antes, alvo[c])) mud.push([l.raw, l.antes, alvo[c]]);
+    const l = C2.L[c];
+    if (modo === 'trocar' && !_uepIgual(l.antes, novo[c])) {
+      C2.sh.getRange(l.linha, C2.iUep + 1).setValue(novo[c]);
+      if (C2.iVig >= 0) C2.sh.getRange(l.linha, C2.iVig + 1).setValue(hoje + ' DIGITADA');
+      mud.push([l.raw, l.antes, novo[c]]);
+    }
+    C2.sh.getRange(l.linha, C2.iTr + 1).setValue(carimbo);
   });
   _catalogoMemo = null;
-  const out = { ok: true, trocado: true, n: cods.length, uep: Math.round(regra.uepMed * 100) / 100, nVol: regra.nVol,
-                medicoes: regs.length, vigencia: hoje, codigos: cods, regua: 'lac' };
-  // A versão vem DEPOIS do cadastro: se falhar, a resposta diz (como o GRAVAR UEP).
-  try { out.versoes = _uepVerRegistrar(ss, mud, hoje, _cronoOrigem(modelo, produto, volume, regs.length, regra.nVol), semente); }
-  catch (e) { out.versaoErro = e.message; }
+  const uep = _cronoUepVolumes(cAlvo.map(function (c) { return { vol: C2.L[c].vol, uep: novo[c] }; }));
+  const decisao = modo === 'trocar' ? 'TROCOU' : 'MANTEVE';
+  const contra = (regra.veredito === 'troca') !== (modo === 'trocar');
+  const out = { ok: true, travado: true, decisao: decisao, contraRegra: contra, regra: regra.veredito === 'troca' ? 'TROCA' : 'FICA',
+                uep: Math.round(uep * 100) / 100, antes: cadAtual > 0 ? Math.round(cadAtual * 100) / 100 : null, uepMedida: Math.round(regra.uepMed * 100) / 100,
+                medicoes: regra.nVal, volumes: regra.nVol, n: cAlvo.length, vigencia: hoje };
+  try {
+    const shT = _travaAba(ss), hT = _cronoHdr(shT, TRAVA_HDR);
+    const linhaT = hT.map(function (t) {
+      const o = { TRAVA_ID: tId, TRAVADA_EM: Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss'), MODELO: modelo, PRODUTO: produto,
+               VOLUME: volume, CODIGOS: cAlvo.map(function (c) { return c + ':' + novo[c].toFixed(2); }).join(' '),
+               UEP: out.uep, UEP_ANTES: out.antes === null ? '' : out.antes, UEP_MEDIDA: out.uepMedida,
+               DIFERENCA_PCT: regra.pct === null ? '' : Math.round((regra.pct - 100) * 10) / 10,
+               REGRA: out.regra, DECISAO: decisao + (contra ? ' (CONTRA A REGRA)' : ''), MEDICOES: regra.nVal, VOLUMES: regra.nVol,
+               MOTIVO: String(p.motivo || '').trim().slice(0, 200), DESTRAVADA_EM: '', MOTIVO_DESTRAVA: '' };
+      return o[t] === undefined ? '' : o[t];        // coluna que alguém pôs na aba: vazia
+    });
+    // revisão: texto como TEXTO — "501082001:1.70" o Sheets leria como duração, um MOTIVO
+    // "12/11" como data (a armadilha do "1/2"). Os números (UEP, %, medições) ficam número.
+    const nT = shT.getLastRow() + 1;
+    hT.forEach(function (t, j) { if (TRAVA_TEXTO[t]) shT.getRange(nT, j + 1).setNumberFormat('@'); });
+    shT.getRange(nT, 1, 1, linhaT.length).setValues([linhaT]);
+  } catch (e) { out.logErro = e.message; }
+  if (mud.length) {
+    try { out.versoes = _uepVerRegistrar(ss, mud, hoje, _cronoOrigem(modelo, produto, volume, regra.nVal, regra.nVol) + ' · TRAVA PPCP', C2.semente); }
+    catch (e) { out.versaoErro = e.message; }
+  }
+  if (tId && cache) try { cache.put('rp_trava:' + tId, JSON.stringify(out), 7200); } catch (e) { /* segue */ }
   return out;
+}
+
+// Destravar: o código do PPCP e o MOTIVO (obrigatório). Limpa a UEP_TRAVA dos
+// códigos e escreve DESTRAVADA_EM na linha da trava. A UEP não muda.
+function destravarUep(p) { return _comLock(_destravarUepCore, p || {}); }
+function _destravarUepCore(p) {
+  const recusa = function (motivo, txt) { return { ok: true, destravado: false, recusado: true, motivo: motivo, erro: txt }; };
+  const modelo = codKey(p.modelo).slice(0, 6), produto = String(p.produto || '').trim(), volume = String(p.volume || '').trim();
+  const motivo = String(p.motivo || '').trim().slice(0, 200);
+  if (modelo.length !== 6 || !produto || !volume) return { ok: false, erro: 'Faltou o produto (modelo, nome e volume).' };
+  if (motivo.length < 3) return recusa('sem-motivo', 'escreva o motivo para destravar');
+  const cod = _travaCodigo(p.codigo);
+  if (cod !== 'ok') return recusa('codigo-' + cod, TRAVA_RECUSA_COD[cod]);
+  const cAlvo = Object.keys(_travaCods(p.cods));
+  if (!cAlvo.length) return { ok: false, erro: 'Nenhum código do volume.' };
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const C = _travaCadastro(ss, cAlvo, false);
+  if (C.erro) return { ok: false, erro: C.erro };
+  const presos = cAlvo.filter(function (c) { return C.L[c] && C.L[c].trava; });
+  const agora = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss');
+  presos.forEach(function (c) { C.sh.getRange(C.L[c].linha, C.iTr + 1).setValue(''); });
+  _catalogoMemo = null;
+  // a linha ATIVA mais nova do volume na UEP_TRAVAS
+  let linha = 0;
+  const sh = ss.getSheetByName(SHEET_UEP_TRAVAS);
+  if (sh) {
+    const v = sh.getDataRange().getValues(), h = (v[0] || []).map(function (t) { return String(t).trim().toUpperCase(); });
+    const iM = h.indexOf('MODELO'), iP = h.indexOf('PRODUTO'), iV = h.indexOf('VOLUME'), iD = h.indexOf('DESTRAVADA_EM'), iX = h.indexOf('MOTIVO_DESTRAVA');
+    for (let i = v.length - 1; i >= 1 && iD >= 0; i--) {
+      if (codKey(v[i][iM]).slice(0, 6) !== modelo || _travaNorm(v[i][iP]) !== _travaNorm(produto) || String(v[i][iV] || '').trim() !== volume) continue;
+      if (String(v[i][iD] || '').trim()) continue;
+      sh.getRange(i + 1, iD + 1).setNumberFormat('@').setValue(agora);
+      if (iX >= 0) sh.getRange(i + 1, iX + 1).setNumberFormat('@').setValue(motivo);
+      linha = i + 1; break;
+    }
+  }
+  if (!presos.length) return { ok: true, destravado: true, jaDestravada: true, linha: linha };
+  return { ok: true, destravado: true, n: presos.length, linha: linha };
+}
+
+// As travas para o painel (vão junto com as medições no getCronoRegistros): as
+// linhas da UEP_TRAVAS, da mais nova para trás. Sem a aba: lista vazia.
+function _travasLer() {
+  const v = _valores(SHEET_UEP_TRAVAS);
+  if (!v || v.length < 2) return [];
+  const h = v[0].map(function (t) { return String(t).trim().toUpperCase(); });
+  const g = function (r, n) { const j = h.indexOf(n); return j < 0 ? '' : r[j]; };
+  const out = [];
+  for (let i = v.length - 1; i >= 1 && out.length < 300; i--) {
+    const r = v[i];
+    if (!String(g(r, 'MODELO') || '').trim()) continue;
+    const quando = function (x) { return x instanceof Date ? Utilities.formatDate(x, TZ, 'dd/MM/yyyy HH:mm') : String(x == null ? '' : x).trim(); };
+    out.push({ linha: i + 1, id: String(g(r, 'TRAVA_ID') || ''), em: quando(g(r, 'TRAVADA_EM')), modelo: codKey(g(r, 'MODELO')).slice(0, 6),
+               produto: String(g(r, 'PRODUTO') || '').trim(), volume: String(g(r, 'VOLUME') || '').trim(),
+               cods: String(g(r, 'CODIGOS') || '').trim(), uep: _numBR(g(r, 'UEP')) || null, antes: _numBR(g(r, 'UEP_ANTES')) || null,
+               medida: _numBR(g(r, 'UEP_MEDIDA')) || null, dif: g(r, 'DIFERENCA_PCT') === '' ? null : _numBR(g(r, 'DIFERENCA_PCT')),
+               regra: String(g(r, 'REGRA') || ''), decisao: String(g(r, 'DECISAO') || ''), medicoes: _numBR(g(r, 'MEDICOES')) || 0,
+               volumes: _numBR(g(r, 'VOLUMES')) || 0, motivo: String(g(r, 'MOTIVO') || ''),
+               destravadaEm: quando(g(r, 'DESTRAVADA_EM')), motivoDestrava: String(g(r, 'MOTIVO_DESTRAVA') || '') });
+  }
+  return out;
+}
+
+// A digitação de UMA célula na coluna UEP (ou UEP_TRAVA) de um código travado é
+// desfeita (onEdit): a UEP volta ao valor da trava (a UEP_TRAVAS guarda a de
+// cada código), a carimbo apagado volta, e a célula ganha uma nota. Colagem de
+// várias células não tem o valor de antes: fica, e o painel acusa a diferença
+// (UEP MUDOU NA PLANILHA / TRAVA APAGADA NA PLANILHA). true = desfez.
+function _travaDesfazEdicao(e, sh) {
+  const r = e.range;
+  if (r.getNumRows() !== 1 || r.getNumColumns() !== 1 || r.getRow() < 2) return false;
+  const hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0]
+    .map(function (c) { return String(c).trim().toUpperCase().replace(/\s+/g, ' '); });
+  const iUep = hdr.indexOf('UEP'), iTr = hdr.indexOf(TRAVA_COL), iCod = hdr.indexOf('CODIGO');
+  if (iTr < 0 || iCod < 0) return false;
+  const col = r.getColumn() - 1;
+  if (col !== iUep && col !== iTr) return false;
+  const carimbo = col === iTr ? String(e.oldValue == null ? '' : e.oldValue).trim()
+                              : String(sh.getRange(r.getRow(), iTr + 1).getValue() || '').trim();
+  if (!carimbo) return false;                       // o código não está travado
+  const c = codKey(sh.getRange(r.getRow(), iCod + 1).getValue());
+  let volta = null;
+  if (col === iUep) {
+    // o valor da trava ativa mais nova do código
+    const T = _travasLer().filter(function (t) { return !t.destravadaEm; });
+    for (let i = 0; i < T.length && volta === null; i++) {
+      String(T[i].cods).split(/\s+/).forEach(function (x) { const m = x.split(':'); if (codKey(m[0]) === c && Number(m[1]) > 0) volta = Number(m[1]); });
+    }
+    if (volta === null) return false;              // sem o registro, não há para onde voltar
+    if (_uepIgual(_numBR(r.getValue()), volta)) return false;
+    r.setValue(volta);
+  } else {
+    if (String(r.getValue() || '').trim() === carimbo) return false;
+    r.setValue(carimbo);
+  }
+  r.setNote('UEP travada pelo PPCP (' + carimbo + '): a edição foi desfeita. Para mudar, destrave na ⏱ CRONOANÁLISE → TRAVA DA UEP do painel.');
+  return true;
 }
 
 // ── CONFERÊNCIA DAS TROCAS (v5.34; v5.36: só a troca — as horas são do painel) ──
@@ -4438,6 +4666,7 @@ function lerCatalogoProdutos() {
   // prefixo, "UEP_VIGENCIA" casaria no lugar dela.
   const iUep    = hdr.indexOf('UEP');
   const iUepVig = _porPrefixo('UEP_VIG');
+  const iTrava  = hdr.indexOf('UEP_TRAVA');   // v5.64: "dd/MM/yyyy PPCP" = UEP travada pelo PPCP
 
   if (iCod < 0) return [];
 
@@ -4458,7 +4687,8 @@ function lerCatalogoProdutos() {
       pontos:     iPontos >= 0 ? _numBR(row[iPontos]) : 0,
       tempoTroca: iTroca  >= 0 ? _numBR(row[iTroca]) : 0,
       uep:        iUep    >= 0 ? _numBR(row[iUep]) : 0,
-      uepVig:     iUepVig >= 0 ? _dataStr(row[iUepVig]) : ''
+      uepVig:     iUepVig >= 0 ? _dataStr(row[iUepVig]) : '',
+      uepTrava:   iTrava  >= 0 ? String(row[iTrava] == null ? '' : row[iTrava]).trim() : ''
     });
   }
   _catalogoMemo = produtos;
@@ -4736,6 +4966,7 @@ function _uepEstimarCatalogo(p) {
     const colU = iUep >= 0 ? _col(iUep) : _vaz(), colV = iVig >= 0 ? _col(iVig) : _vaz();
     const antesU = colU.map(function (r) { return r[0]; }), antesV = colV.map(function (r) { return r[0]; });
     const colM = _col(_pref('MEDIDA DA CAIXA')), colE = _col(_pref('ENTRE_PECA')), colVel = _col(_pref('VELOCIDADE'));
+    const colT = _col(hdr.indexOf('UEP_TRAVA'));   // v5.64: travado pelo PPCP não é tocado (TRAVA_COL)
     const vels = (colVel || []).map(function (r) { return _numBR(r[0]); }).filter(function (v) { return v > 0; }).sort(function (a, b) { return a - b; });
     const velPad = vels.length ? vels[Math.floor(vels.length / 2)] : 0;
     let estimados = 0, mantidos = 0, estNovos = 0, estMudam = 0, estIguais = 0;
@@ -4744,6 +4975,7 @@ function _uepEstimarCatalogo(p) {
       const cod = String(cods[i][0] || '').trim();
       if (!cod) continue;
       const temUep = _numBR(colU[i][0]) > 0;
+      if (colT && String(colT[i][0] || '').trim()) { mantidos++; continue; }
       if (temUep && !_uepEhEstimada(_dataStr(colV[i][0]))) { mantidos++; continue; }
       const u = _uepEstimada(k, tetoAnc, {
         medida: colM ? _numBR(colM[i][0]) : 0,
@@ -4999,6 +5231,7 @@ function setUepCatalogo(p) {
     const colD = _col(hdr.indexOf('DESCRICAO'));
     const colM = _col(_pref('MEDIDA DA CAIXA'));
     const colE = _col(_pref('ENTRE_PECA'));
+    const colT = _col(hdr.indexOf('UEP_TRAVA'));   // v5.64: travado pelo PPCP não é tocado (TRAVA_COL)
     const linhas = [];
     for (let i = 0; i < cods.length; i++) {
       const cod = String(cods[i][0] || '').trim();
@@ -5009,14 +5242,16 @@ function setUepCatalogo(p) {
       const vm = String(colD ? colD[i][0] : '').match(/VOL\.?\s*(\d+)\s*\/\s*(\d+)/i);
       const med = colM ? _numBR(colM[i][0]) : 0;
       linhas.push({ i: i, k: k, cod: cod, vol: vm ? +vm[1] : 1, nVol: vm ? +vm[2] : 1,
-                    esteira: med > 0 ? med + (colE ? _numBR(colE[i][0]) : 0) : 0 });
+                    esteira: med > 0 ? med + (colE ? _numBR(colE[i][0]) : 0) : 0,
+                    travado: !!(colT && String(colT[i][0] || '').trim()) });
     }
     const porVol = _uepPorVolume(alvo, linhas);
     const achados = {};
     const mudancas = [], existentes = [], escritosCod = [];
-    let gravados = 0, novos = 0, deEst = 0, iguais = 0, substituidos = 0, protegidos = 0;
+    let gravados = 0, novos = 0, deEst = 0, iguais = 0, substituidos = 0, protegidos = 0, travados = 0;
     linhas.forEach(function (l) {
       achados[l.k] = true;
+      if (l.travado) { travados++; return; }
       const novo = porVol.uep[l.k + '#' + l.vol];
       const antes = _numBR(antesU[l.i]);
       const est = _uepEhEstimada(_dataStr(antesV[l.i]));
@@ -5036,7 +5271,7 @@ function setUepCatalogo(p) {
     const semCodigo = Object.keys(alvo).filter(function (k) { return !achados[k]; });
     const base = { ok: true, produtos: Object.keys(achados).length, semCodigo: semCodigo,
                    volumes: porVol.repartidos, volumesSemMedida: porVol.semMedida,
-                   novos: novos, deEst: deEst, iguais: iguais, existentes: existentes.slice(0, 200), nExistentes: existentes.length,
+                   novos: novos, deEst: deEst, iguais: iguais, travados: travados, existentes: existentes.slice(0, 200), nExistentes: existentes.length,
                    // os códigos que ESTE passo grava: a estimativa roda depois e
                    // não toca neles — o painel desconta da simulação dela.
                    escritosCod: escritosCod.slice(0, 500) };
@@ -6732,6 +6967,10 @@ function onEdit(e) {
     // v5.24: UEP digitada à mão no cadastro vira versão (UEP_VERSOES). Falhar
     // aqui não pode travar a edição — o catch de baixo engole, como sempre.
     if (sh.getName() === SHEET_PRODUTOS) {
+      // v5.64: UEP travada pelo PPCP não muda pela digitação de uma célula
+      let desfez = false;
+      try { desfez = _travaDesfazEdicao(e, sh); } catch (errT) { Logger.log('UEP_TRAVA (onEdit) falhou: ' + errT.message); }
+      if (desfez) return;
       try { _uepVerDaEdicao(e, sh); } catch (errV) { Logger.log('UEP_VERSOES (onEdit) falhou: ' + errV.message); }
       return;
     }
