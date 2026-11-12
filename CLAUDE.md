@@ -69,7 +69,10 @@ via Google Apps Script (JSONP).
   dia no `getProgramacaoDetalhada` (v5.37), e a DATA no formato da aba na
   linha que volta da CONCLUIDA (v5.45), e a PROGRAMAÇÃO DA SEMANA (v5.59:
   `getProgramacaoSemana` — as duas abas, o saldo só da própria linha, cada dia
-  igual à META do dia): `node programacao.test.js`.
+  igual à META do dia), e o TAKT DA SEMANA dos tempos-alvo (v5.63: as 6 semanas
+  do `getTemposAlvo` contra o `_taktMontar` REAL do painel, extraído do HTML,
+  com lote no sábado, domingo e feriado; o que falhou não fica no cache):
+  `node programacao.test.js`.
 - `uep-padrao.test.js` — UEP padrão versionada (`UEP_VERSOES`), trava do GRAVAR
   UEP e o bloco 7 da aba ⚖ UEP (padrão × realizado por produto; v7.206.0: a
   linha do produto na régua de hoje e o "% com X"). Carrega o
@@ -6244,7 +6247,7 @@ feito e dá ar de verdade ao que sobrou.
   - Nos produtos com UEP pela cronoanálise ele dá ~1,6 × o trabalho puro (sem
     as lacunas): 10,74 ÷ 6,7. É a folga da média da linha para paradas,
     lacunas e microparadas — não é o tempo padrão (o padrão é a UEP).
-- **`getTemposAlvo`** (leitura, cache 300 s, grupos `cat`+`cfg`):
+- **`getTemposAlvo`** (leitura, cache 300 s, grupos `cat`+`cfg`; `+prod` desde a v5.63):
   `_temposAlvoMontar(catalogo, cfg)` (pura) devolve `ref` (metaUep e
   metaOrigem, setupsDia/setupMin/setupOrigem, setupDia, minProd, sUep) e
   `produtos` = { rot, uep, alvo } para cada nome da lista do app — o `rot` do
@@ -6257,6 +6260,39 @@ feito e dá ar de verdade ao que sobrou.
   `padrao`. ⚠ **re-deploy manual**.
 - O app de cronoanálise (repositório `crono-analise`) lê pelo servidor dele e
   guarda no tablet; ver o README de lá.
+- **O TAKT DA SEMANA VAI JUNTO (`.gs` v5.63 / v7.231.0 / app 2.107.0)**. PPCP,
+  com a MESA CABECEIRA SLEEP na tela (PELO TAKT 8,5 s, TEMPO-ALVO 8,9 s):
+  *"tempo alvo está maior"* → *"tempo alvo não entrega?"* → *"quem vê a tela
+  acha que está tudo bem"*. O tempo-alvo entrega a MÉDIA (2.761 UEP/dia); a
+  programação de 09–13/11 pedia 105,1% dela. E o tablet mostrava, embaixo do
+  alvo, o takt da semana POR VOLUME (16,4 s, igual para todo produto) — a
+  SLEEP no alvo parecia folgada.
+  - Decidido com o PPCP: **a cor continua pelo tempo-alvo** (o veredito do
+    produto não pode mudar com a programação da semana; uma faixa âmbar entre
+    takt e alvo foi proposta e retirada — 0,4 s na SLEEP, ~5%, é o erro de uma
+    medição e a cor trocaria por acaso). **A linha da carga passa a ser POR
+    PRODUTO**: *"a semana pede 8,5 s"* = os s por UEP da semana × a UEP do
+    produto (a coluna PELO TAKT). No cronômetro é um número (A SEMANA PEDE),
+    sem cor, ao lado de VOLUMES, VOL/H e ÚLTIMO.
+  - `getTemposAlvo` devolve `semanas` (`_taktSemanasMontar`, pura): a semana de
+    hoje e as `TA_SEMANAS_ANTES`=5 anteriores, cada uma com `de`, `ate`,
+    `atual`, `uep`, `cx`, `cxSemUep`, `nUteis`, `feriados`, `sUep` = dias úteis
+    × (527 − setup) × 60 ÷ UEP programada e `pede` = UEP por dia útil ÷ META ×
+    100 — a conta do `_taktMontar` (o `programacao.test.js` confere contra as
+    linhas do `getProgramacaoSemana` e o regex da fórmula do painel). Sem UEP
+    programada ou sem dia útil: `sUep`/`pede` null. Falhou a programação: os
+    alvos vão assim mesmo, com `semanas: null` e `semanasErro`. Cache: grupos
+    `cat`+`cfg`+`prod` (o lançamento invalida); a resposta com `semanasErro`
+    não entra no cache de leitura (uma falha passageira não deixa o app 5 min
+    no takt por volume).
+  - ⚠ As semanas passadas são recontadas com o cadastro, o setup e os
+    feriados de HOJE (como o app, que multiplica pela UEP de hoje): não é o
+    número que o painel mostrava naquela semana se algo disso mudou.
+  - ⚠ A medição é lida com a semana DELA (o app acha pela data). Medição de
+    mais de 6 semanas, painel antes da v5.63 ou semana sem UEP: o app mostra o
+    takt por volume de antes.
+  - TAKT POR PRODUTO do painel: o TEMPO-ALVO ganhou o cx/h embaixo (`cxhRef`),
+    na régua do PELO TAKT (hora de relógio, o setup na média).
 
 ## A RÉGUA DA CRONOANÁLISE É O SEM AS LACUNAS (v7.200.0 / `.gs` v5.44)
 - PPCP, 04/11/2026, com o PDF da **HOME ANGEL 1.8 · VOL 2/2** na tela (60

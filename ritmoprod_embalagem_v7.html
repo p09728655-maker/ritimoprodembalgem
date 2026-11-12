@@ -4058,14 +4058,14 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.230.0';
+const APP_VER   = '7.231.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
 // .gs v5.57) e o rodapé compara: o GitHub e o editor do Apps Script não se
 // falam, e sem isso ninguém via qual .gs estava rodando. Mudou o .gs? Suba este
 // número junto com o GS_VERSAO de lá (o apps-script.test.js confere).
-const GS_REPO   = '5.62';
+const GS_REPO   = '5.63';
 let GS_IMPL;   // undefined = ainda não leu · null = o .gs implantado não informa (antes da v5.57)
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -10565,7 +10565,8 @@ function _taktPorCaixa(T){
     const dias=Object.keys(g.dias).map(Number).sort((a, b)=>a-b);
     return { rot:g.modelo+' · '+(g.nome || 'código '+g.cod)+(g.vb>1 ? ` · VOL ${g.va}/${g.vb}` : ''), cx:g.cx, dias, uepCx,
       difCor:g.uMin!=null && g.uMax-g.uMin>0.005, uMin:g.uMin, uMax:g.uMax, sTakt, sRef:uepCx ? T.ref*uepCx : null,
-      cxhTakt:sTakt ? 3600*_taktFProd(T)/sTakt : null, cxSemUep:g.cx-g.cxUep };   // cx por hora de RELÓGIO (o setup na média)
+      cxhTakt:sTakt ? 3600*_taktFProd(T)/sTakt : null, cxSemUep:g.cx-g.cxUep,   // cx por hora de RELÓGIO (o setup na média)
+      cxhRef:uepCx ? 3600*_taktFProd(T)/(T.ref*uepCx) : null };   // v7.231.0: o do TEMPO-ALVO, na mesma régua
   }).sort((a, b)=>a.dias[0]-b.dias[0] || b.cx-a.cx || a.rot.localeCompare(b.rot));
 }
 // O desenho (sem conta). semTit: sem o título (v7.224.0: a tabela mora no TAKT POR
@@ -10581,7 +10582,7 @@ function _taktPorCaixaHtml(R, T, semTit){
     +R.map(g=>`<tr><td>${e(g.rot)}</td><td class="mono">${quando(g)}</td><td class="n">${fmtN(g.cx)}</td>`
       +`<td class="n">${g.uepCx!=null ? f2(g.uepCx)+(g.difCor ? `<small>${f2(g.uMin)}–${f2(g.uMax)} por cor</small>` : '') : '—<small>sem UEP</small>'}</td>`
       +`<td class="n"><b>${g.sTakt!=null ? _tkS(g.sTakt)+' s' : '—'}</b>${g.cxhTakt ? `<small>${fmtN(Math.round(g.cxhTakt))} cx/h</small>` : ''}</td>`
-      +`<td class="n">${g.sRef!=null ? _tkS(g.sRef)+' s' : '—'}</td></tr>`).join('')
+      +`<td class="n">${g.sRef!=null ? _tkS(g.sRef)+' s' : '—'}${g.cxhRef ? `<small>${fmtN(Math.round(g.cxhRef))} cx/h</small>` : ''}</td></tr>`).join('')
     +`</tbody></table><div class="uep-nota">1 caixa a cada X segundos sem o setup (a jornada menos o setup do ⚙ — o mesmo digitado no app de cronoanálise); o cx/h é por hora de relógio, com o setup na média — o que se confere no HORA A HORA. PELO TAKT = o que a programação da semana pede; TEMPO-ALVO = o tempo que cada caixa do produto pode levar para a linha fazer a média sem hora extra (${_tkS(T.ref)} s por UEP × a UEP por caixa). Para a medição do produto, compare o NO PERÍODO da cronoanálise com o TEMPO-ALVO — é contra ele que o app de cronoanálise julga cada volume; o takt do app é por volume (todo volume igual) e faz o produto pesado parecer sempre acima.</div></div>`;
 }
 // ── A FAIXA DO TAKT (v7.224.0) ─────────────────────────────────────────────

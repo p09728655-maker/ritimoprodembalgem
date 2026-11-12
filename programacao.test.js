@@ -930,11 +930,110 @@ console.log('\n── v5.59: a programação da semana ──');
   ok('datas inválidas, "ate" antes de "de" e mais de 14 dias: recusa, sem ler nada',
      [sem({ de: 'ontem', ate: '05/11/2026' }).ok, sem({ de: '06/11/2026', ate: '05/11/2026' }).ok, sem({ de: '01/11/2026', ate: '15/11/2026' }).ok, sem({ de: '01/11/2026', ate: '14/11/2026' }).ok],
      [false, false, false, true]);
+  // v5.63 — O TAKT DA SEMANA junto com os tempos-alvo: a MESMA conta do TAKT DA
+  // SEMANA do painel, sobre as MESMAS linhas do getProgramacaoSemana.
+  {
+    m.setHoje('05/11/2026');
+    const ta = vm.runInContext('(function(){ _invalidarValores(); return getTemposAlvo(); })()', m.ctx);
+    const r0 = sem();
+    const comUep = r0.linhas.filter(x => !x.foraEsteira && x.uep != null);
+    const uepSem = Math.round(comUep.reduce((a, x) => a + x.uep, 0) * 10) / 10;
+    const minProd = ta.ref.minProd, nUteis = 4;   // 02/11 feriado
+    const w = (ta.semanas || []).find(x => x.atual) || {};
+    ok('v5.63: os tempos-alvo levam o takt da semana — a de hoje e as 5 anteriores, a de hoje marcada',
+       [ta.ok, (ta.semanas || []).length, (ta.semanas || []).map(x => x.de)[5], w.de, w.ate, (ta.semanas || []).filter(x => x.atual).length],
+       [true, 6, '02/11/2026', '02/11/2026', '08/11/2026', 1]);
+    ok('v5.63: a UEP da semana = a soma das linhas do getProgramacaoSemana (as duas abas, fora da esteira de fora), os dias úteis sem o feriado',
+       [w.uep, w.nUteis, w.cxSemUep, w.feriados], [uepSem, nUteis, 95, [{ data: '02/11/2026', desc: 'FINADOS' }]]);
+    ok('v5.63: s por UEP = dias úteis × (527 − setup) × 60 ÷ UEP; pede = UEP por dia útil ÷ META UEP (o "pede X% da referência" do painel)',
+       [w.sUep, w.pede], [Math.round(nUteis * minProd * 60 / uepSem * 1000) / 1000, Math.round(uepSem / nUteis / ta.ref.metaUep * 1000) / 10]);
+    const ant = ta.semanas.find(x => x.de === '26/10/2026');
+    ok('v5.63: semana sem UEP programada (só código sem UEP no cadastro): sem takt (null, nunca 0)',
+       [ant.uep, ant.cxSemUep, ant.sUep, ant.pede], [0, 135, null, null]);
+    const HTML = fs.readFileSync(path.join(__dirname, 'ritmoprod_embalagem_v7.html'), 'utf8');
+    ok('v5.63: a conta é a do painel (_taktMontar: nUteis × minProd × 60 ÷ progUep; pede = porDia ÷ meta) e o cache de leitura sabe da programação',
+       [/const takt=nUteis>0 && progUep>0 \? nUteis\*minProd\*60\/progUep : null;/.test(HTML), /pede:porDia!=null \? porDia\/meta\*100 : null/.test(HTML),
+        /getTemposAlvo: \['cat', 'cfg', 'prod'\]/.test(GS)],
+       [true, true, true]);
+  }
   ok('a leitura está no doGet, no cache de leitura (invalidado pelo lançamento e pelo cadastro) e não grava',
      [/act === 'getProgramacaoSemana'\) result = getProgramacaoSemana\(p\)/.test(GS), /getProgramacaoSemana: 120/.test(GS),
       /getProgramacaoSemana: \['prod', 'cat'\]/.test(GS),
       /setValue|appendRow|insertSheet|deleteRow/.test(GS.slice(GS.indexOf('function getProgramacaoSemana('), GS.indexOf('// ════', GS.indexOf('function getProgramacaoSemana('))))],
      [true, true, true, false]);
+}
+
+// v5.63 — PARIDADE DE VERDADE: o takt da semana do getTemposAlvo contra o
+// _taktMontar REAL do painel (extraído do HTML), sobre o getProgramacaoSemana
+// real, semana a semana — com lote em SÁBADO, DOMINGO e FERIADO (na UEP, fora
+// dos dias úteis), fora da esteira, código sem UEP e fora do cadastro, as duas
+// abas e o setup/meta da CONFIG_PAINEL. Revisão de 12/11: o regex da fórmula
+// sozinho deixava passar um .gs que tirasse o fim de semana da UEP.
+console.log('\n── v5.63: o takt da semana do .gs = o TAKT DA SEMANA do painel ──');
+{
+  const JS = [...V7.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)].map(x => x[1]).join('\n');
+  const pegaV7 = (assin) => {
+    const i = JS.indexOf(assin); if (i < 0) throw new Error('não achei ' + assin);
+    const j = JS.indexOf('{', JS.indexOf(')', i)); let n = 0;
+    for (let k = j; k < JS.length; k++) { if (JS[k] === '{') n++; else if (JS[k] === '}' && --n === 0) return JS.slice(i, k + 1); }
+    throw new Error('sem fim ' + assin);
+  };
+  const P = vm.createContext({ console });
+  P.window = P;
+  vm.runInContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'), P);
+  vm.runInContext('var SETUP_PEND=null; var CRONO_APP_GRUPO=' + JS.match(/const CRONO_APP_GRUPO=([^;]+);/)[1] + ';', P);
+  ['function _cartNum(', 'function _taktMontar(', 'function _taktSetup('].forEach(f => vm.runInContext(pegaV7(f), P));
+
+  // hoje = quinta, 05/11/2026 (02/11 feriado). Lotes no feriado, no sábado e no domingo, com UEP.
+  const prog = [
+    { lote: 'P1', data: '02/11', cod: '501060001', qtde: 40 },                 // feriado: na UEP, fora dos dias úteis
+    { lote: 'P1', data: '03/11', cod: '501060001', qtde: 190 },
+    { lote: 'P2', data: '03/11', cod: '501093001', qtde: 95 },                 // sem UEP
+    { lote: 'P2', data: '03/11', cod: '501999999', qtde: 30 },                 // fora do cadastro
+    { lote: 'P3', data: '04/11', cod: '501134001', qtde: 100, prod: 60 },
+    { lote: 'P4', data: '05/11', cod: '501141002', qtde: 270 },                // fora da esteira (abaixo)
+    { lote: 'P5', data: '06/11', cod: '501079003', qtde: 190 },
+    { lote: 'P6', data: '07/11', cod: '501088001', qtde: 95 },                 // sábado
+    { lote: 'P6', data: '08/11', cod: '501134001', qtde: 50 },                 // domingo
+    { lote: 'P7', data: '27/10', cod: '501079003', qtde: 100 },                // semana anterior
+    { lote: 'P8', data: '31/10', cod: '501060001', qtde: 60 },                 // sábado da semana anterior
+    { lote: 'P9', data: '12/11', cod: '501060001', qtde: 80 },                 // semana que vem: fora
+  ];
+  const arq = [['LOTE', 'DATA', 'ORDEM', 'CODIGO', 'DESCRICAO', 'QTD_CX', 'PRODUZIDO', 'SALDO', 'PERCENTUAL', 'STATUS', 'ATUALIZADO_EM', 'ARQUIVADO_EM'],
+    ['A1', '04/11/2026', 1, '501134001', 'X', 240, 240, 0, 100, 'CONCLUIDO', '', ''],
+    ['A2', '28/10/2026', 1, '501088001', 'X', 95, 95, 0, 100, 'CONCLUIDO', '', ''],
+    ['A3', '20/10/2026', 1, '501060001', 'X', 120, 120, 0, 100, 'CONCLUIDO', '', '']];
+  const m = montar(prog, [], { hoje: '05/11/2026', arq: arq, fer: [['DATA', 'DESCRICAO'], ['02/11/2026', 'FINADOS'], ['21/10/2026', 'PARADA']] });
+  m.ABAS.PROGRAMACAO[0].push('FORA DA ESTEIRA');
+  m.ABAS.PROGRAMACAO.slice(1).forEach((r, i) => r.push(prog[i].cod === '501141002' ? 'X' : ''));
+  m.ABAS.PRODUTO_CODIGO = [['CODIGO', 'DESCRICAO', 'COR', 'UEP'],
+    ['501060001', 'VOL 1/2 PENTEADEIRA CAMARIM MEL', 'BRANCO', 1.73], ['501134001', 'VOL 1/1 PENTEADEIRA PRINCESA', 'BRANCO', 2.4],
+    ['501141002', 'VOL 1/1 BUFFET 2 PT PRISM', 'OFF WHITE', 1.62], ['501079003', 'VOL 1/2 BUFFET FLIP 1.6', 'OFF WHITE', 2.05],
+    ['501093001', 'VOL 1/1 CANT CAFE AURORA', 'CINAMOMO', ''], ['501088001', 'VOL 1/2 HOME ANGEL 1.8', 'CINAMOMO', 2.48]];
+  m.ABAS.CONFIG_PAINEL = [['CHAVE', 'VALOR'], ['META_UEP', 2761], ['SETUPS_DIA', 4], ['SETUP_MIN', '8,2']];
+  const ta = vm.runInContext('(function(){ _invalidarValores(); return getTemposAlvo(); })()', m.ctx);
+  const ver = (w) => {
+    const S = vm.runInContext(`(function(){ _invalidarValores(); return getProgramacaoSemana(${JSON.stringify({ de: w.de, ate: w.ate })}); })()`, m.ctx);
+    P.__S = S; P.__H = { num: 20261105, meta: ta.ref.metaUep, setup: { setupsDia: ta.ref.setupsDia, setupMin: ta.ref.setupMin, origem: 'planilha' } };
+    const T = vm.runInContext('_taktMontar(__S, [], __H)', P);
+    return {
+      gs: [w.sUep, w.pede, w.nUteis, w.uep, w.cxSemUep],
+      painel: [T.takt != null ? Math.round(T.takt * 1000) / 1000 : null, T.pede != null ? Math.round(T.pede * 10) / 10 : null,
+        T.nUteis, Math.round(T.progUep * 10) / 10, T.cxSemUep],
+    };
+  };
+  const rs = (ta.semanas || []).map(w => ({ de: w.de, ...ver(w) }));
+  ok('v5.63: cada uma das 6 semanas — s por UEP, pede, dias úteis, UEP e caixas sem UEP — igual ao _taktMontar do painel',
+     rs.map(r => [r.de, r.gs]), rs.map(r => [r.de, r.painel]));
+  const atual = rs.find(r => r.de === '02/11/2026');
+  const uepEsp = Math.round((190 * 1.73 + 40 * 1.73 + 100 * 2.4 + 240 * 2.4 + 190 * 2.05 + 95 * 2.48 + 50 * 2.4) * 10) / 10;
+  ok('v5.63: o feriado, o sábado e o domingo estão na UEP e fora dos dias úteis (4); fora da esteira fora; sem UEP e fora do cadastro contados',
+     atual && atual.gs.slice(2), [4, uepEsp, 125]);
+  const ant = rs.find(r => r.de === '26/10/2026'), ant2 = rs.find(r => r.de === '19/10/2026');
+  ok('v5.63: a resposta com o takt da semana que falhou (semanasErro) não fica no cache de leitura',
+     /result\.ok !== false && !result\.semanasErro\)/.test(GS), true);
+  ok('v5.63: semanas anteriores — o sábado (31/10) na UEP; o feriado de 21/10 tira um dia útil',
+     [ant && ant.gs[2], ant && ant.gs[3], ant2 && ant2.gs[2]], [5, Math.round((100 * 2.05 + 60 * 1.73 + 95 * 2.48) * 10) / 10, 4]);
 }
 
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ programação ok — adiantamento abate o lote, ENCERRAR fecha sem apagar, o app pergunta a cor');
