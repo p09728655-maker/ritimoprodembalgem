@@ -907,6 +907,28 @@ console.log('\n── v7.224.0: a FAIXA DO TAKT — os volumes para o app de cro
     ok('na AVALIAR o cx/h do TAKT POR PRODUTO também é por hora de relógio (o Tv leva os minutos sem o setup)',
        [Math.round(g0.cxhTakt), HA.includes('<small>' + fmtN(esp) + ' cx/h</small>'), HA.includes('<small>' + fmtN(Math.round(3600 / g0.sTakt)) + ' cx/h</small>')],
        [esp, true, false]); }
+  { // v7.235.1 (revisão da v7.235.0: "21 de 21 linhas com sem medida da caixa"): na AVALIAR o TEMPO-ALVO vem da
+    // esteira de cada VOLUME do cadastro (estVols do _capProdutos) — os códigos da colagem são de mentira
+    // (900000001…), o mapa por código não servia; e a eficiência do ⚙ vai no Tv (antes, sempre 85%)
+    const CATM = [{ codigo:'501151001', desc:'VOL 1/1 RACK MOVE 1.6', cor:'CINAMOMO', uep:3.01, pontos:163, medida:2076, velocidade:9, entrePeca:400 },
+      { codigo:'501059001', desc:'VOL 1/2 PENTEADEIRA CAMARIM STRASS', cor:'BRANCO', uep:1.46, pontos:290, medida:1705, velocidade:9, entrePeca:400 },
+      { codigo:'501059002', desc:'VOL 2/2 PENTEADEIRA CAMARIM STRASS', cor:'BRANCO', uep:1.78, pontos:79, medida:1344, velocidade:9, entrePeca:400 },
+      { codigo:'501999001', desc:'VOL 1/1 PRODUTO SEM MEDIDA', cor:'BRANCO', uep:1, pontos:50 }];
+    const PM = _capProdutos(CATM), pr = n => PM.find(p => p.nome.includes(n)), est = mm => (mm + 400) / 150;
+    const item = (n, q) => { const p = pr(n); return { n:20261110, nome:p.nome, qtde:q, uepJogo:p.uepJogo, ptsJogo:p.ptsJogo, lote:null, modelo:p.modelo, nVol:p.nVol, uepVols:p.uepVols, estVols:p.estVols }; };
+    const LM = { itens:[item('RACK MOVE', 100), item('STRASS', 50), item('SEM MEDIDA', 10)], semCad:[], semData:0 };
+    const PD0 = global.PONTOS_DIA; global.PONTOS_DIA = { eficienciaEmb:80 };
+    const MM = _tkaMontar(LM, {}, 2761, null), VM = _tkaVolumes(LM, MM.T);
+    const RM = _taktPorCaixa({ takt:MM.T.takt, ref:MM.T.ref, meta:MM.T.meta, minProd:MM.T.minProd, ef:MM.T.ef, prods:VM.prods });
+    const HM = _tkaHtml(LM, MM, { botoes:'' });
+    global.PONTOS_DIA = PD0;
+    const r2 = x => x == null ? null : Math.round(x * 100) / 100, rot = n => RM.find(g => g.rot.includes(n));
+    ok('AVALIAR: a esteira de cada volume vai com o produto do cadastro (estVols: RACK MOVE 1.6 16,51 s; STRASS 14,03 e 11,63 s; sem medida, null)',
+       [pr('RACK MOVE').estVols.map(r2), pr('STRASS').estVols.map(r2), pr('SEM MEDIDA').estVols], [[r2(est(2076))], [r2(est(1705)), r2(est(1344))], [null]]);
+    ok('AVALIAR: o TEMPO-ALVO de cada volume = a esteira dele ÷ a eficiência do ⚙ (80% aqui), não "sem medida da caixa"; o produto sem medida, sem alvo',
+       [MM.T.ef, r2(rot('RACK MOVE').sRef), r2(rot('STRASS · VOL 2/2').sRef), rot('SEM MEDIDA').sRef,
+        HM.includes('÷ 80%'), HM.includes('÷ 85%'), (HM.match(/sem medida da caixa/g) || []).length],
+       [80, r2(est(2076) / 0.8), r2(est(1344) / 0.8), null, true, false, 1]); }
   // v7.226.0 (PPCP: "melhor deixar para eu configurar setup nos dois, assim coloco igual, vamos usar setup médio"):
   // o setup é do ⚙ — CONFIG_PAINEL (.gs v5.61), senão este computador, senão o padrão 8 × 8.
   // Medido: 4,3 trocas de produto/dia × 7,65 min = 32,9 min/dia (13/10–10/11). O app só aceita

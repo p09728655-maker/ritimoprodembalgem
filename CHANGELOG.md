@@ -11,6 +11,27 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.235.1 — 12/11/2026 · tempo-alvo pela esteira: AVALIAR PROGRAMAÇÃO e o ⚙
+
+Correções da revisão da v7.235.0. Nada muda no `.gs` (sem re-deploy).
+
+- **AVALIAR PROGRAMAÇÃO:** o TAKT POR PRODUTO da programação colada mostrava
+  *"sem medida da caixa"* em todas as linhas e citava 85% mesmo com outra
+  eficiência no ⚙. Agora a esteira de cada volume vem do cadastro e a
+  eficiência é a do ⚙.
+- **⚙ EFICIÊNCIA DA EMBALAGEM:** com a planilha ainda sem a chave
+  `EFICIENCIA_EMB`, digitar 85 e salvar não gravava nada (o painel achava que
+  já valia, pelo padrão). Agora grava, e o app deixa de dizer *"o padrão: o ⚙
+  ainda não tem"*.
+- **AGORA:** a explicação (passe o mouse) dizia que o tempo-alvo é a média da
+  linha e que as caixas por hora são de relógio. Agora diz a régua da esteira
+  e que o cx/h do alvo é com o produto rodando.
+
+**Atenção:** na AVALIAR PROGRAMAÇÃO, a coluna TEMPO-ALVO passa a ter número
+(antes, *"sem medida da caixa"* em tudo).
+
+---
+
 ## v7.235.0 — 12/11/2026 · O TEMPO-ALVO PELA ESTEIRA · ⚠ re-deploy (.gs v5.65)
 
 PPCP, com o RACK MOVE 1.6 na tela do app de cronoanálise: *"tempo alvo está

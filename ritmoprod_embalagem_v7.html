@@ -4099,7 +4099,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.235.0';
+const APP_VER   = '7.235.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -10822,14 +10822,14 @@ function _taktAgora(T, A){
 // semana é em segundos por UEP; a linha entende em segundos por CAIXA do produto.
 // Por produto · volume programado na semana: takt × UEP por caixa (a média das
 // cores, pesada pelas caixas) = o ritmo que o produto precisa para a semana
-// fechar; referência × UEP por caixa = o TEMPO-ALVO do produto (v7.230.0, PPCP:
-// "troca por TEMPO ALVO" — era "NA MÉDIA DA LINHA"): o tempo que cada caixa pode
-// levar para a linha fazer a média sem hora extra, o MESMO do getTemposAlvo
-// (.gs v5.62) que julga cada volume no app de cronoanálise desde a v2.106.0
-// dele. É o "1 caixa a cada X s" do AGORA para todos os produtos — e o número
-// para comparar com o NO PERÍODO da cronoanálise do produto.
-// ⚠ Pode diferir do app na 2ª casa: aqui a UEP por caixa é a média das cores
-// PESADA PELAS CAIXAS programadas; lá, a média simples das cores do volume.
+// fechar. O TEMPO-ALVO (v7.235.0 / .gs v5.65; era referência × UEP por caixa) =
+// a esteira do produto (pesada pelas caixas, cxEst/estSoma) ÷ a eficiência da
+// embalagem (T.ef): o tempo de cada caixa com o produto rodando, o MESMO do
+// getTemposAlvo que julga cada volume no app de cronoanálise — o número para
+// comparar com o NO PERÍODO da cronoanálise. NÃO se compara com o PELO TAKT
+// (na média do dia). Produto com caixa sem medida: sem tempo-alvo.
+// ⚠ Pode diferir do app na 2ª casa: aqui a esteira é pesada pelas caixas
+// programadas; lá, a média simples das cores do volume.
 // Conta pura. Ordem: o 1º dia programado, depois as caixas.
 function _taktPorCaixa(T){
   if(!T || !Array.isArray(T.prods)) return [];
@@ -10918,7 +10918,7 @@ function _taktFaixaHtml(F, R, Tt){
     +`<div class="tks-nl-l"><b class="tks-nl-n">${n0(F.vol)}</b> volumes${A0 ? ` · takt no app <b class="tks-nl-n">${_tkS(A0.s)} s</b> por volume` : ''}</div>`
     +`<div class="tks-nl-d">${[stp].concat(ext).filter(Boolean).join(' · ')}</div></div>`;
   const A=F.agora, H=A && A.hora;
-  const c2=A ? `<div class="tks-nl-c" title="O tempo de 1 caixa do produto que está rodando (sem o setup): o que a semana pede para fechar e o tempo-alvo (a média da linha sem hora extra). As caixas por hora são de relógio, com o setup na média — o que se confere no HORA A HORA.">`
+  const c2=A ? `<div class="tks-nl-c" title="O tempo de 1 caixa do produto que está rodando. A semana pede: o que a programação precisa para fechar, na média do dia (sem o setup); as caixas por hora são de relógio, com o setup na média — o que se confere no HORA A HORA. Tempo-alvo: a esteira do produto ÷ a eficiência da embalagem do ⚙, com o produto rodando; as caixas por hora dele também são com o produto rodando. Os dois não se comparam.">`
     +`<div class="kpi-lbl">AGORA · ${e(A.nome)}${A.cor ? ' '+e(A.cor) : ''}</div>`
     +`<div class="tks-nl-l">a semana pede <b class="tks-nl-n">${_tkS(A.sTakt)} s</b> por caixa <i>≈ ${n0(A.cxh)} cx/h</i>`
     +(A.sRef!=null ? ` · tempo-alvo <b class="tks-nl-n">${_tkS(A.sRef)} s</b> <i>≈ ${n0(A.cxhRef)} cx/h</i>` : '')+`</div>`
@@ -11076,7 +11076,7 @@ function _tkaLer(txt, prods, hojeN){
     // painel sem o zero da frente (025441 = 25441). Lote lançado no Sheets tem número; o novo, não.
     const lc=ip>=2 ? String(cs[ip-2]||'').trim() : '', lote=/^\d{4,8}$/.test(lc) ? lc.replace(/^0+/, '') : null;
     if(prod) itens.push({ n:data, nome:prod.nome, qtde:q, uepJogo:prod.uepJogo, ptsJogo:prod.ptsJogo, lote,
-                          modelo:prod.modelo, nVol:prod.nVol, uepVols:prod.uepVols });
+                          modelo:prod.modelo, nVol:prod.nVol, uepVols:prod.uepVols, estVols:prod.estVols });
     else semCad.push({ n:data, nome:txtP.t, qtde:q });
   });
   return { itens, semCad, semData };
@@ -11099,8 +11099,11 @@ function _tkaVolumes(L, T){
     if(util[x.n]===false) volFds+=q*nv;
     for(let v=1; v<=nv; v++){
       const u=Array.isArray(x.uepVols) && Number(x.uepVols[v-1])>0 ? Number(x.uepVols[v-1]) : null;
-      const g=G[x.nome+'|'+v]=G[x.nome+'|'+v] || { modelo:String(x.modelo||''), nome:x.nome, cod:'', va:v, vb:nv, cx:0, cxUep:0, uepSoma:0, uMin:null, uMax:null, dias:{} };
+      const g=G[x.nome+'|'+v]=G[x.nome+'|'+v] || { modelo:String(x.modelo||''), nome:x.nome, cod:'', va:v, vb:nv, cx:0, cxUep:0, uepSoma:0, uMin:null, uMax:null, dias:{}, cxEst:0, estSoma:0 };
       g.cx+=q; g.dias[x.n]=1;
+      // v7.235.1: a esteira do volume (s), como o _taktMontar faz pelo código — o TEMPO-ALVO da colagem
+      const es=Array.isArray(x.estVols) && Number(x.estVols[v-1])>0 ? Number(x.estVols[v-1]) : null;
+      if(es){ g.cxEst+=q; g.estSoma+=q*es; }
       if(u){ g.cxUep+=q; g.uepSoma+=q*u; g.uMin=g.uMin==null ? u : Math.min(g.uMin, u); g.uMax=g.uMax==null ? u : Math.max(g.uMax, u); }
     }
   });
@@ -11127,7 +11130,7 @@ function _tkaMontar(L, fer, meta, rit){
   });
   const feriados=Object.keys(fer||{}).map(Number).filter(n=>n>=de && n<=ate).map(n=>({ data:br(n), desc:fer[n] }));
   const T=_taktMontar({ ok:true, de:br(de), ate:br(ate), hoje:br(v.getFullYear()*10000+(v.getMonth()+1)*100+v.getDate()), linhas, feriados },
-    [], { num:v.getFullYear()*10000+(v.getMonth()+1)*100+v.getDate(), meta, ef:_efEmb() }, Object.keys(pts).length ? pts : null, _taktEstMapa(_pdiaPcCat()));
+    [], { num:v.getFullYear()*10000+(v.getMonth()+1)*100+v.getDate(), meta, ef:_efEmb() }, Object.keys(pts).length ? pts : null);   // a esteira da colagem vai pelo _tkaVolumes (estVols)
   const P=T && T.takt!=null ? _taktProxMontar(T) : null;
   return { T, P, V:P ? _taktVeredito(T, P, rit) : null, semUep };
 }
@@ -11330,7 +11333,7 @@ function _tkaHtml(L, M, o){
   // o que ficou de fora vai em DESTAQUE logo abaixo do veredito (carga que não entrou muda a resposta)
   const fora=notas.length ? `<div class="uep-card tka-fora"><div class="uep-nota" style="margin-top:0">${notas.join('<br>')}</div></div>` : '';
   const perTxt=uteis.length ? `${uteis[0].data.slice(0, 5)} a ${uteis[uteis.length-1].data.slice(0, 5)}` : per;
-  const VC=_tkaVolumes(L, T), Tv={ takt:T.takt, ref:T.ref, meta:T.meta, minProd:T.minProd, prods:VC ? VC.prods : [] };
+  const VC=_tkaVolumes(L, T), Tv={ takt:T.takt, ref:T.ref, meta:T.meta, minProd:T.minProd, ef:T.ef, prods:VC ? VC.prods : [] };
   h+=_taktHeroHtml(M.V, { semana:'prox', nUteis:T.nUteis, unid:'produtos', ritmo:true })+fora
     +_taktFecharHtml(_taktFecharDados(M.V, { semana:'prox', P, k, ultimo:uteis.length ? uteis[uteis.length-1].data.slice(0, 5) : null }), { unid:'produtos' })
     +(op.corrente ? _tkaChegadaHtml(op.corrente, M.V, perTxt)
@@ -15451,9 +15454,11 @@ function _capProdutos(cat){
   return Object.values(G).map(g=>{
     let uep=0, faltam=[], pts=0, ptsFalta=0, tJogo=0, tFalta=0, mmJogo=0, velCad=0, vaoPad=false;
     const uepVols=[];   // v7.224.0: a UEP de cada volume (a cor mais rápida), para o TAKT POR PRODUTO da colagem
+    const estVols=[];   // v7.235.1: a esteira de cada volume em s (a cor mais rápida), para o TEMPO-ALVO da colagem
     for(let v=1; v<=g.nVol; v++){
       const x=g.vols[v];
       uepVols.push(x&&x.min!=null ? x.min : null);
+      estVols.push(x&&x.tMin!=null ? x.tMin*3600 : null);
       if(x&&x.min!=null) uep+=x.min; else faltam.push(v);
       if(x&&x.pn) pts+=x.ps/x.pn; else ptsFalta++;
       if(x&&x.tMin!=null){ tJogo+=x.tMin; mmJogo+=x.mm; velCad=Math.max(velCad,x.vel); if(x.ent===ESTEIRA_VAO_PADRAO) vaoPad=true; } else tFalta++;
@@ -15464,7 +15469,7 @@ function _capProdutos(cat){
     // Pontos do PRODUTO = soma dos volumes (média entre as cores: ponto é tabela, não ritmo).
     // Volume sem pontos → null (nunca meio produto).
     return { chave:g.chave, modelo:g.modelo, nome:g.nome, nVol:g.nVol, nCores:Object.keys(g.cores).length,
-             codigos:g.codigos, uepJogo: faltam.length? null : Math.round(uep*100)/100, volSemUep:faltam, uepVols,
+             codigos:g.codigos, uepJogo: faltam.length? null : Math.round(uep*100)/100, volSemUep:faltam, uepVols, estVols,
              ptsJogo: ptsFalta? null : Math.round(pts*100)/100,
              tetoH, tetoDia: tetoH!=null ? Math.floor(tetoH*UEP_MIN_DIA/60) : null,
              mmJogo: tetoH!=null ? mmJogo : null, velCad: tetoH!=null ? velCad : null,
@@ -17171,8 +17176,9 @@ function saveCfg(){
     if(_metaUepNova) PONTOS_DIA.metaUep=_metaUepNova; }
   // EFICIÊNCIA DA EMBALAGEM (v7.235.0): a mesma regra da meta de UEP — só vai à
   // planilha quando MUDOU; vazio ou lixo não apaga a que já vale.
-  { const x=_efEmbLer((document.getElementById('c-ef-emb')||{}).value);
-    _efEmbNova=x!=null && x!==_efEmb() ? x : null;
+  // v7.235.1: compara com o que a PLANILHA tem, não com o padrão — sem a chave, digitar 85 grava 85
+  { const x=_efEmbLer((document.getElementById('c-ef-emb')||{}).value), naPlanilha=Number(PONTOS_DIA.eficienciaEmb);
+    _efEmbNova=x!=null && !(naPlanilha>0 && x===naPlanilha) ? x : null;
     if(_efEmbNova!=null) PONTOS_DIA.eficienciaEmb=_efEmbNova; }
   // Meta de PONTOS (v7.187.0): a mesma regra — só vai à planilha quando MUDOU;
   // vazio ou texto não apaga a que já vale. Fica também neste computador

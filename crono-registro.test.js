@@ -717,7 +717,7 @@ console.log('\n── v5.62/v5.65: o tempo-alvo de cada produto, pela esteira �
     ok('⚙ EFICIÊNCIA DA EMBALAGEM: o campo, "85" / "85%" / "82,5" valem, lixo e fora de 1–100 não; vai à planilha (eficienciaEmb=) só quando mudou',
        [HTML.includes('id="c-ef-emb"'), ['85', '85%', '82,5', ' 90 % ', 'abc', '0', '150', ''].map(ler),
         /if\(_efEmbNova!=null\)\{ params\.push\('eficienciaEmb='\+_efEmbNova\); _efEmbNova=null; \}/.test(HTML),
-        /_efEmbNova=x!=null && x!==_efEmb\(\) \? x : null;/.test(HTML),
+        /_efEmbNova=x!=null && !\(naPlanilha>0 && x===naPlanilha\) \? x : null;/.test(HTML),
         /eficienciaEmb: \(json\.painelConfig\|\|\{\}\)\.eficienciaEmb/.test(HTML)],
        [true, [85, 85, 82.5, 90, null, null, null, null], true, true, true]); }
   ok('a leitura está no doGet, no cache (o cadastro e a config invalidam) e não grava nada',
