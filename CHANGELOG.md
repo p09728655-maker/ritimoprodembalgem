@@ -11,6 +11,29 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.232.0 — 12/11/2026 · TAKT DA SEMANA enxuto
+
+PPCP, com a ESTA SEMANA na tela: *"muita informação"* → *"tire redundância,
+deixar enxuta, direta sem rodeios"*. A tela repetia o mesmo número em vários
+lugares: o 105,1% quatro vezes, o que falta três (o PARA FECHAR tinha os
+mesmos ≈5h e ≈820 caixas do veredito), o ritmo da linha três, e o AGORA duas.
+Eram cinco unidades misturadas.
+
+- **A ordem, nas três telas (ESTA SEMANA, SEMANA QUE VEM e AVALIAR):** o
+  veredito primeiro, o **PARA FECHAR numa linha**, o gráfico, e depois a faixa
+  **NA LINHA E NO APP**: os volumes e o takt do app de cronoanálise numa linha
+  (com o setup) e o **AGORA** em segundos por caixa (o que a semana pede, o
+  tempo-alvo e a última hora). O TAKT POR PRODUTO continua logo abaixo,
+  recolhido.
+- **Saíram da ESTA SEMANA:** os três cartões grandes do topo, os cartões em s
+  por UEP, a frase, a cascata e o bloco AGORA dos detalhes. O porquê é o recado
+  do gráfico (*do que não saiu: X% excesso de programação · Y% ritmo da
+  linha*). O takt contra a média em s por UEP fica no *title* do recado.
+- **SEMANA QUE VEM:** sem os cartões em s por UEP e a frase. Nos DETALHES fica
+  só a simulação em outros ritmos.
+- **Atenção:** nenhum número mudou. As contas são as mesmas, e o 🖨 TAKT DA
+  SEMANA (a folha da diretoria) não mudou.
+
 ## v7.231.0 / `.gs` v5.63 — 12/11/2026 · O takt da semana vai para o app de cronoanálise ⚠ re-deploy
 
 PPCP, com a MESA CABECEIRA SLEEP na tela (8,5 s pelo takt e 8,9 s no tempo-alvo):

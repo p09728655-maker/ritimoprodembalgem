@@ -148,7 +148,10 @@ via Google Apps Script (JSONP).
   o setup do ⚙ (a ordem gravando → planilha → computador → padrão, o setup
   médio 4 × 8,2 contra a conta do app, o zero, o que não cabe na jornada, os
   campos no domínio do app, o que impede salvar, o envio do que mudou e do
-  digitado antes do re-deploy, a resposta da planilha):
+  digitado antes do re-deploy, a resposta da planilha); e (v7.232.0) a tela
+  enxuta: o agora em s por caixa na faixa NA LINHA E NO APP, o que saiu (cartões
+  em s por UEP, frase, cascata, AGORA e DETALHES da esta semana), a ordem do
+  olhar nas três telas e o PARA FECHAR numa linha sem repetir as caixas:
   `node takt-semana.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
@@ -6948,6 +6951,25 @@ feito e dá ar de verdade ao que sobrou.
   POR QUE NÃO ACOMPANHOU (a cascata) e AGORA lado a lado (`.uep-2`), e o DIA A
   DIA (programado tracejado × feito, hora extra em cima, linhas da referência
   e do takt/dia). Botão: *pede X% da referência* (âmbar acima de 100%).
+  - ⚠ **Desde a v7.232.0 a tela é ENXUTA** (PPCP, 12/11/2026, com a ESTA
+    SEMANA na tela: *"muita informação"* → *"faça a análise profunda, tire
+    redundância, deixar enxuta, direta sem rodeios"* → prévia → *"ok"*). Medido
+    antes: o 105,1% aparecia 4 vezes (botão, cartão do topo, cartão TAKT e a
+    frase), a falta 3 (veredito, PARA FECHAR com os MESMOS ≈5h e ≈820 caixas,
+    cartão FALTA em UEP), o ritmo de 93,8% 3, o 80/20 2 (recado e frase; a
+    cascata é a mesma conta em UEP), o AGORA 2 — em cinco unidades. Ordem nas
+    três telas: título → **veredito** → **PARA FECHAR numa linha**
+    (`_taktFecharHtml` sem opção; a tela não repete as caixas do veredito, o
+    papel continua com elas) → o gráfico (ESTA SEMANA: DIA A DIA com o porquê
+    no recado; as outras: ONDE ESTÁ O EXCESSO) → a faixa **NA LINHA E NO APP**
+    (`.tks-nl`: os volumes e o takt do app numa linha, com o setup; o AGORA em
+    s por caixa com o que a semana pede, o tempo-alvo e a última hora) → o
+    TAKT POR PRODUTO recolhido. **Saíram** da ESTA SEMANA os cartões em s por
+    UEP, a frase, a cascata, o bloco AGORA e os DETALHES inteiros (o 10,2 × 10,7
+    s por UEP ficou no *title* do recado do gráfico); da SEMANA QUE VEM os
+    cartões e a frase (nos DETALHES só a SIMULAÇÃO). As contas (`_taktMontar`,
+    `cas`, `exec`) não mudaram; o 🖨 TAKT não mudou. Duas unidades na frente:
+    horas de linha para decidir, segundos por caixa para a linha e o app.
   - **Conta pura** `_taktMontar(S, hist, H)` (S = a leitura, hist =
     `UEP_HIST`, H = o hoje da aba: `num`, `minNorm`, `restMin`, `uep`, `he`,
     `meta`, `fim`), `_taktRestMin`, `_taktAgora`, `_uepSubTakt` · **desenho**
@@ -7196,6 +7218,8 @@ feito e dá ar de verdade ao que sobrou.
       × 26,9 s no período da medição (em cima); 21 produtos na tabela.
       ⚠ **Desde a v7.224.0 a tabela NÃO mora mais nos detalhes** — ver o item
       abaixo (a FAIXA DO TAKT).
+    - ⚠ **Desde a v7.232.0 a faixa é compacta e fica DEPOIS do gráfico**
+      (NA LINHA E NO APP, ver *A TELA* acima): o veredito vem primeiro.
     - **A FAIXA DO TAKT (v7.224.0)** — PPCP, 11/11/2026: *"onde fica o takt
       que temos que seguir? e a quantidade de volumes"* → *"não consigo
       localizar com facilidade"* → *"preciso saber o takt da semana para
