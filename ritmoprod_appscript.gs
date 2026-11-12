@@ -1,5 +1,24 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.65 — O TEMPO-ALVO PELA ESTEIRA (getTemposAlvo) e a EFICIÊNCIA DA
+//               EMBALAGEM na CONFIG_PAINEL (EFICIENCIA_EMB).
+//               PPCP, 12/11/2026, com o RACK MOVE 1.6 na tela do app (alvo
+//               32,3 s; medido 25,2 s com as paradas, 18,2 s sem as lacunas):
+//               "tempo alvo está equivocado" → "hoje temos tamanho da caixa,
+//               velocidade da esteira". Nas 69 medições da CRONOANALISE o sem
+//               as lacunas dá 0,99 × o tempo da esteira; o alvo pela UEP dava
+//               1,6 × (a UEP é medida contra os 6,7 s LIMPOS da MADERO e os
+//               10,74 s por UEP são a média do dia, com as perdas) e 62 de 68
+//               medições ficavam abaixo dele. Agora:
+//                 esteira    = (MEDIDA DA CAIXA + ENTRE_PECAS) mm ÷ VELOCIDADE m/min
+//                 tempo-alvo = esteira ÷ EFICIÊNCIA DA EMBALAGEM (85%)
+//               Medida, velocidade e entre-peças por código na PRODUTO_CODIGO
+//               (as mesmas do _tetoEsteiraCxH); a eficiência no ⚙ (chave
+//               EFICIENCIA_EMB, padrão 85). Os 85% são da linha com o produto
+//               rodando (paradas, lacunas e fadiga dentro) — NÃO são a meta do
+//               dia: a carga da semana continua pela UEP e pela META UEP.
+//               Produto sem medida ou velocidade: sem alvo (nunca a UEP no lugar).
+//               ⚠ re-deploy manual. Antes dele o app segue com o alvo pela UEP.
 // Versão: 5.64 — A TRAVA DA UEP: a troca passa pelo PPCP (travarUep).
 //               PPCP, 12/11/2026: "limite de medição" → "colocar um carimbo em
 //               cada produto que já cumpriu a regra e travar a uep, mas essa
@@ -566,7 +585,7 @@
 
 // A versão deste arquivo, a mesma do cabeçalho (v5.58). Vai no getDados para o
 // rodapé do painel dizer qual .gs está implantado — o GitHub não sabe.
-const GS_VERSAO = '5.64';
+const GS_VERSAO = '5.65';
 
 const SHEET_DADOS     = 'HORA_A_HORA';
 const SHEET_HIST      = 'HISTORICO';
@@ -2590,25 +2609,54 @@ function _cronoDoApp(p, catalogo) {
   } };
 }
 
-// ── TEMPO-ALVO DO PRODUTO (v5.62) ──────────────────────────────────────────
-// PPCP, 11/11/2026: "hoje takt está pela programação, mas ideal não seria pela
-// quantidade que fizemos sem horas extras?" → análise → "isso que quis dizer:
-// tempo-alvo de cada produto". O takt da semana é um número só para todo
-// volume (jornada ÷ volumes programados): produto pesado sai sempre acima dele
-// e o leve sempre abaixo, pelo peso e não pelo desempenho. O tempo-alvo é o
-// tempo que CADA volume pode levar para a linha fazer a média sem hora extra:
-//   s por UEP = (jornada 527 min − setup do dia) × 60 ÷ META UEP (a média da
-//   linha sem hora extra, 2.761) · tempo-alvo = s por UEP × UEP do volume.
-// É a mesma régua do NA MÉDIA DA LINHA do TAKT POR PRODUTO do painel (o setup
-// do ⚙, o mesmo do app). Só muda quando a META UEP (a referência) for revista
-// ou a cronoanálise trocar a UEP do produto.
+// ── TEMPO-ALVO DO PRODUTO (v5.62; PELA ESTEIRA desde a v5.65) ──────────────
+// PPCP, 11/11/2026: "isso que quis dizer: tempo-alvo de cada produto" — o takt
+// da semana julga todo volume pelo mesmo número. Na v5.62 o alvo era
+// (527 − setup) × 60 ÷ META UEP × UEP; PPCP, 12/11/2026, com o RACK MOVE 1.6
+// (alvo 32,3 s, medido 18,2 s sem as lacunas): "tempo alvo está equivocado" →
+// "hoje temos tamanho da caixa, velocidade da esteira". A UEP é medida contra
+// os 6,7 s LIMPOS da MADERO e os 10,74 s por UEP são a MÉDIA do dia: o alvo
+// saía 1,6 × o trabalho limpo. A esteira explica a linha (nas 69 medições da
+// CRONOANALISE, o sem as lacunas = 0,99 × a esteira, sem ajuste nenhum):
+//   esteira    = (MEDIDA DA CAIXA + ENTRE_PECAS) mm ÷ (VELOCIDADE m/min ÷ 60)
+//              = 3600 ÷ _tetoEsteiraCxH (a MESMA conta do % TETO EST.)
+//   tempo-alvo = esteira ÷ (EFICIÊNCIA DA EMBALAGEM ÷ 100)   (⚙, padrão 85%)
+// Os 85% são da linha COM O PRODUTO RODANDO: paradas, lacunas e fadiga dentro
+// (PPCP: "85 ok"). Não é a meta do dia — o dia perde mais (trocas, esperas;
+// o % TETO EST. mostra 22–68%): a carga da semana continua pela UEP.
 // Os nomes são os da lista do app (o rot do _uepConvProdutos do painel):
-// "modelo · NOME" (o produto inteiro, volumes intercalados: a UEP média por
-// caixa) e, com 2+ volumes, "modelo · NOME · VOL v/n". A UEP sai do
-// _cronoUepCad — a MESMA da medição que o app manda (UEP_CADASTRO).
-// Produto sem UEP (ou jogo com volume sem UEP): uep e alvo null — o app diz
-// "sem tempo-alvo", nunca inventa.
+// "modelo · NOME" (o produto inteiro, volumes intercalados: a esteira média por
+// caixa) e, com 2+ volumes, "modelo · NOME · VOL v/n". A UEP continua indo
+// (informação; a mesma da medição do app, _cronoUepCad).
+// Produto sem medida ou velocidade (ou jogo com volume sem): esteira e alvo
+// null — o app diz "sem tempo-alvo", nunca a UEP no lugar.
 const TA_SETUP_PADRAO_GS = { setupsDia: 8, setupMin: 8 };   // = o padrão do CRONO_APP_GRUPO do painel (o teste prende)
+const TA_EFICIENCIA_PADRAO_GS = 85;                         // % da esteira (PPCP, 12/11/2026) = EF_EMB_PADRAO do painel (o teste prende)
+// A esteira de UM código, em segundos por caixa (null sem medida ou velocidade).
+function _taEsteiraS(c) {
+  const t = _tetoEsteiraCxH(c);
+  return t > 0 ? 3600 / t : null;
+}
+// A esteira de um volume (volSel) ou do JOGO (volSel 0), como o _cronoUepCad
+// faz com a UEP: média das cores de cada volume; o jogo, a média dos volumes
+// (por caixa). Volume sem esteira → null (nunca uma esteira pela metade).
+function _taEsteiraCad(doVol, volSel, nVol) {
+  const nV = volSel ? 1 : nVol, porVol = [];
+  for (let v = 1; v <= nV; v++) {
+    const es = doVol.filter(function (c) { return (volSel ? true : c.vol === v) && c.esteira > 0; }).map(function (c) { return c.esteira; });
+    porVol.push(es.length ? es.reduce(function (a, b) { return a + b; }, 0) / es.length : null);
+  }
+  return porVol.every(function (e) { return e != null; }) ? porVol.reduce(function (a, b) { return a + b; }, 0) / nV : null;
+}
+// Medida, velocidade e entre-peças da linha, para o app escrever a conta:
+// só quando TODO código dela tem os mesmos três (senão null — a média de duas
+// caixas não é a caixa de ninguém; o app escreve só a esteira média).
+function _taCaixaDe(cods) {
+  const c0 = cods[0];
+  if (!c0) return null;
+  const igual = cods.every(function (c) { return c.medida === c0.medida && c.vel === c0.vel && c.entre === c0.entre; });
+  return igual && c0.medida > 0 && c0.vel > 0 ? { medida: c0.medida, vel: c0.vel, entre: c0.entre } : null;
+}
 function _temposAlvoMontar(catalogo, cfg) {
   cfg = cfg || {};
   const meta = Number(cfg.metaUep) > 0 ? Number(cfg.metaUep) : UEP_META_PADRAO_GS;
@@ -2618,6 +2666,8 @@ function _temposAlvoMontar(catalogo, cfg) {
   const setupDia = Math.round(sd * sm * 10) / 10, minProd = UEP_MIN_DIA_GS - setupDia;
   if (!(minProd > 0)) return { ok: false, erro: 'O setup do dia (' + setupDia + ' min) não cabe na jornada.' };
   const sUep = minProd * 60 / meta;
+  const temEf = Number(cfg.eficienciaEmb) > 0 && Number(cfg.eficienciaEmb) <= 100;
+  const ef = temEf ? Number(cfg.eficienciaEmb) : TA_EFICIENCIA_PADRAO_GS;
   const G = {};
   (catalogo || []).forEach(function (c) {
     const cod = codKey(c.codigo);
@@ -2627,23 +2677,27 @@ function _temposAlvoMontar(catalogo, cfg) {
     const v = _cronoVolCad(c.desc), k = cod.slice(0, 6) + '|' + nome;
     const g = G[k] = G[k] || { modelo: cod.slice(0, 6), nome: nome, nVol: 1, cods: [] };
     g.nVol = Math.max(g.nVol, v.nVol);
-    g.cods.push({ cod: cod, vol: v.vol, nVol: v.nVol, uep: Number(c.uep) > 0 ? Number(c.uep) : null });
+    g.cods.push({ cod: cod, vol: v.vol, nVol: v.nVol, uep: Number(c.uep) > 0 ? Number(c.uep) : null,
+                  esteira: _taEsteiraS(c), medida: Number(c.medida) || 0, vel: Number(c.velocidade) || 0, entre: Number(c.entrePeca) || 0 });
   });
-  const linha = function (rot, uep) {
-    const u = uep === '' ? null : uep;
-    return { rot: rot, uep: u, alvo: u ? Math.round(sUep * u * 100) / 100 : null };
+  const r2 = function (x) { return Math.round(x * 100) / 100; };
+  const linha = function (rot, uep, est, cods) {
+    const u = uep === '' ? null : uep, cx = est != null ? _taCaixaDe(cods) : null;
+    return { rot: rot, uep: u, esteira: est != null ? r2(est) : null, alvo: est != null ? r2(est * 100 / ef) : null,
+             medida: cx ? cx.medida : null, vel: cx ? cx.vel : null, entre: cx ? cx.entre : null };
   };
   const L = [];
   Object.keys(G).forEach(function (k) {
     const g = G[k], rot = g.modelo + ' · ' + g.nome;
-    L.push(linha(rot, _cronoUepCad(g.cods, 0, g.nVol)));
+    L.push(linha(rot, _cronoUepCad(g.cods, 0, g.nVol), _taEsteiraCad(g.cods, 0, g.nVol), g.cods));
     for (let v = 1; g.nVol > 1 && v <= g.nVol; v++) {
       const doVol = g.cods.filter(function (c) { return c.vol === v; });
-      if (doVol.length) L.push(linha(rot + ' · VOL ' + v + '/' + g.nVol, _cronoUepCad(doVol, v, g.nVol)));
+      if (doVol.length) L.push(linha(rot + ' · VOL ' + v + '/' + g.nVol, _cronoUepCad(doVol, v, g.nVol), _taEsteiraCad(doVol, v, g.nVol), doVol));
     }
   });
   L.sort(function (a, b) { return a.rot < b.rot ? -1 : a.rot > b.rot ? 1 : 0; });
   return { ok: true, ref: {
+    metodo: 'esteira', eficiencia: ef, eficienciaOrigem: temEf ? 'planilha' : 'padrao',
     metaUep: meta, metaOrigem: Number(cfg.metaUep) > 0 ? 'planilha' : 'padrao',
     minDia: UEP_MIN_DIA_GS, setupsDia: sd, setupMin: sm, setupOrigem: temSetup ? 'planilha' : 'padrao',
     setupDia: setupDia, minProd: Math.round(minProd * 10) / 10, sUep: Math.round(sUep * 1000) / 1000
@@ -4773,8 +4827,25 @@ function getConfigPainel() {
     // do app de cronoanálise. Sem a chave → null (o painel usa o dele); ZERO é
     // valor (sem setup), nunca "não tem".
     setupsDia: (_cfgSetup(kv.SETUPS_DIA, kv.SETUP_MIN) || { setupsDia: null }).setupsDia,
-    setupMin:  (_cfgSetup(kv.SETUPS_DIA, kv.SETUP_MIN) || { setupMin: null }).setupMin
+    setupMin:  (_cfgSetup(kv.SETUPS_DIA, kv.SETUP_MIN) || { setupMin: null }).setupMin,
+    // EFICIÊNCIA DA EMBALAGEM (v5.65): o % da esteira da régua do tempo-alvo.
+    // Sem a chave (ou ilegível) → null: o tempo-alvo usa o padrão e diz que é.
+    eficienciaEmb: _cfgEficiencia(kv.EFICIENCIA_EMB)
   };
+}
+// A EFICIÊNCIA DA EMBALAGEM (v5.65): % do ritmo da esteira que a linha entrega
+// com o produto rodando — a régua do tempo-alvo do app de cronoanálise. De 1 a
+// 100, com até UMA casa. A célula formatada como PORCENTAGEM guarda 0,85 para
+// "85%": de 0 a 1 vale × 100 (ninguém quer 0,85% de eficiência). "85%" escrito
+// como texto também vale. Fora disso, null — nunca um número inventado.
+function _cfgEficiencia(v) {
+  if (v === undefined || v === null) return null;
+  const s = String(v).trim().replace(/\s*%$/, '');
+  if (!s || !/^\d+([.,]\d+)?$/.test(s)) return null;
+  let n = typeof v === 'number' ? v : _numBR(s);
+  if (n > 0 && n <= 1) n = n * 100;
+  n = Math.round(n * 10) / 10;
+  return n >= 1 && n <= 100 ? n : null;
 }
 // O SETUP (v5.61), os dois juntos ou nenhum (null), no domínio do app de
 // cronoanálise: trocas por dia INTEIRAS de 0 a 100, minutos de 0 a 600 com até
@@ -4848,6 +4919,9 @@ function setConfigPainel(p) {
     // NÚMERO (a célula pt-BR não confunde decimal com milhar).
     const su = _cfgSetup(p.setupsDia, p.setupMin);
     if (su) { novos.SETUPS_DIA = su.setupsDia; novos.SETUP_MIN = su.setupMin; }
+    // EFICIÊNCIA DA EMBALAGEM (v5.65): só número válido (_cfgEficiencia) —
+    // vazio ou lixo não apaga a que já vale. Gravada como NÚMERO (85, não 0,85).
+    if (p.eficienciaEmb !== undefined) { const ef = _cfgEficiencia(p.eficienciaEmb); if (ef != null) novos.EFICIENCIA_EMB = ef; }
 
     const vals = sh.getDataRange().getValues();
     const linhaDe = {};

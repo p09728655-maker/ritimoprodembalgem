@@ -11,6 +11,49 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.235.0 — 12/11/2026 · O TEMPO-ALVO PELA ESTEIRA · ⚠ re-deploy (.gs v5.65)
+
+PPCP, com o RACK MOVE 1.6 na tela do app de cronoanálise: *"tempo alvo está
+equivocado"* → *"hoje temos tamanho da caixa, velocidade da esteira"* → *"85
+ok"* → *"essas métricas no painel, onde eu possa atualizar"*.
+
+O tempo-alvo era a UEP do produto × 10,74 s por UEP. A UEP é medida contra os
+6,7 s **limpos** da MADERO, e os 10,74 s são a **média do dia**, com as perdas.
+O alvo saía 1,6 × o trabalho limpo: o RACK MOVE 1.6 tinha alvo de 32,3 s e
+foi medido em 25,2 s com as paradas e 18,2 s sem as lacunas. Nas 69 medições
+da CRONOANALISE, 62 ficavam abaixo do alvo. A esteira explica a linha: o sem
+as lacunas dá 0,99 × o tempo da esteira, sem ajuste nenhum.
+
+- **Tempo-alvo = esteira ÷ eficiência da embalagem.** Esteira = (medida da
+  caixa + entre-peças) ÷ velocidade, por código, na PRODUTO_CODIGO — a mesma
+  conta do % TETO EST. RACK MOVE 1.6: (2076 + 400) mm ÷ 9 m/min = 16,5 s;
+  ÷ 85% = **19,4 s**.
+- **⚙ EFICIÊNCIA DA EMBALAGEM (%)**, abaixo do setup: grava na CONFIG_PAINEL
+  (chave `EFICIENCIA_EMB`, padrão 85) e vale para o painel e para o app. Também
+  dá para digitar direto na aba (85, 85% ou 0,85 na célula em %).
+- Medida, velocidade e entre-peças continuam por código na PRODUTO_CODIGO.
+  Produto sem medida ou velocidade fica **sem tempo-alvo** ("sem medida da
+  caixa"), nunca com a UEP no lugar.
+- **TAKT POR PRODUTO:** a coluna TEMPO-ALVO e o tempo-alvo do AGORA passam a
+  ser pela esteira; o cx/h embaixo dele é com o produto rodando (3.600 ÷ o
+  alvo), não de relógio. O PELO TAKT não muda.
+- **.gs v5.65** (⚠ **re-deploy**): `getTemposAlvo` manda, por produto, a
+  esteira, o alvo, a medida, a velocidade e o entre-peças, e na régua o método
+  e a eficiência. `getConfigPainel`/`setConfigPainel` leem e gravam a
+  `EFICIENCIA_EMB`.
+
+**Atenção:** o TEMPO-ALVO de todo produto muda, e cai bastante: o RACK MOVE
+1.6 vai de 32,3 s para 19,4 s, a MESA CABECEIRA MADERO de 10,7 s para 10,0 s.
+Nas medições já feitas, ~38 de 68 passam a ficar **acima** do alvo (antes, 6).
+Não é a linha que piorou: a régua deixou de ter as perdas do dia dentro.
+**Não compare o TEMPO-ALVO com o PELO TAKT:** o takt continua na média do dia
+(trocas e esperas dentro, cx/h de relógio); o alvo é com o produto rodando. A
+carga da semana (o "pede X% da referência") continua pela UEP e pela META UEP.
+Antes do re-deploy, o app de cronoanálise segue com o alvo pela UEP; a
+tabela do painel já mostra o alvo pela esteira.
+
+---
+
 ## mobile 1.48.0 — 12/11/2026 · o bipe não fica mais calado
 
 PPCP: *"no operador lê o código EAN mas não acontece nada"*.

@@ -36,13 +36,13 @@ global.SETUP_PEND = null; global.SETUP_PLAN = null;   // v7.226.0: o setup envia
 global._rpEsc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 ['function _cartNum(', 'function _eixoGrade(', 'function _taktMontar(', 'function _taktRestMin(', 'function _taktAgora(',
  'function _uepSubTakt(', 'function _taktPorCaixa(', 'function _taktPorCaixaHtml(', 'function _taktHtml(', 'function _taktSvg(', 'function _taktProxMontar(', 'function _taktProxHtml(',
- 'function _taktProxSemana(', 'function _taktSemBotoes(', 'function _taktEstadoHtml(', 'function _fmtHM(', 'function _taktSimHtml(', 'function _taktCenRot(', 'function _taktCenarios(', 'function _taktSimular(', 'function _taktDocHtml(', 'function _taktVeredito(', 'function _taktHeroHtml(', 'function _taktDetHtml(', 'function _taktPtsMapa(', 'function _tkPts(',
+ 'function _taktProxSemana(', 'function _taktSemBotoes(', 'function _taktEstadoHtml(', 'function _fmtHM(', 'function _taktSimHtml(', 'function _taktCenRot(', 'function _taktCenarios(', 'function _taktSimular(', 'function _taktDocHtml(', 'function _taktVeredito(', 'function _taktHeroHtml(', 'function _taktDetHtml(', 'function _taktPtsMapa(', 'function _taktEstMapa(', 'function _tkPts(',
  // v7.222.0: o nível diretoria
  'function _tkAprox(', 'function _tkDia(', 'function _tkHAprox(', 'function _taktPico(', 'function _taktFecharDados(', 'function _taktFecharHtml(',
  'function _taktHerancaHtml(', 'function _taktExcessoHtml(',
  // v7.224.0: a faixa do takt (os volumes para o app de cronoanálise)
  'function _taktSetup(', 'function _setupLer(', 'function _setupCfgTxt(', 'function _setupErro(', 'function _setupEnviar(', 'function _setupDaConfig(', 'function _setupResposta(', 'function _taktApp(', 'function _taktFaixa(', 'function _taktFaixaHtml('].forEach(f => eval.call(global, pega(f)));
-['EIXO_PASSOS', '_tkS', 'TKS_DOW', 'CRONO_APP_GRUPO', '_taktFProd', '_tkDec', '_tkM', 'TKS_DOC_SVG_W', 'UEP_REF_STATUS', 'TKS_RITMO_DESVIO', 'SETUP_TROCAS_MAX', 'SETUP_MIN_MAX'].forEach(c => eval.call(global, pegaConst(c).replace(/^const /, 'global.').replace(/^global\.(\w+)\s*=/, 'global.$1 =')));
+['EIXO_PASSOS', '_tkS', 'TKS_DOW', 'CRONO_APP_GRUPO', '_taktFProd', '_tkDec', '_tkM', 'TKS_DOC_SVG_W', 'UEP_REF_STATUS', 'TKS_RITMO_DESVIO', 'SETUP_TROCAS_MAX', 'SETUP_MIN_MAX', 'EF_EMB_PADRAO'].forEach(c => eval.call(global, pegaConst(c).replace(/^const /, 'global.').replace(/^global\.(\w+)\s*=/, 'global.$1 =')));
 
 let falhas = 0;
 function ok(nome, real, esperado) {
@@ -154,15 +154,27 @@ ok('EXECUTADO = (3 × 527 + 240) min, menos o setup na mesma proporção (× 463
     L2('09/11', '501135001', 'VOL 1/1 PENT CAMARIM 1PT 2GAV DIAMANTE', 'OFF WHITE', 50, 2.48), L2('12/11', '501135001', 'VOL 1/1 PENT CAMARIM 1PT 2GAV DIAMANTE', 'OFF WHITE', 450, 2.48),
     L2('11/11', '501999001', 'VOL 1/1 PRODUTO NOVO', 'BRANCO', 80, null),
     L2('11/11', '501777001', 'VOL 1/1 FORA DA ESTEIRA', 'BRANCO', 999, 1, true), L2('16/11', '501094001', 'VOL 1/1 MESA CABECEIRA SLEEP', 'BRANCO', 777, 0.83)] };
-  const T2 = _taktMontar(S2, [], { num:20261106, meta:2761 }), R2 = _taktPorCaixa(T2), por = n => R2.find(g => g.rot.includes(n));
+  // v7.235.0: a esteira de cada código (medida + 400 mm a 9 m/min, PRODUTO_CODIGO real): o TEMPO-ALVO = esteira ÷ 85%.
+  // O PRODUTO NOVO sem medida: sem tempo-alvo (nunca a UEP no lugar)
+  const EST = _taktEstMapa([{ codigo:'501094001', medida:825, velocidade:9, entrePeca:400 }, { codigo:'501094002', medida:825, velocidade:9, entrePeca:400 },
+    { codigo:'501060001', medida:1285, velocidade:9, entrePeca:400 }, { codigo:'501060003', medida:1285, velocidade:9, entrePeca:400 },
+    { codigo:'501060002', medida:1255, velocidade:9, entrePeca:400 }, { codigo:'501135001', medida:1590, velocidade:9, entrePeca:400 },
+    { codigo:'501999001', medida:0, velocidade:9, entrePeca:400 }]);
+  const estS = mm => (mm + 400) / 150;
+  const T2 = _taktMontar(S2, [], { num:20261106, meta:2761, ef:85 }, null, EST), R2 = _taktPorCaixa(T2), por = n => R2.find(g => g.rot.includes(n));
   ok('takt por caixa: um por produto · volume (as cores juntas; fora da esteira e fora da semana de fora), na ordem do 1º dia, das caixas e do nome',
      R2.map(g => [g.rot, g.cx, g.dias.map(n => n % 100)]),
      [['501094 · MESA CABECEIRA SLEEP', 500, [9]], ['501135 · PENT CAMARIM 1PT 2GAV DIAMANTE', 500, [9, 12]], ['501060 · PENTEADEIRA CAMARIM MEL · VOL 1/2', 200, [10]],
       ['501060 · PENTEADEIRA CAMARIM MEL · VOL 2/2', 200, [10]], ['501999 · PRODUTO NOVO', 80, [11]]]);   // empate de caixas: pelo nome
   const dm = por('DIAMANTE'), mel = por('VOL 1/2');
-  ok('PELO TAKT = takt da semana × UEP por caixa; TEMPO-ALVO = referência × UEP por caixa; cx/h = por hora de RELÓGIO: 3.600 × 463/527 ÷ pelo takt (o setup na média)',
-     [Math.round(dm.sTakt * 100) / 100, Math.round(T2.takt * 2.48 * 100) / 100, Math.round(dm.sRef * 100) / 100, Math.round(T2.ref * 2.48 * 100) / 100, Math.round(dm.cxhTakt), Math.round(3600 / dm.sTakt)],
-     [Math.round(T2.takt * 2.48 * 100) / 100, Math.round(T2.takt * 2.48 * 100) / 100, Math.round(T2.ref * 2.48 * 100) / 100, Math.round(T2.ref * 2.48 * 100) / 100, Math.round(3600 * 463 / 527 / (T2.takt * 2.48)), Math.round(3600 / (T2.takt * 2.48))]);
+  ok('PELO TAKT = takt da semana × UEP por caixa (cx/h de RELÓGIO: 3.600 × 463/527 ÷ pelo takt); TEMPO-ALVO (v7.235.0) = a esteira do código ÷ 85% — DIAMANTE (1590 + 400) mm a 9 m/min = 13,27 s → 15,61 s',
+     [Math.round(dm.sTakt * 100) / 100, Math.round(dm.cxhTakt), T2.ef, Math.round(dm.estCx * 100) / 100, Math.round(dm.sRef * 100) / 100],
+     [Math.round(T2.takt * 2.48 * 100) / 100, Math.round(3600 * 463 / 527 / (T2.takt * 2.48)), 85, Math.round(estS(1590) * 100) / 100, Math.round(estS(1590) / 0.85 * 100) / 100]);
+  ok('a esteira por produto é pesada pelas caixas como a UEP (MEL 1/2: as duas cores com a mesma caixa); um código sem medida derruba o alvo do produto (nunca pela metade)',
+     [Math.round(mel.estCx * 100) / 100, por('PRODUTO NOVO').estCx, por('PRODUTO NOVO').sRef,
+      (() => { const Tm = _taktMontar(S2, [], { num:20261106, meta:2761 }, null, Object.assign({}, EST, { '501060003':undefined })); return _taktPorCaixa(Tm).find(g => g.rot.includes('VOL 1/2')).sRef; })(),
+      _taktMontar(S2, [], { num:20261106, meta:2761 }).ef, _taktMontar(S2, [], { num:20261106, meta:2761, ef:80 }).ef],
+     [Math.round(estS(1285) * 100) / 100, null, null, null, 85, 80]);
   ok('a UEP por caixa é a média das cores pesada pelas caixas (MEL 1/2: 1,73 e 1,75 → 1,74, diz que difere por cor); sem UEP → sem takt, nunca 0',
      [mel.uepCx, mel.difCor, por('PRODUTO NOVO').uepCx, por('PRODUTO NOVO').sTakt, por('PRODUTO NOVO').cxSemUep, por('SLEEP').difCor], [1.74, true, null, null, 80, false]);
   const HC = _taktPorCaixaHtml(R2, T2);
@@ -172,16 +184,21 @@ ok('EXECUTADO = (3 × 527 + 240) min, menos o setup na mesma proporção (× 463
      [true, 5, true, true, true, true, true]);
   // v7.230.0 (PPCP: "troca por TEMPO ALVO"): a coluna era NA MÉDIA DA LINHA; é o mesmo número que julga cada
   // volume no app de cronoanálise (getTemposAlvo), e a nota manda comparar o NO PERÍODO com ele
-  ok('TEMPO-ALVO: a coluna (nunca mais NA MÉDIA DA LINHA), o título com a conta, a nota que manda comparar o NO PERÍODO com ele',
-     [HC.includes('>TEMPO-ALVO</th>'), HC.includes('NA MÉDIA DA LINHA'), HC.includes('TEMPO-ALVO = o tempo de cada caixa com a linha na média, sem hora extra: compare o NO PERÍODO da cronoanálise com ele'),
-      HC.includes('O tempo-alvo do produto: os ' + _tkS(T2.ref) + ' s por UEP da média da linha sem hora extra')],
-     [true, false, true, true]);
+  // v7.235.0 (PPCP, 12/11/2026: "tempo alvo está equivocado" → "tamanho da caixa, velocidade da esteira" → "85 ok"):
+  // o título e a nota dizem a conta nova e que o PELO TAKT é na média do dia — não se compara um com o outro
+  ok('TEMPO-ALVO: a coluna (nunca mais NA MÉDIA DA LINHA), o título com a conta da esteira ÷ 85%, a nota que manda comparar o NO PERÍODO com ele e NÃO com o PELO TAKT',
+     [HC.includes('>TEMPO-ALVO</th>'), HC.includes('NA MÉDIA DA LINHA'),
+      HC.includes('TEMPO-ALVO = a esteira do produto ÷ 85%: o tempo de cada caixa com o produto rodando — compare o NO PERÍODO da cronoanálise com ele, não com o PELO TAKT'),
+      HC.includes('O tempo-alvo do produto: a esteira dele — (medida da caixa + entre-peças) ÷ velocidade, da PRODUTO_CODIGO — ÷ 85% (a eficiência da embalagem do ⚙)'),
+      HC.includes('s por UEP da média da linha')],
+     [true, false, true, true, false]);
   // v7.231.0 (PPCP, com a SLEEP na tela: 8,5 s pelo takt e 8,9 s no tempo-alvo): o cx/h embaixo do TEMPO-ALVO
   // também, na mesma régua do PELO TAKT (hora de relógio, o setup na média) — os dois se comparam na mesma unidade
-  ok('TEMPO-ALVO com o cx/h embaixo: 3.600 × 463/527 ÷ o tempo-alvo, como o PELO TAKT; sem UEP, sem cx/h',
+  // v7.235.0: o cx/h do TEMPO-ALVO é com o produto rodando (3.600 ÷ o alvo), não de relógio — o alvo já não tem o setup na conta
+  ok('TEMPO-ALVO com o cx/h embaixo: 3.600 ÷ o tempo-alvo (com o produto rodando); sem medida da caixa, sem alvo e sem cx/h — e diz por quê',
      [Math.round(dm.cxhRef), HC.includes(_tkS(dm.sRef) + ' s<small>' + fmtN(Math.round(dm.cxhRef)) + ' cx/h</small></td>'), por('PRODUTO NOVO').cxhRef,
-      dm.cxhRef < dm.cxhTakt === T2.ref > T2.takt],
-     [Math.round(3600 * 463 / 527 / (T2.ref * 2.48)), true, null, true]);
+      HC.includes('—<small>sem medida da caixa</small>')],
+     [Math.round(3600 / (estS(1590) / 0.85)), true, null, true]);
   // v7.224.0 (PPCP: "não consigo localizar com facilidade"): a tabela saiu dos DETALHES e abre no TAKT POR PRODUTO,
   // logo abaixo da faixa do topo — nas três telas (a AVALIAR, por volume, pelo _tkaVolumes)
   // v7.232.0 (PPCP: "tire redundância"): a faixa desce para depois do gráfico (NA LINHA E NO APP), fora dos detalhes
@@ -263,24 +280,25 @@ const HORAS = [
   { inicio:'12:12', he:false, uep:null, futuro:true },
 ];
 const SLOTS = [{ inicio:'09:00', min:60 }, { inicio:'10:00', min:60 }, { inicio:'12:12', min:48 }];
-const AG = { cod:'501060001', desc:'VOL 1/2 PENTEADEIRA CAMARIM MEL', cor:'BRANCO', uepCx:1.73, horas:HORAS, slots:SLOTS, phm:PHM };
+// v7.235.0: a esteira do código de agora (MEL 1/2: (1285 + 400) mm a 9 m/min = 11,23 s) — o tempo-alvo = ÷ 85%
+const AG = { cod:'501060001', desc:'VOL 1/2 PENTEADEIRA CAMARIM MEL', cor:'BRANCO', uepCx:1.73, estCx:(1285 + 400) / 150, horas:HORAS, slots:SLOTS, phm:PHM };
 const G = _taktAgora(T, AG);
-ok('MEL VOL 1/2 BRANCO (1,73): 1 caixa a cada 15,0 s pelo takt e 17,4 s pela referência (linha rodando, sem o setup)',
-   [r1(G.sTakt), r1(G.sRef)], [15, 17.4]);
+ok('MEL VOL 1/2 BRANCO (1,73): 1 caixa a cada 15,0 s pelo takt; tempo-alvo 13,2 s = a esteira 11,2 s ÷ 85% (v7.235.0; era 17,4 s pela referência × UEP)',
+   [r1(G.sTakt), r1(G.estCx), r1(G.sRef)], [15, 11.2, 13.2]);
 // v7.225.0 (revisão): a última hora na MESMA régua do takt e da referência — os minutos dela × 463/527, como o
 // EXECUTADO. Antes da correção ela saía em relógio (24,8 s) ao lado do takt e da referência sem o setup.
 ok('a última hora fechada (10:00) teve duas cores: o ritmo dela sem o setup (14,3 × 463/527 = 12,6 s por UEP) em caixas da MEL — 21,8 s, a cor do HORA A HORA',
    [G.hora.inicio, G.hora.so, r1(G.hora.sUep), r1(G.hora.sCx), G.hora.cls, G.hora.cx], ['10:00', false, 12.6, 21.8, 'red', 145]);
 { const Gm = _taktAgora(T, Object.assign({}, AG, { horas:[{ inicio:'09:00', uep:2761 * 60 / 527, cls:'ok' }] }));
-  ok('uma hora EXATAMENTE na meta (314,4 UEP em 60 min) dá a referência: 10,06 s por UEP e 17,4 s por caixa da MEL — a mesma régua',
-     [Math.round(Gm.hora.sUep * 100) / 100, Math.round(T.ref * 100) / 100, r1(Gm.hora.sCx), r1(Gm.sRef)], [10.06, 10.06, 17.4, 17.4]); }
+  ok('uma hora EXATAMENTE na meta (314,4 UEP em 60 min) dá a referência: 10,06 s por UEP e 17,4 s por caixa da MEL (referência × UEP) — a mesma régua',
+     [Math.round(Gm.hora.sUep * 100) / 100, Math.round(T.ref * 100) / 100, r1(Gm.hora.sCx), r1(T.ref * 1.73)], [10.06, 10.06, 17.4, 17.4]); }
 { const G2 = _taktAgora(T, Object.assign({}, AG, { horas:HORAS.slice(0, 1).concat([{ inicio:'10:00', andamento:true, uep:120 }]), cor:'OFF WHITE' }));
   ok('a hora em andamento não conta; hora só do produto (a MEL OFF WHITE das 09:00): as caixas dela, 60 × 463/527 × 60 ÷ 145 = 21,8 s',
      [G2.hora.inicio, G2.hora.so, r1(G2.hora.sCx), G2.hora.cx], ['09:00', true, 21.8, 145]); }
-ok('sem produto apontado → null; sem UEP no cadastro → sem conta por caixa; nenhuma hora fechada → hora null',
-   [_taktAgora(T, Object.assign({}, AG, { cod:'' })), (g => [g.sTakt, g.sRef, g.hora && g.hora.sCx])(_taktAgora(T, Object.assign({}, AG, { uepCx:null }))),
-    _taktAgora(T, Object.assign({}, AG, { horas:[] })).hora],
-   [null, [null, null, null], null]);
+ok('sem produto apontado → null; sem UEP no cadastro → sem takt por caixa (o tempo-alvo, que é da esteira, fica); sem medida → sem tempo-alvo; nenhuma hora fechada → hora null',
+   [_taktAgora(T, Object.assign({}, AG, { cod:'' })), (g => [g.sTakt, r1(g.sRef), g.hora && g.hora.sCx])(_taktAgora(T, Object.assign({}, AG, { uepCx:null }))),
+    _taktAgora(T, Object.assign({}, AG, { estCx:null })).sRef, _taktAgora(T, Object.assign({}, AG, { horas:[] })).hora],
+   [null, [null, 13.2, null], null, null]);
 
 console.log('\n── o botão da sub-aba ──');
 ok('o botão: quanto a programação pede da referência (âmbar acima de 100%); sem a leitura diz o estado, nunca 0',
@@ -295,7 +313,7 @@ const HT = _taktHtml(T, G, { largura:1200, V:_taktVeredito(T, null, T.exec.uep /
 // dos DETALHES: repetiam o veredito (a falta, o ritmo), o gráfico (o porquê) e a faixa (o agora).
 ok('v7.232.0: a tela enxuta — o agora em s por caixa (o que a semana pede, o tempo-alvo, a última hora) e os volumes do app na faixa; o dia a dia com a linha de 1 dia',
    ['<b>NA LINHA E NO APP</b>', '<div class="kpi-lbl">AGORA · VOL 1/2 PENTEADEIRA CAMARIM MEL BRANCO</div>',
-    'a semana pede <b class="tks-nl-n">15,0 s</b> por caixa <i>≈ 211 cx/h</i>', 'tempo-alvo <b class="tks-nl-n">17,4 s</b> <i>≈ 182 cx/h</i>',
+    'a semana pede <b class="tks-nl-n">15,0 s</b> por caixa <i>≈ 211 cx/h</i>', 'tempo-alvo <b class="tks-nl-n">13,2 s</b> <i>≈ 272 cx/h</i>',
     'última hora (10:00): <b class="tks-c-red">21,8 s por caixa</b> — a hora não foi só dele · 1,73 UEP por caixa',
     '<b class="tks-nl-n">5.970</b> volumes · takt no app <b class="tks-nl-n">18,7 s</b> por volume', 'id="tks-g-box"',
     '1 dia de linha (' + _fmtHM(527) + ' = média de 2.761 UEP entregues sem hora extra)'].filter(t => !HT.includes(t)), []);
@@ -594,13 +612,15 @@ ok('os detalhes recolhidos lembram se estavam abertos (o refresh da tela redesen
      [true, false, 2, true]); }
 { const G0 = pega('async function gerarRelatorioTakt(');
   ok('🖨 a janela abre no clique, lê o que faltar (histórico, esta semana, a que vem) e monta com as MESMAS contas da tela; no menu 🖨 IMPRIMIR ▾',
-     [G0.indexOf("window.open(") < G0.indexOf('await '), /_taktMontar\(TKS, UEP_HIST, _taktHoje\(D, hojeN\), pts\)/.test(G0), /_taktProxMontar\(T1\)/.test(G0),
+     [G0.indexOf("window.open(") < G0.indexOf('await '), /_taktMontar\(TKS, UEP_HIST, _taktHoje\(D, hojeN\), pts, est\)/.test(G0), /_taktProxMontar\(T1\)/.test(G0),
       /_taktVeredito\(T0, null, rit\)/.test(G0) && /_taktVeredito\(T1, P1, rit\)/.test(G0),
-      /onclick="_uepImpFecha\(\);gerarRelatorioTakt\(\)"/.test(html), /T=_taktMontar\(TKS, UEP_HIST, _taktHoje\(D, hojeN\), _taktPtsMapa\(_pdiaPcCat\(\)\)\)/.test(R)],
+      /onclick="_uepImpFecha\(\);gerarRelatorioTakt\(\)"/.test(html), /T=_taktMontar\(TKS, UEP_HIST, _taktHoje\(D, hojeN\), _taktPtsMapa\(_pdiaPcCat\(\)\), _taktEstMapa\(_pdiaPcCat\(\)\)\)/.test(R)],
      [true, true, true, true, true, true]); }
 
 console.log('\n── v7.213.0: AVALIAR PROGRAMAÇÃO (a colagem da planilha) ──');
-['function _capVol(', 'function _capNome(', 'function _capProdutos(', 'function _tkaCorrente(', 'function _tkaFaixas(', 'function _tkaRitTxt(', 'function _tkaDias(', 'function _tkaSaldoHtml(', 'function _tkaDocHtml(', 'function _tkaNorm(', 'function _tkaChave(', 'function _tkaAchar(', 'function _tkaNum(', 'function _tkaData(', 'function _tkaLer(', 'function _tkaMontar(', 'function _tkaHtml(', 'function _tkaChegadaHtml(', 'function _tkaVolumes('].forEach(f => eval.call(global, pega(f)));
+['function _capVol(', 'function _capNome(', 'function _capProdutos(', 'function _tkaCorrente(', 'function _tkaFaixas(', 'function _tkaRitTxt(', 'function _tkaDias(', 'function _tkaSaldoHtml(', 'function _tkaDocHtml(', 'function _tkaNorm(', 'function _tkaChave(', 'function _tkaAchar(', 'function _tkaNum(', 'function _tkaData(', 'function _tkaLer(', 'function _tkaMontar(', 'function _tkaHtml(', 'function _tkaChegadaHtml(', 'function _tkaVolumes(',
+ // v7.235.0: a eficiência do ⚙ e a esteira de cada código (o TEMPO-ALVO da colagem)
+ 'function _efEmb(', 'function _pdiaPcCat('].forEach(f => eval.call(global, pega(f)));
 global.TKA_IN = false;
 eval.call(global, pegaConst('ESTEIRA_VAO_PADRAO').replace(/^const /, 'global.'));
 global.TKA_TXT = '';

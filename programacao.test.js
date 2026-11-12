@@ -984,7 +984,7 @@ console.log('\n── v5.63: o takt da semana do .gs = o TAKT DA SEMANA do paine
   const P = vm.createContext({ console });
   P.window = P;
   vm.runInContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'), P);
-  vm.runInContext('var SETUP_PEND=null; var CRONO_APP_GRUPO=' + JS.match(/const CRONO_APP_GRUPO=([^;]+);/)[1] + ';', P);
+  vm.runInContext('var SETUP_PEND=null; var CRONO_APP_GRUPO=' + JS.match(/const CRONO_APP_GRUPO=([^;]+);/)[1] + '; var EF_EMB_PADRAO=' + JS.match(/const EF_EMB_PADRAO=(\d+);/)[1] + ';', P);
   ['function _cartNum(', 'function _taktMontar(', 'function _taktSetup('].forEach(f => vm.runInContext(pegaV7(f), P));
 
   // hoje = quinta, 05/11/2026 (02/11 feriado). Lotes no feriado, no sábado e no domingo, com UEP.

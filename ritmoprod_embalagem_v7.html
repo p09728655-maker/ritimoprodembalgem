@@ -3851,6 +3851,14 @@ if (_v7Instalado()) _v7EscondeBotao();
       <div class="frm-grp"><label class="frm-lbl">MIN/TROCA</label><input class="frm-inp" id="c-setup-min" type="text" inputmode="decimal" placeholder="ex.: 8,2"></div>
       <div class="frm-grp"><label class="frm-lbl">SETUP/DIA</label><div id="c-setup-h" class="cfg-v">—</div></div>
     </div>
+    <!-- EFICIÊNCIA DA EMBALAGEM (v7.235.0 / .gs v5.65): a régua do TEMPO-ALVO —
+         a esteira do produto ÷ esta eficiência. Grava na CONFIG_PAINEL
+         (EFICIENCIA_EMB) e vale para todos os aparelhos e para o app de cronoanálise. -->
+    <div class="frm-row" title="O tempo-alvo de cada produto = (medida da caixa + entre-peças) ÷ velocidade da esteira ÷ esta eficiência. Medida, velocidade e entre-peças são de cada código, na aba PRODUTO_CODIGO. É a linha com o produto rodando (paradas, lacunas e fadiga dentro), não a meta do dia. Vale para o painel e para o app de cronoanálise, em todos os aparelhos.">
+      <div class="frm-grp"><label class="frm-lbl">EFICIÊNCIA DA EMBALAGEM (%)</label><input class="frm-inp" id="c-ef-emb" type="text" inputmode="decimal" placeholder="85"></div>
+      <div class="frm-grp"><label class="frm-lbl">TEMPO-ALVO</label><div id="c-ef-emb-h" class="cfg-v">—</div></div>
+      <div class="cfg-h cfg-full">tempo-alvo = esteira do produto ÷ esta eficiência · esteira = (medida da caixa + entre-peças) ÷ velocidade, por código na PRODUTO_CODIGO · padrão 85% · vale para o painel e o app de cronoanálise</div>
+    </div>
     <div class="frm-row" style="margin-bottom:0">
       <div class="frm-grp"><label class="frm-lbl">DEMANDA IDEAL (CX/DIA)</label><input class="frm-inp" id="c-takt-dem" type="number" min="0"></div>
       <div class="frm-grp"><label class="frm-lbl">TAKT IDEAL (CALCULADO)</label><div id="c-takt-hint" class="cfg-v">—</div></div>
@@ -4091,14 +4099,14 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.234.0';
+const APP_VER   = '7.235.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
 // .gs v5.57) e o rodapé compara: o GitHub e o editor do Apps Script não se
 // falam, e sem isso ninguém via qual .gs estava rodando. Mudou o .gs? Suba este
 // número junto com o GS_VERSAO de lá (o apps-script.test.js confere).
-const GS_REPO   = '5.64';
+const GS_REPO   = '5.65';
 let GS_IMPL;   // undefined = ainda não leu · null = o .gs implantado não informa (antes da v5.57)
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5135,7 +5143,9 @@ function _aplicarPontosDia(json){
         // META DE PONTOS / DIA da CONFIG_PAINEL (.gs v5.42) — a régua do mix na aba 📏 RÉGUAS
         metaPts: (json.painelConfig||{}).metaPts,
         // SETUP DO TAKT da CONFIG_PAINEL (.gs v5.61): trocas por dia × min por troca (_taktSetup)
-        setupsDia: (json.painelConfig||{}).setupsDia, setupMin: (json.painelConfig||{}).setupMin
+        setupsDia: (json.painelConfig||{}).setupsDia, setupMin: (json.painelConfig||{}).setupMin,
+        // EFICIÊNCIA DA EMBALAGEM da CONFIG_PAINEL (.gs v5.65): a régua do TEMPO-ALVO (_efEmb)
+        eficienciaEmb: (json.painelConfig||{}).eficienciaEmb
       };
       aplicarMetaDiaAutomatica();
       // Config do ciclo de telas compartilhada via planilha: se veio do backend,
@@ -10298,11 +10308,12 @@ function renderUep(){
       ? 'Não consegui ler o histórico (os dias fechados da semana). Tento de novo sozinho em 20 s.' : 'Lendo o histórico…'}</div></div>`;
   } else {
     try{
-      T=_taktMontar(TKS, UEP_HIST, _taktHoje(D, hojeN), _taktPtsMapa(_pdiaPcCat()));
+      T=_taktMontar(TKS, UEP_HIST, _taktHoje(D, hojeN), _taktPtsMapa(_pdiaPcCat()), _taktEstMapa(_pdiaPcCat()));
       // o veredito em horas de linha (v7.211.0), com o ritmo desta semana ao lado
       const cs=T && _taktCenarios(meta, T, null).find(c=>c.id==='sem');
       rit=cs ? cs.uepDia : null; V0=T && T.takt!=null ? _taktVeredito(T, null, rit) : null;
       const G=T && _taktAgora(T, { cod:PONTOS_DIA.produtoAtual, desc:PONTOS_DIA.produtoAtualDesc, cor:PONTOS_DIA.produtoAtualCor,
+        estCx:(_taktEstMapa(_pdiaPcCat())||{})[String(PONTOS_DIA.produtoAtual||'').replace(/\D/g, '')],
         uepCx:_tvUepDoProduto(PONTOS_DIA.produtoAtual, PONTOS_DIA.produtoAtualDesc, PONTOS_DIA.produtoAtualCor, _pdiaPcCat(), PONTOS_DIA.porHoraModelo),
         horas, slots:k.slots, phm:PONTOS_DIA.porHoraModelo });
       const tb=document.getElementById('tks-g-box');
@@ -10322,7 +10333,7 @@ function renderUep(){
     } else {
       let b1=null;
       try{
-        T1=_taktMontar(TKP, UEP_HIST||[], { num:hojeN, meta }, _taktPtsMapa(_pdiaPcCat()));
+        T1=_taktMontar(TKP, UEP_HIST||[], { num:hojeN, meta, ef:_efEmb() }, _taktPtsMapa(_pdiaPcCat()), _taktEstMapa(_pdiaPcCat()));
         const P1=T1 && _taktProxMontar(T1), tb=document.getElementById('tks-g-box');
         const sim=P1 ? _taktSimular(P1, T1.nUteis, _taktCenarios(meta, T, D.P && D.P.n ? { n:D.P.n, media:D.P.res.media } : null)) : [];
         b1=T1 ? _taktProxHtml(T1, P1, { largura:tb ? _svgLargura(tb) : 760, botoes:tksBt, sim, V:P1 && _taktVeredito(T1, P1, rit), sobra:V0 }) : null;
@@ -10505,6 +10516,31 @@ function _taktEspera(){ return TKS_FALHA && TKS_FALHA!=='sem-endpoint' ? 60000 :
 // média de 2.761 UEP/dia foi feita com o setup dentro, então o setup sai dos
 // dois lados e se cancela.
 const CRONO_APP_GRUPO={ hSemana:44, diasSemana:5, setupsDia:8, setupMin:8 };
+// EFICIÊNCIA DA EMBALAGEM (v7.235.0 / .gs v5.65, PPCP 12/11/2026: "85 ok"): o
+// TEMPO-ALVO de cada produto é a esteira dele ÷ esta eficiência — a linha com o
+// produto rodando (paradas, lacunas e fadiga dentro), NÃO a meta do dia. O
+// padrão = o TA_EFICIENCIA_PADRAO_GS do .gs (o teste prende); a CONFIG_PAINEL
+// (EFICIENCIA_EMB, digitada no ⚙) manda quando existe.
+const EF_EMB_PADRAO=85;
+function _efEmb(){ const v=Number(typeof PONTOS_DIA!=='undefined' && PONTOS_DIA ? PONTOS_DIA.eficienciaEmb : null); return v>0 && v<=100 ? v : EF_EMB_PADRAO; }
+// O que se digita no ⚙: "85", "85%", "82,5" → 1 a 100 com uma casa; fora disso null.
+function _efEmbLer(txt){
+  const t=String(txt==null ? '' : txt).trim().replace(/\s*%$/, '');
+  if(!/^\d+([.,]\d+)?$/.test(t)) return null;
+  const n=Math.round(Number(t.replace(',', '.'))*10)/10;
+  return n>=1 && n<=100 ? n : null;
+}
+// A ESTEIRA de cada código, em segundos por caixa: (medida + entre-peças) ÷
+// velocidade — a MESMA conta do _tetoEsteiraCxH do .gs (3600 ÷ teto). Sem
+// medida ou velocidade o código fica fora (nunca uma esteira inventada).
+function _taktEstMapa(cat){
+  const m={};
+  (Array.isArray(cat) ? cat : []).forEach(p=>{
+    const c=String(p && p.codigo || '').replace(/\D/g, ''), vel=Number(p && p.velocidade)||0, med=Number(p && p.medida)||0, ent=Number(p && p.entrePeca)||0;
+    if(c && vel>0 && med>0) m[c]=(med+ent)*60/(vel*1000);
+  });
+  return Object.keys(m).length ? m : null;
+}
 // O SETUP QUE VALE (v7.226.0 / .gs v5.61): os dois campos do ⚙ (trocas por dia
 // × minutos por troca — os mesmos dois do app). Na CONFIG_PAINEL (todo
 // aparelho); sem ela, o deste computador (CFG, rpe_cfg); sem nenhum, o padrão.
@@ -10555,7 +10591,7 @@ function _taktApp(dias, vol, grupo){
 // UEP congeladas no fechamento) · H: o hoje da ⚖ UEP — { num (aaaammdd), minNorm
 // (minutos de jornada com lançamento), restMin (minutos de jornada que faltam),
 // uep, he, meta, fim (texto do fim do turno) }. Sem dado → null, nunca 0.
-function _taktMontar(S, hist, H, pts){
+function _taktMontar(S, hist, H, pts, est){
   if(!S || !Array.isArray(S.linhas)) return null;
   const deN=_cartNum(S.de), ateN=_cartNum(S.ate), h=H||{}, hojeN=Number(h.num)||_cartNum(S.hoje);
   if(!deN || !ateN || ateN<deN) return null;
@@ -10586,8 +10622,11 @@ function _taktMontar(S, hist, H, pts){
       const cod=String(l.codigo||'').replace(/\D/g, ''), mv=String(l.desc||'').match(/^\s*VOL\.?\s*(\d+)\s*\/\s*(\d+)\s*/i);
       const base=String(l.desc||'').replace(/^\s*VOL\.?\s*\d+\s*\/\s*\d+\s*/i, '').replace(/\s+/g, ' ').trim().toUpperCase();
       const k=base ? cod.slice(0, 6)+'|'+base+'|'+(mv ? mv[1] : '1') : 'cod|'+cod;
-      const g=prods[k]=prods[k] || { modelo:cod.slice(0, 6), nome:base, cod, va:mv ? Number(mv[1]) : 1, vb:mv ? Number(mv[2]) : 1, cx:0, cxUep:0, uepSoma:0, uMin:null, uMax:null, dias:{} };
+      const g=prods[k]=prods[k] || { modelo:cod.slice(0, 6), nome:base, cod, va:mv ? Number(mv[1]) : 1, vb:mv ? Number(mv[2]) : 1, cx:0, cxUep:0, uepSoma:0, uMin:null, uMax:null, dias:{}, cxEst:0, estSoma:0 };
       g.cx+=q; g.dias[ln]=1;
+      // v7.235.0: a esteira do código (s por caixa), pesada pelas caixas como a UEP — o TEMPO-ALVO
+      const e=est ? Number(est[cod]) : 0;
+      if(e>0){ g.cxEst+=q; g.estSoma+=q*e; }
       if(u){ g.cxUep+=q; g.uepSoma+=q*u; g.uMin=g.uMin==null ? u : Math.min(g.uMin, u); g.uMax=g.uMax==null ? u : Math.max(g.uMax, u); }
     }
     if(l.saldo==null){ falta.semSaldo++; return; }
@@ -10643,6 +10682,7 @@ function _taktMontar(S, hist, H, pts){
   falta.ate=futuros.length ? futuros[futuros.length-1].data.slice(0, 5) : (h.fim || null);
   falta.passa=falta.uep-falta.capRest;
   return { de:S.de, ate:S.ate, hojeN, dias, nUteis, progCx, progUep, meta, takt, porDia, prods:Object.values(prods),
+    ef:Number(h.ef)>0 && Number(h.ef)<=100 ? Number(h.ef) : EF_EMB_PADRAO,   // v7.235.0: a régua do TEMPO-ALVO (esteira ÷ ef); quem chama passa o _efEmb()
     setup:SU, setupDia:minProd<UEP_MIN_DIA ? setupDia : 0, minProd,
     ref:minProd*60/meta, pede:porDia!=null ? porDia/meta*100 : null,
     cxSemUep:soma(dias, d=>d.cxSemUep), cxFora:soma(dias, d=>d.cxFora),
@@ -10732,7 +10772,7 @@ function _taktPtsMapa(cat){
 function _taktHoje(D, hojeN){
   const ag=new Date(), agMin=ag.getHours()*60+ag.getMinutes();
   return { num:hojeN, minNorm:D.k.minNorm, restMin:_taktRestMin(D.k.slots, D.k.allHoje, agMin),
-           uep:D.feito, he:D.he, meta:D.meta, fim:CFG.turnoFim||'17:00' };
+           uep:D.feito, he:D.he, meta:D.meta, fim:CFG.turnoFim||'17:00', ef:_efEmb() };
 }
 // Minutos de jornada que ainda faltam hoje (a hora em andamento, só o que resta;
 // hora extra fora). É o TEM do veredito da esta semana (com os dias úteis que vêm).
@@ -10774,7 +10814,9 @@ function _taktAgora(T, A){
            sCx:so && cx>0 ? min*fP*60/cx : (sUep!=null && uepCx ? sUep*uepCx : null) };
   }
   return { cod, desc:A.desc||'', cor:A.cor||'', uepCx,
-    sTakt:T.takt!=null && uepCx ? T.takt*uepCx : null, sRef:uepCx ? T.ref*uepCx : null, hora };
+    sTakt:T.takt!=null && uepCx ? T.takt*uepCx : null,
+    // v7.235.0: o TEMPO-ALVO pela esteira do código (÷ a eficiência do ⚙), não mais pela UEP
+    sRef:Number(A.estCx)>0 ? Number(A.estCx)*100/(T.ef||EF_EMB_PADRAO) : null, estCx:Number(A.estCx)>0 ? Number(A.estCx) : null, hora };
 }
 // TAKT POR CAIXA (v7.217.0, PPCP: "sim, mostra takt por caixa"): o takt da
 // semana é em segundos por UEP; a linha entende em segundos por CAIXA do produto.
@@ -10793,11 +10835,13 @@ function _taktPorCaixa(T){
   if(!T || !Array.isArray(T.prods)) return [];
   return T.prods.map(g=>{
     const uepCx=g.cxUep>0 ? g.uepSoma/g.cxUep : null, sTakt=T.takt!=null && uepCx ? T.takt*uepCx : null;
+    // v7.235.0: a esteira só quando TODA caixa do produto tem medida e velocidade (nunca uma média pela metade)
+    const estCx=g.cx>0 && g.cxEst===g.cx ? g.estSoma/g.cx : null;
     const dias=Object.keys(g.dias).map(Number).sort((a, b)=>a-b);
     return { rot:g.modelo+' · '+(g.nome || 'código '+g.cod)+(g.vb>1 ? ` · VOL ${g.va}/${g.vb}` : ''), cx:g.cx, dias, uepCx,
-      difCor:g.uMin!=null && g.uMax-g.uMin>0.005, uMin:g.uMin, uMax:g.uMax, sTakt, sRef:uepCx ? T.ref*uepCx : null,
+      difCor:g.uMin!=null && g.uMax-g.uMin>0.005, uMin:g.uMin, uMax:g.uMax, sTakt, sRef:estCx ? estCx*100/(T.ef||EF_EMB_PADRAO) : null, estCx,
       cxhTakt:sTakt ? 3600*_taktFProd(T)/sTakt : null, cxSemUep:g.cx-g.cxUep,   // cx por hora de RELÓGIO (o setup na média)
-      cxhRef:uepCx ? 3600*_taktFProd(T)/(T.ref*uepCx) : null };   // v7.231.0: o do TEMPO-ALVO, na mesma régua
+      cxhRef:estCx ? 3600*(T.ef||EF_EMB_PADRAO)/100/estCx : null };   // v7.235.0: o do TEMPO-ALVO com o produto rodando (não de relógio)
   }).sort((a, b)=>a.dias[0]-b.dias[0] || b.cx-a.cx || a.rot.localeCompare(b.rot));
 }
 // O desenho (sem conta). semTit: sem o título (v7.224.0: a tabela mora no TAKT POR
@@ -10809,12 +10853,12 @@ function _taktPorCaixaHtml(R, T, semTit){
   return (semTit ? '' : `<div class="uep-sec"><b>TAKT POR CAIXA</b> cada produto programado · ${_tkS(T.takt)} s por UEP × a UEP por caixa dele</div>`)
     +`<div class="uep-card" style="overflow-x:auto"><table class="tka-tab tks-cx"><thead><tr><th>PRODUTO · VOLUME</th><th>QUANDO</th><th class="n">CAIXAS</th><th class="n">UEP/CX</th>`
     +`<th class="n" title="O ritmo que o produto precisa para a programação da semana fechar: o takt da semana (${_tkS(T.takt)} s por UEP) × a UEP por caixa">PELO TAKT</th>`
-    +`<th class="n" title="O tempo-alvo do produto: os ${_tkS(T.ref)} s por UEP da média da linha sem hora extra (a referência de ${fmtN(Math.round(T.meta))} UEP/dia, sem o setup) × a UEP por caixa. É o tempo que cada caixa pode levar para a linha fazer a média sem hora extra — o mesmo que julga cada volume no app de cronoanálise">TEMPO-ALVO</th></tr></thead><tbody>`
+    +`<th class="n" title="O tempo-alvo do produto: a esteira dele — (medida da caixa + entre-peças) ÷ velocidade, da PRODUTO_CODIGO — ÷ ${_tkDec(T.ef||EF_EMB_PADRAO)}% (a eficiência da embalagem do ⚙). É o tempo de cada caixa com o produto rodando, paradas e lacunas dentro — o mesmo que julga cada volume no app de cronoanálise">TEMPO-ALVO</th></tr></thead><tbody>`
     +R.map(g=>`<tr><td>${e(g.rot)}</td><td class="mono">${quando(g)}</td><td class="n">${fmtN(g.cx)}</td>`
       +`<td class="n">${g.uepCx!=null ? f2(g.uepCx)+(g.difCor ? `<small>${f2(g.uMin)}–${f2(g.uMax)} por cor</small>` : '') : '—<small>sem UEP</small>'}</td>`
       +`<td class="n"><b>${g.sTakt!=null ? _tkS(g.sTakt)+' s' : '—'}</b>${g.cxhTakt ? `<small>${fmtN(Math.round(g.cxhTakt))} cx/h</small>` : ''}</td>`
-      +`<td class="n">${g.sRef!=null ? _tkS(g.sRef)+' s' : '—'}${g.cxhRef ? `<small>${fmtN(Math.round(g.cxhRef))} cx/h</small>` : ''}</td></tr>`).join('')
-    +`</tbody></table><div class="uep-nota">PELO TAKT = o que a programação da semana pede · TEMPO-ALVO = o tempo de cada caixa com a linha na média, sem hora extra: compare o NO PERÍODO da cronoanálise com ele · segundos sem o setup; cx/h de relógio.</div></div>`;
+      +`<td class="n">${g.sRef!=null ? _tkS(g.sRef)+' s' : '—<small>sem medida da caixa</small>'}${g.cxhRef ? `<small>${fmtN(Math.round(g.cxhRef))} cx/h</small>` : ''}</td></tr>`).join('')
+    +`</tbody></table><div class="uep-nota">PELO TAKT = o que a programação da semana pede, na média do dia (trocas e esperas dentro): sem o setup, cx/h de relógio · TEMPO-ALVO = a esteira do produto ÷ ${_tkDec(T.ef||EF_EMB_PADRAO)}%: o tempo de cada caixa com o produto rodando — compare o NO PERÍODO da cronoanálise com ele, não com o PELO TAKT; cx/h com o produto rodando.</div></div>`;
 }
 // ── A FAIXA DO TAKT (v7.224.0) ─────────────────────────────────────────────
 // PPCP, 11/11/2026, com a SEMANA QUE VEM na tela: "onde fica o takt que temos
@@ -10848,7 +10892,7 @@ function _taktFaixa(T, o){
     takt:T.takt, ref:T.ref, pede:T.pede, setupDia:T.setupDia||0, setupOrigem:T.setup ? T.setup.origem : null,
     agora:G && G.uepCx && G.sTakt!=null ? { nome:String(G.desc||G.cod||'').replace(/\s+/g, ' ').trim(), cor:G.cor||'', uepCx:G.uepCx,
       sTakt:G.sTakt, cxh:3600*_taktFProd(T)/G.sTakt,   // cx por hora de RELÓGIO (o setup na média)
-      sRef:G.sRef!=null ? G.sRef : null, cxhRef:G.sRef>0 ? 3600*_taktFProd(T)/G.sRef : null,
+      sRef:G.sRef!=null ? G.sRef : null, cxhRef:G.sRef>0 ? 3600/G.sRef : null,   // v7.235.0: com o produto rodando (a régua do alvo), não de relógio
       hora:G.hora && G.hora.sCx!=null ? { inicio:G.hora.inicio, sCx:G.hora.sCx, cls:G.hora.cls||'', so:!!G.hora.so } : null } : null,
     agoraEst:!('G' in op) ? null : !G ? 'nenhum' : !(G.uepCx && G.sTakt!=null) ? 'sem-uep' : null,
     agoraNome:G ? String(G.desc||G.cod||'').replace(/\s+/g, ' ').trim()+(G.cor ? ' '+G.cor : '') : '' };
@@ -11083,7 +11127,7 @@ function _tkaMontar(L, fer, meta, rit){
   });
   const feriados=Object.keys(fer||{}).map(Number).filter(n=>n>=de && n<=ate).map(n=>({ data:br(n), desc:fer[n] }));
   const T=_taktMontar({ ok:true, de:br(de), ate:br(ate), hoje:br(v.getFullYear()*10000+(v.getMonth()+1)*100+v.getDate()), linhas, feriados },
-    [], { num:v.getFullYear()*10000+(v.getMonth()+1)*100+v.getDate(), meta }, Object.keys(pts).length ? pts : null);
+    [], { num:v.getFullYear()*10000+(v.getMonth()+1)*100+v.getDate(), meta, ef:_efEmb() }, Object.keys(pts).length ? pts : null, _taktEstMapa(_pdiaPcCat()));
   const P=T && T.takt!=null ? _taktProxMontar(T) : null;
   return { T, P, V:P ? _taktVeredito(T, P, rit) : null, semUep };
 }
@@ -11800,9 +11844,9 @@ async function gerarRelatorioTakt(){
   const agora=new Date(), ctx={ data:hojeStr(), hora:agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) };
   let corpo='';
   try{
-    const pts=_taktPtsMapa(_pdiaPcCat());
-    const T0=_taktMontar(TKS, UEP_HIST, _taktHoje(D, hojeN), pts);
-    const T1=TKP && TKP.de===w.de ? _taktMontar(TKP, UEP_HIST, { num:hojeN, meta:D.meta }, pts) : null;
+    const pts=_taktPtsMapa(_pdiaPcCat()), est=_taktEstMapa(_pdiaPcCat());
+    const T0=_taktMontar(TKS, UEP_HIST, _taktHoje(D, hojeN), pts, est);
+    const T1=TKP && TKP.de===w.de ? _taktMontar(TKP, UEP_HIST, { num:hojeN, meta:D.meta, ef:_efEmb() }, pts, est) : null;
     const P1=T1 ? _taktProxMontar(T1) : null;
     const cs=_taktCenarios(D.meta, T0, null).find(c=>c.id==='sem'), rit=cs ? cs.uepDia : null;
     const V0=T0 && T0.takt!=null ? _taktVeredito(T0, null, rit) : null, V1=P1 ? _taktVeredito(T1, P1, rit) : null;
@@ -17011,6 +17055,12 @@ function openCfg(){
       const h=()=>{ const v=_pgSimNum(mu.value)||UEP_META_PADRAO; const e=document.getElementById('c-meta-uep-h');
         if(e) e.textContent=`≈ ${fmtN(Math.round(v*60/UEP_MIN_DIA))} UEP/h · ${fmtN(v)} UEP em ${UEP_MIN_DIA} min`; };
       mu.oninput=h; h(); } }
+  // EFICIÊNCIA DA EMBALAGEM (v7.235.0): vazio = a da planilha não chegou (vale o padrão)
+  { const ie=document.getElementById('c-ef-emb');
+    if(ie){ const v=Number(PONTOS_DIA.eficienciaEmb); ie.value=v>0 ? _tkDec(v) : '';
+      const h=()=>{ const e=document.getElementById('c-ef-emb-h'), x=_efEmbLer(ie.value), ef=x || (ie.value.trim() ? null : _efEmb());
+        if(e) e.textContent=ef ? `esteira × ${(100/ef).toFixed(2).replace('.', ',')}${x ? '' : ' (padrão)'} · ex.: 16,5 s → ${_tkS(16.5*100/ef)} s` : 'digite de 1 a 100'; };
+      ie.oninput=h; h(); } }
   { const ip=document.getElementById('c-meta-pts');
     if(ip){ const m=_metaPtsDia(); ip.value=m.v>0?fmtN(m.v):'';
       const h=()=>{ const v=_capPtsMetaLer(ip.value), u=_pgSimNum((document.getElementById('c-meta-uep')||{}).value)||UEP_META_PADRAO;
@@ -17119,6 +17169,11 @@ function saveCfg(){
     const atual=Number(PONTOS_DIA.metaUep)>0?Number(PONTOS_DIA.metaUep):UEP_META_PADRAO;
     _metaUepNova=(mu>0&&Math.round(mu)!==Math.round(atual))?Math.round(mu):null;
     if(_metaUepNova) PONTOS_DIA.metaUep=_metaUepNova; }
+  // EFICIÊNCIA DA EMBALAGEM (v7.235.0): a mesma regra da meta de UEP — só vai à
+  // planilha quando MUDOU; vazio ou lixo não apaga a que já vale.
+  { const x=_efEmbLer((document.getElementById('c-ef-emb')||{}).value);
+    _efEmbNova=x!=null && x!==_efEmb() ? x : null;
+    if(_efEmbNova!=null) PONTOS_DIA.eficienciaEmb=_efEmbNova; }
   // Meta de PONTOS (v7.187.0): a mesma regra — só vai à planilha quando MUDOU;
   // vazio ou texto não apaga a que já vale. Fica também neste computador
   // (rpe_cap_pts), a rede enquanto o .gs v5.42 não estiver publicado.
@@ -17198,6 +17253,7 @@ document.getElementById('modal-cfg').addEventListener('click',function(e){ if(e.
 // ── Config do ciclo de telas COMPARTILHADA via planilha ──────────────────────
 // Envia a config atual (telas ativas + tempos + KPIs da Tela B) para o backend,
 // que grava na aba CONFIG_PAINEL. Fire-and-forget: não bloqueia o salvar.
+let _efEmbNova=null;     // v7.235.0: a eficiência da embalagem digitada no ⚙, a enviar uma vez
 let _metaUepNova=null;   // meta de UEP digitada nas configurações, a enviar uma vez
 let _metaPtsNova=null;   // meta de PONTOS, idem (v7.187.0)
 // SETUP DO TAKT (v7.226.0): o que o ⚙ mostrou ao abrir (e de onde) e o que mudou,
@@ -17294,6 +17350,7 @@ function enviarConfigPainel(){
     'modoLeitor='+(CFG.modoLeitor!==false?1:0)
   ];
   if(_metaUepNova){ params.push('metaUep='+_metaUepNova); _metaUepNova=null; }
+  if(_efEmbNova!=null){ params.push('eficienciaEmb='+_efEmbNova); _efEmbNova=null; }
   if(_metaPtsNova){ params.push('metaPts='+_metaPtsNova); _metaPtsNova=null; }
   const su=_setupNovo;
   if(su){ params.push('setupsDia='+su.a, 'setupMin='+su.b); _setupNovo=null; }
