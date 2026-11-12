@@ -11,6 +11,33 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## mobile 1.48.0 — 12/11/2026 · o bipe não fica mais calado
+
+PPCP: *"no operador lê o código EAN mas não acontece nada"*.
+
+Testado no Chromium com o app do operador: a leitura funcionava com o leitor
+mandando as teclas rápido e um Enter no fim. O app ficava **calado** (sem
+aviso, sem bipe e sem abrir a hora) quando o leitor fugia desse roteiro:
+
+- terminava a leitura com **TAB** em vez de Enter;
+- não mandava **nada** no fim;
+- mandava as teclas com mais de **80 ms** de intervalo (leitor bluetooth lento).
+
+Agora:
+
+- **TAB** fecha a leitura como o Enter.
+- **Sem nada no fim**, a leitura fecha sozinha depois de 0,7 s parado. O Enter
+  que chegar atrasado é ignorado: não lê duas vezes e não clica em botão.
+- **Sem campo de texto focado** (o normal na tela do operador), o leitor pode
+  mandar as teclas com até 0,6 s de intervalo. Com um campo de texto focado,
+  vale a regra de 80 ms de antes, para a digitação de alguém não virar bipe.
+
+**Atenção:** se o leitor não "digita" nada (teste num bloco de notas do tablet:
+o código tem de aparecer), o problema é o pareamento ou o modo do leitor, e não
+o app. Nada muda no `.gs`.
+
+---
+
 ## mobile 1.47.0 / v7.234.0 — 12/11/2026 · PAROU agora, motivo depois
 
 PPCP: *"na cronoanálise tem a opção de parar e colocar motivo depois, faz o

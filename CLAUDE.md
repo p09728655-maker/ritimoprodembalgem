@@ -36,7 +36,8 @@ via Google Apps Script (JSONP).
 - `etiqueta.test.js` — a leitura da ETIQUETA pelo bipe do celular (mobile
   1.45.0): o volume da etiqueta escolhe o código, com linhas reais do cadastro
   (MEL, ANTARES, SLEEP), e na dúvida o app não escolhe; roda o `eanAchar` e o
-  `processarBipe` reais: `node etiqueta.test.js`.
+  `processarBipe` reais, e quando a leitura do teclado fecha (mobile 1.48.0:
+  Enter, Tab, pausa, leitor lento, `scanTecla`/`scanPausa`): `node etiqueta.test.js`.
 - `exclusao.test.js` — EXCLUIR e TROCAR PRODUTO do lançamento:
   `getLancamentosHora`, `excluirLancamento` e `trocarProdutoLancamento`
   rodando o `.gs` inteiro numa planilha de mentira (as três abas, o
@@ -319,6 +320,24 @@ via Google Apps Script (JSONP).
   `(8006)` + GTIN + peça/total do volume, ou `(01)` + GTIN no VOL 1/1.
 - ⚠ O operador só vê o cadastro novo quando entra de novo no app: no perfil
   OPERADOR o catálogo é lido no login (e guardado no aparelho).
+- **QUANDO A LEITURA FECHA (mobile 1.48.0**, PPCP 12/11/2026: *"lê o código
+  EAN mas não acontece nada"*). Testado no Chromium (Playwright, Apps Script
+  simulado): o `processarBipe` estava certo; a captura do teclado só fechava a
+  leitura com **Enter** e teclas a **≤ 80 ms**. TAB no fim, sem sufixo ou leitor
+  lento = **nada na tela**, nem o aviso vermelho. `MODO_LEITOR` estava `1` na
+  `CONFIG_PAINEL` (conferido pela API). O leitor do chão não foi visto: a causa
+  exata ficou sem confirmar.
+  - Regra PURA `scanTecla(st, key, agora, editavel)` / `scanPausa(st, agora)`;
+    o ouvinte (capture, `keydown`) só aplica. `SCAN_MIN`=8 teclas,
+    `SCAN_RAJADA_MS`=80 (com campo de texto focado, `_scanEditavel`),
+    `SCAN_SOLTO_MS`=600 (sem campo focado: ninguém digita "no nada"),
+    `SCAN_FIM_MS`=700 (parado isso com ≥ 8 teclas = fecha sozinha).
+  - Enter **ou Tab** fecham; sem sufixo, fecha na pausa e o Enter/Tab que chegar
+    em até 700 ms depois é engolido (não lê de novo, não clica botão focado).
+  - Ainda calado: o leitor que não gera `keydown` (modo SPP, teclado virtual de
+    app do leitor, sem pareamento) e o leitor lento COM campo de texto focado.
+    Prefixo de simbologia `]C1` dá EAN errado (aviso vermelho), não tratado.
+  - Testes em `etiqueta.test.js` (a regra real; 10 de 10 mutações pegas).
 - **O PRODUTO NO LANÇAMENTO** (mesma versão, PPCP: *"quando bipa não aparece o
   código"* → *"quando operador digitar qtde vai fechar a banqueta ou
   buffet?"*). A quantidade vai para o **produto atual do turno** na hora do
