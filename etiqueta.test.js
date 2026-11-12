@@ -180,6 +180,67 @@ ok('o bipe acende a linha (menos no TROCAR PRODUTO)', /if\(!trocando\) _mlProdPi
      [zToast > zModal, zToast > zConf, /\.scan-toast\{position:fixed;left:50%;top:/.test(MOB)], [true, true, true]);
 }
 
+console.log('\n── o leitor como teclado: quando a leitura fecha (mobile 1.48.0) ──');
+// PPCP, 12/11/2026: "lê o código EAN mas não acontece nada". No Chromium o app só
+// ficava CALADO com o leitor fora do roteiro: TAB no fim, nenhum sufixo, ou teclas
+// a mais de 80 ms. A regra é a do app (scanTecla/scanPausa + as constantes).
+{
+  const cte = n => (MJS.match(new RegExp('const ' + n + ' = [^;]+;')) || [])[0];
+  eval(['SCAN_MIN', 'SCAN_RAJADA_MS', 'SCAN_SOLTO_MS', 'SCAN_FIM_MS'].map(cte).join('\n').replace(/const /g, 'var '));
+  eval(pega(MJS, 'function scanTecla(') + '\n' + pega(MJS, 'function scanPausa('));
+  // O leitor "digita": as teclas, de `passo` em `passo` ms, e o sufixo no mesmo ritmo.
+  function leitura(txt, passo, fim, editavel, t0 = 10000) {
+    let st = { buf: '', ult: 0, engole: 0 }, t = t0, lidas = [], vazou = 0;
+    for (const k of txt) {
+      const r = scanTecla(st, k, t, editavel); st = r.st; if (!r.prevent) vazou++; if (r.processa) lidas.push(r.processa); t += passo;
+    }
+    if (fim) { const r = scanTecla(st, fim, t, editavel); st = r.st; if (r.processa) lidas.push(r.processa); }
+    return { st, lidas, vazou, t };
+  }
+  const ETQ = '800678985990784240202';
+  ok('leitor rápido com Enter: a leitura fecha no Enter (como sempre)', leitura(ETQ, 8, 'Enter', false).lidas, [ETQ]);
+  ok('com TAB no fim: a leitura fecha no TAB (antes: nada)', leitura(ETQ, 8, 'Tab', false).lidas, [ETQ]);
+  {
+    const a = leitura(ETQ, 8, null, false);
+    ok('sem sufixo: nada fecha na hora, a etiqueta fica no buffer', [a.lidas, a.st.buf], [[], ETQ]);
+    const p = scanPausa(a.st, a.t + SCAN_FIM_MS);
+    ok('… e fecha sozinha na pausa', p.processa, ETQ);
+    const enter = scanTecla(p.st, 'Enter', a.t + SCAN_FIM_MS + 50, false);
+    ok('… e um Enter atrasado depois disso é engolido (não clica botão focado) e não lê de novo',
+       [enter.prevent, enter.processa], [true, '']);
+    const depois = scanTecla(enter.st, 'Enter', a.t + SCAN_FIM_MS + 100, false);
+    ok('… mas só esse: o Enter seguinte segue normal', depois.prevent, false);
+  }
+  ok('leitor lento (150 ms entre teclas) SEM campo focado: lê (antes: nada)', leitura(ETQ, 150, 'Enter', false).lidas, [ETQ]);
+  {
+    const a = leitura(ETQ, 150, 'Enter', true);
+    ok('leitor lento COM campo de texto focado: não vira bipe (é a velocidade de alguém digitando)', [a.lidas, a.vazou], [[], ETQ.length]);
+  }
+  ok('com campo focado, o leitor rápido continua lendo e só a 1ª tecla passa', (() => { const a = leitura(ETQ, 8, 'Enter', true); return [a.lidas, a.vazou]; })(), [[ETQ], 1]);
+  ok('teclas a mais de SCAN_SOLTO_MS uma da outra não se juntam (nem sem campo focado)', leitura(ETQ, SCAN_SOLTO_MS + 50, 'Enter', false).lidas, []);
+  ok('Enter curto (menos de 8 teclas) segue normal: não é etiqueta', (() => {
+    let st = { buf: '1234', ult: 10000, engole: 0 };
+    const r = scanTecla(st, 'Enter', 10005, false); return [r.prevent, r.processa];
+  })(), [false, '']);
+  ok('pausa com menos de 8 teclas no buffer: nada', scanPausa({ buf: '1234', ult: 1, engole: 0 }, 5000).processa, '');
+  ok('Shift (dos parênteses) não entra no buffer nem quebra a leitura', (() => {
+    let st = { buf: '', ult: 0, engole: 0 }, t = 10000, lidas = [];
+    for (const k of ['Shift', '(', '8', '0', '0', '6', 'Shift', ')', ...'78985990784240202', 'Enter']) {
+      const r = scanTecla(st, k, t, false); st = r.st; if (r.processa) lidas.push(r.processa); t += 8;
+    }
+    return lidas;
+  })(), ['(8006)78985990784240202']);
+  ok('as réguas: sem campo focado mais folga que com campo, e a pausa maior que a folga',
+     [SCAN_RAJADA_MS, SCAN_SOLTO_MS > SCAN_RAJADA_MS, SCAN_FIM_MS > SCAN_SOLTO_MS, SCAN_MIN], [80, true, true, 8]);
+  const ouv = MJS.slice(MJS.indexOf("let _scanSt = "), MJS.indexOf('}, true);', MJS.indexOf("let _scanSt = ")));
+  ok('o ouvinte do teclado aplica a regra pura (scanTecla) e fecha na pausa pelo scanPausa',
+     [/scanTecla\(_scanSt, e\.key, Date\.now\(\), _scanEditavel\(\)\)/.test(ouv), /scanPausa\(_scanSt, Date\.now\(\)\)/.test(ouv),
+      /setTimeout\([\s\S]*SCAN_FIM_MS\)/.test(ouv), /if\(r\.processa\)\{ e\.stopPropagation\(\); processarBipe\(r\.processa\)/.test(ouv),
+      /if\(p\.processa\) processarBipe\(p\.processa\);/.test(ouv)],
+     [true, true, true, true, true]);
+  ok('a captura antiga (só Enter, 80 ms fixos) não voltou', /_scanBuf|_scanLast/.test(MJS), false);
+}
+
 console.log('\n── guarda-corpo ──');
 ok('o processarBipe passa pelo eanAchar (não volta a casar só o núcleo)',
    /const r = eanAchar\(raw, PRODUTOS\);/.test(pega(MJS, 'function processarBipe(')), true);

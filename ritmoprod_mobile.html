@@ -1080,7 +1080,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.47.0';
+const APP_VER   = '1.48.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -1824,28 +1824,72 @@ function processarBipe(raw){
   }
 }
 
-// Captura estilo "keyboard wedge": o leitor manda os caracteres muito rápido e
-// termina com Enter. A distinção bipe × digitação humana é pela VELOCIDADE: teclas
-// em rajada (< 80 ms entre elas) são do leitor — a gente acumula e bloqueia o
-// default pra não vazar em nenhum campo. A 1ª tecla (após pausa) pode ser humana,
-// então essa deixa passar e só recomeça o buffer. Sem campo focado → o teclado
-// virtual do tablet nunca abre. Assim senha e outros campos digitados à mão seguem
+// Captura estilo "keyboard wedge": o leitor "digita" a etiqueta. A distinção
+// bipe × digitação humana é pela VELOCIDADE: teclas em rajada (até 80 ms entre
+// elas) são do leitor — a gente acumula e bloqueia o default pra não vazar em
+// nenhum campo. A 1ª tecla (após pausa) pode ser humana, então essa deixa passar
+// e só recomeça o buffer. Assim senha e outros campos digitados à mão seguem
 // normais (teclas lentas nunca acumulam até virar bipe).
-let _scanBuf='', _scanLast=0;
+// 1.48.0 (PPCP, 12/11/2026: "lê o código EAN mas não acontece nada"): testado no
+// Chromium, o app só ficava CALADO quando o leitor não seguia o roteiro — fim da
+// leitura em TAB, nenhum sufixo, ou teclas a mais de 80 ms. Agora:
+//   · TAB fecha a leitura como o Enter;
+//   · sem sufixo, a leitura fecha sozinha depois de SCAN_FIM_MS parado
+//     (e o Enter/Tab que chegar atrasado é engolido, não clica botão focado);
+//   · SEM campo de texto focado (o normal na tela do operador), a velocidade não
+//     importa até SCAN_SOLTO_MS: ninguém digita "no nada", e um leitor lento
+//     (bluetooth economizando bateria) também vale. Com campo focado, vale a
+//     rajada de 80 ms de sempre — senão a digitação de alguém viraria bipe.
+// A regra é PURA (`scanTecla`/`scanPausa`); o ouvinte só aplica.
+const SCAN_MIN = 8;          // menos que isso não é etiqueta (Enter curto segue normal)
+const SCAN_RAJADA_MS = 80;   // entre teclas do leitor, com um campo de texto focado
+const SCAN_SOLTO_MS = 600;   // entre teclas do leitor, sem campo focado
+const SCAN_FIM_MS = 700;     // parado isso depois de ≥ SCAN_MIN teclas = a leitura acabou
+function scanTecla(st, key, agora, editavel){
+  const junto = (agora - (st.ult||0)) <= (editavel ? SCAN_RAJADA_MS : SCAN_SOLTO_MS);
+  const nst = { buf: st.buf||'', ult: agora, engole: st.engole||0 };
+  if(key==='Enter' || key==='Tab'){
+    const buf = nst.buf; nst.buf = '';
+    if(buf.length>=SCAN_MIN) return { st:nst, prevent:true, processa:buf };
+    // o sufixo atrasado de uma leitura que já fechou pela pausa: não vaza
+    if(!buf && agora<=nst.engole){ nst.engole = 0; return { st:nst, prevent:true, processa:'' }; }
+    return { st:nst, prevent:false, processa:'' };     // Enter/Tab de gente: segue normal
+  }
+  if(key && key.length===1){
+    if(junto){ nst.buf += key; return { st:nst, prevent:true, processa:'' }; } // rajada: acumula, não vaza
+    nst.buf = key;                                      // início/digitação humana: recomeça
+  }
+  return { st:nst, prevent:false, processa:'' };
+}
+// A pausa depois da última tecla: com uma etiqueta no buffer, a leitura acabou.
+function scanPausa(st, agora){
+  if((st.buf||'').length<SCAN_MIN) return { st, processa:'' };
+  return { st:{ buf:'', ult:st.ult, engole: agora+SCAN_FIM_MS }, processa:st.buf };
+}
+function _scanEditavel(){
+  const a = document.activeElement;
+  if(!a || a===document.body) return false;
+  if(a.isContentEditable) return true;
+  const t = (a.tagName||'').toUpperCase();
+  if(t==='TEXTAREA' || t==='SELECT') return true;
+  return t==='INPUT' && !/^(button|checkbox|radio|submit|reset|range|color|file|image|hidden)$/i.test(a.type||'');
+}
+let _scanSt = { buf:'', ult:0, engole:0 }, _scanTimer = null;
 document.addEventListener('keydown', function(e){
   if(PERFIL!=='operador') return;                // só na tela do operador
   if(!MODO_LEITOR) return;                        // desligado no gerencial (CONFIG_PAINEL)
-  const now = Date.now();
-  const rapido = (now - _scanLast) <= 80;        // veio em velocidade de leitor?
-  _scanLast = now;
-  if(e.key==='Enter'){
-    const buf=_scanBuf; _scanBuf='';
-    if(buf.length>=8){ e.preventDefault(); e.stopPropagation(); processarBipe(buf); }
-    return;                                       // Enter curto: deixa o handler normal agir
-  }
-  if(e.key && e.key.length===1){
-    if(rapido){ _scanBuf += e.key; e.preventDefault(); } // rajada do leitor: acumula, não vaza
-    else { _scanBuf = e.key; }                    // início/digitação humana: recomeça o buffer
+  if(_scanTimer){ clearTimeout(_scanTimer); _scanTimer = null; }
+  const r = scanTecla(_scanSt, e.key, Date.now(), _scanEditavel());
+  _scanSt = r.st;
+  if(r.prevent) e.preventDefault();
+  if(r.processa){ e.stopPropagation(); processarBipe(r.processa); return; }
+  if(_scanSt.buf.length>=SCAN_MIN){
+    _scanTimer = setTimeout(()=>{
+      _scanTimer = null;
+      const p = scanPausa(_scanSt, Date.now());
+      _scanSt = p.st;
+      if(p.processa) processarBipe(p.processa);
+    }, SCAN_FIM_MS);
   }
 }, true);
 
