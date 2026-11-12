@@ -27,7 +27,8 @@ via Google Apps Script (JSONP).
   função real): `node apps-script.test.js`.
 - `lancamento.test.js` — qual hora aceita lançamento no mobile (hora corrente +
   tolerância da recém-fechada), contra o código real, e o lançamento RECUSADO
-  pelo servidor (mobile 1.41.0, o `salvarLanc` real): `node lancamento.test.js`.
+  pelo servidor (mobile 1.41.0, o `salvarLanc` real) e a CONFIRMAR O PRODUTO
+  (mobile 1.46.0): `node lancamento.test.js`.
 - `etiqueta.test.js` — a leitura da ETIQUETA pelo bipe do celular (mobile
   1.45.0): o volume da etiqueta escolhe o código, com linhas reais do cadastro
   (MEL, ANTARES, SLEEP), e na dúvida o app não escolhe; roda o `eanAchar` e o
@@ -333,6 +334,33 @@ via Google Apps Script (JSONP).
     teclado), nunca letra. Medido no Chromium: 320×658, 360×740, 800×1280 e
     1280×800 com a folha sem rolar e o ADICIONAR inteiro à vista (antes, a
     320×658 já rolava 11 px). Peça nova no lançamento? Medir de novo.
+
+## CONFIRMAR O PRODUTO quando ele mudou (mobile 1.46.0)
+- O caso, 12/11/2026: um bipe de TESTE da banqueta trocou o produto do turno e as
+  180 cx do BUFFET 3 PT PRISM da hora 09:00 entraram na BANQUETA VERSATIL. O
+  PPCP pediu para o Claude corrigir pela planilha (o TROCAR do app era o caminho
+  recomendado): linha 3128 da `PRODUCAO_PRODUTO` (código, descrição, pontos =
+  180 × 167,2584, peso = 180 × 35,15), linha 2877 da `HISTORICO_MEDIA_FAMILIA` e
+  linha 7 da `LANC_TROCADOS` (ORIGEM *PPCP (planilha, via Claude)*). A baixa dos
+  lotes se refaz no próximo lançamento. PPCP: *"tem que ter uma confirmação"* →
+  *"quando o produto mudou"* (a opção em todo lançamento foi recusada: o
+  operador acostuma a tocar sem ler).
+- `lancProdConfirmar(ult, hoje, cod, prodConf)` (pura) decide: o aparelho lembra
+  o produto do último lançamento que MANDOU hoje (`rp_lanc_ult` = {dia, cod},
+  gravado antes da resposta, como o `rp_lanc_rec`; chave nova, não renomear).
+  Pergunta **CONFIRMAR O PRODUTO** (`tag:'prod'`, destaque TROCAR PRODUTO) no 1º
+  lançamento depois que o produto muda, no 1º do dia (o produto do turno passa de
+  ontem para hoje) e no que vai SEM produto (o 2º sem produto seguido, não).
+  Código comparado só pelos dígitos. Texto em `lancProdMudouTxt`.
+- Não pergunta de novo o produto escolhido DENTRO do lançamento: bipado com a
+  pergunta aberta (`processarBipe` marca `_slotAtivo.prodConf` e responde
+  TROCAR), ou escolhido no seletor aberto pela pergunta ou pelo TROCAR A COR
+  (`_prodConfSel`; fechar o seletor sem escolher desfaz). O `_slotAtivo` nasce a
+  cada `abrirLanc`, então a marca vale só para aquele lançamento.
+- Ordem no `salvarLanc`: madrugada (que já pergunta o produto e dispensa esta) →
+  CONFIRMAR O PRODUTO → LANÇAMENTO REPETIDO → CONFERIR A COR.
+- Por aparelho: o lançamento de outro tablet não conta. Testes em
+  `lancamento.test.js` (o `salvarLanc` real; 4 mutações pegas).
 
 ## PRODUTOS EMBALADOS HOJE — gerencial do celular (mobile 1.39.0) e do PC (v7.201.0)
 - PPCP, 04/11/2026: *"sugestão para tela gerencial do app celular, colocando os

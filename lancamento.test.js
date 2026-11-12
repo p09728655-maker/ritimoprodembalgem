@@ -132,7 +132,8 @@ ok('a linha diz até quando aceita', /aceita lançamento até \$\{fromMin\(fim\+
 // jogava o motivo fora e dizia "o servidor não respondeu… lance de novo,
 // repetir é seguro" — o operador repetia a mesma recusa sem saber por quê.
 // Roda o salvarLanc REAL contra um servidor de mentira.
-async function _lancCaso(resposta) {
+async function _lancCaso(resposta, o) {
+  o = o || {};
   const vm = require('vm');
   const LS = {}, DOM = { 'ml-qtd': { value: '1500' }, 'btn-salvar': { textContent: 'ADICIONAR', disabled: false } };
   const C = { window: {}, console, alert: m => C.ALERTS.push(String(m)), ALERTS: [], CHAMADAS: [],
@@ -144,15 +145,25 @@ async function _lancCaso(resposta) {
     + 'var PROG_HOJE_DIA = "", PROG_HOJE_TS = 0, PROG_HOJE_MAX = 0, COR_OK = { dia: "", cod: {} }, PROG_HOJE = [], PROG_PROX = null, PROG_PROX_QTD = null;'
     + 'var PROD_ATUAL = "", CFG = { sheetsUrl: "https://x/exec" }, _slotAtivo = { inicio: "10:00", label: "10:00-11:00" };'
     + 'var FECHOU = 0, LEU = 0; function fecharModalLanc(){ FECHOU++; } async function lerSheets(){ LEU++; }'
-    + 'function confirmarModal(){ return Promise.resolve(true); } function _nomeProdLanc(){ return ""; }'
-    + 'function avisoCorErrada(){ return null; } function abrirModalProduto(){}', C);
+    + 'var LANC_ULT_K = "rp_lanc_ult", _prodConfSel = null, PERGUNTAS = [], ABRIU_SEL = 0, RESPOSTA = true;'
+    + 'function confirmarModal(o){ PERGUNTAS.push(o); return Promise.resolve(RESPOSTA); } function _nomeProdLanc(c){ return c ? "PROD " + c : ""; }'
+    + 'function avisoCorErrada(){ return null; } function abrirModalProduto(){ ABRIU_SEL++; } async function _lancMadrugadaVolta(){}', C);
   ['function _lancRecentes(', 'function _lancGuardar(', 'function _lancEsquecer(', 'function lancRepetido(',
-   'function lancRecusadoTxt(', 'async function salvarLanc('].forEach(f => vm.runInContext(pega(MJS, f), C));
+   'function lancRecusadoTxt(', 'function _lancUltLe(', 'function _lancUltGuarda(', 'function lancProdConfirmar(',
+   'function lancProdMudouTxt(', 'function lancMadrugadaTxt(', 'async function salvarLanc('].forEach(f => vm.runInContext(pega(MJS, f), C));
+  if (o.ult) LS.rp_lanc_ult = JSON.stringify(o.ult === 'hoje' ? { dia: vm.runInContext('hojeStr()', C), cod: o.ultCod } : o.ult);
+  if (o.prod != null) vm.runInContext('PROD_ATUAL = ' + JSON.stringify(o.prod), C);
+  if (o.prodConf != null) vm.runInContext('_slotAtivo.prodConf = ' + JSON.stringify(o.prodConf), C);
+  if (o.mad) vm.runInContext('_slotAtivo.mad = true', C);
+  if (o.resposta === false) vm.runInContext('RESPOSTA = false', C);
   C.jsonpFetch = async url => { C.CHAMADAS.push(url); return resposta(); };
   await vm.runInContext('salvarLanc()', C);
   const recs = vm.runInContext('_lancRecentes()', C);
   return { alerts: C.ALERTS, chamadas: C.CHAMADAS.length, fechou: vm.runInContext('FECHOU', C), btn: DOM['btn-salvar'],
-    guardado: recs.some(x => x.ini === '10:00' && x.cx === 1500) };
+    guardado: recs.some(x => x.ini === '10:00' && x.cx === 1500),
+    perguntas: vm.runInContext('PERGUNTAS', C).map(p => ({ tag: p.tag, titulo: p.titulo, msg: p.msg, ok: p.ok, cancelar: p.cancelar, seguro: p.seguro })),
+    abriuSel: vm.runInContext('ABRIU_SEL', C), sel: vm.runInContext('_prodConfSel === _slotAtivo', C),
+    ult: JSON.parse(LS.rp_lanc_ult || 'null'), url: C.CHAMADAS[0] || '' };
 }
 const _lancAsync = (async () => {
   const MOTIVO = 'Quantidade acima do limite de 1000 cx por lançamento. Nada foi gravado.';
@@ -168,7 +179,62 @@ const _lancAsync = (async () => {
   const t = await _lancCaso(() => { throw new Error('Timeout'); });
   ok('sem resposta: retenta, diz que pode não ter gravado e mantém o registro (timeout ≠ não gravou)',
      [t.chamadas, /não respondeu/.test(t.alerts[0] || ''), t.guardado], [4, true, true]);
+
+  // ── CONFIRMAR O PRODUTO (mobile 1.46.0) ──
+  // O caso de 12/11/2026: bipe de TESTE da banqueta, e as 180 cx do buffet da
+  // hora 09:00 entraram na banqueta sem ninguém ver.
+  console.log('\n── confirmar o produto quando ele mudou (mobile 1.46.0) ──');
+  const m = await _lancCaso(() => ({ ok: true }), { ult: 'hoje', ultCod: '501141004', prod: '501140002' });
+  ok('o produto mudou desde o último lançamento: pergunta ANTES de mandar, com o antes e o agora',
+     [m.perguntas.length, m.perguntas[0] && m.perguntas[0].tag, m.perguntas[0] && m.perguntas[0].titulo,
+      /era PROD 501141004, agora é PROD 501140002/.test(m.perguntas[0] && m.perguntas[0].msg), m.chamadas],
+     [1, 'prod', 'CONFIRMAR O PRODUTO', true, 1]);
+  ok('o destaque é TROCAR PRODUTO (o LANÇAR é o neutro)', [m.perguntas[0].ok, m.perguntas[0].cancelar, m.perguntas[0].seguro],
+     ['LANÇAR', 'TROCAR PRODUTO', 'cancelar']);
+  ok('confirmado: o produto mandado vira o último (o próximo lançamento dele não pergunta)', m.ult && m.ult.cod, '501140002');
+  const n = await _lancCaso(() => ({ ok: true }), { ult: 'hoje', ultCod: '501141005', prod: '501141005' });
+  ok('mesmo produto do último lançamento: não pergunta', [n.perguntas.length, n.chamadas], [0, 1]);
+  const n2 = await _lancCaso(() => ({ ok: true }), { ult: 'hoje', ultCod: '501.141.005', prod: '501141005' });
+  ok('o código com ou sem pontos é o mesmo produto', n2.perguntas.length, 0);
+  const t2 = await _lancCaso(() => ({ ok: true }), { ult: 'hoje', ultCod: '501141004', prod: '501140002', resposta: false });
+  ok('TROCAR PRODUTO: não manda nada, abre o seletor por cima, e a escolha de lá vale como conferida',
+     [t2.chamadas, t2.abriuSel, t2.sel, t2.ult && t2.ult.cod], [0, 1, true, '501141004']);
+  const c2 = await _lancCaso(() => ({ ok: true }), { ult: 'hoje', ultCod: '501141004', prod: '501141005', prodConf: '501141005' });
+  ok('produto já escolhido neste lançamento (pelo TROCAR ou bipado na pergunta): não pergunta de novo', [c2.perguntas.length, c2.chamadas], [0, 1]);
+  const p1 = await _lancCaso(() => ({ ok: true }), { ult: { dia: '11/11/2026', cod: '501060001' }, prod: '501141005' });
+  ok('1º lançamento do dia (o produto do turno vem de ontem): pergunta', [p1.perguntas.length, /Primeiro lançamento do dia/.test(p1.perguntas[0] && p1.perguntas[0].msg)], [1, true]);
+  const s1 = await _lancCaso(() => ({ ok: true }), { ult: 'hoje', ultCod: '501141005', prod: '' });
+  ok('sem produto: pergunta e diz que não baixa lote nem entra na UEP',
+     [s1.perguntas.length, /SEM PRODUTO/.test(s1.perguntas[0] && s1.perguntas[0].msg), /não baixam o lote nem entram na UEP/.test(s1.perguntas[0] && s1.perguntas[0].msg)], [1, true, true]);
+  const s2 = await _lancCaso(() => ({ ok: true }), { ult: 'hoje', ultCod: '', prod: '' });
+  ok('sem produto de novo (o último também foi sem): não pergunta', s2.perguntas.length, 0);
+  const md = await _lancCaso(() => ({ ok: true }), { ult: 'hoje', ultCod: '501141004', prod: '501140002', mad: true });
+  ok('hora da madrugada: só a pergunta da madrugada (que já é do produto)', md.perguntas.map(p => p.tag), ['mad']);
 })();
+
+{
+  console.log('\n── a regra, pura ──');
+  eval(pega(MJS, 'function lancProdConfirmar('));
+  const H = '12/11/2026';
+  ok('sem último lançamento → primeiro', lancProdConfirmar(null, H, '501141005', null), { tipo: 'primeiro', antes: '' });
+  ok('último de ontem → primeiro', lancProdConfirmar({ dia: '11/11/2026', cod: '501141005' }, H, '501141005', null), { tipo: 'primeiro', antes: '' });
+  ok('mudou → mudou, com o anterior', lancProdConfirmar({ dia: H, cod: '501141004' }, H, '501140002', null), { tipo: 'mudou', antes: '501141004' });
+  ok('igual → nada', lancProdConfirmar({ dia: H, cod: '501141005' }, H, '501141005', null), null);
+  ok('conferido neste lançamento → nada', lancProdConfirmar({ dia: H, cod: '501141004' }, H, '501140002', '501.140.002'), null);
+  ok('conferido OUTRO produto → pergunta este', lancProdConfirmar({ dia: H, cod: '501141004' }, H, '501140002', '501141005').tipo, 'mudou');
+  ok('sem produto depois de um com → sem', lancProdConfirmar({ dia: H, cod: '501141004' }, H, '', null), { tipo: 'sem', antes: '501141004' });
+  ok('a pergunta mora depois da madrugada e antes do repetido', (() => {
+    const f = pega(MJS, 'async function salvarLanc(');
+    const a = f.indexOf("tag:'mad'"), b = f.indexOf("tag:'prod'"), c = f.indexOf("tag:'rep'");
+    return a > 0 && b > a && c > b;
+  })(), true);
+  ok('o bipe responde a pergunta, e o produto bipado vale como conferido',
+     [/_confirmaTag==='prod' && _slotAtivo\) _slotAtivo\.prodConf = p\.codigo;/.test(pega(MJS, 'function processarBipe(')),
+      /_confirmaTag==='mad2' \|\| _confirmaTag==='prod'\)\) _confirmaResolve\(false\)/.test(pega(MJS, 'function processarBipe('))], [true, true]);
+  ok('o seletor aberto pela pergunta marca a escolha; fechar sem escolher desfaz',
+     [/if\(_prodConfSel && _prodConfSel===_slotAtivo\) _slotAtivo\.prodConf = codigo;/.test(pega(MJS, 'async function selecionarProduto(')),
+      /_prodConfSel = null;/.test(pega(MJS, 'function fecharModalProduto('))], [true, true]);
+}
 
 _lancAsync.then(() => {
   console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo passou');
