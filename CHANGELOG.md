@@ -11,6 +11,49 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.244.0 — 13/11/2026 · GERENCIAL DO PC: correções da revisão da v7.243.0
+
+A revisão terminou depois do merge da v7.243.0. Pelo combinado com o PPCP, as
+correções ficam num PR aberto, sem merge, para ele conferir. Nada muda no `.gs`
+(sem re-deploy).
+
+- **Hora que fechou com zero caixas volta a ser cobrada.** Ela aparece como
+  0,0% ABAIXO e entra no vale. Na v7.243.0 aparecia "SEM UEP" e saía da análise
+  (o caso de 28/08, quando o 12:12 fechou em 0).
+- **Sábado e domingo no dia passado:**
+  - a meta da hora é a das horas trabalhadas. Em 07/11 (META UEP 1.257 em
+    240 min) a meta é 314 por hora; a v7.243.0 dizia 143, e uma hora com 290
+    UEP saía OK com 203% em vez de ATENÇÃO com 92%;
+  - o 16:00–16:59 passa a valer 59 min, como ao vivo.
+- **Hora em que parte das caixas não tem UEP** (código sem UEP ou caixa lançada
+  sem produto) mostra o % com `*` e o status PARTE SEM UEP, sem cor. Antes saía
+  ABAIXO em vermelho.
+- **Sem a UEP do dia** (a leitura ainda chegando ou falhou), as caixas
+  programadas voltam a dar o selo, e as horas lançadas dizem LENDO… em vez de
+  "SEM UEP". A tela nunca fica sem veredito; quando a UEP chega, o selo passa
+  para ela.
+- **De manhã, antes do 1º lançamento da jornada**, o ritmo necessário é o da
+  meta inteira (314 UEP/h em 8h47). Antes dizia "jornada encerrada".
+- **ATRASO:** se a leitura do cadastro falhar, o card diz "cadastro não lido"
+  em vez de "lendo o cadastro…" para sempre.
+- **No dia passado**, a UEP de cada hora diz que vem do cadastro de hoje (o
+  total do card é o gravado no fechamento).
+- **Impressão do gerencial:** o cabeçalho diz a UEP com o selo e as caixas como
+  fato. Antes imprimia "Eficiência" e "Projeção" em caixas, que a tela não
+  mostra mais. No dia passado, sai o dia que está na tela.
+- **PRODUTOS EMBALADOS HOJE:** menos de meio UEP feito em hora extra aparece
+  como "<1", e não mais "sem UEP" (rp-core 1.17.1: o `uepHe` vem sem
+  arredondar).
+- **Testes:** passam a rodar a montagem real do gerencial. Às 16:22 de 13/11
+  restam 37 min de jornada, e o ritmo necessário é 738 UEP/h; o teste da
+  v7.243.0 afirmava 463 com um modelo escrito à mão. 10 de 10 mutações pegas.
+- Saíram o `renderChartHora` e o `renderChartComp`, que ficaram sem uso.
+
+**Atenção:** o número que muda é o do **ritmo necessário**, que agora conta os
+minutos que de fato restam da jornada. Muda também o veredito das horas
+fechadas em zero, das horas com parte das caixas sem UEP e das horas de sábado
+e domingo no dia passado.
+
 ## v7.243.0 — 13/11/2026 · GERENCIAL DO PC: a UEP na frente
 
 Pedido do PPCP: *"precisamos ir adaptando a tela gerencial para priorizar as

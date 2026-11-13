@@ -4156,7 +4156,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.243.0';
+const APP_VER = '7.244.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -12820,7 +12820,7 @@ function _pdiaPcHtml(M, aberto, P){
         <span class="pdpc-uu">${p.uep != null ? fmtN(p.uep) : '<small>sem UEP</small>'}</span>
         <span class="pdpc-u">${p.uepMedia != null ? p.uepMedia.toFixed(2).replace('.', ',') : '—'}</span>
         <span class="pdpc-cx">${fmtN(p.cx)}</span>
-        <span class="pdpc-u${p.he > 0 ? ' he' : ''}"${p.he > 0 ? ` title="${fmtN(p.he)} cx em hora extra"` : ''}>${p.he > 0 ? (p.uepHe != null ? (p.uepHe > 0 ? fmtN(p.uepHe) : 'sem UEP') : fmtN(p.he) + ' cx') : '—'}</span>
+        <span class="pdpc-u${p.he > 0 ? ' he' : ''}"${p.he > 0 ? ` title="${fmtN(p.he)} cx em hora extra"` : ''}>${p.he > 0 ? (p.uepHe != null ? (p.uepHe >= 0.5 ? fmtN(Math.round(p.uepHe)) : p.uepHe > 0 ? '&lt;1' : 'sem UEP') : fmtN(p.he) + ' cx') : '—'}</span>
         <span class="pdpc-bar"><span class="pdpc-tr"><i style="width:${p.pct != null ? p.pct : 0}%"></i></span><span class="pdpc-pc">${p.pct != null ? p.pct + '%' : '—'}</span></span>
       </button>
       ${on ? _pdiaPcDetHtml(p) : ''}
@@ -12995,14 +12995,8 @@ function renderGerencialHist(){
   // fechamento, a hora não; por isso a soma pode diferir um pouco (o title diz).
   // Backend antigo ou sem UEP no cadastro → a tabela em caixas, nunca zero.
   const uepHH=H.uepHora&&typeof H.uepHora==='object'?H.uepHora:null;
-  const _minHora=lbl=>{ const m=String(lbl||'').match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
-    if(!m) return 60; const d=toMin(m[2])-toMin(m[1]); return d>0&&d<=120?(d===59?60:d):60; };
   // A forma da hora do _uepAbaHoras, para o MESMO desenho do dia de hoje.
-  const horasU=(comUep&&uepHH)?horas.map(h=>{
-    const ehHE=_horaEhHE(h.hora), u=uepHH[_uepHHMM(h.hora)]||null;
-    return { label:h.hora, he:ehHE, lancada:true, andamento:false, uep:u&&u.uep>0?u.uep:null, cxSem:u?u.cxSem:0,
-             metaH:ehHE?null:uepDiaMeta(dia)*_minHora(h.hora)/UEP_MIN_DIA };
-  }):null;
+  const horasU=(comUep&&uepHH)?_gerHorasHist(horas, uepDiaMeta(dia), uepHH, H.data||dia.data):null;
   if(horasU){
     document.getElementById('analise-row').innerHTML=_gerAnaliseUepHistHtml(horasU, pctUep, dia);
   } else {
@@ -13029,14 +13023,15 @@ function renderGerencialHist(){
   }
 
   // ── Tabela hora a hora ──
-  document.getElementById('tbl-data-lbl').textContent=H.data+(dia.fechado?' · DIA FECHADO':'');
+  document.getElementById('tbl-data-lbl').textContent=H.data+(dia.fechado?' · DIA FECHADO':'')+(horasU?' · horas pela UEP do cadastro de hoje':'');
   if(horasU){
     _gerTheadUep();
     document.getElementById('tbl-hora-body').innerHTML=horas.map((h,i)=>{
       const cx=Number(h.real)||0, u=horasU[i];
       // As caixas COM UEP da hora: as da hora menos as de código sem UEP (o log
       // do dia passado não separa as lançadas sem produto — ~0 desde setembro).
-      return _gerHoraLinha(u, cx, Math.max(0, cx-(u.cxSem||0)), null);
+      return _gerHoraLinha(u, cx, Math.max(0, cx-(u.cxSem||0)), null,
+        { nota:'UEP da hora pelo cadastro de hoje (o total do dia, no 1º card, é o gravado no fechamento)' });
     }).join('')||'<tr><td colspan="7" class="empty-msg">Sem produção registrada neste dia (não foi arquivado no HISTÓRICO_HORA).</td></tr>';
   } else {
   _gerTheadCx();
@@ -13064,7 +13059,7 @@ function renderGerencialHist(){
   const _gl=document.getElementById('ger-leg-fraca'); if(_gl) _gl.style.display='none';
 
   // ── Gráficos do dia ──
-  if(horasU){ _gerChartsUep(horasU.map((h,i)=>({h, cx:Number(horas[i].real)||0}))); return; }
+  if(horasU){ _gerChartsUep(horasU.map((h,i)=>({h, cx:Number(horas[i].real)||0, cxCom:Math.max(0, (Number(horas[i].real)||0)-(h.cxSem||0))}))); return; }
   _gerChartsTtlCx();
   const labels=horas.map(h=>h.hora);
   const metaLn=prods.map(()=>Math.round(metaHora));
@@ -13080,12 +13075,31 @@ function renderGerencialHist(){
 }
 // A análise do dia passado em UEP: o % da meta do dia, a tendência das duas
 // últimas horas de jornada e o pico e o vale pelo % da meta DA HORA.
+// As horas do dia passado na forma do _uepAbaHoras (v7.244.0). A meta da hora é
+// a do dia repartida pelos minutos de JORNADA: em dia útil, 527 (a META UEP
+// gravada é a do dia inteiro); em sábado e domingo, os minutos das horas de
+// jornada com produção — desde o .gs v5.60 a META UEP gravada deles já é a das
+// horas trabalhadas (07/11/2026: 1.257 em 240 min → 314 por hora, não 143). O
+// 16:00-16:59 vale 59 min, como ao vivo e no .gs (_minDoSlot).
+function _gerHorasHist(horas, metaDia, uepHH, data){
+  const minH=lbl=>{ const m=String(lbl||'').match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
+    if(!m) return 60; const d=toMin(m[2])-toMin(m[1]); return d>0&&d<=120?d:60; };
+  const jorn=(horas||[]).filter(h=>!_horaEhHE(h.hora)&&(Number(h.real)||0)>0);
+  const minJ=uepFimDeSemana(data)?jorn.reduce((t,h)=>t+minH(h.hora),0):UEP_MIN_DIA;
+  return (horas||[]).map(h=>{
+    const ehHE=_horaEhHE(h.hora), u=(uepHH||{})[_uepHHMM(h.hora)]||null;
+    return { label:h.hora, inicio:_uepHHMM(h.hora), he:ehHE, lancada:true, andamento:false, cx:Number(h.real)||0,
+             uep:u&&u.uep>0?u.uep:null, cxSem:u?u.cxSem:0,
+             metaH:ehHE||!(minJ>0)?null:Number(metaDia)*minH(h.hora)/minJ };
+  });
+}
 function _gerAnaliseUepHistHtml(horasU, pctUep, dia){
-  const fech=horasU.filter(h=>!h.he&&h.uep>0&&h.metaH>0).map(h=>({ h, p:h.uep/h.metaH*100 }));
+  const fech=horasU.map(h=>({ h, J:_gerHoraJulga(h, h.cx, Math.max(0, h.cx-(h.cxSem||0))) }))
+    .filter(x=>x.J&&!x.J.parte).map(x=>({ h:x.h, p:x.J.pct, uep:x.J.uep }));
   let pico=null, vale=null;
   fech.forEach(x=>{ if(!pico||x.p>pico.p) pico=x; if(!vale||x.p<vale.p) vale=x; });
   const ult=fech.slice(-2), tend=ult.length===2?(ult[1].p>=ult[0].p?1:-1):0;
-  const ph=x=>x?`${fmtP(x.p)} da meta da hora · ${fmtN(Math.round(x.h.uep))} UEP`:'nenhuma hora de jornada com UEP';
+  const ph=x=>x?`${fmtP(x.p)} da meta da hora · ${fmtN(Math.round(x.uep))} UEP`:'nenhuma hora de jornada com UEP';
   return `
     <div class="a-card"><div class="a-lbl">UEP DO DIA</div>
       <div class="a-val" style="color:${pctUep!=null?'var(--'+sc(pctUep)+')':'var(--txt2)'}">${pctUep!=null?fmtP(pctUep):'—'}</div>
@@ -13118,9 +13132,10 @@ function renderGerencial(){
      tudo sai do getDados e do getPontosDia que o gerencial já lê.
      ⚠ A TV e o celular ainda julgam em caixas (fase seguinte). */
   const G=_gerUepModelo(k);
-  // Sem a UEP no backend ou no cadastro (nunca desde a v5.11), as caixas
-  // voltam a dar o veredito — nunca uma tela sem veredito nenhum.
-  const semUep=PONTOS_DIA.uep===false||(!!PONTOS_DIA.uep&&!(PONTOS_DIA.uep.codigos>0));
+  // Sem a UEP do dia (lendo, a leitura falhou, backend antigo ou cadastro sem
+  // UEP), as caixas voltam a dar o veredito — nunca uma tela sem veredito
+  // nenhum. Quando a UEP chega, o selo passa para ela.
+  const semUep=!G.ok;
   _gerKpiPinta(_gerUepCards(G, k), _gerCxCards(k, semUep));
   renderGerProdutosDia(k.real);   // produtos embalados hoje (v7.201.0)
   // A aba UEP lê o mesmo PONTOS_DIA: redesenha junto no refresh.
@@ -13146,9 +13161,10 @@ function renderGerencial(){
   const horasU=G.horas||_uepAbaHoras(k.slots, k.allHoje, {}, PONTOS_DIA.metaUep, G.agoraMin);
   const uepCxAgora=G.m&&G.m.prod?G.m.prod.uepCx:null;
   const cxDe=sl=>{ const reg=k.allHoje.find(d=>d.horario===sl.inicio); return reg&&reg.producaoHora!=null?reg.producaoHora:null; };
+  const oLin=G.ok?null:{ est:G.lendo?'LENDO…':'SEM UEP', estT:G.lendo?_pontosEstadoTxt(true):'sem a UEP do dia' };
   document.getElementById('tbl-hora-body').innerHTML=k.slots.map((sl,i)=>{
     const h=horasU[i]||{label:sl.label, he:!!sl.he, lancada:false};
-    return _gerHoraLinha(h, cxDe(sl), (G.cxCom||{})[sl.inicio]||0, uepCxAgora);
+    return _gerHoraLinha(h, cxDe(sl), (G.cxCom||{})[sl.inicio]||0, uepCxAgora, oLin);
   }).join('')||'<tr><td colspan="7" class="empty-msg">Configure o turno ou importe o Excel.</td></tr>';
   // O ⚠/▲ da média histórica de CAIXAS do mesmo horário saiu da tabela (v7.243.0):
   // ao lado da cor da UEP, ele dava um segundo veredito por hora — às 09:00 de
@@ -13156,7 +13172,7 @@ function renderGerencial(){
   // PRISM, mais leves).
   const _gl=document.getElementById('ger-leg-fraca'); if(_gl) _gl.style.display='none';
 
-  _gerChartsUep(horasU.map((h,i)=>({h, cx:cxDe(k.slots[i])})));
+  _gerChartsUep(horasU.map((h,i)=>({h, cx:cxDe(k.slots[i]), cxCom:(G.cxCom||{})[k.slots[i].inicio]||0})));
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -13166,13 +13182,23 @@ function renderGerencial(){
 // _uepAbaHoras / _uepAbaProj da aba ⚖ UEP para a hora e a projeção, e o
 // _tvUepMontar das Telas F/G para os minutos à frente/atrás, o que falta em
 // caixas do produto de agora e quando a meta sai. Nenhuma régua nova.
-function _gerUepModelo(k){
+function _gerUepModelo(k, agoraMin){
   const U=PONTOS_DIA.uep;
   const card=_uepCardLeitura(uepCard(U, PONTOS_DIA.metaUep, k.minNorm));
-  const a=new Date(), agoraMin=a.getHours()*60+a.getMinutes();
-  if(!U||!(U.codigos>0)) return { ok:false, card, agoraMin };
+  if(agoraMin==null){ const a=new Date(); agoraMin=a.getHours()*60+a.getMinutes(); }
+  if(!U||!(U.codigos>0)) return { ok:false, lendo:U===null, card, agoraMin };
   const meta=card.meta, feito=Number(U.normal)||0, he=Number(U.he)||0;
   const horas=_uepAbaHoras(k.slots, k.allHoje, uepPorHora(PONTOS_DIA.porHoraModelo), meta, agoraMin);
+  // As caixas e os minutos de cada hora (v7.244.0): a hora que fechou em ZERO é
+  // cobrada (a régua de sempre), e o que resta de jornada não depende do
+  // _tvUepMontar (que não monta sem hora de jornada lançada).
+  horas.forEach((h, i)=>{
+    const sl=k.slots[i]||{}, reg=(k.allHoje||[]).find(d=>d.horario===h.inicio);
+    h.cx=reg&&reg.producaoHora!=null?Number(reg.producaoHora):null;
+    h.min=sl.min||60;
+  });
+  const minRest=horas.filter(h=>!h.he).reduce((t,h)=>{ const i0=toMin(h.inicio), f0=i0+h.min;
+    return t+Math.max(0, f0-Math.max(i0, agoraMin)); }, 0);
   const proj=_uepAbaProj(feito, k.minNorm);
   let m=null;
   try{
@@ -13180,8 +13206,22 @@ function _gerUepModelo(k){
       prod:{ cod:PONTOS_DIA.produtoAtual, desc:PONTOS_DIA.produtoAtualDesc, cor:PONTOS_DIA.produtoAtualCor },
       cat:_pdiaPcCat(), phm:PONTOS_DIA.porHoraModelo });
   }catch(e){ m=null; }
-  return { ok:true, card, meta, feito, he, horas, proj, m, agoraMin, cxSem:Number(U.cxSem)||0,
+  return { ok:true, card, meta, feito, he, horas, proj, m, agoraMin, minRest, cxSem:Number(U.cxSem)||0,
            cxCom:_gerCxComHora(PONTOS_DIA.porHoraModelo) };
+}
+// A hora é julgada? Regra ÚNICA da tabela, da análise e dos gráficos (v7.244.0).
+// null = não julga: hora extra, a hora de agora, sem lançamento, sem meta, ou
+// lançada só com caixas sem UEP. Hora fechada em ZERO caixas é julgada (0%,
+// a régua de sempre — o 12:12 que fechou em 0 em 28/08). Hora em que PARTE das
+// caixas não tem UEP (código sem UEP, ou lançada sem produto: caixas da hora
+// maiores que as do registro) sai com `parte`: o % é mostrado, sem veredito —
+// a UEP dela está incompleta e a hora sairia ABAIXO sem ser.
+function _gerHoraJulga(h, cx, cxCom){
+  if(!h || h.he || h.andamento || !h.lancada || !(h.metaH>0)) return null;
+  if(!(h.uep>0)) return cx===0 && !(h.cxSem>0) ? { uep:0, pct:0 } : null;
+  const pct=h.uep/h.metaH*100;
+  const semProd=cx!=null && cxCom!=null && cx>(Number(cxCom)||0)+(Number(h.cxSem)||0);
+  return (h.cxSem>0 || semProd) ? { uep:h.uep, pct, parte:true } : { uep:h.uep, pct };
 }
 // Caixas COM UEP de cada hora (HH:MM): a META EM CX da hora sai do peso delas.
 function _gerCxComHora(phm){
@@ -13227,7 +13267,8 @@ function _gerUepCards(G, k){
     ? { l:'PARA A META', v:'✓', c:'', sub:'meta de UEP do dia batida', t:'' }
     : { l:'PARA A META', v:fmtN(Math.round(falta))+' <small>UEP</small>', c:'',
         sub:[pr&&m.faltaCx?`≈ ${fmtN(m.faltaCx)} cx de ${_rpEsc(pr.nome)}`:'',
-             m?(m.chega!=null?`sai às ${fromMin(Math.round(m.chega))} no ritmo da meta`:(m.minRest>0?`não cabe até ${CFG.turnoFim||'17:00'} no ritmo da meta`:'jornada encerrada')):''].filter(Boolean).join(' · ')||'meta − UEP feita na jornada',
+             m?(m.chega!=null?`sai às ${fromMin(Math.round(m.chega))} no ritmo da meta`:(m.minRest>0?`não cabe até ${CFG.turnoFim||'17:00'} no ritmo da meta`:'jornada encerrada'))
+              :(G.minRest>0?'':'jornada encerrada')].filter(Boolean).join(' · ')||'meta − UEP feita na jornada',
         t:'Meta de UEP − UEP feita na jornada. Em caixas: a falta ÷ a UEP por caixa do produto que está rodando agora. "Sai às" anda pelos minutos de jornada que restam (o almoço fica fora), no ritmo da meta.' });
   return L;
 }
@@ -13246,7 +13287,7 @@ function _gerAtrasoKpi(){
       sub:`${fmtN(a.cx)} cx${a.desde?' · desde '+a.desde:''}${a.semUep?` · * ${plural(a.semUep,'código sem UEP fica','códigos sem UEP ficam')} só nas caixas`:''}`,
       t:'Caixas de lotes com data anterior a hoje que ainda faltam, em horas de linha no ritmo da meta (UEP ÷ meta × 527 min). O programado de hoje não entra.' };
     return { l, c:'red', v:fmtN(a.cx)+' <small>cx</small>',
-      sub:`${a.desde?'desde '+a.desde+' · ':''}${cat?'sem UEP no cadastro':'lendo o cadastro…'}` };
+      sub:`${a.desde?'desde '+a.desde+' · ':''}${cat?'sem UEP no cadastro':GER_CAT_FALHA?'cadastro não lido (abra a ⚖ UEP para tentar de novo)':'lendo o cadastro…'}` };
   }
   if(!a&&Number(prog.atrasoTotal)>0) return { l, c:'red', v:fmtN(prog.atrasoTotal)+' <small>cx</small>', sub:'cx de lotes com data anterior a hoje' };
   return null;
@@ -13283,10 +13324,29 @@ function _gerKpiHtml(kpis){
 // sem nenhum neste computador (nem o guardado), lê UMA vez por sessão, no fim
 // do ciclo — uma leitura de cada vez, só com o gerencial ao vivo na tela. É a
 // mesma leitura (e a mesma marca) do clique no PRODUTOS EMBALADOS HOJE.
+let GER_CAT_FALHA = false;   // a leitura do cadastro desta sessão falhou: o ATRASO diz isso, não "lendo"
 function _gerCatSeFalta(){
   if(!_pdiaParPrecisa() || _pdiaPcCat() || PDIA_PC_CATPED) return Promise.resolve(null);
   PDIA_PC_CATPED = true;
-  return Promise.resolve(_capBuscar()).then(() => { if(_pdiaParPrecisa()) renderGerencial(); }).catch(() => null);
+  return Promise.resolve(_capBuscar()).catch(() => null)
+    .then(() => { GER_CAT_FALHA = !_pdiaPcCat(); if(_pdiaParPrecisa()) renderGerencial(); }).catch(() => null);
+}
+// O cabeçalho da impressão do gerencial (v7.244.0) diz o que a tela diz: o
+// veredito pela UEP e as caixas como fato. Sem a UEP do dia, o texto de antes.
+// No dia passado, o dia que está na tela (antes saía o de hoje).
+function _gerInfoImpressao(k, G, H, agora){
+  const fim=`Impresso em: ${agora}`;
+  if(H&&H.dia){
+    const d=H.dia, mu=uepDiaMeta(d);
+    return `Dia ${H.data}`+(d.uep!=null&&mu>0?`  |  UEP: ${fmtN(Math.round(d.uep))} de ${fmtN(mu)} (${fmtP(d.uep/mu*100)})`:'')
+      +`\nCaixas: ${fmtN(d.real||0)} de ${fmtN(d.meta||0)} programadas\n`+fim;
+  }
+  if(!k) return fim;
+  if(G&&G.ok&&k.minNorm>0)
+    return `UEP do dia: ${fmtN(Math.round(G.feito))} de ${fmtN(Math.round(G.card.esperado))} esperadas · ${slRitmo(G.card.ef)} · meta ${fmtN(G.meta)}`
+      +(G.proj?`  |  Projeção: ${fmtN(Math.round(G.proj.fim))} UEP`:'')
+      +`\nCaixas: ${fmtN(k.real)} de ${fmtN(k.meta)} programadas (${fmtP(k.efDia)})  |  Slots: ${k.n}/${k.slots.length}\n`+fim;
+  return `Realizado: ${fmtN(k.real)} cx  |  Meta: ${fmtN(k.meta)} cx  |  Eficiência: ${fmtP(k.efDia)}\nSlots: ${k.n}/${k.slots.length}  |  Projeção: ${fmtN(k.proj)} cx\n`+fim;
 }
 function _gerKpi2Off(){ const g2=document.getElementById('kpi-grid2'); if(g2){ g2.innerHTML=''; g2.style.display='none'; } }
 function _gerKpiPinta(l1, l2){
@@ -13312,40 +13372,52 @@ function _gerTheadCx(){
 // (ou a mesma forma); cx = caixas da hora; cxCom = caixas COM UEP; uepCxAgora =
 // UEP por caixa do produto de agora. Hora extra e hora em andamento não são
 // julgadas (as regras da hora extra e da aba ⚖ UEP).
-function _gerHoraLinha(h, cx, cxCom, uepCxAgora){
+function _gerHoraLinha(h, cx, cxCom, uepCxAgora, o){
+  o=o||{};
   const ehHE=!!h.he, temU=h.uep!=null&&h.uep>0;
-  const pct=!ehHE&&!h.andamento&&temU&&h.metaH>0?h.uep/h.metaH*100:null;
+  // a regra de julgar é UMA (_gerHoraJulga): tabela, análise e gráfico
+  const J=_gerHoraJulga(h, cx, cxCom);
+  const pct=J&&!J.parte?J.pct:null;
   const s2=pct==null?'':sc(pct);
-  const uepTxt=temU?fmtN(Math.round(h.uep))+(h.cxSem>0?'*':''):(h.cxSem>0?'0*':'—');
-  const uepTit=temU||h.cxSem>0?`${fmtN(Math.round(h.uep||0))} UEP`+(h.cxSem>0?` · * ${fmtN(h.cxSem)} cx de códigos sem UEP ficaram fora`:''):'nenhuma caixa com produto apontada nesta hora';
+  const uepTxt=temU?fmtN(Math.round(h.uep))+(J&&J.parte?'*':''):(J&&J.uep===0?'0':(h.cxSem>0?'0*':'—'));
+  const semProd=J&&J.parte&&!(h.cxSem>0)?Math.max(0, cx-(Number(cxCom)||0)):0;
+  const uepTit=(temU||h.cxSem>0||semProd?`${fmtN(Math.round(h.uep||0))} UEP`
+      +(h.cxSem>0?` · * ${fmtN(h.cxSem)} cx de códigos sem UEP ficaram fora`:'')
+      +(semProd?` · * ${fmtN(semProd)} cx lançadas sem produto ficaram fora`:'')
+    :(J&&J.uep===0?'a hora fechou sem caixa':'nenhuma caixa com produto apontada nesta hora'))+(o.nota?' · '+o.nota:'');
   const metaCx=ehHE||!(h.metaH>0)?null
     :(temU&&cxCom>0?h.metaH*cxCom/h.uep:(h.andamento&&uepCxAgora>0?h.metaH/uepCxAgora:null));
   const bdg=ehHE?'<span class="badge b-acc">HORA EXTRA</span>'
     :h.andamento?`<span class="badge b-mute" title="hora em andamento — não é julgada">${h.ate?'ATÉ '+h.ate:'EM ANDAMENTO'}</span>`
     :!h.lancada?'<span class="badge b-mute">PENDENTE</span>'
-    :!temU?'<span class="badge b-mute" title="as caixas desta hora não têm UEP">SEM UEP</span>'
+    :o.est?`<span class="badge b-mute" title="${_rpEsc(o.estT||'')}">${o.est}</span>`
+    :!(h.metaH>0)?'<span class="badge b-mute">—</span>'
+    :!J?'<span class="badge b-mute" title="as caixas desta hora não têm UEP">SEM UEP</span>'
+    :J.parte?'<span class="badge b-mute" title="parte das caixas desta hora não tem UEP: o % fica incompleto e a hora não é julgada">PARTE SEM UEP</span>'
     :`<span class="badge b-${s2}">${pct>=96?'OK':pct>=90?'ATENÇÃO':'ABAIXO'}</span>`;
   return `<tr class="${ehHE?'he-row':''}">
       <td class="hora-cell">${ehHE?'<span class="he-dot"></span>':''}${h.label}</td>
-      <td class="mono" title="${_rpEsc(uepTit)}" style="color:${temU?'var(--txt)':'var(--txt3)'}">${uepTxt}</td>
+      <td class="mono" title="${_rpEsc(uepTit)}" style="color:${temU||J?'var(--txt)':'var(--txt3)'}">${uepTxt}</td>
       <td class="mono" style="color:var(--txt2)">${ehHE||!(h.metaH>0)?'—':fmtN(Math.round(h.metaH))}</td>
-      <td class="mono" style="color:${pct!=null?'var(--'+s2+')':'var(--txt3)'}">${pct!=null?fmtP(pct):'—'}</td>
+      <td class="mono" style="color:${pct!=null?'var(--'+s2+')':'var(--txt3)'}">${J?fmtP(J.pct)+(J.parte?'*':''):'—'}</td>
       <td class="mono" style="color:${cx!=null?'var(--txt)':'var(--txt3)'}">${cx!=null?fmtN(cx):'—'}</td>
       <td class="mono" style="color:var(--txt2)"${metaCx!=null&&!(temU&&cxCom>0)?' title="pelo produto que está rodando agora"':''}>${metaCx!=null?fmtN(Math.round(metaCx)):'—'}</td>
       <td>${bdg}</td></tr>`;
 }
 // Os dois gráficos: a UEP de cada hora contra a meta da hora (a cor é a da
-// tabela) e as caixas de cada hora (fato, uma cor só, sem meta). Cor literal:
-// o canvas do Chart.js não resolve token CSS.
+// tabela, pela mesma _gerHoraJulga) e as caixas de cada hora (fato, uma cor só,
+// sem meta). Cor literal: o canvas do Chart.js não resolve token CSS.
 function _gerChartsUep(L){
   const t1=document.getElementById('ger-ch1-ttl'), t2=document.getElementById('ger-ch2-ttl');
   if(t1) t1.textContent='⬛ UEP HORA A HORA · META DA HORA';
   if(t2) t2.textContent='◧ CAIXAS HORA A HORA';
   const labels=L.map(x=>x.h.label||x.h.inicio);
-  const cor=h=>h.he?'rgba(255,92,31,0.55)':h.andamento?'rgba(143,160,181,0.45)':!(h.uep>0)||!(h.metaH>0)?'rgba(42,42,42,0.4)'
-    :(()=>{ const s=sc(h.uep/h.metaH*100); return s==='ok'?'rgba(76,175,80,0.75)':s==='warn'?'rgba(255,152,0,0.75)':'rgba(244,67,54,0.75)'; })();
+  const cor=x=>{ const h=x.h, J=_gerHoraJulga(h, x.cx, x.cxCom);
+    if(h.he) return 'rgba(255,92,31,0.55)';
+    if(!J||J.parte) return 'rgba(143,160,181,0.45)';
+    const s=sc(J.pct); return s==='ok'?'rgba(76,175,80,0.75)':s==='warn'?'rgba(255,152,0,0.75)':'rgba(244,67,54,0.75)'; };
   mkChart('ch-hora',{type:'bar',data:{labels,datasets:[
-    {label:'UEP',data:L.map(x=>x.h.uep>0?Math.round(x.h.uep):null),backgroundColor:L.map(x=>cor(x.h)),borderRadius:3},
+    {label:'UEP',data:L.map(x=>x.h.uep>0?Math.round(x.h.uep):(_gerHoraJulga(x.h, x.cx, x.cxCom)?0:null)),backgroundColor:L.map(cor),borderRadius:3},
     {label:'Meta da hora',data:L.map(x=>x.h.he||!(x.h.metaH>0)?null:Math.round(x.h.metaH)),type:'line',borderColor:'#FF5C1F60',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false}
   ]},options:CHART_DEFAULTS});
   mkChart('ch-comp',{type:'bar',data:{labels,datasets:[
@@ -13359,12 +13431,16 @@ function _gerChartsTtlCx(){
 }
 // A linha de análise em UEP: ritmo necessário, tendência, pico e vale pelo %
 // da meta DA HORA — em caixas absolutas o 12:12 (48 min) sairia sempre o vale.
-// Só horas de jornada fechadas, com UEP (a em andamento não é julgada).
+// As horas julgadas são as da _gerHoraJulga (a hora que fechou em zero entra;
+// hora extra, a de agora e a com parte das caixas sem UEP, não). O que resta de
+// jornada é o do modelo (G.minRest): de manhã, antes do 1º lançamento de
+// jornada, o ritmo necessário é o da meta inteira — nunca "jornada encerrada".
 function _gerAnaliseUep(G){
-  const fech=(G.horas||[]).filter(h=>!h.he&&h.lancada&&!h.andamento&&h.uep>0&&h.metaH>0)
-    .map(h=>({ h, p:h.uep/h.metaH*100 }));
+  const fech=(G.horas||[]).map(h=>({ h, J:_gerHoraJulga(h, h.cx, (G.cxCom||{})[h.inicio]) }))
+    .filter(x=>x.J&&!x.J.parte).map(x=>({ h:x.h, p:x.J.pct, uep:x.J.uep }));
   const m=G.m, falta=Math.max(0, G.meta-G.feito), porH=G.meta/UEP_MIN_DIA*60;
-  const nec=falta<=0?{ ok:true }:(m&&m.minRest>0?{ uepH:falta/m.minRest*60, rest:m.minRest }:null);
+  const rest=G.minRest!=null?G.minRest:(m?m.minRest:0);
+  const nec=falta<=0?{ ok:true }:(rest>0?{ uepH:falta/rest*60, rest }:null);
   let pico=null, vale=null;
   fech.forEach(x=>{ if(!pico||x.p>pico.p) pico=x; if(!vale||x.p<vale.p) vale=x; });
   const ult=fech.slice(-2);
@@ -13377,7 +13453,7 @@ function _gerAnaliseUepHtml(G){
   const necC=!n?'var(--txt2)':n.ok||n.uepH<=A.porH?'var(--ok)':'var(--warn)';
   const necD=!n?'jornada encerrada':n.ok?'meta de UEP do dia batida'
     :`para a meta em ${_fmtHM(n.rest)} de jornada${A.uepCx>0?` · ≈ ${fmtN(Math.round(n.uepH/A.uepCx))} cx/h de ${_rpEsc(A.prod)}`:''}`;
-  const ph=x=>x?`${fmtP(x.p)} da meta da hora · ${fmtN(Math.round(x.h.uep))} UEP`:'nenhuma hora de jornada fechada com UEP';
+  const ph=x=>x?`${fmtP(x.p)} da meta da hora · ${fmtN(Math.round(x.uep))} UEP`:'nenhuma hora de jornada fechada com UEP';
   return `
     <div class="a-card"><div class="a-lbl">RITMO NECESSÁRIO</div>
       <div class="a-val" style="color:${necC}">${necV}</div>
@@ -17171,33 +17247,6 @@ document.addEventListener('DOMContentLoaded',function(){
     catch(e){ console.warn('[CHART] '+id+':',e.message); } });
 });
 
-function renderChartHora(dh,slots,metaH){
-  const labels=slots.map(s=>s.label||s.inicio);
-  const allH=isLive?DADOS.filter(d=>d.data===hojeStr()):dh;
-  const real=slots.map(s=>{
-    const r=allH.find(d=>d.horario===s.inicio);
-    return r&&r.producaoHora!=null?r.producaoHora:null;
-  });
-  const metas=slots.map(s=>{
-    const r=allH.find(d=>d.horario===s.inicio);
-    return r?r.metaHora:metaH;
-  });
-  const colors=real.map((v,i)=>v===null?'rgba(42,42,42,0.4)':v>=metas[i]*0.9?'rgba(76,175,80,0.75)':v>=metas[i]*0.7?'rgba(255,152,0,0.75)':'rgba(244,67,54,0.75)');
-  mkChart('ch-hora',{type:'bar',data:{labels,datasets:[
-    {label:'Realizado',data:real,backgroundColor:colors,borderRadius:3},
-    {label:'Meta/h',data:metas,type:'line',borderColor:'#FF5C1F60',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false}
-  ]},options:CHART_DEFAULTS});
-}
-function renderChartComp(dh,slots,metaH){
-  const n=Math.min(dh.length,slots.length);
-  if(!n){ mkChart('ch-comp',{type:'bar',data:{labels:[],datasets:[]},options:CHART_DEFAULTS}); return; }
-  const labels=dh.slice(0,n).map(d=>d.horario);
-  mkChart('ch-comp',{type:'bar',data:{labels,datasets:[
-    {label:'Real',data:dh.slice(0,n).map(d=>d.producaoHora),backgroundColor:'rgba(245,166,35,0.7)',borderRadius:3},
-    {label:'Meta',data:dh.slice(0,n).map(()=>metaH),backgroundColor:'rgba(255,255,255,0.05)',borderRadius:3}
-  ]},options:{...CHART_DEFAULTS,plugins:{legend:{display:false}}}});
-}
-
 // ════════════════════════════════════════════════
 // RENDER TV
 // ════════════════════════════════════════════════
@@ -20956,9 +21005,8 @@ async function imprimir(){
   const k=dh.length?calcKPIs(dh):null;
   const agora=new Date().toLocaleString('pt-BR');
   const subGer=`${CFG.empresa} · ${CFG.setor} · ${CFG.unidade}`;
-  const infoGer=k
-    ?`Realizado: ${fmtN(k.real)} cx  |  Meta: ${fmtN(k.meta)} cx  |  Eficiência: ${fmtP(k.efDia)}\nSlots: ${k.n}/${k.slots.length}  |  Projeção: ${fmtN(k.proj)} cx\nImpresso em: ${agora}`
-    :`Impresso em: ${agora}`;
+  let G=null; try{ if(k&&!GER_DATA) G=_gerUepModelo(k); }catch(e){ G=null; }
+  const infoGer=_gerInfoImpressao(k, G, GER_DATA&&GER_HIST?GER_HIST:null, agora);
   setTxt('ph-ger-sub', subGer);
   setTxt('ph-ger-info', infoGer);
   _capturarGraficos();
