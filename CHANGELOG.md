@@ -21,12 +21,15 @@ re-deploy).
 - **Sábado vale 6h (05:00–11:00)**, não mais 8h47 — menos o lote que ele já
   tem, que ocupa o começo da janela.
 - **Feriado de dia útil entra na sugestão** (o 20/11, Consciência Negra), na
-  mesma janela. **Feriado religioso fica fora** — reconhecido pela descrição
-  da aba FERIADOS (santa, paixão, corpus, natal, aparecida, finados, reis…).
+  mesma janela — depois do sábado da mesma semana (feriado trabalhado custa
+  mais). **Feriado religioso fica fora** — reconhecido pela descrição da aba
+  FERIADOS (santa, paixão, corpus, natal, aparecida, finados, reis…) —, e
+  também férias coletivas, parada, recesso, ponte e linha sem descrição.
 - **A frase diz o dia e o horário**: *"Hora extra sugerida: sábado 14/11 das
-  05:00 às 11:00 · feriado 20/11 das 05:00 às 07:52"*. A outra forma vem
-  numa 2ª linha, também em horário: *"Ou 2h13 a mais em cada dia útil de 16/11
-  a 25/11 (7 dias): das 05:00 às 07:00 e das 17:00 às 17:13"*.
+  05:00 às 11:00 · sábado 21/11 das 05:00 às 07:52"*. A outra forma vem
+  numa 2ª linha, também em horário: *"Ou 2h13 a mais em cada dia programado de
+  16/11 a 25/11 (7 dias): das 05:00 às 07:00 e das 17:00 às 17:13"* (com o
+  turno do ⚙; acima das 22:00, *"não cabe num dia"*).
 
 **Atenção:** a sugestão muda de número — com o mesmo atraso, cada sábado cobre
 6h em vez de 8h47, então entram mais dias (e o feriado). O atraso, o "a
