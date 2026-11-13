@@ -5517,7 +5517,7 @@ console.log('\n── estudo de UEP ──');
 // ── v7.127.0: leituras do painel uma de cada vez, e a aba UEP diz se a leitura do dia falhou ─
 { const CIC = pega('function _cicloLeitura('), TICK = pega('function _tickCountdown('), FOR = pega('function forcarRefresh(');
   ok('refresh: getDados → aba PARADAS (se aberta) → leitura do dia, encadeados; nunca o getPontosDia junto do getDados',
-     [/const _ls=lerSheets\(\);\s*_parDepois\(_ls\)\.then\(\(\)=>lerPontosDia\(\)\)\.then\(\(\)=>renderGerencial\(\)\);/.test(CIC),
+     [/const _ls=lerSheets\(\);[\s\S]*?_parDepois\(_ls\)\.then\(\(\)=>lerPontosDia\(\)\)\.then\(\(\)=>renderGerencial\(\)\)\s*\.then\(\(\)=>lerParadasDoDia\(\)\)\.then\(/.test(CIC),
       /_cicloLeitura\(\)/.test(TICK), /_cicloLeitura\(\)/.test(FOR), /lerPontosDia\(/.test(TICK + FOR),
       /return Promise\.resolve\(prom\)/.test(pega('function _parDepois(')), /return renderAnaliseParadas\(/.test(pega('function _parDepois('))],
      [true, true, true, false, true, true]);
@@ -5556,7 +5556,7 @@ console.log('\n── estudo de UEP ──');
      [/_gpxCartaoHtml\(d, pf\)/.test(pega('function _gpxSemanasBlocos(')), /_gpxSemanasBlocos\(_gpxSemanasMontar\(P, new Date\(\), _gpxPassadosDoPainel\(new Date\(\)\)\), 'dir', /.test(pega('function _dirCartHtml(')),
       /gpx-trilho|gpx-barra/.test(pega('function _gpxSemanasBlocos(')), /_cartAberta\(|_gpxMontar\(/.test(pega('function _gpxCartaoHtml('))], [true, true, false, false]);
   ok('na diretoria não rodam o poll de paradas nem as médias por horário (disputavam a fila com o getHistory)',
-     [/if\(!_modoDir\(\)\)\{\s*pollParadaTV\(\);/.test(JS), /return; \}\s*await lerPontosDia\(\); renderGerencial\(\);\s*if\(await lerMediaHorasComRetry\(4\)\)/.test(JS),
+     [/if\(!_modoDir\(\)\)\{\s*pollParadaTV\(\);/.test(JS), /return; \}\s*await lerPontosDia\(\); renderGerencial\(\);\s*if\(await lerParadasDoDia\(\)!==null\) renderGerProdutosDia\(\);[^\n]*\n\s*if\(await lerMediaHorasComRetry\(4\)\)/.test(JS),
       /iniciarAutoRefresh\(\);\s*if\(_modoDir\(\)\)\{ lerPontosDia\(\)\.finally\(\(\)=>\{ renderDir\(\); _dirCarregar\(\); \}\); return; \}/.test(JS)], [true, true, true]);
   ok('o gráfico da diretoria mede a CAIXA e se refaz quando ela muda de tamanho',
      [/new ResizeObserver\(/.test(JS), /function _dirAjustaGraf\(\)/.test(JS), /box\.clientHeight/.test(pega('function _dirAjustaGraf('))], [true, true, true]);

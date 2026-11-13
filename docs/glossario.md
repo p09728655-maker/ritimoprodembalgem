@@ -353,6 +353,7 @@ diferentes num dia com HE.
 | **EM HE** | caixas do produto lançadas fora de 07:00–17:00 (a janela do `_ehHoraExtraCaixas`) | cx | `rp-core:pdiaMontar` |
 | **% (barra)** | UEP do produto ÷ UEP do dia; produto sem UEP → "—", nunca 0 | % | `rp-core:pdiaMontar` |
 | **POR COR E VOLUME** (detalhe) | caixas do log por cor × volume, só com 2+ volumes embalados hoje | cx | `rp-core:pdiaMontar` |
+| **PARADAS** (faixa fina abaixo da sequência, só no PC, v7.236.0) | cada parada de hoje da aba PARADAS (`getParadas`) no mesmo eixo de tempo: não programada em vermelho, programada (coluna CLASSE da `TIPOS_PARADA`, `ehPlanejada`) em cinza, aberta listrada até agora. O almoço sai da marca. Total = nº de paradas **encerradas** e Σ `durProdutiva` (fora do almoço) — o mesmo **TEMPO TOTAL PARADO** da aba PARADAS em HOJE; entre parênteses, só as não programadas. A aberta fica fora do total (sem FIM não há duração) e aparece à parte, até agora. Sem perda em caixas aqui | paradas · min | `v7:_pdiaParMontar` |
 
 ## Telas F e G da TV — a UEP do dia (v7.138.0)
 

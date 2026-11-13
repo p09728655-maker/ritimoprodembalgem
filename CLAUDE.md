@@ -472,6 +472,38 @@ via Google Apps Script (JSONP).
     PENTEADEIRA CAMARIM MEL (2 linhas, bloco de 99 px); 1366/1280 → CAMARIM
     MEL (69/65 px). HTML novo com `rp-core.js` velho em cache: o 3º argumento é
     ignorado e cai na regra de 1 linha (sem quebrar nada).
+  - **AS PARADAS NA FAIXA (v7.236.0**, PPCP 13/11/2026, com o print: *"no
+    timeline colocar as paradas"*). Faixa fina (`.pdpc-par`, 16 px) logo abaixo
+    da sequência, no MESMO eixo: não programada `var(--red)`, programada
+    (`ehPlanejada` com o `PAR_CLASSE_MAP`) cinza, aberta listrada até agora; o
+    `title` da marca tem tipo, horário, duração e motivo (A INFORMAR dito).
+    Linha `.pdpc-pleg` embaixo do eixo: N paradas · tempo (não programadas) ·
+    PARADA AGORA · legenda · hora da leitura.
+    - **Conta** `_pdiaParMontar(lista, F, o)` (pura, no HTML do PC — só ele usa):
+      `durProdutiva` + `ehPlanejada` do `paradas-calc` (o almoço sai da marca e
+      da soma; parada toda no almoço, de zero ou sem horário, fora). Os totais
+      (só ENCERRADAS) fecham com o `RP_PARADAS.stats` = o TEMPO TOTAL PARADO da
+      aba PARADAS em HOJE (o teste confere). Nenhuma perda em caixas aqui.
+      **Desenho** `_pdiaPcParHtml` (sem conta); `_pdiaPcHtml(M, aberto, P)` —
+      sem `P` (null), o quadro de antes.
+    - **Leitura** `lerParadasDoDia` → `getParadas` (só o dia, cache de 20 s no
+      `.gs`), 2 tentativas em sequência, voo compartilhado, `PDIA_PAR = {dia,
+      ts, lista}`; falhou → `PDIA_PAR_FALHA`, mantém a lista de HOJE (*"não
+      atualizou"*). Só com `_pdiaParPrecisa()`: GERENCIAL ao vivo na tela
+      (`!GER_DATA`), fora da diretoria e da TV. No `_cicloLeitura` DEPOIS do
+      `renderGerencial` (uma de cada vez), na carga inicial depois da leitura do
+      dia, e ao abrir a aba (`_pdiaParSeVelha`, se passou de 5 min, esperando o
+      `_pontosVoo`). Classes pelo `_carregarClassesPar` (uma vez por sessão).
+    - Estados da faixa (`_pdiaParDoPainel`): sem Apps Script → sem faixa; sem o
+      `paradas-calc` → diz; antes da 1ª leitura (ou lista de outro dia) →
+      *lendo*; falhou → *paradas não lidas*; zero → *nenhuma parada apontada
+      hoje*. Nunca faixa vazia calada.
+    - ⚠ A pele do PRODUTO continua sem verde/vermelho; o vermelho é só das
+      regras `.pdpc-par/.pdpc-pb/.pdpc-pst/.pdpc-pleg` (o teste separa as duas).
+    - O celular NÃO tem a faixa (ele já lê o `getParadas` a cada 90 s — levar é
+      passar a conta para o `rp-core` e desenhar no `_pdiaHtml`).
+    - Medido no Chromium: 1920 e 1366, nada passa da largura; a 1366 a linha
+      embaixo quebra em duas.
 
 ## Excluir lançamento pelo app (mobile 1.34.0 / `.gs` v5.25)
 - PPCP, 16/10/2026, com o WhatsApp do operador na mão: *"esse 60 foi duas
