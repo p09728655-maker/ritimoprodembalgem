@@ -7546,6 +7546,23 @@ feito e dá ar de verdade ao que sobrou.
       é lida — antes ficava *lendo…* sem leitura). O teste roda o bloco real do `renderUep` com o
       relógio virtual (não regex).
     - Medido no Chromium (retrato de 06/11): 1920 e 1366, nada passa da largura.
+    - **A PERGUNTA DA TELA (v7.238.0**, PPCP: *"o intuito dessa tela é saber se
+      vamos precisar de horas extras, quando for para trabalhar aos sábados vai
+      ter programação com a data de sábado"*): a frase é *"Hora extra até DD/MM:
+      Xh já programada (sábados/feriados com lote, `C.heProg`) · Yh ainda a
+      programar"* (Y = o atraso no fim). O botão da sub-aba, *"4 semanas: Yh de
+      hora extra a programar"*.
+    - **SUGESTÃO DE HORA EXTRA (v7.238.0**, *"já colocar a sugestão de trabalho
+      extra se for o caso"*): `_taktHeSugestao(semanas, iU)` (pura). Os sábados
+      DEPOIS da última semana que fechou em dia (antes dela a folga já pagou o
+      atraso), cada um com `min(livre, atraso daquela semana − o já sugerido,
+      total − o já sugerido)` — livre = 8h47 − o lote que o sábado já tem; nenhum
+      sábado paga hora sem atraso para cobrir (o teste refaz o encadeamento com
+      as horas sugeridas e confere: fecha em zero, sobra zero). Ou o total ÷ os
+      dias úteis com lote de amanhã em diante, com o aviso acima das 2h da
+      madrugada (05–07). Linha `.tks4-sug` abaixo da frase; o sábado sugerido
+      também na linha da semana. ⚠ Sábado = 8h47 de linha (uma jornada na
+      média): o turno real de sábado pode ser menor.
     - **🖨 4 SEMANAS (v7.238.0**, PPCP: *"colocar impressão"*):
       `gerarRelatorio4Semanas`, no menu 🖨 IMPRIMIR ▾. A montagem é UMA
       (`_taktSemanasDoPainel`, a tela e o papel) e o desenho o MESMO
@@ -7806,7 +7823,16 @@ feito e dá ar de verdade ao que sobrou.
       vencida (dois lotes do mesmo código = o atraso duas vezes) e o vencido desta
       semana, que já vem do TKS linha a linha, entrava de novo. Hoje: por código,
       UMA vez, o falta menos o saldo das linhas do TKS até hoje, na linha vencida
-      mais antiga; as outras com saldo 0 (só para a colagem não duplicar o lote). `_tkaPainelCarregar` lê o que
+      mais antiga; as outras com saldo 0 (só para a colagem não duplicar o lote).
+      Só com a programação detalhada DE HOJE (`_progDetHoje`): o falta de ontem
+      menos o saldo de hoje erraria; o `_tkaPainelCarregar` relê se for de outro
+      dia (`TKA_VENC_FALHA` segura a releitura sozinha depois de uma falha).
+    - **A regra do 4 SEMANAS (v7.238.0)**: lote em sábado, domingo ou feriado é
+      HORA EXTRA JÁ PROGRAMADA — fora do atraso, dita na semana (*"hora extra já
+      programada: 14/11 1h03"*) e na frase (`C.heMin`); o vencido que cai num
+      hoje fora da jornada continua atraso (`d.venc`). Dia útil com lote com UEP
+      já adiantado tem a jornada (antes: lacuna). O rótulo da semana só pelos
+      dias úteis. `_tkaPainelCarregar` lê o que
       faltar NA FILA (`_uepDepoisDe(_uepLendo, …)`; `TKA_VOO` fica fora do
       `_uepLendo`, senão esperaria a si mesmo).
     - **🖨 AVALIAÇÃO DA PROGRAMAÇÃO** (`gerarRelatorioAvaliacao`, menu): a

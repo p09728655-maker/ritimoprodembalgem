@@ -11,10 +11,28 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
-## v7.238.0 — 13/11/2026 · AVALIAR sem o vencido em dobro · 🖨 4 SEMANAS
+## v7.238.0 — 13/11/2026 · 4 SEMANAS responde "vamos precisar de hora extra?" · AVALIAR alinhado · 🖨 4 SEMANAS
 
-PPCP: *"sim corrigir e avaliar, colocar impressão"*. Nada muda no `.gs` (sem
-re-deploy).
+PPCP: *"sim corrigir e avaliar, colocar impressão"* → *"o intuito dessa tela é
+saber se vamos precisar de horas extras, quando for para trabalhar aos sábados
+vai ter programação com a data de sábado"* → *"já colocar a sugestão de
+trabalho extra se for o caso"*. Nada muda no `.gs` (sem re-deploy).
+
+- **4 SEMANAS fala em hora extra.** A frase virou *"Hora extra até 18/11:
+  1h03 já programada (14/11) · 14h52 ainda a programar"*. O lote com data de
+  sábado (ou feriado) é a hora extra já programada; o atraso no fim é a que
+  falta programar. O botão da sub-aba diz *"4 semanas: 14h52 de hora extra a
+  programar"*.
+- **Sugestão de hora extra** logo abaixo: os sábados que fecham o atraso, cada
+  um até 8h47 (menos o lote que ele já tem), a partir da última semana que
+  fechou em dia (antes dela a folga já pagou), e nenhum sábado com mais hora que
+  atraso para cobrir. Ou a mesma hora dividida pelos dias úteis com lote, com o
+  aviso quando passa das 2h da madrugada (05–07).
+- **Atenção — o AVALIAR PROGRAMAÇÃO conta igual ao 4 SEMANAS.** Lote em sábado
+  ou feriado deixou de entrar no atraso (é hora extra já programada, dita na
+  semana e na frase); dia útil com lote já adiantado passou a ter a jornada
+  (antes ficava fora como "sem programação"). O vencido de hoje num sábado
+  continua atraso.
 
 - **Atenção — o SALDO DE HORAS do AVALIAR PROGRAMAÇÃO pode baixar.** O vencido de
   antes desta segunda era somado lote a lote com o `falta` do CÓDIGO (o mesmo

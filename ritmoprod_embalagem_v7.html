@@ -10993,8 +10993,8 @@ function _uepSubTakt(T, est, rot, C4){
   if(est==='sem-url') return { txt:'sem Google Sheets', cls:'' };
   if(est==='falha') return { txt:'programação não lida', cls:'' };
   if(rot==='4 semanas') return !C4 ? { txt:'…', cls:'' }
-    : C4.atraso>0 ? { txt:`4 semanas: ${_fmtHM(C4.atraso)} de atraso${C4.completo ? '' : ' (parcial)'}`, cls:'warn' }
-    : { txt:`4 semanas: em dia${C4.completo ? '' : ' (parcial)'}`, cls:'' };
+    : C4.atraso>0 ? { txt:`4 semanas: ${_fmtHM(C4.atraso)} de hora extra a programar${C4.completo ? '' : ' (parcial)'}`, cls:'warn' }
+    : { txt:`4 semanas: sem hora extra a programar${C4.completo ? '' : ' (parcial)'}`, cls:'' };
   if(!T) return { txt:rot==='avaliação' ? 'cole a programação' : '…', cls:'' };
   if(T.takt==null) return { txt: T.nUteis ? 'nenhuma UEP programada' : 'nenhum dia útil', cls:'' };
   return { txt:rot ? `${rot}: pede ${fmtP(T.pede)}` : `pede ${fmtP(T.pede)} da referência`, cls:T.pede>100 ? 'warn' : '' };
@@ -11232,31 +11232,37 @@ function _tkaCorrente(painel, itens, o){
   const dt=n=>new Date(Math.floor(n/10000), (Math.floor(n/100)%100)-1, n%100), num=d=>d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();
   const D={};
   const dia=n=>D[n]=D[n]||{ n, uep:0, pai:false, col:false };
+  // v7.238.0 (a regra do 4 SEMANAS): o dia com lote com UEP tem jornada mesmo já adiantado (a linha
+  // está livre e abate atraso); a demanda é só o saldo
   lin.forEach(l=>{ const n=Number(l.dataNum)||_cartNum(l.data), s=Number(l.saldo), u=Number(l.uepCx);
-    if(!(s>0) || !(u>0) || n>fim) return; const d=dia(Math.max(n, hojeN)); d.uep+=s*u; d.pai=true; });
+    if(!(u>0) || n>fim) return; const d=dia(Math.max(n, hojeN)); d.pai=true;
+    if(s>0){ d.uep+=s*u; if(n<hojeN) d.venc=(d.venc||0)+s*u; } });   // o vencido cai em hoje: é atraso, nunca hora extra
   novos.forEach(x=>{ if(!(x.uepJogo>0) || x.n<hojeN) return; const d=dia(x.n); d.uep+=x.qtde*x.uepJogo; d.col=true; });
   const fer=o.fer||{}, dias=[], semanas=[];
-  let B=0, Br=0, chegada=null, chegadaR=null, ini=Math.min(...(itens||[]).map(x=>x.n)), w=null;
+  let B=0, Br=0, chegada=null, chegadaR=null, ini=Math.min(...(itens||[]).map(x=>x.n)), w=null, heTot=0;
   for(let d=dt(hojeN); num(d)<=fim; d.setDate(d.getDate()+1)){
     const n=num(d), dow=d.getDay(), util=dow>=1 && dow<=5 && fer[n]==null, x=D[n]||{ n, uep:0, pai:false, col:false };
     const vazio=util && n>hojeN && !x.pai && !x.col;
     const cap=vazio ? 0 : n===hojeN ? (util ? Math.max(0, Math.min(UEP_MIN_DIA, Number(o.restMin)||0)) : 0) : (util ? UEP_MIN_DIA : 0);
-    const dem=x.uep*k;
+    // lote em sábado, domingo ou feriado = HORA EXTRA JÁ PROGRAMADA (PPCP: "quando for para
+    // trabalhar aos sábados vai ter programação com a data de sábado"): fora do atraso, dito
+    const venc=x.venc||0, he=!util ? Math.max(0, x.uep-venc)*k : 0, dem=util ? x.uep*k : venc*k;
     if(n===ini){ chegada=B; chegadaR=Br; }
     B=Math.max(0, B+dem-cap); if(r) Br=Math.max(0, Br+dem/r-cap);
     const seg=new Date(d); seg.setDate(seg.getDate()-((dow+6)%7));
-    if(!w || w.seg!==num(seg)){ w={ seg:num(seg), de:null, ate:null, precisa:0, tem:0, pai:false, col:false, lacunas:[], feriados:[], hoje:false }; semanas.push(w); }
-    // de/ate = os dias que CONTAM (úteis ou com programação): sábado e domingo sem lote não
-    // entram no rótulo (PPCP, com o print: "06 e 08/11 está considerando fim de semana")
-    if(util || dem>0){ if(w.de==null) w.de=n; w.ate=n; }
+    if(!w || w.seg!==num(seg)){ w={ seg:num(seg), de:null, ate:null, precisa:0, tem:0, pai:false, col:false, lacunas:[], feriados:[], hoje:false, he:0, heDias:[] }; semanas.push(w); }
+    // de/ate = os DIAS ÚTEIS (PPCP: "06 e 08/11 está considerando fim de semana"; "sempre dias úteis")
+    if(util || n===hojeN && dem>0){ if(w.de==null) w.de=n; w.ate=n; }   // hoje fora da jornada com vencido: aparece (é atraso)
+    if(he>0){ w.he+=he; w.heDias.push({ n, min:Math.round(he) }); heTot+=he; }
     if(fer[n]!=null && dow>=1 && dow<=5) w.feriados.push(n);
     if(n===hojeN) w.hoje=true;
     w.precisa+=dem; w.tem+=cap; w.pai=w.pai || x.pai; w.col=w.col || x.col; if(vazio) w.lacunas.push(n);
     w.atraso=B; w.atrasoR=r ? Br : null;
-    dias.push({ n, dow, util, feriado:fer[n]||null, uep:x.uep, pai:x.pai, col:x.col, vazio, cap, dem, atraso:B });
+    dias.push({ n, dow, util, feriado:fer[n]||null, uep:x.uep, pai:x.pai, col:x.col, vazio, cap, dem, he, atraso:B });
   }
-  semanas.forEach(s=>{ s.precisa=Math.round(s.precisa); s.tem=Math.round(s.tem); s.atraso=Math.round(s.atraso); if(s.atrasoR!=null) s.atrasoR=Math.round(s.atrasoR); });
-  return { dias, semanas:semanas.filter(s=>s.de!=null), dup, novos, ini, fim, chegada:Math.round(chegada||0), chegadaR:r ? Math.round(chegadaR||0) : null,
+  semanas.forEach(s=>{ s.precisa=Math.round(s.precisa); s.tem=Math.round(s.tem); s.atraso=Math.round(s.atraso); if(s.atrasoR!=null) s.atrasoR=Math.round(s.atrasoR); s.he=Math.round(s.he);
+    if(s.de==null && s.heDias.length){ s.de=s.heDias[0].n; s.ate=s.heDias[s.heDias.length-1].n; } });   // semana só com hora extra
+  return { dias, semanas:semanas.filter(s=>s.de!=null), dup, novos, ini, fim, chegada:Math.round(chegada||0), chegadaR:r ? Math.round(chegadaR||0) : null, heMin:Math.round(heTot),
            atraso:Math.round(B), atrasoR:r ? Math.round(Br) : null, lacunas:dias.filter(d=>d.vazio).map(d=>d.n), ritPct:r ? r*100 : null };
 }
 // As leituras do painel que a corrente precisa além desta semana (TKS) e da que
@@ -11271,6 +11277,13 @@ function _tkaFaixas(hojeN, fimN){
   return out;
 }
 let TKF={}, TKA_VOO=null;   // faixas lidas: 'de|ate' → { S, falha, ts }; a leitura delas no ar
+let TKA_VENC_FALHA=0;   // a programação detalhada (o vencido de antes da segunda) não veio na última tentativa
+// A programação detalhada (PROG_DETALHADA) é DE HOJE? O `falta` dela é o atraso do dia da leitura.
+function _progDetHoje(){
+  if(!PROG_DET_TS || !Array.isArray(PROG_DETALHADA)) return false;
+  const d=new Date(PROG_DET_TS);
+  return p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+d.getFullYear()===hojeStr();
+}
 // As linhas do painel para a corrente, do que JÁ foi lido: esta semana (TKS), a
 // que vem (TKP), as faixas (TKF) e o vencido de semanas anteriores (a carteira
 // do PRÓXIMOS DIAS, PROG_DETALHADA: o que falta de lotes com data antes desta
@@ -11284,8 +11297,10 @@ function _tkaPainel(fimN){
   _tkaFaixas(hojeN, fimN).forEach(f=>{ const x=TKF[f.de+'|'+f.ate]; if(x && x.S) usa(x.S); else faltam.push(f.de); });
   const seg=new Date(); seg.setDate(seg.getDate()-((seg.getDay()+6)%7));
   const segN=seg.getFullYear()*10000+(seg.getMonth()+1)*100+seg.getDate();
-  lin.push(..._tkaVencidoAntes(PROG_DETALHADA, TKS && _cartNum(TKS.hoje)===hojeN ? TKS.linhas : [], segN, hojeN));
-  return { lin, faltam, fer, falhou:Object.keys(TKF).filter(k=>TKF[k].falha && !TKF[k].S).map(k=>k.split('|')[0]) };
+  const falhou=Object.keys(TKF).filter(k=>TKF[k].falha && !TKF[k].S).map(k=>k.split('|')[0]);
+  if(_progDetHoje()) lin.push(..._tkaVencidoAntes(PROG_DETALHADA, TKS && _cartNum(TKS.hoje)===hojeN ? TKS.linhas : [], segN, hojeN));
+  else { faltam.push('o vencido'); if(TKA_VENC_FALHA) falhou.push('o vencido'); }
+  return { lin, faltam, fer, falhou };
 }
 // O VENCIDO DE ANTES DESTA SEGUNDA (pura). O `falta` do getProgramacaoDetalhada é
 // POR CÓDIGO (atraso + o que falta de hoje) e vem igual em TODA linha do código:
@@ -11327,6 +11342,8 @@ function _tkaPainelCarregar(fimN){
         const r=await _taktLer('&de='+encodeURIComponent(f.de)+'&ate='+encodeURIComponent(f.ate));
         TKF[key]={ S:r.S||null, falha:r.falha||null, ts:Date.now() };
       }
+      if(!_progDetHoje()) await carregarProgramacaoDetalhada();   // o vencido de antes da segunda (a de ontem passou do TTL: relê)
+      TKA_VENC_FALHA=_progDetHoje() ? 0 : Date.now();
     }catch(e){ console.warn('[UEP] avaliar · painel:', e.message); }
   })().finally(()=>{ TKA_VOO=null; if(_abaOn('uep') && UEP_SUB==='takt' && TKS_SEM===2) renderUep(); });
   return TKA_VOO;
@@ -11355,14 +11372,16 @@ function _tkaSaldoHtml(C, o){
   const fs=(pr, tm)=>pr>tm ? `<span class="tks-red">falta ${hm(pr-tm)}</span>` : `<span class="tks-ok">sobra ${hm(tm-pr)}</span>`;
   const fr=`A linha chega em <b>${dd(C.ini)}</b> ${C.chegada>0 ? `com <b>${hm(C.chegada)}</b> de atraso` : '<b>em dia</b>'} (a programação de hoje até lá)`
     +` e termina <b>${dd(C.fim)}</b> ${C.atraso>0 ? `com <b>${hm(C.atraso)}</b> de atraso${_tkaDias(C.atraso)}` : '<b>em dia</b>'}, na média da linha sem hora extra`
-    +(C.atrasoR!=null ? `. No ritmo atual (${fmtP(C.ritPct)} da média, desde hoje): ${_tkaRitTxt(C)}` : '')+'.';
+    +(C.atrasoR!=null ? `. No ritmo atual (${fmtP(C.ritPct)} da média, desde hoje): ${_tkaRitTxt(C)}` : '')+'.'
+    +(C.heMin>0 ? ` Hora extra já programada (sábado ou feriado): <b>${hm(C.heMin)}</b>.` : '');
   const lin=C.semanas.map(s=>{
     const og=s.pai && s.col ? 'painel + colagem' : s.col ? 'colagem' : s.pai ? 'painel' : '—';
     const rot=`${dd(s.de)}${s.ate!==s.de ? '–'+dd(s.ate) : ''}`+(s.hoje && s.de===C.dias[0].n ? ' (hoje: o que resta)' : '')
       +(s.feriados.length ? ` <span class="mono">(${s.feriados.map(n=>dd(n)+' feriado').join(', ')})</span>` : '');
     return `<tr${s.col ? ' class="tka-col"' : ''}><td>${rot}</td><td class="mono">${og}</td><td class="n">${hm(s.precisa)}</td><td class="n">${hm(s.tem)}</td>`
       +`<td class="n">${fs(s.precisa, s.tem)}</td><td class="n"><b>${sx(s.atraso)}</b></td>${C.atrasoR!=null ? `<td class="n">${sx(s.atrasoR)}</td>` : ''}</tr>`
-      +(s.lacunas.length ? `<tr class="tka-lac"><td></td><td colspan="${C.atrasoR!=null ? 6 : 5}">sem programação no painel nem na colagem: ${s.lacunas.map(dd).join(', ')} — fora da conta</td></tr>` : '');
+      +(s.lacunas.length ? `<tr class="tka-lac"><td></td><td colspan="${C.atrasoR!=null ? 6 : 5}">sem programação no painel nem na colagem: ${s.lacunas.map(dd).join(', ')} — fora da conta</td></tr>` : '')
+      +(s.heDias && s.heDias.length ? `<tr class="tka-lac"><td></td><td colspan="${C.atrasoR!=null ? 6 : 5}">hora extra já programada: ${s.heDias.map(h=>`${dd(h.n)} ${hm(h.min)}`).join(', ')} — fora do atraso</td></tr>` : '');
   }).join('');
   // A COLAGEM INTEIRA (v7.221.0, PPCP: "como explicar isso, não cabe e sobra"): as semanas
   // partem a colagem pelo calendário — 24–27/11 falta, 30/11 (segunda) sobra —, e o veredito
@@ -11378,7 +11397,7 @@ function _tkaSaldoHtml(C, o){
   return `<div class="uep-sec"><b>SALDO DE HORAS</b> de hoje até ${dd(C.fim)} · a programação do painel + a colada, sem duplicar</div>`
     +(op.semFrase ? '' : `<div class="tks-ler${C.atraso>0 ? ' warn' : ''}">${fr}</div>`)   // a tela diz a frase no bloco A LINHA CHEGA (v7.223.0)
     +`<div class="uep-card" style="overflow-x:auto"><table class="tka-tab"><thead><tr><th>SEMANA</th><th>DE ONDE</th><th class="n">PRECISA</th><th class="n">TEM</th><th class="n">NA SEMANA</th><th class="n">ATRASO ACUMULADO</th>${C.atrasoR!=null ? '<th class="n">NO RITMO ATUAL</th>' : ''}</tr></thead><tbody>${lin}${tot}</tbody></table>`
-    +`<div class="uep-nota">Só os dias úteis contam: sábado, domingo e feriado têm 0 h (sem hora extra) — lote com data neles entra no precisa. Precisa = a programação em horas de linha (o vencido entra hoje); tem = a jornada sem hora extra (hoje, o que resta). <b>Falta</b> = precisa − tem (não cabe); <b>sobra</b> = tem − precisa (cabe). O atraso acumulado passa para o dia seguinte; a sobra não vira crédito — só abate atraso que já existe.${cv ? ' <b>Colagem inteira</b> = só a programação colada, de ponta a ponta (o veredito); as semanas a dividem pelo calendário, e uma semana pode sobrar com a colagem não cabendo.' : ''} <b>Dias</b> = horas ÷ ${hm(UEP_MIN_DIA)} (1 jornada).${C.atrasoR!=null ? ` <b>No ritmo atual</b> = as horas da linha rodando como está (${fmtP(C.ritPct)} da média) desde hoje — cada dia rende menos, então o atraso cresce também antes da colagem; chegada + o “faltam” no ritmo atual = o fim.` : ''}${notas.length ? '<br>'+notas.join('<br>') : ''}</div></div>`;
+    +`<div class="uep-nota">Só os dias úteis contam. Lote com data em sábado, domingo ou feriado é hora extra já programada: fora do atraso, dito na semana. Dia útil com lote já adiantado tem a jornada (a linha está livre). Precisa = a programação em horas de linha (o vencido entra hoje); tem = a jornada sem hora extra (hoje, o que resta). <b>Falta</b> = precisa − tem (não cabe); <b>sobra</b> = tem − precisa (cabe). O atraso acumulado passa para o dia seguinte; a sobra não vira crédito — só abate atraso que já existe.${cv ? ' <b>Colagem inteira</b> = só a programação colada, de ponta a ponta (o veredito); as semanas a dividem pelo calendário, e uma semana pode sobrar com a colagem não cabendo.' : ''} <b>Dias</b> = horas ÷ ${hm(UEP_MIN_DIA)} (1 jornada).${C.atrasoR!=null ? ` <b>No ritmo atual</b> = as horas da linha rodando como está (${fmtP(C.ritPct)} da média) desde hoje — cada dia rende menos, então o atraso cresce também antes da colagem; chegada + o “faltam” no ritmo atual = o fim.` : ''}${notas.length ? '<br>'+notas.join('<br>') : ''}</div></div>`;
 }
 // O DESENHO (sem conta): a caixa de colar e, embaixo, o veredito, o dia a dia e o
 // que ficou de fora.
@@ -11581,18 +11600,47 @@ function _taktSemanasMontar(L, rit){
       dias.push(Object.assign(b, { precisa:Math.round(d.saldoUep*k), tem:d.hoje ? restHoje : UEP_MIN_DIA }));
     });
     const temSoma=dias.reduce((a, d)=>a+d.tem, 0), uep=uVenc+uDia;
+    // para a SUGESTÃO de hora extra: o sábado da semana que vem pela frente (livre = 8h47 − o lote que ele já tem)
+    // e os dias úteis com lote de amanhã em diante
+    const sd=T.dias.find(d=>d.dow===6 && !d.passado && !d.hoje && !d.feriado);
+    const sab=sd ? { data:sd.data, livre:Math.max(0, UEP_MIN_DIA-Math.round(sd.saldoUep*k)) } : null;
+    const nUtFut=T.dias.filter(d=>d.util && !d.passado && !d.hoje && d.uep>0).length;
     const vazia=T.dias.every(d=>!(d.cx>0)) && !(uVenc>0), semUep=!vazia && !T.dias.some(d=>d.uep>0);
     const conta=!vazia && !semUep;
     const precisa=conta ? Math.round(uep*k) : 0, tem=conta ? temSoma : 0, precR=conta && rf ? Math.round(uep*k*rf) : null;
     if(ok && conta){ A=Math.max(0, A+precisa-tem); if(AR!=null) AR=Math.max(0, AR+precR-tem); }
     return { i, de:T.de, ate:T.ate, ini, fim:fimU, fimConta:ultConta, hoje:i===0, vazia, semUep, conta, precisa, tem, falta:precisa-tem,
              atraso:ok ? A : null, atrasoR:ok && AR!=null ? AR : null, antes:i===0 ? Math.round(uVenc*k) : 0,
-             cxSemUep:T.cxSemUep, feriados:T.dias.filter(d=>d.feriado && d.dow>=1 && d.dow<=5).map(d=>d.data), fora, semUepD, he, dias:conta ? dias : [] };   // semana sem conta: nada a abrir
+             cxSemUep:T.cxSemUep, feriados:T.dias.filter(d=>d.feriado && d.dow>=1 && d.dow<=5).map(d=>d.data), fora, semUepD, he, dias:conta ? dias : [],   // semana sem conta: nada a abrir
+             sab, nUtFut };
   });
   // a frase vai até o último dia programado da última semana com conta
   const ult=semanas.filter(s=>s.atraso!=null && s.conta).pop();
+  // A SUGESTÃO DE HORA EXTRA (PPCP: "já colocar a sugestão de trabalho extra se for o caso"). O que
+  // falta programar é o atraso no fim. Ele nasce DEPOIS da última semana que fechou em dia (antes
+  // dela, a folga já pagou): os sábados vêm dali em diante, cada um com o que tem livre, e nenhum
+  // tira mais do que o atraso que existe no fim da semana dele (senão sobraria hora paga à toa) nem
+  // mais que o total. A outra forma: o total dividido pelos dias úteis com lote de amanhã em diante.
+  const sug=ok && ult && ult.atraso>0 ? _taktHeSugestao(semanas, semanas.indexOf(ult)) : null;
   return { semanas, completo:ok, fim:ult ? (ult.fimConta || ult.fim) : null, atraso:ult ? ult.atraso : null, atrasoR:ult ? ult.atrasoR : null,
-           nFora:semanas.reduce((a, s)=>a+(s.conta ? s.fora.length+s.semUepD.length : 0), 0), ritPct:rf ? 100/rf : null };
+           nFora:semanas.reduce((a, s)=>a+(s.conta ? s.fora.length+s.semUepD.length : 0), 0), ritPct:rf ? 100/rf : null,
+           heProg:semanas.reduce((a, s)=>a.concat(s.he || []), []),   // a hora extra JÁ programada (lote em sábado ou feriado)
+           sug };
+}
+// A SUGESTÃO (pura). semanas = as do _taktSemanasMontar (conta, atraso no fim, sab {data, livre},
+// nUtFut); iU = a última semana com conta (o atraso dela é o que falta programar).
+function _taktHeSugestao(semanas, iU){
+  const ult=semanas[iU];
+  if(!ult || !(ult.atraso>0)) return null;
+  let z=-1; semanas.forEach((s, i)=>{ if(i<iU && s.conta && s.atraso===0) z=i; });
+  let H=0; const sab=[];
+  for(let i=z+1; i<=iU; i++){
+    const s=semanas[i]; if(!s.sab || !(s.atraso>H)) continue;
+    const h=Math.min(s.sab.livre, s.atraso-H, ult.atraso-H);
+    if(h>0){ sab.push({ data:s.sab.data, min:h, i }); H+=h; }
+  }
+  const nD=semanas.slice(z+1, iU+1).reduce((a, s)=>a+(s.nUtFut||0), 0);
+  return { total:ult.atraso, sab, resto:ult.atraso-H, dias:nD, porDia:nD ? Math.round(ult.atraso/nD) : null };
 }
 // O DESENHO (sem conta): a frase, uma linha por semana (toque abre o dia a dia) e a regra.
 function _taktSemanasHtml(C, o){
@@ -11604,39 +11652,49 @@ function _taktSemanasHtml(C, o){
   const pp=!!op.papel;   // no papel: sem botão, sem toque, o dia a dia de todas as semanas
   const tit=pp ? '' : `<div class="uep-sec" style="margin-top:0"><b>TAKT DA SEMANA</b> ${op.botoes||''} ${dd(s0.ini)}–${dd(sN.fim || s0.fim)} · programação datada`
     +`<button class="btn btn-ghost" style="margin-left:auto;padding:3px 10px;font-size:10px" onclick="_taktSemanasLer()" title="Ler de novo a programação das semanas seguintes">↻ ATUALIZAR</button></div>`;
-  const ver=C.atraso==null ? '' : `<div class="tks-ler${C.atraso>0 ? ' warn' : ''}">Na média da linha sem hora extra, a linha chega a <b>${dd(C.fim)}</b> `
-    +(C.atraso>0 ? `com <b>${hm(C.atraso)}</b> de atraso${_tkaDias(C.atraso)}` : '<b>em dia</b>')+'.'
-    +(rr && C.atrasoR!=null ? ` No ritmo atual (${fmtP(C.ritPct)} da média): ${C.atrasoR>0 ? `<b>${hm(C.atrasoR)}</b>${_tkaDias(C.atrasoR)}` : '<b>em dia</b>'}.` : '')
+  // A PERGUNTA DA TELA (PPCP: "o intuito dessa tela é saber se vamos precisar de horas extras"):
+  // a hora extra já programada (lote em sábado ou feriado) e a que AINDA FALTA programar (o atraso no fim)
+  const heP=(C.heProg||[]).reduce((a, h)=>a+h.min, 0);
+  const ver=C.atraso==null ? '' : `<div class="tks-ler${C.atraso>0 ? ' warn' : ''}"><b>Hora extra até ${dd(C.fim)}:</b> `
+    +(heP>0 ? `<b>${hm(heP)}</b> já programada (${C.heProg.map(h=>dd(h.data)).join(', ')}) · ` : '')
+    +(C.atraso>0 ? `<b>${hm(C.atraso)}</b> ainda a programar${_tkaDias(C.atraso)}` : '<b>nenhuma a programar</b>')+', na média da linha.'
+    +(rr && C.atrasoR!=null ? ` No ritmo atual (${fmtP(C.ritPct)} da média): ${C.atrasoR>0 ? `<b>${hm(C.atrasoR)}</b> a programar${_tkaDias(C.atrasoR)}` : '<b>nenhuma</b>'}.` : '')
     +(C.nFora ? ` <span class="mono">Dia útil sem programação fica fora (${plural(C.nFora, 'dia', 'dias')}).</span>` : '')
     +(C.completo ? '' : ' <span class="mono">(até onde foi lido)</span>')+'</div>';
+  const g=C.sug, lst=a=>a.length>1 ? a.slice(0, -1).join(', ')+' e '+a[a.length-1] : a[0];
+  const sug=!g ? '' : `<div class="tks-ler warn tks4-sug"><b>Sugestão de hora extra:</b> `
+    +(g.sab.length ? `${g.sab.length>1 ? 'sábados' : 'sábado'} ${lst(g.sab.map(x=>`${dd(x.data)} (${hm(x.min)})`))}`
+      +(g.resto>0 ? ` e mais <b>${hm(g.resto)}</b> nos dias úteis` : '') : 'nenhum sábado livre até lá')
+    +(g.porDia ? ` — ou ≈ <b>${hm(g.porDia)}</b> por dia útil (${plural(g.dias, 'dia', 'dias')} com lote até ${dd(C.fim)})${g.porDia>120 ? ', mais que as 2h da madrugada (05–07)' : ''}` : '')+'.</div>';
   const vazio=`<td></td>${rr ? '<td></td>' : ''}`;
   const lin=S.map(s=>{
-    const ab=pp || !!TKS4_AB[s.i];
+    const temDias=!!(s.dias && s.dias.length || s.antes>0), ab=temDias && (pp || !!TKS4_AB[s.i]);
     const obs=s.est ? [] : [
       s.feriados.length ? s.feriados.map(f=>dd(f)+' feriado').join(', ') : '',
       s.conta && s.fora.length ? lista(s.fora)+' sem programação — fora' : '',
       s.conta && s.semUepD.length ? lista(s.semUepD)+' só caixas sem UEP — fora' : '',
       s.he.length ? s.he.map(h=>`${dd(h.data)} ${hm(h.min)} em hora extra, fora`).join(', ') : '',
-      s.conta && s.cxSemUep>0 ? `${fmtN(s.cxSemUep)} cx sem UEP fora (a semana é mais pesada)` : ''
+      s.conta && s.cxSemUep>0 ? `${fmtN(s.cxSemUep)} cx sem UEP fora (a semana é mais pesada)` : '',
+      (x=>x ? `sugestão: sábado ${dd(x.data)} ${hm(x.min)} de hora extra` : '')(C.sug && C.sug.sab.find(x=>x.i===s.i))
     ].filter(Boolean);
-    const rot=`${s.est || pp ? '' : ab ? '▾ ' : '▸ '}${s.est ? 'semana '+(s.i+1) : s.hoje ? 'esta semana' : dd(s.ini)+'–'+dd(s.fim)}`
+    const rot=`${s.est || pp || !temDias ? '' : ab ? '▾ ' : '▸ '}${s.est ? 'semana '+(s.i+1) : s.hoje ? 'esta semana' : dd(s.ini)+'–'+dd(s.fim)}`
       +(obs.length ? `<div class="mono tks4-o">${e(obs.join(' · '))}</div>` : '');
-    if(s.est) return `<tr><td>${rot}</td><td class="n mono" colspan="${rr ? 5 : 4}">${s.est==='falha' ? 'não consegui ler — ↻ ATUALIZAR' : 'lendo…'}</td></tr>`;
+    if(s.est) return `<tr><td>${rot}</td><td class="n mono" colspan="${rr ? 5 : 4}">${pp ? 'não lida (a leitura da programação falhou)' : s.est==='falha' ? 'não consegui ler — ↻ ATUALIZAR' : 'lendo…'}</td></tr>`;
     const dias=ab ? (s.antes>0 ? `<tr class="tks4-d"><td>lotes desta semana já vencidos</td><td class="n">${hm(s.antes)}</td><td class="n">—</td><td></td>${vazio}</tr>` : '')
       +s.dias.map(d=>`<tr class="tks4-d"><td>${dd(d.data)} ${TKS_DOW[d.dow]}${d.feriado ? ' · '+e(String(d.feriado).toLowerCase()) : !d.util ? ' · fim de semana' : ''}`
         +(d.he ? ' · hora extra, fora da conta' : d.fora==='vazio' ? ' · sem programação, fora' : d.fora==='semUep' ? ' · só caixas sem UEP, fora' : '')+'</td>'
         +(d.he ? `<td class="n mono">${hm(d.precisa)}</td><td class="n">—</td><td class="n">—</td>`
           : d.fora ? '<td class="n">—</td><td class="n">—</td><td class="n">—</td>'
           : `<td class="n">${hm(d.precisa)}</td><td class="n">${hm(d.tem)}</td><td class="n">${fs(d.precisa, d.tem)}</td>`)+vazio+'</tr>').join('') : '';
-    return (pp ? '<tr class="tks4-s">' : `<tr class="tks4-s" onclick="_tks4Tog(${s.i})" title="Toque para ${ab ? 'fechar' : 'ver'} o dia a dia">`)+`<td>${rot}</td>`
+    return (pp || !temDias ? '<tr class="tks4-s">' : `<tr class="tks4-s" onclick="_tks4Tog(${s.i})" title="Toque para ${ab ? 'fechar' : 'ver'} o dia a dia">`)+`<td>${rot}</td>`
       +(s.vazia ? '<td class="n">—</td><td class="n">—</td><td class="n mono">sem programação datada</td>'
         : s.semUep ? `<td class="n">—</td><td class="n">—</td><td class="n mono">${fmtN(s.cxSemUep)} cx sem UEP no cadastro — sem conta</td>`
         : `<td class="n">${hm(s.precisa)}</td><td class="n">${hm(s.tem)}</td><td class="n">${fs(s.precisa, s.tem)}</td>`)
       +`<td class="n"><b>${sx(s.atraso)}</b></td>${rr ? `<td class="n">${sx(s.atrasoR)}</td>` : ''}</tr>`+dias;
   }).join('');
-  return tit+ver
+  return tit+ver+sug
     +`<div class="uep-card" style="overflow-x:auto"><table class="tka-tab tks4"><thead><tr><th>SEMANA</th><th class="n">PRECISA</th><th class="n">TEM</th><th class="n">NA SEMANA</th><th class="n">ATRASO NO FIM</th>${rr ? '<th class="n">NO RITMO ATUAL</th>' : ''}</tr></thead><tbody>${lin}</tbody></table>`
-    +`<div class="uep-nota">Horas de linha. Precisa = o saldo dos lotes dos dias úteis (na esta semana, também o que já venceu); tem = 8h47 por dia útil com lote (hoje, o que resta). Dia útil sem lote e lote em fim de semana ou feriado (hora extra) ficam fora. O atraso passa para a semana seguinte; a sobra só abate atraso que já existe. Não soma o vencido de antes desta segunda (o card ATRASO).${pp ? '' : ' Toque na semana para ver o dia a dia.'}</div></div>`;
+    +`<div class="uep-nota">Horas de linha. Precisa = o saldo dos lotes dos dias úteis (na esta semana, também o que já venceu); tem = 8h47 por dia útil com lote (hoje, o que resta). Dia útil sem lote e lote em fim de semana ou feriado (hora extra) ficam fora. O atraso passa para a semana seguinte; a sobra só abate atraso que já existe; o atraso no fim é a hora extra que ainda falta programar. Sugestão: os sábados depois da última semana que fechou em dia, cada um até 8h47 (menos o lote que ele já tem) e até o atraso daquela semana — mais cedo, a hora paga ficaria sem atraso para cobrir. Não soma o vencido de antes desta segunda (o card ATRASO).${pp ? '' : ' Toque na semana para ver o dia a dia.'}</div></div>`;
 }
 function _taktEstadoHtml(est, erro, fn, botoes){
   const msg=est==='lendo' ? 'Lendo a programação da semana…'
@@ -12095,6 +12153,7 @@ async function gerarRelatorio4Semanas(){
   if(D.estado!=='ok'){ win.close(); alert(D.msg+(D.estado==='aguardando' ? '\nTente de novo em alguns segundos.' : '')); return; }
   const hojeN=_cartNum(hojeStr()), w=_taktProxSemana(hojeStr()), f4=_taktSemanas4Faixa(hojeStr());
   try{
+    if(_uepLendo()){ msg('Esperando a outra leitura terminar…'); await new Promise(ok=>_uepDepoisDe(_uepLendo, ok)); }   // uma leitura do Apps Script por vez
     if(!UEP_HIST){ msg('Lendo o histórico (os dias fechados)…'); await _uepAbaHistCarregar(); }
     if(!TKS || _cartNum(TKS.hoje)!==hojeN || Date.now()-TKS_TS>TKS_TTL){ msg('Lendo a programação desta semana…'); await _taktCarregar(true); }
     if(!TKP || TKP.de!==w.de || Date.now()-TKP_TS>TKS_TTL){ msg('Lendo a programação da semana que vem…'); await _taktProxCarregar(true); }
@@ -12113,7 +12172,7 @@ async function gerarRelatorio4Semanas(){
   const S=C.semanas, per=`${String(S[0].ini||'').slice(0, 5)} a ${String(S[S.length-1].fim || S[0].fim || '').slice(0, 5)}`;
   const html=_rpDocParadas('4 semanas — '+ctx.data, true)
     +'<style>'+_TKS_DOC_SKIN+_TKA_DOC_SKIN+_TKS4_DOC_SKIN+'</style>'+_rpBotaoImprimir()+'<div class="tks-doc">'
-    +_rpCabecalho('TAKT — 4 SEMANAS: O ATRASO SEMANA A SEMANA',
+    +_rpCabecalho('TAKT — 4 SEMANAS: VAMOS PRECISAR DE HORA EXTRA?',
         `<div class="rp-per">RETRATO</div><div>${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)}</div><div>${_rpEsc(per)} · dias úteis</div>`,
         ' · EM HORAS DE LINHA')
     +_taktSemanasHtml(C, { papel:true })
