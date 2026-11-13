@@ -2855,8 +2855,13 @@ ok('o veredito do ritmo mora no núcleo comum',
 // de fábrica.
 ok('TV: a Tela B espelha a linha de apoio',
    /set\('tvb-ef-sub',\s*get\('tv-ef-sub'\)\)/.test(_v7) && /id="tvb-ef-sub"/.test(_v7), true);
-ok('gerencial: o card mostra o % do dia com o veredito do ritmo ao lado',
-   /v:fmtP\(k\.efDia\),\s*sub:slRitmo\(k\.efRitmo\)/.test(_v7), true);
+// v7.243.0 (PPCP, 13/11/2026: "priorizar as UEPs"): no gerencial do PC o veredito
+// do dia é o da UEP; o % da meta em caixas virou fato no card CAIXAS PROGRAMADAS,
+// e só julga quando não há UEP nenhuma (backend ou cadastro).
+ok('gerencial: o % do dia em caixas é fato, sem selo — o selo é o da UEP',
+   [/\$\{fmtP\(k\.efDia\)\} feito · `\+_metaPartesTxt\(p, k\.gap, false\)/.test(_v7),
+    /l:'CAIXAS PROGRAMADAS', v:fmtN\(k\.meta\), c:semUep\?sc\(k\.efRitmo\):''/.test(_v7),
+    /`<b>\$\{slRitmo\(c\.ef\)\}<\/b> · /.test(_v7), /v:fmtP\(k\.efDia\),\s*sub:slRitmo\(k\.efRitmo\)/.test(_v7)], [true, true, true, false]);
 ok('celular: o card diz a mesma coisa',
    /v:fmtP\(k\.efDia\), sub:slRitmo\(k\.efRitmo\)/.test(_mob), true);
 
@@ -2870,13 +2875,13 @@ console.log('\n── HORA EXTRA não é julgada, no dia de HOJE também ──'
 // nem veredito, nem pico/vale, nem atraso.
 ok('o atraso do núcleo pula a hora extra',
    /if \(r\.he\) return \{ atrasoHora: 0/.test(_core), true);
-ok('gerencial ao vivo: a tabela não calcula eficiência de hora extra',
-   /const ef=\(!isHE&&prod!=null\)/.test(_v7), true);
+ok('gerencial ao vivo (UEP, v7.243.0): a hora extra não tem % da meta',
+   /const pct=!ehHE&&!h\.andamento&&temU&&h\.metaH>0\?/.test(pega('function _gerHoraLinha(')), true);
 ok('gerencial ao vivo: a linha de HE ganha etiqueta, não veredito',
-   /const bdg=isHE\s*\n\s*\? '<span class="badge b-acc">HORA EXTRA<\/span>'/.test(_v7), true);
+   /const bdg=ehHE\?'<span class="badge b-acc">HORA EXTRA<\/span>'/.test(pega('function _gerHoraLinha(')), true);
 ok('gerencial ao vivo: a etiqueta HE não volta colada no OK/ABAIXO',
    /badge b-he" style="margin-right:5px">HE</.test(_v7), false);
-ok('gerencial ao vivo: META/H da hora extra sai "—"', /const metaCel=isHE\?'—'/.test(_v7), true);
+ok('gerencial ao vivo: META UEP da hora extra sai "—"', /\$\{ehHE\|\|!\(h\.metaH>0\)\?'—'/.test(pega('function _gerHoraLinha(')), true);
 ok('gerencial ao vivo: pico e vale só das horas de jornada',
    /const prodsNorm=dhAll\.filter\(r=>!r\.he\)/.test(_v7) &&
    /dh\.find\(r=>!r\.he&&r\.producaoHora===k\.melhor\)/.test(_v7), true);
@@ -3953,9 +3958,12 @@ ok('a janela de contradição existe em 8 das 9 horas', _discordam, 8);
      /PROJEÇÃO FINAL[^\n]*ACIMA DA META'\s*:/.test(txt), false);
   ok(nome + ': e não pinta mais cor de status',
      /PROJEÇÃO FINAL[^\n]*k\.proj>=k\.meta\?'ok':'red'/.test(txt), false);
-  ok(nome + ': o número da projeção continua na tela',
-     /\{l:'PROJEÇÃO FINAL',\s*v:fmtN\(k\.proj\)/.test(txt), true);
 });
+ok('ritmoprod_mobile.html: o número da projeção continua na tela',
+   /\{l:'PROJEÇÃO FINAL',\s*v:fmtN\(k\.proj\)/.test(_mob), true);
+// v7.243.0: no gerencial do PC a projeção é em UEP — número, sem cor de status.
+ok('ritmoprod_embalagem_v7.html: a projeção é em UEP, sem cor de status',
+   /l:'PROJEÇÃO · UEP', v:p\?fmtN\(Math\.round\(p\.fim\)\):'—', c:''/.test(pega('function _gerUepCards(')), true);
 // A TV já mostrava só o número — nunca teve este defeito, e não pode ganhar um.
 ok('a TV segue imprimindo a projeção sem veredito',
    /getElementById\('tv-proj'\)\.textContent=fmtN\(k\.proj\);/.test(JS), true);
@@ -4250,10 +4258,13 @@ console.log('\n── estudo de UEP ──');
   {
     const MOB = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
     ok('o gerencial do desktop e o do celular mostram o card pelo uepCard do núcleo',
-       [(JS.match(/uepCard\(PONTOS_DIA\.uep, PONTOS_DIA\.metaUep, k\.minNorm\)/g) || []).length,
-        (MOB.match(/uepCard\(PONTOS_DIA\.uep, PONTOS_DIA\.metaUep, k\.minNorm\)/g) || []).length], [1, 1]);
+       [/_uepCardLeitura\(uepCard\(U, PONTOS_DIA\.metaUep, k\.minNorm\)\)/.test(pega('function _gerUepModelo(')),
+        (MOB.match(/uepCard\(PONTOS_DIA\.uep, PONTOS_DIA\.metaUep, k\.minNorm\)/g) || []).length], [true, 1]);
+    // v7.243.0: a hora do gerencial do PC é a do _uepAbaHoras (a da aba ⚖ UEP),
+    // com a soma por hora do núcleo (uepPorHora).
     ok('UEP hora a hora nos dois gerenciais pela conta do núcleo',
-       [/uepCelula\(uepH\[sl\.inicio\]/.test(JS), /uepCelula\(uepH\[r\.horario\]/.test(MOB), /porHoraModelo: json\.porHoraModelo/.test(MOB)], [true, true, true]);
+       [/_uepAbaHoras\(k\.slots, k\.allHoje, uepPorHora\(PONTOS_DIA\.porHoraModelo\), meta, agoraMin\)/.test(pega('function _gerUepModelo(')),
+        /uepCelula\(uepH\[r\.horario\]/.test(MOB), /porHoraModelo: json\.porHoraModelo/.test(MOB)], [true, true, true]);
     ok('a PROGRAMAÇÃO mostra a UEP da linha e do dia contra a meta',
        /UEP \(\$\{fmtP\(pctUep\)\} da meta/.test(pega('function renderProgramacaoDetalhada(')), true);
     // v7.175.0 (PPCP, 27/10/2026, com o print: "essa tela está toda desalinhada"):
@@ -5582,7 +5593,7 @@ console.log('\n── estudo de UEP ──');
   CFG.sheetsUrl = urlAntes;
   ok('a aba UEP e o card UEP DO DIA leem o estado; a aba oferece ↻ quando falhou',
      [/msg:_pontosEstadoTxt\(\)/.test(pega('function _uepAbaDados(')), /_pontosTentarAgora\(\)/.test(pega('function renderUep(')),
-      /_uepCardLeitura\(uepCard\(PONTOS_DIA\.uep/.test(JS), /Timeout — verifique a URL/.test(JS)], [true, true, true, false]);
+      /_uepCardLeitura\(uepCard\(U, PONTOS_DIA\.metaUep/.test(JS), /Timeout — verifique a URL/.test(JS)], [true, true, true, false]);
   ok('só UMA retentativa automática por falha, e só com a aba UEP aberta',
      [/if\(PONTOS_LEIT\.auto \|\| !_abaOn\('uep'\)/.test(pega('function _pontosRetentar(')), /PONTOS_LEIT\.auto=false/.test(LPD)], [true, true]);
   const POLL = pega('async function pollParadaTV(');
@@ -5596,7 +5607,7 @@ console.log('\n── estudo de UEP ──');
      [/_gpxCartaoHtml\(d, pf\)/.test(pega('function _gpxSemanasBlocos(')), /_gpxSemanasBlocos\(_gpxSemanasMontar\(P, new Date\(\), _gpxPassadosDoPainel\(new Date\(\)\)\), 'dir', /.test(pega('function _dirCartHtml(')),
       /gpx-trilho|gpx-barra/.test(pega('function _gpxSemanasBlocos(')), /_cartAberta\(|_gpxMontar\(/.test(pega('function _gpxCartaoHtml('))], [true, true, false, false]);
   ok('na diretoria não rodam o poll de paradas nem as médias por horário (disputavam a fila com o getHistory)',
-     [/if\(!_modoDir\(\)\)\{\s*pollParadaTV\(\);/.test(JS), /return; \}\s*await lerPontosDia\(\); renderGerencial\(\);\s*if\(await lerParadasDoDia\(\)!==null\) renderGerProdutosDia\(\);[^\n]*\n\s*if\(await lerMediaHorasComRetry\(4\)\)/.test(JS),
+     [/if\(!_modoDir\(\)\)\{\s*pollParadaTV\(\);/.test(JS), /return; \}\s*await lerPontosDia\(\); renderGerencial\(\);\s*if\(await lerParadasDoDia\(\)!==null\) renderGerProdutosDia\(\);[^\n]*\n\s*await _gerCatSeFalta\(\);[^\n]*\n\s*if\(await lerMediaHorasComRetry\(4\)\)/.test(JS),
       /iniciarAutoRefresh\(\);\s*if\(_modoDir\(\)\)\{ lerPontosDia\(\)\.finally\(\(\)=>\{ renderDir\(\); _dirCarregar\(\); \}\); return; \}/.test(JS)], [true, true, true]);
   ok('o gráfico da diretoria mede a CAIXA e se refaz quando ela muda de tamanho',
      [/new ResizeObserver\(/.test(JS), /function _dirAjustaGraf\(\)/.test(JS), /box\.clientHeight/.test(pega('function _dirAjustaGraf('))], [true, true, true]);
@@ -5692,8 +5703,12 @@ console.log('\n── estudo de UEP ──');
      [_histTemMetaComp([{ meta: 1550, metaDia: 1550, atrasoMeta: 0 }, { meta: 1500, metaDia: null, atrasoMeta: null }]),
       _histTemMetaComp([{ meta: 2150, metaDia: 1550, atrasoMeta: 600 }]), _histTemMetaComp([{ meta: 1100, metaDia: 1157, atrasoMeta: 0 }]),
       _histTemMetaComp([]), _histTemMetaComp(null)], [false, true, true, false, false]);
-  ok('os dois cards META DO DIA (hoje e dia passado) passam pelo _metaPartesTxt',
-     (JS.match(/l:'META DO DIA',\s*v:fmtN\((k\.)?meta\),\s*sub:_metaPartesTxt\(/g) || []).length, 2);
+  // v7.243.0: hoje o card é CAIXAS PROGRAMADAS (fato); o dia passado com UEP
+  // também, e o dia passado SEM UEP continua META DO DIA (o veredito em caixas).
+  ok('os cards das caixas programadas (hoje e dia passado, com e sem UEP) passam pelo _metaPartesTxt',
+     [(JS.match(/l:'META DO DIA',\s*v:fmtN\((k\.)?meta\),\s*sub:_metaPartesTxt\(/g) || []).length,
+      /l:'CAIXAS PROGRAMADAS', v:fmtN\(k\.meta\)[\s\S]{0,200}_metaPartesTxt\(p, k\.gap, false\)/.test(pega('function _gerCxCards(')),
+      /l:'CAIXAS PROGRAMADAS', v:fmtN\(meta\), c:'', sub:`\$\{fmtP\(ef\)\} feito · `\+_metaPartesTxt\(/.test(pega('function renderGerencialHist('))], [1, true, true]);
   ok('o card de hoje lê a META DIA da aba pelo _metaDiaAba (a linha rotulada HE fora, como no .gs)',
      [/_metaPartes\(k\.meta, _metaDiaAba\(\)\)/.test(JS), /\^HE\\b\|\^HE\\d/.test(pega('function _metaDiaAba('))], [true, true]);
   ok('o histórico guarda metaDia/atrasoMeta do getHistory (null quando não vem)',
@@ -5909,6 +5924,116 @@ process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não te
       /\.kpi-card\.larga\{grid-column:1\/-1\}/.test(mob), /\.kpi-card\.atr \.kpi-val\{font-size:34px;color:var\(--red\)\}/.test(mob),
       /carregarProdutos\(\)\.then\(\(\) => \{ if\(PERFIL === 'gerencial'\) renderGerencial\(\); \}\)/.test(mJS), /<div class="kpi-card \$\{k\.c\}">/.test(RG)],
      [true, false, true, true, true, true]);
+}
+
+console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0) ──');
+// PPCP, 13/11/2026: "precisamos ir adaptando a tela gerencial para priorizar as
+// UEPs" → prévia → "pode implantar no gerencial primeiro". O retrato é o de
+// 13/11/2026 com o lançado até a hora das 15:00 (a das 16:00 vazia, 16:22): 2.305,7
+// UEP na jornada em 468 min, 391,6 em hora extra, meta 2.761 — o card dizia
+// ATENÇÃO e o % DA META em caixas, 80,0%.
+{
+  const vm = require('vm');
+  const C = vm.createContext({ console, Math, Date, Number, String, Array, Object, JSON, isFinite, window: {} });
+  C.window = C;
+  vm.runInContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'), C);
+  ['function _rpEsc(', 'function _fmtHM(', 'function _uepAbaHoras(', 'function _uepAbaProj(', 'function _gerMinTxt(',
+   'function _gerHoraLinha(', 'function _gerAtrasoKpi(', 'function _gerUepCards(', 'function _gerCxCards(', 'function _metaPartes(',
+   'function _metaPartesTxt(', 'function _gerAnaliseUep(', 'function _gerCxComHora(', 'function _gerKpiHtml('].forEach(f => vm.runInContext(pega(f), C));
+  vm.runInContext(`var CFG = { turnoFim:'17:00' }; var PONTOS_DIA = { metaUep:2761, programacao:{ lista:[], atrasoTotal:0 }, pontos:0, pesoKg:0 };
+    var _CAT = null; function _pdiaPcCat(){ return _CAT; } function _metaDiaAba(){ return 1800; }`, C);
+  const R = (e, v) => { Object.assign(C, v || {}); return vm.runInContext(e, C); };
+  // as horas de 13/11 (jornada; a 16:00 é a hora de agora, sem lançamento)
+  const SL = [['05:00',60,true],['06:00',60,true],['07:00',60],['08:00',60],['09:00',60],['10:00',60],['12:12',48],['13:00',60],['14:00',60],['15:00',60],['16:00',59]]
+    .map(([ini, min, he]) => ({ inicio:ini, label:ini, min, he:!!he }));
+  const CX = { '05:00':76, '06:00':102, '07:00':136, '08:00':148, '09:00':160, '10:00':160, '12:12':98, '13:00':208, '14:00':128, '15:00':224 };
+  const UH = { '05:00':167.2, '06:00':224.4, '07:00':251.6, '08:00':273.8, '09:00':276.2, '10:00':280, '12:12':171.5, '13:00':348.6, '14:00':256, '15:00':448 };
+  const allHoje = SL.filter(s => CX[s.inicio] != null).map(s => ({ horario:s.inicio, producaoHora:CX[s.inicio], he:s.he }));
+  const uepH = {}; Object.keys(UH).forEach(h => { uepH[h] = { uep:UH[h], cxSem:0 }; });
+  const horas = R('_uepAbaHoras(_s, _a, _u, 2761, 982)', { _s:SL, _a:allHoje, _u:uepH });
+  const card = R('uepCard({ normal:2305.7, he:391.6, codigos:10, cxSem:0 }, 2761, 468)');
+  const m = { difMin:(2305.7 - card.esperado) / (2761/527), faltaCx:228, prod:{ nome:'SAPATEIRA SPAZIO', uepCx:2 }, chega:null, minRest:59 };
+  const G = { ok:true, card, meta:2761, feito:2305.7, he:391.6, horas, proj:R('_uepAbaProj(2305.7, 468)'), m, cxSem:0, agoraMin:982 };
+  const k = { minNorm:468, real:1440, realNormal:1262, realHE:178, nHE:2, meta:1800, efDia:80, efRitmo:90.1, gap:360, ritmo:160 };
+  const L1 = R('_gerUepCards(_G, _k)', { _G:G, _k:k });
+  ok('1ª linha: UEP DO DIA (o único selo), ritmo, projeção e o que falta — sem atraso, sem o card dele',
+     L1.map(c => [c.l, c.c]),
+     [['UEP DO DIA · META 2.761', 'warn ger-hero'], ['RITMO · UEP/HORA', ''], ['PROJEÇÃO · UEP', ''], ['PARA A META', '']]);
+  ok('o card diz o selo, os minutos atrás, o feito × esperado e a hora extra (a prévia de 13/11)',
+     [L1[0].v, L1[0].sub],
+     ['2.306 <small>UEP</small>', '<b>ATENÇÃO</b> · 28 min atrás do ritmo · 2.306 de 2.452 UEP esperadas até agora · +392 em hora extra']);
+  ok('ritmo 296 UEP/h contra 314; projeção 2.596 (94,0% da meta); faltam 455 UEP ≈ 228 cx de SAPATEIRA, não cabe até 17:00',
+     [L1[1].v, L1[1].sub, L1[2].v, L1[2].sub, L1[3].v, L1[3].sub],
+     ['296 <small>/h</small>', 'a meta pede 314 UEP/h', '2.596', '94,0% da meta · na média de hoje, só jornada',
+      '455 <small>UEP</small>', '≈ 228 cx de SAPATEIRA SPAZIO · não cabe até 17:00 no ritmo da meta']);
+  ok('minutos: atrás, à frente e "no tempo" abaixo de meio minuto',
+     [R('_gerMinTxt(-27.9)'), R('_gerMinTxt(12.4)'), R('_gerMinTxt(0.4)'), R('_gerMinTxt(-0.4)')],
+     ['28 min atrás do ritmo', '12 min à frente do ritmo', 'no tempo da meta', 'no tempo da meta']);
+  const L2 = R('_gerCxCards(_k, false)', { _k:k }), L2s = R('_gerCxCards(_k, true)', { _k:k });
+  ok('2ª linha: caixas, programado, cx/h, pontos e peso — nenhuma com cor',
+     [L2.map(c => c.l), L2.every(c => c.c === '')], [['CAIXAS', 'CAIXAS PROGRAMADAS', 'RITMO · CX/HORA', 'PONTOS', 'PESO'], true]);
+  ok('as caixas programadas dizem o % feito como fato (80,0%) e o que falta',
+     [L2[0].sub, L2[1].sub], ['1.262 normal + 178 em hora extra', '80,0% feito · caixas programadas · faltam 360']);
+  ok('sem UEP nenhuma (backend ou cadastro), as caixas voltam a julgar — nunca uma tela sem veredito',
+     [L2s[1].c, /^<b>ATENÇÃO<\/b> · 80,0% feito/.test(L2s[1].sub)], ['warn', true]);
+  ok('na tela inteira, um card só com a cor do ritmo (ok/âmbar)',
+     [...L1, ...L2].filter(c => /\b(ok|warn)\b/.test(c.c)).length, 1);
+  // A tabela hora a hora: a cor é a da UEP; as caixas e a META EM CX informam.
+  const cxCom = {}; Object.keys(CX).forEach(h => { cxCom[h] = CX[h]; });
+  const lin = i => R('_gerHoraLinha(_h, _cx, _cc, 2)', { _h:horas[i], _cx:CX[SL[i].inicio] == null ? null : CX[SL[i].inicio], _cc:cxCom[SL[i].inicio] || 0 });
+  const cel = h => [...h.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map(x => x[1].replace(/<[^>]+>/g, '').trim());
+  ok('09:00: 160 cx (98% em caixas) eram 87,9% da meta de UEP — mesa e escrivaninha PRISM, mais leves: precisavam de 182 cx',
+     cel(lin(4)), ['09:00', '276', '314', '87,9%', '160', '182', 'ABAIXO']);
+  ok('12:12 (48 min) pede 251 UEP, não 314: 68,2% e 144 cx',
+     cel(lin(6)).slice(1), ['172', '251', '68,2%', '98', '144', 'ABAIXO']);
+  ok('15:00: 143% da meta da hora, OK',
+     cel(lin(9)).slice(3), ['142,5%', '224', '157', 'OK']);
+  ok('hora extra (05:00): a UEP sim, sem meta, sem %, a etiqueta e nenhum veredito',
+     [cel(lin(0)), /b-(ok|warn|red)/.test(lin(0))], [['05:00', '167', '—', '—', '76', '—', 'HORA EXTRA'], false]);
+  ok('a hora de agora (16:00, sem caixa): sem %, a meta da hora (59 min: 309 UEP) em caixas do produto de agora (155) e "ATÉ 16:22"',
+     cel(lin(10)), ['16:00', '—', '309', '—', '—', '155', 'ATÉ 16:22']);
+  ok('hora lançada só com código sem UEP: "0*", SEM UEP, nunca ABAIXO',
+     cel(R('_gerHoraLinha(_h, 80, 0, null)', { _h:{ label:'11:00', he:false, lancada:true, andamento:false, uep:null, cxSem:80, metaH:314 } })),
+     ['11:00', '0*', '314', '—', '80', '—', 'SEM UEP']);
+  ok('hora que ainda não chegou: PENDENTE',
+     cel(R('_gerHoraLinha(_h, null, 0, 2)', { _h:{ label:'16:00', he:false, lancada:false, andamento:false, futuro:true, uep:null, cxSem:0, metaH:310 } })),
+     ['16:00', '—', '310', '—', '—', '—', 'PENDENTE']);
+  // A análise em UEP: pico e vale pelo % da meta DA HORA (em caixas o 12:12 sairia sempre o vale).
+  const A = R('_gerAnaliseUep(_G)', { _G:G });
+  ok('pico 15:00 (142,5%), vale 12:12 (68,2%), tendência ↑ (14:00 81,5% → 15:00), precisa 463 UEP/h ≈ 232 cx/h de SAPATEIRA',
+     [A.pico.h.label, Math.round(A.pico.p * 10) / 10, A.vale.h.label, Math.round(A.vale.p * 10) / 10, A.tend, Math.round(A.nec.uepH), Math.round(A.nec.uepH / A.uepCx)],
+     ['15:00', 142.5, '12:12', 68.2, 1, 463, 232]);
+  ok('a análise não julga hora extra nem a hora de agora',
+     R('_gerAnaliseUep(_G)', { _G:Object.assign({}, G, { horas:horas.map((h, i) => i === 0 ? Object.assign({}, h, { uep:999 }) : h) }) }).pico.h.label, '15:00');
+  // O ATRASO: o MESMO atrasoVencido do celular (a paridade com o _gpxMontar está testada), em horas de linha.
+  R(`_CAT = [{ codigo:'501.089.003', uep:2 }]; PONTOS_DIA.programacao = { lista:[{ codigo:'501089003', falta:200, atraso:120, atrasoDesde:'12/11/2026' }], atrasoTotal:120 };`);
+  const At = R('_gerAtrasoKpi()');
+  ok('ATRASO: 120 cx × 2,00 UEP = 240 UEP = 0h46 de linha, desde 12/11, vermelho',
+     [At.l, At.v, At.sub, At.c], ['⚠ ATRASO · LOTES VENCIDOS', '0h46 <small>de linha</small>', '120 cx · desde 12/11', 'red']);
+  ok('com atraso, ele é o 2º card da 1ª linha',
+     R('_gerUepCards(_G, _k)', { _G:G, _k:k }).map(c => c.l).slice(0, 2), ['UEP DO DIA · META 2.761', '⚠ ATRASO · LOTES VENCIDOS']);
+  R(`_CAT = null;`);
+  ok('sem o cadastro neste computador: as caixas e "lendo o cadastro…"',
+     [R('_gerAtrasoKpi()').v, R('_gerAtrasoKpi()').sub], ['120 <small>cx</small>', 'desde 12/11 · lendo o cadastro…']);
+  R(`PONTOS_DIA.programacao = { lista:[{ codigo:'501089003', falta:200 }], atrasoTotal:300 };`);
+  ok('.gs sem o atraso por código: as caixas do atrasoTotal; sem atraso, sem card',
+     [R('_gerAtrasoKpi()').v, (R(`PONTOS_DIA.programacao = { lista:[{ codigo:'1', falta:5, atraso:0 }], atrasoTotal:0 }`), R('_gerAtrasoKpi()'))], ['300 <small>cx</small>', null]);
+  ok('as caixas COM UEP de cada hora (META EM CX sai do peso delas)',
+     R('_gerCxComHora(_p)', { _p:[{ hora:'09:00', caixas:47, uep:78.5 }, { hora:'09:00', caixas:20, uep:0 }, { hora:'09:00-10:00', caixas:113, uep:197.8 }, { hora:'', caixas:5, uep:9 }] }), { '09:00':160 });
+  // O render: a UEP primeiro, as caixas embaixo, e a tabela e os gráficos em UEP.
+  const RG = pega('function renderGerencial(');
+  ok('o render: duas linhas de cards, a análise em UEP, a tabela pela _gerHoraLinha e os gráficos em UEP; o ⚠/▲ de caixas saiu',
+     [/_gerKpiPinta\(_gerUepCards\(G, k\), _gerCxCards\(k, semUep\)\)/.test(RG), /G\.ok\?_gerAnaliseUepHtml\(G\):_gerAnaliseCxHtml\(k, dh\)/.test(RG),
+      /_gerHoraLinha\(h, cxDe\(sl\)/.test(RG), /_gerChartsUep\(/.test(RG), /fraqMark|MEDIA_HORAS/.test(RG), /id="kpi-grid2"/.test(src)],
+     [true, true, true, true, false, true]);
+  ok('o dia passado com UEP gravada segue a mesma regra; sem UEP, o veredito em caixas',
+     [/const comUep=dia\.uep!=null;/.test(pega('function renderGerencialHist(')), /if\(comUep\) _gerKpiPinta\(kUep, kCx\); else _gerKpiPinta\(kpis, \[\]\);/.test(pega('function renderGerencialHist(')),
+      /_gerHoraLinha\(u, cx,/.test(pega('function renderGerencialHist('))], [true, true, true]);
+  ok('sem cadastro neste computador: UMA leitura por sessão, no fim do ciclo e da carga inicial, só com o gerencial ao vivo',
+     [/if\(!_pdiaParPrecisa\(\) \|\| _pdiaPcCat\(\) \|\| PDIA_PC_CATPED\) return Promise\.resolve\(null\);\s*PDIA_PC_CATPED = true;/.test(pega('function _gerCatSeFalta(')),
+      /renderGerProdutosDia\(\); \}\)\.then\(\(\)=>_gerCatSeFalta\(\)\)\.catch/.test(pega('function _cicloLeitura(')), /await _gerCatSeFalta\(\);/.test(JS)], [true, true, true]);
+  ok('nenhuma leitura nova: o gerencial não chama o Apps Script por conta da UEP',
+     /jsonpFetch|_capBuscar|getProgramacaoDetalhada/.test(['function _gerUepModelo(', 'function _gerUepCards(', 'function _gerAtrasoKpi(', 'function _gerCxCards('].map(pega).join('\n')), false);
 }
 
 console.log(falhas === 0

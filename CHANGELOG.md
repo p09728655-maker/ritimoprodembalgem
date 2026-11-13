@@ -11,6 +11,72 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.243.0 — 13/11/2026 · GERENCIAL DO PC: a UEP na frente
+
+Pedido do PPCP: *"precisamos ir adaptando a tela gerencial para priorizar as
+UEPs"*. Ele viu a prévia com os números do dia e aprovou: *"pode implantar no
+gerencial primeiro"*. Decisões dele: o 2.761 vira a **META oficial**, e a TV e
+o celular ficam para a fase seguinte. Nada muda no `.gs` (sem re-deploy).
+
+- **O veredito do dia passa a ser um só: o da UEP.** O 1º card é a **UEP DO DIA
+  · META 2.761**. Ele traz o selo, os **minutos atrás ou à frente do ritmo**, o
+  feito contra o esperado e a hora extra.
+- Ao lado do card UEP DO DIA vêm:
+  - o **ATRASO · LOTES VENCIDOS em horas de linha**, o mesmo número do celular e
+    da ⚖ UEP;
+  - o **ritmo em UEP/h**;
+  - a **projeção em UEP**, só como número;
+  - o que falta para a meta, em UEP e em caixas do produto que está rodando,
+    com o horário em que ela sai ou o aviso de que não cabe até 17:00.
+- **As caixas descem para a 2ª linha, como fato e sem cor:**
+  - CAIXAS;
+  - **CAIXAS PROGRAMADAS**, a meta em caixas, com o *"80,0% feito"* escrito;
+  - cx/hora, pontos e peso.
+- **Tabela hora a hora em UEP:**
+  - colunas UEP · META UEP · % DA META (com a cor) · CAIXAS · **META EM CX** ·
+    STATUS;
+  - a META EM CX é a meta da hora convertida pelo peso das caixas que rodaram
+    nela. Às 09:00 de hoje saíram 160 cx (98% pela régua de caixas da
+    planilha), mas eram mesa e escrivaninha PRISM, mais leves: a hora precisava
+    de 182 cx e deu 88% da meta de UEP;
+  - a hora em andamento não é julgada (*ATÉ 16:22*).
+- **Pico e vale pelo % da meta da hora.** Em caixas, o 12:12 (48 min) sai
+  sempre como vale. O ritmo necessário passa a ser em UEP/h, com o equivalente
+  em cx/h do produto de agora.
+- **Gráficos:** UEP por hora contra a meta da hora, e caixas por hora sem meta.
+- **PRODUTOS EMBALADOS HOJE:**
+  - abre com a UEP do dia dividida entre jornada e hora extra (a jornada é a
+    do card UEP DO DIA);
+  - a tabela traz a UEP primeiro, uma coluna nova **UEP/CX** (o peso da caixa)
+    e o EM HE em UEP;
+  - a faixa reparte cada hora pela UEP de cada produto.
+- **Dia passado com UEP gravada:** mesma regra. O veredito é a UEP contra a
+  META UEP daquele dia, e ao lado aparecem quanto faltou ou sobrou, a UEP em
+  hora extra e a UEP por caixa. Dia sem UEP gravada continua julgado em caixas.
+- Num computador sem o cadastro de UEP guardado, o gerencial lê o cadastro uma
+  vez por sessão, no fim do ciclo de leituras.
+
+**Atenção:**
+- **o selo do gerencial muda de régua.** De 16/10 a 12/11, as duas réguas
+  discordaram em 12 de 19 dias úteis.
+- **Saíram do gerencial ao vivo:**
+  - o card % DA META DO DIA (o número continua, sem cor, nas CAIXAS
+    PROGRAMADAS);
+  - a PROJEÇÃO FINAL em caixas;
+  - HORAS PRODUTIVAS;
+  - MELHOR HORA e PIOR HORA em caixas (o pico e o vale ficam na análise);
+  - o card *⚠ ATRASO NA PROGRAMAÇÃO* em caixas (agora é o ATRASO em horas);
+  - na tabela, ACUMULADO, META/H e EFICIÊNCIA em caixas, o *(+N)* de atraso por
+    hora e o ⚠/▲ da média histórica de caixas.
+- **A TV e o celular continuam julgando em caixas** até a próxima fase. Nos
+  dias em que as réguas discordam, o PC e a TV vão dizer coisas diferentes.
+- A META UEP ainda aparece como "referência" no relatório CAIXAS × PONTOS × UEP
+  e na aba 📏 RÉGUAS. A troca do nome fica para a mesma fase.
+
+`rp-core.js` 1.17.0: o `pdiaMontar` passa a dar a UEP feita em hora extra por
+produto (`uepHe`) e a opção `porUep` da faixa. O celular não passa essa opção e
+não muda.
+
 ## v7.242.0 — 13/11/2026 · TAKT DA SEMANA: de onde vem o PRECISA, e onde o ATRASO entra
 
 Pedido do PPCP com a tela na mão: o card ATRASO dizia **1h55** e o TAKT DA

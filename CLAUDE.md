@@ -3598,6 +3598,75 @@ feito e dá ar de verdade ao que sobrou.
   (`page-break-after:avoid`) e KPIs, faixa de alerta e gráfico não partem ao
   meio — mesma regra já documentada para o relatório de paradas.
 
+## GERENCIAL DO PC: A UEP NA FRENTE (v7.243.0 / rp-core 1.17.0)
+- PPCP, 13/11/2026: *"precisamos ir adaptando a tela gerencial para priorizar
+  as UEPs"* → *"e também o painel tb… tv"* → três decisões (o 2.761 vira a
+  **META oficial**; na TV o selo virá da UEP, dito em minutos e caixas do produto
+  de agora; o celular muda junto) → prévias com os números do dia → *"pode
+  implantar no gerencial primeiro depois vamos para outro"*. **Fase 1 = só o
+  gerencial do PC.** TV, celular, HISTÓRICO, relatórios, semana/Tela D, a EF do
+  FECHAR DIA e o nome "referência" (relatório CAIXAS × PONTOS × UEP, 📏 RÉGUAS,
+  `UEP_REF_STATUS`) ficam para as próximas.
+- **Por quê**: no HISTORICO de 16/10 a 12/11 (19 dias úteis, jornada) caixas e
+  UEP discordaram em **12**; o gerencial mostrava os dois selos (% DA META em
+  caixas e UEP DO DIA). Ex.: 04/11 caixas 64% × UEP 104%; 06/11 e 11/11 caixas
+  ~100% × UEP 84–86%. ⚠ A UEP julga o RITMO da linha contra a capacidade, não a
+  ENTREGA do programado — por isso o programado e o ATRASO ficam à vista.
+- **1ª linha (`#kpi-grid`, `_gerUepCards`)**: UEP DO DIA · META (hero, `ger-hero`,
+  2 colunas, o ÚNICO selo — `slRitmo` do `uepCard`, + *N min atrás/à frente do
+  ritmo* pelo `difMin` do `_tvUepMontar`) · ⚠ ATRASO · LOTES VENCIDOS em horas
+  (`_gerAtrasoKpi` = o `atrasoVencido` do rp-core, o mesmo do celular; sem cadastro,
+  as caixas) · RITMO UEP/H e PROJEÇÃO UEP (`_uepAbaProj`, sem cor) · PARA A META
+  (UEP e ≈ caixas do produto de agora; *sai às* ou *não cabe até 17:00*).
+- **2ª linha (`#kpi-grid2`, `_gerCxCards`)**: CAIXAS · CAIXAS PROGRAMADAS (a META
+  DO DIA em caixas; *80,0% feito* como fato) · RITMO CX/H · PONTOS · PESO — **sem
+  cor**. Só sem UEP nenhuma (`semUep`: backend ou cadastro) as caixas programadas
+  voltam a julgar: nunca uma tela sem veredito.
+- **Saíram do gerencial ao vivo**: % DA META DO DIA, PROJEÇÃO FINAL (cx), HORAS
+  PRODUTIVAS, MELHOR/PIOR HORA (cx), *⚠ ATRASO NA PROGRAMAÇÃO* (cx); na tabela
+  ACUMULADO, META/H, EFICIÊNCIA, o *(+N)* e o ⚠/▲ da média histórica de caixas
+  (era um 2º veredito por hora). O `calcAtrasoHoras` e o `getMediaHoras` seguem
+  (a TV usa).
+- **Tabela** (`_gerHoraLinha`, a MESMA no dia de hoje e no dia passado; o thead é
+  refeito, `_gerTheadUep`/`_gerTheadCx`): HORÁRIO · UEP · META UEP · % DA META
+  (cor `sc`) · CAIXAS · **META EM CX** (meta da hora × caixas COM UEP ÷ UEP da
+  hora — `_gerCxComHora`; a hora de agora sem caixa: ÷ UEP/cx do produto de agora)
+  · STATUS. Hora extra e hora em andamento (`ATÉ HH:MM`) não são julgadas; hora
+  só com código sem UEP = *SEM UEP* (`0*`), nunca ABAIXO. As horas são as do
+  `_uepAbaHoras` (a régua da aba ⚖ UEP).
+- **Análise** (`_gerAnaliseUep`/`_gerAnaliseUepHtml`): RITMO NECESSÁRIO em UEP/h
+  (≈ cx/h do produto de agora), TENDÊNCIA e PICO/VALE pelo **% da meta da hora**
+  (em caixas o 12:12 de 48 min era sempre o vale), só horas de jornada fechadas.
+  Sem UEP: `_gerAnaliseCxHtml` (a de antes).
+- **Gráficos** (`_gerChartsUep`): UEP por hora (cor da tabela, HE âmbar, a hora de
+  agora cinza) × meta da hora; caixas por hora numa cor só, sem meta. Títulos
+  `#ger-ch1-ttl`/`#ger-ch2-ttl`. Cor literal (canvas).
+- **Dia passado** (`renderGerencialHist`, `comUep = dia.uep != null`): UEP gravada
+  × META UEP daquele dia no hero (texto `sl`), + FALTOU/META BATIDA, UEP EM HORA
+  EXTRA e UEP POR CAIXA; a tabela e os gráficos em UEP com o `uepHora` (cadastro
+  ATUAL); a análise `_gerAnaliseUepHistHtml`. Dia sem UEP gravada: o de antes, em
+  caixas. Com UEP gravada mas sem `uepHora`: a tabela em caixas SEM cor.
+- **PRODUTOS EMBALADOS HOJE do PC**: o resumo abre com a UEP (`pdpc-n big`) e
+  *X na jornada + Y em hora extra* (total = `round(M.uep)`, jornada =
+  `round(M.uep − M.uepHe)`, HE = a diferença — fecha com as linhas; pode ficar 1
+  UEP longe de outra tela); tabela PRODUTO · COR · HORÁRIO · **UEP** (`pdpc-uu`) ·
+  **UEP/CX** · CAIXAS · **EM HE · UEP** (as caixas no `title`) · PARTE. rp-core
+  1.17.0: `pdiaMontar` dá `uepHe` (produto e total) e `o.porUep` reparte a hora da
+  faixa pela UEP (produto sem UEP na hora → a do dia; sem UEP nenhuma → a hora
+  inteira volta às caixas). **O celular não passa `porUep` e não muda.** rp-core
+  antigo em cache: sem a divisão e o EM HE em caixas.
+- **Uma leitura a mais, só quando falta**: `_gerCatSeFalta` — sem cadastro neste
+  computador (nem o `rpe_cap_cat`), lê o `getProdutos` UMA vez por sessão
+  (`PDIA_PC_CATPED`, a mesma marca do clique no PRODUTOS EMBALADOS), no fim do
+  `_cicloLeitura` e da carga inicial, só com o gerencial ao vivo.
+- Medido no Chromium (Apps Script simulado com os lançamentos reais de 13/11,
+  Chart.js local): 1920, 1366 e 1280 — nada passa da largura; o hero tem 2
+  colunas e a 2ª linha cabe numa só.
+- Testes: `relatorios.test.js` (*A UEP NA FRENTE no gerencial do PC*, com o retrato
+  real de 13/11: os cards, um selo só, as horas 09:00/12:12/15:00/HE/agora/sem UEP,
+  a análise, o ATRASO, a leitura do cadastro) e `produtos-dia.test.js` (o resumo,
+  as colunas, o `uepHe`, a faixa pela UEP e o celular igual).
+
 ## EFICIÊNCIA: uma régua só, e é a META DO DIA
 - **O cartão mostrava um número de uma conta com a cor de OUTRA.** O número era
   `efDia` (realizado ÷ meta do DIA) e a cor/status vinham de `ef` (realizado ÷
@@ -3631,7 +3700,7 @@ feito e dá ar de verdade ao que sobrou.
     pega a **cor do selo** (antes lia a cor do número, que agora é tinta).
   - ⚠ **A conta não mudou** — `efNoRitmo` continua sendo quem pinta a tela.
     Trocou qual número ocupa o lugar grande.
-- **Quem usa: TV (telas A e B), gerencial do desktop e gerencial do celular.**
+- **Quem usa: TV (telas A e B) e gerencial do celular** (o gerencial do PC julga pela UEP desde a v7.243.0 — ver *GERENCIAL DO PC: A UEP NA FRENTE*; o % DA META DO DIA dele virou fato no card CAIXAS PROGRAMADAS).
   Painel que julga o mesmo instante de dois jeitos é o defeito que este projeto
   mais pagou caro — por isso a conta saiu dos dois HTMLs para o núcleo.
   `rp-core.test.js` cobre a conta e `relatorios.test.js` falha se `sc(k.ef)`

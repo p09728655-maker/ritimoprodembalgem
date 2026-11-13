@@ -22,6 +22,31 @@ Unidade padrão: **caixa (cx)**. Não existe "peça" no vocabulário do produto.
 ⚠ O slot pós-almoço `12:12-13:00` tem **48 min**, não 60. Por isso as horas
 produtivas somam a duração real de cada slot em vez de multiplicar por 60.
 
+## Gerencial do PC — a UEP na frente (v7.243.0)
+
+PPCP, 13/11/2026: o veredito do dia no gerencial do PC passou a ser **um só, o
+da UEP** (meta 2.761 = a META oficial). As caixas ficam na tela como fato, sem
+cor. A TV e o celular ainda julgam em caixas (a seção abaixo vale para eles).
+
+| Termo | Fórmula | Unidade | Onde está |
+|---|---|---|---|
+| **UEP DO DIA · META** (1º card, o único selo) | UEP de jornada × esperado até agora (`uepCard`); o selo é `slRitmo` do % do esperado | UEP | `v7:_gerUepCards` + `rp-core:uepCard` |
+| **min atrás / à frente do ritmo** | (UEP feita − esperada) ÷ (meta ÷ 527) | min | `v7:_tvUepMontar` (`difMin`) |
+| **⚠ ATRASO · LOTES VENCIDOS** | caixas de lotes vencidos × UEP do código ÷ (meta ÷ 527) — o mesmo do celular e da faixa da ⚖ UEP | h de linha | `rp-core:atrasoVencido` |
+| **RITMO · UEP/HORA** | UEP de jornada ÷ minutos de jornada decorridos × 60 | UEP/h | `v7:_uepAbaProj` |
+| **PROJEÇÃO · UEP** | UEP feita + a média por minuto × minutos de jornada que faltam (número, sem veredito) | UEP | `v7:_uepAbaProj` |
+| **PARA A META** | meta − UEP feita; em caixas: ÷ UEP por caixa do produto de agora (para cima) | UEP / cx | `v7:_tvUepMontar` |
+| **CAIXAS PROGRAMADAS** | a META DO DIA em caixas (a do FECHAR DIA); o % feito é fato, sem cor | cx | `v7:_gerCxCards` |
+| **% DA META** (hora a hora) | UEP da hora ÷ (meta × minutos da hora ÷ 527) — a cor da linha | % | `v7:_gerHoraLinha` |
+| **META EM CX** (hora a hora) | meta de UEP da hora × caixas com UEP ÷ UEP da hora (a hora de agora sem caixa: ÷ UEP por caixa do produto de agora) | cx | `v7:_gerHoraLinha` |
+| **PICO / VALE** | a hora de jornada fechada com o maior / menor % da meta da hora | — | `v7:_gerAnaliseUep` |
+| **RITMO NECESSÁRIO** | (meta − UEP feita) ÷ minutos de jornada que restam × 60 | UEP/h | `v7:_gerAnaliseUep` |
+
+⚠ Sem a UEP no backend ou no cadastro, as caixas programadas voltam a dar o
+selo — nunca uma tela sem veredito. No dia passado, o veredito é a UEP gravada
+no fechamento contra a META UEP daquele dia; dia sem UEP gravada continua
+julgado em caixas.
+
 ## Eficiência — o número é fato, o veredito é o selo
 
 | Termo | Fórmula | Unidade | Onde está |

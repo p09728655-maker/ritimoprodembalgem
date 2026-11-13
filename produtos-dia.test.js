@@ -232,8 +232,27 @@ vm.runInContext(`
 `, G);
 G.document = { getElementById: id => (gEl[id] = gEl[id] || { innerHTML: '', textContent: '' }) };
 const grun = (expr, vars) => { Object.assign(G, vars || {}); return vm.runInContext(expr, G); };
-const MP = grun('pdiaMontar(_phm, _ph, _cat, "501136001", _ag, Object.assign({}, _o, { larg: PDIA_PC_LARG, linhas: PDIA_PC_LINHAS, passo: 60 }))',
+// O PC reparte a hora da faixa pela UEP (v7.243.0, porUep) — o render passa isso.
+const MP = grun('pdiaMontar(_phm, _ph, _cat, "501136001", _ag, Object.assign({}, _o, { larg: PDIA_PC_LARG, linhas: PDIA_PC_LINHAS, passo: 60, porUep: true }))',
   { _phm: PHM, _ph: PH, _cat: CAT, _ag: AGORA, _o: O });
+const MPcx = grun('pdiaMontar(_phm, _ph, _cat, "501136001", _ag, Object.assign({}, _o, { larg: PDIA_PC_LARG, linhas: PDIA_PC_LINHAS, passo: 60 }))',
+  { _phm: PHM, _ph: PH, _cat: CAT, _ag: AGORA, _o: O });
+console.log('\n── A UEP NA FRENTE (v7.243.0): a UEP em hora extra e a faixa pela UEP ──');
+ok('a UEP feita em hora extra, por produto e no total (a PRISM toda de madrugada; 60 cx da HOME ANGEL)',
+   [MP.produtos.map(p => [p.he, p.uepHe]), Math.round(MP.uepHe), Math.round(MP.uep - MP.uepHe)], [[[184, 438], [60, 149], [0, 0]], 587, 855]);
+ok('sem o porUep (o celular) a faixa é a de antes, pelas caixas: troca às 06:31',
+   [Math.round(MPcx.faixa.segs[0].fim * 10) / 10, Math.round(M.faixa.segs[0].fim * 10) / 10], [391, 391]);
+ok('com o porUep a hora das 06:00 é repartida pela UEP: a HOME ANGEL (2,48/cx) pesa mais que a PRISM (2,38/cx) → troca às 06:30',
+   Math.round(MP.faixa.segs[0].fim * 10) / 10, 390.3);
+ok('nada mais muda com o porUep: caixas, UEP, trocas, ordem, % e o fim da faixa',
+   [MP.cx, MP.uep, MP.trocas, MP.produtos.map(p => p.nome), MP.produtos.map(p => p.pct), MP.faixa.segs.length, MP.faixa.segs[2].fim],
+   [MPcx.cx, MPcx.uep, MPcx.trocas, MPcx.produtos.map(p => p.nome), MPcx.produtos.map(p => p.pct), MPcx.faixa.segs.length, MPcx.faixa.segs[2].fim]);
+{ // produto sem UEP na hora: a hora inteira volta às caixas (nunca mistura as duas réguas)
+  const phm2 = PHM.map(x => /PRISM/.test(x.nome) ? Object.assign({}, x, { uep: 0 }) : x);   // a PRISM sem UEP nenhuma
+  const A = grun('pdiaMontar(_phm, _ph, _cat, "501136001", _ag, Object.assign({}, _o, { porUep: true }))', { _phm: phm2, _ph: PH, _cat: CAT, _ag: AGORA, _o: O });
+  const B = grun('pdiaMontar(_phm, _ph, _cat, "501136001", _ag, _o)', { _phm: phm2, _ph: PH, _cat: CAT, _ag: AGORA, _o: O });
+  ok('um produto da hora sem UEP nenhuma: a hora volta inteira às caixas (troca às 06:31, como sem o porUep)',
+     [A.faixa.segs[0].fim, Math.round(A.faixa.segs[0].fim * 10) / 10], [B.faixa.segs[0].fim, 391]); }
 ok('a mesma conta do celular: caixas, UEP, HE, trocas e parte da UEP',
    [MP.cx, Math.round(MP.uep), MP.heCx, MP.trocas, MP.produtos.map(p => p.pct)], [M.cx, Math.round(M.uep), M.heCx, M.trocas, M.produtos.map(p => p.pct)]);
 ok('faixa do PC: uma marca por hora e o nome inteiro cabe (no celular, PRISM)',
@@ -259,8 +278,13 @@ ok('1 linha é a regra de antes (o celular não muda): o nome inteiro só se cou
      [true, true, 2, true, true, true, false]); }
 const HP = grun('_pdiaPcHtml(_M, "")', { _M: MP });
 const HPa = grun('_pdiaPcHtml(_M, _k)', { _M: MP, _k: MP.produtos[1].key });
-ok('resumo: caixas, UEP, produtos e trocas',
-   ['<b>596</b><i>CAIXAS</i>', '<b>1.441</b><i>UEP</i>', '<b>3</b><i>PRODUTOS</i>', '<b>2</b><i>TROCAS DE PRODUTO</i>'].every(t => HP.includes(t)), true);
+ok('resumo: a UEP primeiro, com a jornada (a do card UEP DO DIA) + a hora extra, e depois caixas, produtos e trocas',
+   ['<div class="pdpc-n big"><b>1.441</b><i>UEP</i>', '<em>855 na jornada + <span>586 em hora extra</span></em>',
+    '<div class="pdpc-n sec"><b>596</b><i>CAIXAS</i>', '<b>3</b><i>PRODUTOS</i>', '<b>2</b><i>TROCAS DE PRODUTO</i>'].every(t => HP.includes(t))
+   && HP.indexOf('<i>UEP</i>') < HP.indexOf('<i>CAIXAS</i>'), true);
+ok('a divisão fecha com o total: 855 + 586 = 1.441 (a soma das linhas)', 855 + 586, MP.produtos.reduce((s, p) => s + p.uep, 0));
+ok('rp-core antigo (sem uepHe): o total, sem a divisão',
+   (h => h.includes('<b>1.441</b><i>UEP</i>') && !h.includes('na jornada'))(grun('_pdiaPcHtml(_M, "")', { _M: Object.assign({}, MP, { uepHe: undefined, produtos: MP.produtos.map(p => Object.assign({}, p, { uepHe: undefined })) }) })), true);
 ok('cobertura: todas com produto · hora extra em âmbar',
    HP.includes('Todas as 596 cx lançadas com produto · <span class="he">244 cx em hora extra</span>'), true);
 ok('eixo: o "agora" escrito e a hora cheia colada nele (10) fora',
@@ -268,10 +292,15 @@ ok('eixo: o "agora" escrito e a hora cheia colada nele (10) fora',
 ok('almoço escrito na faixa', HP.includes('ALMOÇO</div>'), true);
 ok('uma linha por produto, cada uma um botão com aria-expanded',
    (HP.match(/<button type="button" class="pdpc-bt pdpc-row" onclick="_pdiaPcToggle\(\d\)" aria-expanded="false">/g) || []).length, 3);
-ok('cabeçalho das colunas na ordem da prévia',
-   HP.includes('<span>PRODUTO</span><span>COR</span><span>HORÁRIO</span><span class="n">CAIXAS</span><span class="n">UEP</span><span class="n">EM HE</span><span>PARTE DA UEP DO DIA</span>'), true);
-ok('EM HE por produto em âmbar; sem hora extra, "—" neutro (traço não é sinal)',
-   ['<span class="pdpc-u he">184</span>', '<span class="pdpc-u he">60</span>', '<span class="pdpc-u">—</span>'].every(t => HP.includes(t)), true);
+ok('cabeçalho das colunas: a UEP antes das caixas, com o peso da caixa (UEP/CX) — a prévia de 13/11',
+   /<span>PRODUTO<\/span><span>COR<\/span><span>HORÁRIO<\/span><span class="n">UEP<\/span><span class="n"[^>]*>UEP\/CX<\/span><span class="n">CAIXAS<\/span><span class="n"[^>]*>EM HE · UEP<\/span><span>PARTE DA UEP DO DIA<\/span>/.test(HP), true);
+ok('a UEP é o número grande da linha; o UEP/CX com duas casas; as caixas depois',
+   ['<span class="pdpc-uu">438</span>', '<span class="pdpc-u">2,38</span>', '<span class="pdpc-cx">184</span>', '<span class="pdpc-uu">947</span>', '<span class="pdpc-u">2,48</span>'].every(t => HP.includes(t)), true);
+ok('EM HE em UEP e em âmbar (as caixas no title); sem hora extra, "—" neutro (traço não é sinal)',
+   ['<span class="pdpc-u he" title="184 cx em hora extra">438</span>', '<span class="pdpc-u he" title="60 cx em hora extra">149</span>', '<span class="pdpc-u">—</span>'].every(t => HP.includes(t)), true);
+ok('rp-core antigo (sem uepHe): o EM HE volta às caixas, escrito "cx"',
+   grun('_pdiaPcHtml(_M, "")', { _M: Object.assign({}, MP, { produtos: MP.produtos.map(p => Object.assign({}, p, { uepHe: undefined })) }) }).includes('title="184 cx em hora extra">184 cx</span>'), true);
+ok('o render do PC passa o porUep', /porUep: true \}\);/.test(pega(PC_JS, 'function renderGerProdutosDia(')), true);
 ok('AGORA no horário do produto de agora', HP.includes('desde 09:00 · <span class="ag">AGORA</span>'), true);
 ok('% numa coluna fixa (as barras alinham)', (HP.match(/<span class="pdpc-pc">\d+%<\/span>/g) || []).length, 3);
 ok('fechado: sem detalhe; aberto: tabela e hora a hora só do aberto',
