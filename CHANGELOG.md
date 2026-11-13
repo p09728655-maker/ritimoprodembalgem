@@ -11,6 +11,28 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.242.0 — 13/11/2026 · TAKT DA SEMANA: de onde vem o PRECISA, e o ATRASO já está dentro
+
+Pedido do PPCP com a tela na mão: o card ATRASO dizia **1h55** e o TAKT DA
+SEMANA **"faltam 6h16"** — *"como falta 6?"*. Os dois estão certos e medem coisas
+diferentes; a tela não dizia que um está dentro do outro. Nada muda no `.gs`
+(sem re-deploy).
+
+- **A barra PRECISA da ESTA SEMANA vem em partes**, com a legenda logo embaixo:
+  *1h55 de atraso (lotes vencidos) + 6h41 dos lotes de hoje* (e, de segunda a
+  quinta, *+ Xh dos dias que vêm*). As partes somam o PRECISA.
+- **O card ATRASO ganhou uma 2ª linha:** *já conta no FALTAM da semana*. Se o
+  atraso vem de antes da segunda, a linha diz *o de antes de dd/mm não conta no
+  FALTAM da semana* — o TAKT só soma os lotes desta semana.
+- A impressão do TAKT leva a mesma legenda (continua em uma folha).
+
+**Atenção:** nenhum número muda. Conferido na planilha em 13/11 às 14:39: as
+1h55 são o HOME RIPADO SUPREMO 1.8 VOL 1/3 e 2/3 (lote 25411, 10/11, nada
+embalado) e 10 cx da MESA CENTRO PRISM BRANCO AC (25423, 12/11); as 6h41 são o
+CONJ 2 MESAS SLIM (1.100 cx) e o HOME RIPADO ANTARES 1.4 (300 cx), que não
+começaram, e 14 cx da ESCRIVANINHA PRISM. A manhã foi dos lotes de 12/11 (ELOA e
+MESA CENTRO PRISM OFF WHITE).
+
 ## v7.241.0 — 13/11/2026 · Hora extra sugerida: semana a semana, com os dois tetos
 
 Correção da v7.240.0, achada na revisão depois do merge. Nada muda no `.gs` (sem re-deploy).

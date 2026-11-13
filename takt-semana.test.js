@@ -36,7 +36,7 @@ global.SETUP_PEND = null; global.SETUP_PLAN = null;   // v7.226.0: o setup envia
 global._rpEsc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 ['function _cartNum(', 'function _eixoGrade(', 'function _taktMontar(', 'function _taktRestMin(', 'function _taktAgora(',
  'function _uepSubTakt(', 'function _taktPorCaixa(', 'function _taktPorCaixaHtml(', 'function _taktHtml(', 'function _taktSvg(', 'function _taktProxMontar(', 'function _taktProxHtml(',
- 'function _taktProxSemana(', 'function _taktSemBotoes(', 'function _taktEstadoHtml(', 'function _fmtHM(', 'function _taktSimHtml(', 'function _taktCenRot(', 'function _taktCenarios(', 'function _taktSimular(', 'function _taktDocHtml(', 'function _taktVeredito(', 'function _taktHeroHtml(', 'function _taktDetHtml(', 'function _taktPtsMapa(', 'function _taktEstMapa(', 'function _tkPts(',
+ 'function _taktProxSemana(', 'function _taktSemBotoes(', 'function _taktEstadoHtml(', 'function _fmtHM(', 'function _taktSimHtml(', 'function _taktCenRot(', 'function _taktCenarios(', 'function _taktSimular(', 'function _taktDocHtml(', 'function _taktVeredito(', 'function _taktPrecisaPartes(', 'function _taktHeroHtml(', 'function _taktDetHtml(', 'function _taktPtsMapa(', 'function _taktEstMapa(', 'function _tkPts(',
  // v7.222.0: o nível diretoria
  'function _tkAprox(', 'function _tkDia(', 'function _tkHAprox(', 'function _taktPico(', 'function _taktFecharDados(', 'function _taktFecharHtml(',
  'function _taktHerancaHtml(', 'function _taktExcessoHtml(',
@@ -514,6 +514,60 @@ ok('semana que vem: precisa de 46h08, tem 43h55 → faltam 2h13 — o MESMO do P
    [_fmtHM(V1.precisaMin), _fmtHM(V1.temMin), V1.faltaMin === P1.saldoMin && V1.faltaMin === SIM[0].min, Math.round(V1.faltaCx) === Math.round(SIM[0].cx),
     V1.ritmo.faltaMin, Math.round(V1.ritmo.faltaCx) === Math.round(SIM[1].cx)],
    [_fmtHM(2768), _fmtHM(2635), true, true, SIM[1].min, true]);
+// v7.242.0 (PPCP 13/11/2026, com a tela: o card ATRASO dizia 1h55 e o TAKT "faltam 6h16" — "como falta 6?" → prévia →
+// "pode subir"): a barra PRECISA da esta semana em partes — o que já venceu, o de hoje e o dos dias que vêm —, nos
+// MESMOS minutos do veredito (a soma é o PRECISA). Conta em _taktPrecisaPartes; o desenho só lê.
+{ const PT = _taktPrecisaPartes(T, V0), dH = T.dias.find(d => d.hoje);
+  ok('o PRECISA em partes (06/11 11:58): o vencido da semana (2.526,3 UEP) e o de hoje (2.570,5), a soma = o PRECISA; sexta sem lote no fim de semana: sem "dias que vêm"',
+     [PT.map(p => p.k), PT.map(p => p.min), PT.reduce((a, p) => a + p.min, 0), r1(T.falta.uepVenc), r1(dH.saldoUep)],
+     [['venc', 'hoje'], [482, 491], V0.precisaMin, 2526.3, 2570.5]);
+  // o retrato de 13/11/2026 14:39 (conferido na planilha): SUPREMO 1.8 VOL 1/3 e 2/3 (200 cx) + MESA CENTRO PRISM 10 cx vencidos;
+  // SLIM 1.100 cx + ANTARES 1.4 300 cx + 14 cx da ESCRIVANINHA PRISM de hoje
+  const T13 = { meta:2761, falta:{ uep:604.7 + 2098.5, uepVenc:604.7 }, dias:[{ hoje:true, saldoUep:2098.5 }] };
+  const V13 = { precisaMin:Math.round(T13.falta.uep * 527 / 2761) };
+  ok('o retrato de 13/11: 8h36 = 1h55 de atraso + 6h41 dos lotes de hoje (o 1h55 é o do card ATRASO)',
+     [V13.precisaMin, _taktPrecisaPartes(T13, V13).map(p => _fmtHM(p.min))], [516, ['1h55', '6h41']]);
+  const k = 527 / 2761, mk = (uV, uH, uR) => [{ meta:2761, falta:{ uep:uV + uH + uR, uepVenc:uV }, dias:[{ hoje:true, saldoUep:uH }] }, { precisaMin:Math.round((uV + uH + uR) * k) }];
+  const [T3, V3] = mk(500, 1000, 1500), P3 = _taktPrecisaPartes(T3, V3);
+  // a armadilha do arredondamento: 482,4 + 490,4 = 972,8 → 973; arredondando cada parte (482 + 490) sobrava 1 min, e saía "0h01 dos dias que vêm"
+  const [Ta, Va] = mk(482.4 / k, 490.4 / k, 0), Pa = _taktPrecisaPartes(Ta, Va);
+  ok('três partes no meio da semana (atraso, hoje, dias que vêm) fecham no PRECISA; o arredondamento é do acumulado — nunca um "0h01" que não existe',
+     [P3.map(p => p.k), P3.reduce((a, p) => a + p.min, 0) === V3.precisaMin, Pa.map(p => p.k), Pa.map(p => p.min), Va.precisaMin],
+     [['venc', 'hoje', 'vem'], true, ['venc', 'hoje'], [482, 491], 973]);
+  ok('uma parte só (sem atraso; ou só o vencido), meia UEP de vencido, sem PRECISA ou sem T: nada a separar (null)',
+     [_taktPrecisaPartes(...mk(0, 1000, 500)) && _taktPrecisaPartes(...mk(0, 1000, 500)).map(p => p.k), _taktPrecisaPartes(...mk(0, 1000, 0)), _taktPrecisaPartes(...mk(800, 0, 0)),
+      _taktPrecisaPartes(...mk(0.3, 1000, 0)), _taktPrecisaPartes(T3, { precisaMin:0 }), _taktPrecisaPartes(null, V3), _taktPrecisaPartes(T3, null)],
+     [['hoje', 'vem'], null, null, null, null, null, null]);
+  // sorteio: a soma sempre fecha no PRECISA, toda parte > 0, nunca parte de menos de meia UEP, no máximo três, na ordem
+  let ruim = 0;
+  for(let i = 0; i < 4000; i++){
+    const r = () => Math.random() < 0.25 ? 0 : Math.random() < 0.1 ? Math.random() * 0.6 : Math.random() * 4000;
+    const uV = r(), uH = r(), uR = r(), [Tx, Vx] = mk(uV, uH, uR), P = _taktPrecisaPartes(Tx, Vx);
+    // null só quando não há duas partes de verdade: com duas de 1 min ou mais, tinha de separar
+    if(!P){ if([uV, uH, uR].filter(u => u * k >= 1).length > 1) ruim++; continue; }
+    const soma = P.reduce((a, p) => a + p.min, 0), ord = P.map(p => ['venc', 'hoje', 'vem'].indexOf(p.k));
+    if(soma !== Vx.precisaMin || P.some(p => !(p.min > 0)) || P.length > 3 || ord.some((o, j) => j && o <= ord[j - 1])
+       || (uV < 0.5 && P.some(p => p.k === 'venc')) || (uH < 0.5 && P.some(p => p.k === 'hoje')) || (uR < 0.5 && P.some(p => p.k === 'vem'))) ruim++;
+  }
+  ok('sorteio de 4.000 casos: a soma fecha no PRECISA, toda parte > 0, na ordem, nunca parte de menos de meia UEP', ruim, 0);
+  const hP = _taktHeroHtml(V0, { semana:'esta', ate:'17:00', partes:PT }), hS = _taktHeroHtml(V0, { semana:'esta', ate:'17:00' });
+  const Vok = Object.assign({}, V0, { cabe:true, faltaMin:-30 }), hOk = _taktHeroHtml(Vok, { semana:'esta', ate:'17:00', partes:PT });
+  ok('o desenho: a barra PRECISA em segmentos (p1 até 49,5%, p2 o resto) e, logo embaixo, a legenda "8h02 de atraso (lotes vencidos) + 8h11 dos lotes de hoje"; sem partes, a barra de antes; cabendo, sem o vermelho',
+     [hP.includes('<span class="tks-tr"><i class="p1" style="left:0.0%;width:49.5%"></i><i class="p2" style="left:49.5%;width:50.5%"></i></span><b>16h13</b>'),
+      hP.includes('<div class="tks-bpt pr"><span class="p1"><b>8h02</b> de atraso (lotes vencidos)</span><em>+</em><span class="p2"><b>8h11</b> dos lotes de hoje</span></div><div class="tks-br"><span>TEM</span>'),
+      hS.includes('tks-bpt'), hS.includes('<span class="tks-tr"><i style="width:100.0%"></i></span><b>16h13</b>'), hOk.includes('<div class="tks-bpt">'),
+      _taktHeroHtml(V0, { semana:'esta', partes:[{ k:'venc', min:400 }, { k:'hoje', min:400 }, { k:'vem', min:173 }] }).includes('<em>+</em><span class="p3"><b>2h53</b> dos dias que vêm</span>')],
+     [true, true, false, true, true, true]);
+  ok('a tela e o 🖨 passam as partes na ESTA SEMANA (e só nela); o desenho não faz a conta',
+     [/_taktHeroHtml\(o\.V, \{ semana:'esta', ate:F\.ate, partes:_taktPrecisaPartes\(T, o\.V\) \}\)/.test(pega('function _taktHtml(')),
+      /_taktHeroHtml\(V0, \{ semana:'esta', ate:T\.falta\.ate, partes:_taktPrecisaPartes\(T, V0\) \}\)/.test(pega('function _taktDocHtml(')),
+      /semana:'prox'[^)]*partes/.test(html), /_taktPrecisaPartes\(|uepVenc|saldoUep|UEP_MIN_DIA\/|\.meta/.test(pega('function _taktHeroHtml(')),
+      HT.includes('class="tks-bpt pr"')],
+     [true, true, false, false, true]);
+  ok('a pele: os segmentos de opacidade (tela e papel) e a legenda alinhada embaixo da barra',
+     [/#sec-uep \.tks-tr i\.p2\{opacity:\.55\} #sec-uep \.tks-tr i\.p3\{opacity:\.3\}/.test(html), /#sec-uep \.tks-bpt\{display:flex;[^}]*margin:-1px 62px 7px 74px/.test(html),
+      /\.tks-doc \.tks-tr i\.p2\{opacity:\.55\} \.tks-doc \.tks-tr i\.p3\{opacity:\.3\}/.test(html), /\.tks-doc \.tks-bpt\{display:flex;/.test(html)],
+     [true, true, true, true]); }
 { const h1 = _taktHeroHtml(V1, { semana:'prox', nUteis:5 }), h0 = _taktHeroHtml(V0, { semana:'esta', ate:'17:00' });
   // v7.222.0 (PPCP: "nível diretoria, bater o olho e entender"): UM número e a tradução dele, arredondada
   ok('o veredito: a palavra com o que ela quer dizer, UM número (o que falta), a tradução em dias, caixas (arredondadas) e as barras PRECISA × TEM com a falta marcada',

@@ -5057,7 +5057,7 @@ console.log('\n── estudo de UEP ──');
     global.GPX_ATR_ABERTO = true; const AHa = _gpxAtrasoHtml(AM, PA); global.GPX_ATR_ABERTO = false;
     // v7.227.0 (PPCP: "onde consigo ver hora que está em atraso?" → "deixar em um lugar para ver card" → "deixar à vista"):
     // o total do quadro num cartão da faixa da ⚖ UEP, à vista em qualquer sub-aba — o MESMO número
-    eval(pega('function _uepSubAtr('));
+    eval(pega('function _uepSubAtr(')); eval(pega('function _uepAtrSub('));
     ok('cartão ATRASO: as horas e as caixas do total do quadro, desde o lote mais antigo; * quando há código sem UEP (fica só nas caixas); vermelho',
        _uepSubAtr(PA, AM), { txt:_fmtHM(PA.conta.venc) + '* · 339 cx · desde 20/10', cls:'red' });
     // celular 1.43.0 ("essa card do atraso pode ir para app gerencial" → "no mobile deixar bem à vista"): o card do gerencial do
@@ -5084,13 +5084,33 @@ console.log('\n── estudo de UEP ──');
     { const RPXa = pega('function renderProxDias(');
       ok('o cartão é pintado pelo renderProxDias em cada desfecho (o mesmo A do quadro); sem a lista: dia não lido "…", nada em aberto "nada vencido"',
          [/sbA\(_uepSubAtr\(null, null, f \? 'falha' : 'lendo'\)\)/.test(RPXa), /sbA\(_uepSubAtr\(null, null, 'sem-uep'\)\)/.test(RPXa),
-          /sbA\(_uepSubAtr\(P, A, A \? null : !PONTOS_DIA_TS \? 'lendo' : lista\.length \? 'sem-lista' : 'vazia'\)\)/.test(RPXa),
+          /sbA\(_uepSubAtr\(P, A, A \? null : !PONTOS_DIA_TS \? 'lendo' : lista\.length \? 'sem-lista' : 'vazia', _cartNum\(hojeStr\(\)\)\)\)/.test(RPXa),
           /_gpxMontar\(|_gpxDivida\(|uepCx|porMin/.test(pega('function _uepSubAtr('))], [true, true, true, false]);
       ok('o cartão mora na faixa, à vista em qualquer sub-aba, mas NÃO é sub-aba (sem data-sub e sem role=tab; o _uepSubMarca só acende as sub-abas); o toque abre o quadro',
-         [/<button type="button" class="ucv-sb uep-sb-atr" onclick="_uepAtrAbrir\(\)"[^>]*><b>ATRASO<\/b><span id="uep-sb-atr">…<\/span><\/button>/.test(src),
+         [/<button type="button" class="ucv-sb uep-sb-atr" onclick="_uepAtrAbrir\(\)"[^>]*><b>ATRASO<\/b><span id="uep-sb-atr">…<\/span><small id="uep-sb-atr-s"><\/small><\/button>/.test(src),
           /class="ucv-sb uep-sb-atr"[^>]*(data-sub|role=)/.test(src), /querySelectorAll\('#uep-sub \.ucv-sb\[data-sub\]'\)/.test(pega('function _uepSubMarca(')),
           /GPX_ATR_ABERTO = true;\s*_uepSub\('prox'\);/.test(pega('function _uepAtrAbrir(')), /#sec-uep \.ucv-sb\.uep-sb-atr\.red\{border-color:/.test(src)],
          [true, false, true, true, true]); }
+    // v7.242.0 (PPCP 13/11/2026, com a tela: o card dizia 1h55 e o TAKT "faltam 6h16" — "como falta 6?" → prévia → "pode subir"):
+    // a 2ª linha do card diz que o atraso JÁ CONTA no FALTAM da semana (não é um 2º problema para somar). O TAKT só conta os
+    // lotes desta semana (segunda em diante): atraso de antes da segunda fica fora, e o card diz isso.
+    ok('2ª linha do card ATRASO: desde esta semana (até a própria segunda) "já conta"; desde antes da segunda, diz a segunda e "não conta"',
+       [_uepAtrSub('10/11/2026', 20261113), _uepAtrSub('09/11/2026', 20261113), _uepAtrSub('06/11/2026', 20261113),
+        _uepAtrSub('13/11/2026', 20261116), _uepAtrSub('09/11/2026', 20261115), _uepAtrSub('24/12/2026', 20270101),
+        _uepAtrSub('', 20261113), _uepAtrSub('10/11/2026'), _uepAtrSub('10/11', 20261113)],
+       ['já conta no FALTAM da semana', 'já conta no FALTAM da semana', 'o de antes de 09/11 não conta no FALTAM da semana',
+        'o de antes de 16/11 não conta no FALTAM da semana', 'já conta no FALTAM da semana', 'o de antes de 28/12 não conta no FALTAM da semana',
+        '', '', '']);
+    { const AMh = _gpxAtrasoMontar([{ codigo:'501071004', desc:'VOL 1/3 HOME RIPADO SUPREMO 1.8', cor:'', desde:'10/11/2026', atr:200, hoje:0, u:2.94 }], 2761 / 527);
+      ok('o card com o dia: a 2ª linha vem junto (sub), o resto igual; sem o dia, sem sub (o objeto de antes); sem vencido, sem sub',
+         [_uepSubAtr(PA, AMh, null, 20261113).sub, _uepSubAtr(PA, AMh, null, 20261113).txt === _uepSubAtr(PA, AMh).txt, 'sub' in _uepSubAtr(PA, AMh),
+          'sub' in _uepSubAtr(PA, AM0, null, 20261113), 'sub' in _uepSubAtr(null, null, 'lendo', 20261113)],
+         ['já conta no FALTAM da semana', true, false, false, false]); }
+    { const RPXb = pega('function renderProxDias(');
+      ok('o renderProxDias pinta a 2ª linha (texto e title) e a esconde quando não há; a pele dela no card',
+         [/const s = document\.getElementById\('uep-sb-atr-s'\); if\(s && o\)\{ s\.textContent = o\.sub \|\| ''; s\.title = o\.sub \|\| ''; s\.style\.display = o\.sub \? '' : 'none'; \}/.test(RPXb),
+          /#sec-uep \.ucv-sb\.uep-sb-atr small\{[^}]*white-space:nowrap;overflow:hidden;text-overflow:ellipsis/.test(src)],
+         [true, true]); }
     ok('o quadro do atraso nasce RECOLHIDO, com o total (cx · UEP · horas) e os códigos no título; aberto, continua aberto no refresh',
        [/^<details class="gpx-atr" ontoggle="_gpxAtrToggle\(this\.open\)"><summary class="gpx-atr-t"><b>ATRASO — CONFERÊNCIA<\/b>/.test(AH),
         AH.includes('<b>339 cx · 549 UEP · ' + _fmtHM(PA.conta.venc) + '</b> · 4 códigos'), /^<details class="gpx-atr" open /.test(AHa), /<\/details>$/.test(AH),
