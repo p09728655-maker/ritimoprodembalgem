@@ -7498,31 +7498,52 @@ feito e dá ar de verdade ao que sobrou.
     PAINEL RIPADO ~46, PENTEADEIRA MEL ~90 pontos por UEP; ~70 no mês) — por
     isso a média é a dos lotes DA SEMANA, e sem cadastro de pontos nada sai.
   - **4 SEMANAS (v7.237.0**, PPCP 13/11/2026: *"tem como colocar mais
-    semanas?"* → o quadro, recomendado contra mais botões): `TKS_SEM` = 3,
-    botão entre SEMANA QUE VEM e AVALIAR. Esta semana + as 3 seguintes, **cada
-    uma pela conta da tela dela**: esta semana = `V0` (a ESTA SEMANA); as outras
-    = `_taktMontar` + `_taktProxMontar` + `_taktVeredito` (a SEMANA QUE VEM, o
-    PRÓXIMOS DIAS). `_taktSemanasMontar(L, rit)` (pura) só soma o atraso que
-    passa adiante (a sobra só abate o que existe); semana sem UEP programada =
-    *sem programação datada* (não entra); semana não lida → atraso sem número
-    daí em diante. Desenho `_taktSemanasHtml` (sem conta), toque abre o dia a
-    dia (`TKS4_AB`). Não soma o vencido de antes desta segunda (o card ATRASO;
-    somar foi oferecido e não decidido).
-    - **Rótulo e frase pelo DIA ÚTIL** (PPCP: *"16-22/11 é domingo"*): cada
-      semana leva `ini`/`fim` = o 1º e o último dia útil (sem dia útil, seg–dom);
-      a linha diz *16/11–19/11 (20/11 feriado)* e a frase *"chega a 19/11"* —
-      nunca o domingo. A lição da v7.214.1 do AVALIAR, de novo.
-    - ⚠ A 1ª versão (não publicada) usava o `_tkaCorrente` do AVALIAR e o
-      revisor achou: veredito oposto ao da SEMANA QUE VEM para a mesma semana
-      (dia adiantado ou sem UEP perdia a jornada), vencido contado em dobro (o
-      `falta` do `getProgramacaoDetalhada` é POR CÓDIGO — e o `_tkaPainel` do
-      AVALIAR ainda soma ele por linha: defeito antigo, não mexido), laço de
-      leitura e semanas congeladas.
+    semanas?"* → o quadro, recomendado contra mais botões; *"sempre dias
+    úteis"*): `TKS_SEM` = 3, botão entre SEMANA QUE VEM e AVALIAR. Esta semana +
+    as 3 seguintes, cada uma montada pelo `_taktMontar` (o mesmo das telas), com
+    **UMA regra de saldo para as quatro** (`_taktSemanasMontar`, pura — a do
+    SALDO DE HORAS do AVALIAR, que o PPCP já validou):
+    - precisa = o saldo dos lotes dos **dias úteis**; na esta semana também o que
+      já venceu (o saldo dos dias que passaram = a linha *lotes desta semana já
+      vencidos*, nunca a diferença de arredondamentos);
+    - tem = 527 por **dia útil com lote com UEP** (mesmo já adiantado: a linha
+      está livre e abate atraso); hoje, o resto da jornada;
+    - **dia útil sem lote** (ou só com caixas sem UEP) fica FORA, precisa e tem,
+      e é dito na linha e na frase: o PCP programa ~1,5 semana à frente e a folga
+      de um dia ainda não programado apagava atraso (revisão: a semana 4 só com o
+      23/11 dizia *"chega a 27/11 em dia"*);
+    - **lote em sábado, domingo ou feriado** que vem é hora extra: fora da conta,
+      dito (*"14/11 1h03 em hora extra, fora"*), como no PRÓXIMOS DIAS;
+    - o atraso passa adiante, máx(0, atraso + precisa − tem); a sobra só abate o
+      que existe. No ritmo atual, em horas do relógio (precisa ÷ ritmo).
+    - Semana sem nenhuma linha: *sem programação datada*; só com caixas sem UEP:
+      *N cx sem UEP no cadastro — sem conta*; parte sem UEP: *a semana é mais
+      pesada*. Nenhuma das duas mexe no atraso. Semana não lida → atraso sem
+      número daí em diante, a frase *(até onde foi lido)* e o botão *(parcial)*.
+    - **Com todo dia útil programado e sem lote no fim de semana, cada semana dá
+      o mesmo que a tela dela** (ESTA SEMANA, SEMANA QUE VEM) — o teste confere.
+      Fora disso a diferença está escrita na linha.
+    - Rótulo e frase pelo DIA ÚTIL (PPCP: *"16-22/11 é domingo"*): a linha diz
+      *16/11–19/11 (20/11 feriado · 19/11 sem programação — fora)* e a frase
+      fecha no último dia PROGRAMADO (*"chega a 18/11"*), nunca no domingo.
+    - Desenho `_taktSemanasHtml` (sem conta), toque abre o dia a dia (`TKS4_AB`).
+      Não soma o vencido de antes desta segunda (o card ATRASO; somar foi
+      oferecido e não decidido).
+    - Revisões: a 1ª versão (o `_tkaCorrente` inteiro) contava o vencido em dobro
+      (o `falta` do `getProgramacaoDetalhada` é POR CÓDIGO — e o `_tkaPainel` do
+      AVALIAR ainda soma ele por linha: defeito antigo, não mexido); a 2ª (o
+      veredito de cada tela) contava dia útil sem lote como folga, lote de sábado
+      numa semana e não nas outras, calava as caixas sem UEP e mostrava *"já
+      vencidos 0h01"* sem vencido.
     - Leituras: a semana que vem (`TKP`, `_taktProxCarregar`) e a faixa das
       semanas 3–4 (`TK4`, `_taktSemanas4Carregar`, 14 dias pelo `_taktLer`;
-      `_taktSemanas4Faixa`, `_taktSemanaDe` parte em duas). Só com a fila livre
-      (`_uepLendo`, que inclui o `TK4_VOO`) e depois da espera (5 min; 1 min na
-      falha) — sem laço. ↻ `_taktSemanasLer()` relê as duas na fila.
+      `_taktSemanas4Faixa`, `_taktSemanaDe` parte em duas), uma por vez, com a
+      fila livre (`_uepLendo` inclui o `TK4_VOO`). **Depois de uma falha as DUAS
+      esperam** (`TKS4_FAL`, falhas seguidas: 1 min; 2+ seguidas, 5 min): sem
+      isso uma falhando chamava a outra logo em seguida e o Apps Script ficava
+      ocupado 94% do tempo (medido com relógio virtual). Hoje: tudo falhando 15%,
+      só a faixa falhando 29%. O teste roda o bloco real do `renderUep` com o
+      relógio virtual (não regex).
     - Medido no Chromium (retrato de 06/11): 1920 e 1366, nada passa da largura.
   - **AVALIAR PROGRAMAÇÃO (v7.213.0**, PPCP: *"como fazer para programar
     dentro do padrão?"* → *"a no painel"*): `TKS_SEM` = 2. O PCP cola o bloco
