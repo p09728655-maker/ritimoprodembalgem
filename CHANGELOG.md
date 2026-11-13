@@ -11,6 +11,35 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.237.0 — 13/11/2026 · TAKT DA SEMANA: 4 SEMANAS
+
+PPCP, com a SEMANA QUE VEM na tela: *"tem como colocar mais semanas?"* → o
+quadro de 4 semanas. Nada muda no `.gs` (sem re-deploy).
+
+- **⚖ UEP › TAKT DA SEMANA › 4 SEMANAS** (entre SEMANA QUE VEM e AVALIAR):
+  esta semana e as 3 seguintes, uma linha por semana — PRECISA · TEM (jornada
+  sem hora extra) · NA SEMANA (falta ou sobra) · ATRASO NO FIM e no ritmo atual.
+  Toque na semana abre o dia a dia.
+- **Sempre em dias úteis.** A semana vai do 1º ao último dia útil
+  (*16/11–19/11*, com o feriado de 20/11 dito) e a frase fecha no último dia
+  programado — nunca no domingo.
+- **Uma regra de saldo para as quatro semanas** (a do SALDO DE HORAS do
+  AVALIAR): dia útil sem lote fica fora (não vira folga que apaga atraso);
+  lote em sábado ou feriado é hora extra, fora da conta; o atraso passa para a
+  semana seguinte e a sobra só abate o que já existe. Tudo o que fica fora é
+  dito na linha. Com todos os dias úteis programados e sem lote no fim de
+  semana, cada semana dá o mesmo que a tela dela (ESTA SEMANA, SEMANA QUE VEM).
+- Caixas sem UEP aparecem (*N cx sem UEP — sem conta* ou *a semana é mais
+  pesada*), nunca como "sem programação". O vencido de antes desta segunda não
+  soma (é o card ATRASO).
+- Leituras: a semana que vem e uma faixa de 14 dias (semanas 3 e 4), uma por
+  vez, renovadas a cada 5 min. Depois de falha as duas esperam (1 min; 5 min
+  com falhas seguidas). ↻ ATUALIZAR relê.
+- O botão da sub-aba diz *"4 semanas: Xh de atraso"* ou *"em dia"*, e
+  *(parcial)* quando alguma semana não foi lida.
+
+---
+
 ## v7.236.0 · mobile 1.49.0 — 13/11/2026 · as paradas na faixa do PRODUTOS EMBALADOS HOJE
 
 PPCP, com o print do gerencial do PC: *"no timeline colocar as paradas"* → no

@@ -361,11 +361,11 @@ console.log('\n── a ligação com a aba ──');
 const R = pega('function renderUep('), CAR = pega('async function _uepAbaCarregar('), LD = pega('function _taktCarregar('), LER = pega('async function _taktLer(');
 ok('a 6ª sub-aba: botão, chave, painel no renderUep e o número pintado com os outros',
    [/data-sub="takt"[^>]*onclick="_uepSub\('takt'\)"><b>TAKT DA SEMANA<\/b><span id="uep-sb-takt">/.test(html), /const UEP_SUBS = \[[^\]]*'takt'\];/.test(JS),
-    R.includes("+pn('takt', bT)"), /\['hoje', 'periodo', 'prod', 'takt'\]\.forEach/.test(pega('function _uepSubPintar(')), /T, taktEst:/.test(R)],
+    R.includes("+pn('takt', bT)"), /\['hoje', 'periodo', 'prod', 'takt'\]\.forEach/.test(pega('function _uepSubPintar(')), /: T,\s*taktEst:/.test(R)],
    [true, true, true, true, true]);
 ok('a leitura: action=getProgramacaoSemana, 3 tentativas em sequência, voo compartilhado, a última da fila da aba e na fila da RÉGUAS',
    [LER.includes("action=getProgramacaoSemana"), /for\(let t=1; t<=3; t\+\+\)/.test(LER), /if\(TKS_VOO\) return TKS_VOO;/.test(LD) && /TKS_VOO=_taktLer\(''\)/.test(LD),
-    CAR.indexOf('await _taktCarregar()') > CAR.indexOf('await _uepPadCarregar()'), /TKS_VOO \|\| TKP_VOO \|\| _pontosVoo/.test(pega('function _uepLendo('))],
+    CAR.indexOf('await _taktCarregar()') > CAR.indexOf('await _uepPadCarregar()'), /TKS_VOO \|\| TKP_VOO \|\| TK4_VOO \|\| _pontosVoo/.test(pega('function _uepLendo('))],
    [true, true, true, true, true]);
 ok('o .gs antigo (responde sem linhas) é o único caso que manda re-deployar; renova de outro dia sempre, velha só com a sub-aba aberta',
    [/return \{ falha:'sem-endpoint', erro:'' \};/.test(LER), _taktEstadoHtml('sem-endpoint', '', 'x()', '').includes('cole o ritmoprod_appscript.gs v5.59 e re-deploye'),
@@ -482,7 +482,7 @@ ok('o desenho da semana que vem (v7.232.0): sem os cartões em s por UEP e a fra
       (SV1.match(/>folga \d+h\d\d</g) || []).length, SV1.includes('var(--tks-feito)')], [3, 5, 0, true, true, 2, false]); }
 ok('a escolha da semana e o botão: o painel e o número são da semana escolhida',
    [_taktSemBotoes(0).includes('class="on" onclick="_taktSemSet(0)"'), _taktSemBotoes(1).includes('class="on" onclick="_taktSemSet(1)"'),
-    _uepSubTakt(T1, null, 'semana que vem'), /taktRot:TKS_SEM===2 \? 'avaliação' : TKS_SEM===1 \? 'semana que vem' : ''/.test(R), /T:TKS_SEM===2 \? TA : TKS_SEM===1 \? T1 : T/.test(R)],
+    _uepSubTakt(T1, null, 'semana que vem'), /taktRot:TKS_SEM===2 \? 'avaliação' : TKS_SEM===1 \? 'semana que vem' : TKS_SEM===3 \? '4 semanas' : ''/.test(R), /T:TKS_SEM===2 \? TA : TKS_SEM===1 \? T1 : T/.test(R)],
    [true, true, { txt:'semana que vem: pede ' + fmtP(T1.pede), cls:'warn' }, true, true]);
 { const LP = pega('function _taktProxCarregar('), SS = pega('function _taktSemSet(');
   ok('a leitura da semana que vem: a MESMA (_taktLer) com de/ate, só quando escolhida e na fila (uma leitura por vez); renova ao virar a semana',
@@ -1018,5 +1018,151 @@ console.log('\n── v7.224.0: a FAIXA DO TAKT — os volumes para o app de cro
       (h => h.indexOf('class="tks-nl') > h.indexOf('<b>ONDE ESTÁ O EXCESSO</b>') && h.indexOf('<textarea') < h.indexOf('tks-hero'))(_tkaHtml(L42, M42, { botoes:'' }))],
      [true, true, true]); }
 
-console.log(falhas ? '\n❌ ' + falhas + ' falha(s)' : '\n✅ takt da semana ok — o veredito em horas de linha, o porquê dia a dia, o agora em caixas');
-process.exit(falhas ? 1 : 0);
+console.log('\n── v7.237.0: 4 SEMANAS (uma regra de saldo para as quatro, sempre em dias úteis; só o atraso passa adiante) ──');
+['function _taktSemanas4Faixa(', 'function _taktSemanaDe(', 'function _taktSemanasMontar(', 'function _taktSemanasHtml('].forEach(f => eval.call(global, pega(f)));
+global.TKS4_AB = {};
+global.p2 = global.p2 || (n => String(n).padStart(2, '0'));
+ok('a faixa das semanas 3 e 4: da 3ª segunda (esta inclusa) ao domingo seguinte; 06/11 (sex) → 16–29/11; numa segunda, 09/11 → 23/11–06/12',
+   [_taktSemanas4Faixa('06/11/2026'), _taktSemanas4Faixa('09/11/2026')], [{ de:'16/11/2026', ate:'29/11/2026' }, { de:'23/11/2026', ate:'06/12/2026' }]);
+const F4 = { ok:true, de:'16/11/2026', ate:'29/11/2026', hoje:'06/11/2026', feriados:[{ data:'20/11/2026', desc:'CONSCIÊNCIA NEGRA' }], linhas:FX.F1629 };
+const S3 = _taktSemanaDe(F4, 0), S4 = _taktSemanaDe(F4, 7);
+ok('a faixa vira duas semanas no formato do getProgramacaoSemana (as linhas e o feriado de cada uma)',
+   [S3.de, S3.ate, S3.linhas.length, S3.feriados.length, S4.de, S4.ate, S4.linhas.length, S4.feriados.length],
+   ['16/11/2026', '22/11/2026', FX.F1629.length, 1, '23/11/2026', '29/11/2026', 0, 0]);
+const hP = { num:20261106, meta:2761 };
+const sem4 = Sx => { const Tx = _taktMontar(Sx, [], hP), Px = _taktProxMontar(Tx); return { T:Tx, P:Px, V:_taktVeredito(Tx, Px, RIT) }; };
+const W1 = sem4(SP), W3 = sem4(S3), W4 = sem4(S4);
+const C4 = _taktSemanasMontar([{ T }, { T:W1.T }, { T:W3.T }, { T:W4.T }], RIT);
+ok('com todo dia útil programado, a 1ª semana dá o mesmo que a ESTA SEMANA e a 2ª o mesmo que a SEMANA QUE VEM (46h08 × 43h55, falta 2h13)',
+   [C4.semanas[0].precisa, C4.semanas[0].tem, C4.semanas[1].precisa, C4.semanas[1].tem, C4.semanas[1].falta, _fmtHM(C4.semanas[1].falta)],
+   [V0.precisaMin, V0.temMin, V1.precisaMin, V1.temMin, V1.faltaMin, '2h13']);
+{ const s3 = C4.semanas[2], d19 = s3.dias.find(d => d.data === '19/11/2026');
+  ok('dia útil SEM lote fica fora, precisa e tem (revisão: a folga dele apagava atraso): 16–22/11 só com 16, 17 e 18/11 programados = 3 × 8h47; 19/11 fora; 20/11 feriado; 23–29/11 sem lote = sem programação',
+     [s3.tem, s3.precisa, s3.fora, s3.feriados, s3.fimConta, d19 && d19.fora, C4.semanas[3].vazia, C4.semanas[3].conta],
+     [3 * 527, W3.V.precisaMin, ['19/11/2026'], ['20/11/2026'], '18/11/2026', 'vazio', true, false]); }
+{ const s = C4.semanas, a1 = Math.max(0, s[0].precisa - s[0].tem), a2 = Math.max(0, a1 + s[1].precisa - s[1].tem), a3 = Math.max(0, a2 + s[2].precisa - s[2].tem);
+  ok('o atraso passa adiante e a sobra só abate o que já existe; semana sem lote não mexe; a frase vai até o último dia PROGRAMADO (18/11 — 19/11 sem lote, 20/11 feriado, 22/11 domingo): 14h52',
+     [s[0].atraso, s[1].atraso, s[2].atraso, s[3].atraso, C4.atraso, C4.fim, _fmtHM(C4.atraso)], [a1, a2, a3, a3, a3, '18/11/2026', '14h52']);
+  const H = _taktSemanasHtml(C4, { botoes:'' });
+  ok('rótulo da semana do 1º ao último dia útil (PPCP: "16-22/11 é domingo"), com o feriado e o dia sem lote ditos; nenhum rótulo termina no domingo',
+     [s[1].ini, s[1].fim, s[2].ini, s[2].fim, s[3].fim, H.includes('16/11–19/11'), H.includes('20/11 feriado'), H.includes('19/11 sem programação — fora'), /–22\/11|–15\/11|–29\/11/.test(H), H.includes('a linha chega a <b>18/11</b>'), H.includes('Dia útil sem programação fica fora (1 dia)'), H.includes('23/11, 24/11')],
+     ['09/11/2026', '13/11/2026', '16/11/2026', '19/11/2026', '27/11/2026', true, true, true, false, true, true, false]); }
+{ // o caso da revisão: a semana 4 só com o 23/11 programado — os outros 4 dias não viram folga
+  const l = Object.assign({}, FX.F1629[0], { data:'23/11/2026', dataNum:20261123 });
+  const S4b = Object.assign({}, S4, { linhas:[l] }), T4b = _taktMontar(S4b, [], hP);
+  const Cb = _taktSemanasMontar([{ T }, { T:W1.T }, { T:W3.T }, { T:T4b }], RIT), s4 = Cb.semanas[3];
+  ok('a semana 4 só com o 23/11 programado: tem 8h47 (não 43h55), 24–27/11 fora, e a frase não diz "em dia" (diria, com a jornada dos dias sem lote)',
+     [s4.tem, s4.fora.length, Cb.fim, Cb.atraso > 0, Cb.atraso === Math.max(0, C4.atraso + s4.precisa - 527)], [527, 4, '23/11/2026', true, true]); }
+{ // lote no sábado: hora extra, fora da conta (a regra da SEMANA QUE VEM) — e o dia a dia não pinta falta
+  const sab = Object.assign({}, FX.F1629[0], { data:'14/11/2026', dataNum:20261114, qtde:400, saldo:400, uepCx:0.83, uep:332 });
+  const Ts = _taktMontar(Object.assign({}, SP, { linhas:SP.linhas.concat([sab]) }), [], hP);
+  const Cs = _taktSemanasMontar([{ T }, { T:Ts }], RIT), s1 = Cs.semanas[1], dS = s1.dias.find(d => d.data === '14/11/2026');
+  const Hs = (global.TKS4_AB = { 1:true }, _taktSemanasHtml(Cs, { botoes:'' })); global.TKS4_AB = {};
+  ok('lote no sábado 14/11: fora do PRECISA (46h08, o mesmo da SEMANA QUE VEM), dito na linha e no dia ("hora extra, fora da conta"), sem "falta" vermelha no dia',
+     [s1.precisa, s1.he.length, s1.he[0].min, dS && dS.he, Hs.includes('14/11 1h03 em hora extra, fora'), /14\/11 sáb · fim de semana · hora extra, fora da conta<\/td><td class="n mono">1h03<\/td><td class="n">—<\/td><td class="n">—<\/td>/.test(Hs)],
+     [V1.precisaMin, 1, Math.round(332 * K), true, true, true]); }
+{ // caixas sem UEP: ditas, nunca "sem programação"
+  const su = SP.linhas.map(l => Object.assign({}, l, { uepCx:null, uep:null }));
+  const Tu = _taktMontar(Object.assign({}, SP, { linhas:su }), [], hP);
+  const Cu = _taktSemanasMontar([{ T }, { T:Tu }], RIT), s1 = Cu.semanas[1], Hu = _taktSemanasHtml(Cu, { botoes:'' });
+  const meia = SP.linhas.map((l, i) => i % 2 ? Object.assign({}, l, { uepCx:null, uep:null }) : l);
+  const Tm = _taktMontar(Object.assign({}, SP, { linhas:meia }), [], hP), Cm = _taktSemanasMontar([{ T }, { T:Tm }], RIT), Hm = _taktSemanasHtml(Cm, { botoes:'' });
+  ok('semana só com caixas sem UEP: "N cx sem UEP no cadastro — sem conta" (nunca "sem programação datada"), não mexe no atraso; com parte sem UEP, a linha diz que a semana é mais pesada',
+     [s1.semUep, s1.vazia, s1.atraso === Cu.semanas[0].atraso, Hu.includes(fmtN(Tu.cxSemUep) + ' cx sem UEP no cadastro — sem conta'), Hu.includes('sem programação datada'), Hm.includes(fmtN(Tm.cxSemUep) + ' cx sem UEP fora (a semana é mais pesada)')],
+     [true, false, true, true, false, true]); }
+{ // semana toda já adiantada (saldo 0): a linha está livre — a jornada abate o atraso
+  const ad = SP.linhas.map(l => Object.assign({}, l, { saldo:0 }));
+  const Ta = _taktMontar(Object.assign({}, SP, { linhas:ad }), [], hP), Ca = _taktSemanasMontar([{ T }, { T:Ta }], RIT), s1 = Ca.semanas[1];
+  ok('semana toda adiantada: precisa 0, tem 43h55, e o atraso desta semana é abatido (não "sem programação")',
+     [s1.conta, s1.precisa, s1.tem, s1.atraso, Ca.semanas[0].atraso > 0], [true, 0, 5 * 527, Math.max(0, Ca.semanas[0].atraso - 5 * 527), true]); }
+{ const s = C4.semanas, r = x => x.V.ritmo.faltaMin + x.V.temMin;
+  const b1 = Math.max(0, r({ V:V0 }) - V0.temMin), b2 = Math.max(0, b1 + r(W1) - W1.V.temMin), b3 = Math.max(0, b2 + Math.round(s[2].precisa / K * K * 2761 / RIT) - s[2].tem);
+  ok('no ritmo atual: a mesma passagem em horas do relógio (o precisa ÷ ritmo; nas semanas 1 e 2, o do veredito de cada tela)',
+     [s[0].atrasoR, s[1].atrasoR, Math.abs(s[2].atrasoR - b3) <= 1, s[3].atrasoR], [b1, b2, true, s[2].atrasoR]); }
+const CL = _taktSemanasMontar([{ T }, { T:W1.T }, { est:'falha' }, { est:'falha' }], RIT);
+ok('semana não lida: a linha diz, e o atraso daí em diante fica sem número (a frase diz "até onde foi lido"; o botão, "(parcial)")',
+   [CL.completo, CL.semanas[2].est, CL.semanas[2].atraso, CL.semanas[3].atraso, CL.atraso === CL.semanas[1].atraso, _taktSemanasHtml(CL, {}).includes('(até onde foi lido)'), _taktSemanasHtml(CL, {}).includes('não consegui ler — ↻ ATUALIZAR'), _uepSubTakt(null, null, '4 semanas', CL).txt.endsWith('(parcial)')],
+   [false, 'falha', null, null, true, true, true, true]);
+ok('sem a esta semana montada: nada', _taktSemanasMontar([{ est:'lendo' }, { T:W1.T }], RIT), null);
+{ const d = C4.semanas[1].dias;
+  ok('o dia a dia da semana que vem: os dias úteis, a programação em horas de linha e a jornada; soma o precisa da semana',
+     [d.length, d.every(x => x.tem === 527), Math.abs(d.reduce((a, x) => a + x.precisa, 0) - C4.semanas[1].precisa) <= d.length], [5, true, true]);
+  const d0 = C4.semanas[0], somaTem = d0.dias.reduce((a, x) => a + x.tem, 0);
+  const venc = T.dias.filter(x => x.passado).reduce((a, x) => a + x.saldoUep, 0);
+  ok('o dia a dia desta semana: de hoje em diante, a jornada fecha com o "tem" da ESTA SEMANA; o vencido da semana é o saldo dos dias que passaram, numa linha à parte',
+     [d0.dias[0].data.slice(0, 5), somaTem, d0.antes, d0.antes > 0], ['06/11', d0.tem, Math.round(venc * K), true]);
+  // numa segunda-feira não há vencido da semana: nada de "0h01" de arredondamento (revisão)
+  const Tseg = _taktMontar(SP, [], { num:20261109, meta:2761 }), Cseg = _taktSemanasMontar([{ T:Tseg }], RIT);
+  global.TKS4_AB = { 0:true };
+  ok('segunda-feira sem vencido: antes 0 e a linha "lotes desta semana já vencidos" não aparece',
+     [Cseg.semanas[0].antes, _taktSemanasHtml(Cseg, { botoes:'' }).includes('já vencidos')], [0, false]);
+  global.TKS4_AB = {}; }
+{ global.TKS4_AB = {};
+  const H = _taktSemanasHtml(C4, { botoes:'' });
+  global.TKS4_AB = { 1:true };
+  const Ha = _taktSemanasHtml(C4, { botoes:'' });
+  ok('o desenho: a frase, uma linha por semana com ATRASO NO FIM, a regra; o dia a dia só da semana aberta; semana sem lote diz "sem programação datada"',
+     [H.includes('class="tks-ler'), (H.match(/class="tks4-s"/g) || []).length, H.includes('<th class="n">ATRASO NO FIM</th>'), (H.match(/class="tks4-d"/g) || []).length,
+      (Ha.match(/class="tks4-d"/g) || []).length, Ha.includes('09/11 seg'), H.includes('sem programação datada'), H.includes('onclick="_tks4Tog(1)"'), H.includes('▸ esta semana')],
+     [true, 4, true, 0, 5, true, true, true, true]);
+  ok('o desenho não faz conta: nada de veredito, montagem ou leitura dentro dele',
+     /_taktVeredito\(|_taktMontar\(|_taktProxMontar\(|jsonpFetch|_taktLer\(|UEP_MIN_DIA/.test(pega('function _taktSemanasHtml(')), false);
+  global.TKS4_AB = {}; }
+{ const RR = pega('function renderUep(');
+  ok('a ligação: 4 SEMANAS entre SEMANA QUE VEM e AVALIAR; o setter aceita 3 e pede as leituras na fila; cada semana pelo _taktMontar; o AVALIAR não muda; o botão da sub-aba',
+     [/b\(1, 'SEMANA QUE VEM'\)\}\$\{b\(3, '4 SEMANAS'\)\}\$\{b\(2, 'AVALIAR PROGRAMAÇÃO'\)/.test(pega('function _taktSemBotoes(')), /k===3 \? k : 0/.test(pega('function _taktSemSet(')),
+      /TKS_SEM===3\) _uepDepoisDe\(_uepLendo/.test(pega('function _taktSemSet(')),
+      /_taktSemanasMontar\(\[\{ T \}, sem\(tkpOk \? TKP : null, e1\)/.test(RR) && /\{ T:_taktMontar\(Sx, UEP_HIST\|\|\[\], hP, pts, est\) \}/.test(RR),
+      !/soPainel|o\.fim/.test(pega('function _tkaCorrente(')) && /TKS_SEM===2\) renderUep\(\)/.test(pega('function _tkaPainelCarregar(')),
+      _uepSubTakt(null, null, '4 semanas', null).txt, _uepSubTakt(null, null, '4 semanas', { atraso:735, completo:true }), _uepSubTakt(null, null, '4 semanas', { atraso:0, completo:true }).txt],
+     [true, true, true, true, true, '…', { txt:'4 semanas: 12h15 de atraso', cls:'warn' }, '4 semanas: em dia']);
+  ok('sem laço de leitura: a semana que vem e a faixa só são pedidas com a fila livre e depois da espera (5 min; 1 min depois de falha), uma por vez; a faixa entra na fila da aba',
+     [/if\(UEP_SUB==='takt' && !_uepLendo\(\) && !pausa\)\{[\s\S]*?if\(vP && \(!v4 \|\| TKP_TS<=TK4_TS\)\) _taktProxCarregar\(true\);\s*else if\(v4\) _taktSemanas4Carregar\(true\);/.test(RR),
+      /TK4_VOO=null; TK4_TS=Date\.now\(\);/.test(pega('function _taktSemanas4Carregar(')), /TK4_VOO/.test(pega('function _uepLendo(')),
+      /\(TKS_SEM===1 \|\| TKS_SEM===3\)\) renderUep\(\); \}, 60500\)/.test(pega('function _taktProxCarregar('))],
+     [true, true, true, true]); }
+
+// AS LEITURAS DE VERDADE (revisão: o regex acima passava com a retentativa sem fim).
+// O bloco 4 SEMANAS do renderUep REAL, com relógio virtual, leituras de mentira de
+// 25 s e o refresh do gerencial (renderUep a cada 5 min), por 60 min.
+async function simLeituras(cenario){
+  const RU = pega('function renderUep('), BLOCO = RU.slice(RU.indexOf('  let C4=null;'), RU.indexOf('  // v7.198.0'));
+  ['function _taktSemanas4Carregar(', 'function _taktProxCarregar(', 'async function _taktLer(', 'function _uepLendo(', 'function _uepDepoisDe(', 'function _taktSemSet('].forEach(f => eval.call(global, pega(f)));
+  let VT = Date.UTC(2026, 10, 13, 12, 0, 0), fila = [], seq = 0, noAr = 0, emVoo = 0, maxVoo = 0;
+  const conta = { prox:0, faixa:0 }, nowOrig = Date.now, stOrig = global.setTimeout;
+  Date.now = () => VT;
+  global.setTimeout = (fn, ms) => { fila.push({ t:VT + (ms || 0), s:seq++, fn }); return seq; };
+  global.CFG = Object.assign({}, global.CFG, { sheetsUrl:'https://x/exec' });
+  global._modoDir = () => false;
+  global.jsonpFetch = url => new Promise((res, rej) => {
+    const de = decodeURIComponent((url.match(/[?&]de=([^&]*)/) || [])[1] || ''), tipo = de === '16/11/2026' ? 'prox' : 'faixa';
+    conta[tipo]++; emVoo++; maxVoo = Math.max(maxVoo, emVoo); const t0 = VT;
+    global.setTimeout(() => { emVoo--; noAr += VT - t0;
+      const falha = cenario === 'tudo-falha' || (cenario === 'faixa-falha' && tipo === 'faixa') || (cenario === 'prox-falha' && tipo === 'prox');
+      if(falha) rej(new Error('Timeout')); else res({ ok:true, de, ate:tipo === 'prox' ? '22/11/2026' : '06/12/2026', hoje:'13/11/2026', linhas:[], feriados:[] });
+    }, 25000);
+  });
+  Object.assign(global, { UEP_CARREGANDO:false, UEP_HIST_VOO:null, UEP_PAD_VOO:null, GPX_CARREGANDO:false, PROG_DET_VOO:null, TKS_VOO:null, _pontosVoo:null,
+    TKP:null, TKP_TS:0, TKP_VOO:null, TKP_FALHA:null, TKP_ERRO:'', TK4:null, TK4_TS:0, TK4_VOO:null, TK4_FALHA:null, TK4_ERRO:'', TKS4_FAL:0,
+    TKS_SEM:3, UEP_SUB:'takt', TKS_TTL:300000, UEP_HIST:[], _abaOn:t => t === 'uep', hojeStr:() => '13/11/2026', _efEmb:() => 85, _pdiaPcCat:() => null });
+  const T0 = _taktMontar(Object.assign({}, SP, { hoje:'13/11/2026' }), [], { num:20261113, meta:2761, restMin:200 });
+  let ult = null;
+  global.renderUep = function(){ const T = T0, hojeN = 20261113, meta = 2761, rit = RIT, tksBt = ''; let bT = ''; ult = eval(BLOCO + ';C4'); };
+  global._taktSemSet(3);
+  (function ref(){ global.setTimeout(() => { global.renderUep(); ref(); }, 300000); })();
+  const fim = VT + 60 * 60000;
+  while(fila.length){
+    fila.sort((a, b) => a.t - b.t || a.s - b.s); const f = fila.shift(); if(f.t > fim) break; VT = f.t; f.fn();
+    for(let k = 0; k < 20; k++) await new Promise(r => setImmediate(r));
+  }
+  Date.now = nowOrig; global.setTimeout = stOrig;
+  return { ocup:noAr / 3600000 * 100, maxVoo, conta, est:ult ? ult.semanas.map(x => x.est || 'ok').join(',') : '' };
+}
+(async () => {
+  const tf = await simLeituras('tudo-falha'), ff = await simLeituras('faixa-falha'), pf = await simLeituras('prox-falha'), bom = await simLeituras('ok');
+  ok('as leituras de verdade, 60 min com o Apps Script de 25 s: uma por vez sempre; com tudo falhando, ocupado no máximo 25% do tempo (eram 94%) e as duas tentadas; só a faixa falhando, no máximo 35% (eram 60%); só a semana que vem falhando, a faixa é lida mesmo assim (revisão: ficava "lendo…" sem leitura); tudo ok: as 4 semanas lidas',
+     [tf.maxVoo, ff.maxVoo, pf.maxVoo, bom.maxVoo, tf.ocup <= 25, tf.conta.faixa >= 1, ff.ocup <= 35, pf.est, pf.ocup <= 35, bom.est, bom.conta.prox >= 1 && bom.conta.faixa >= 1],
+     [1, 1, 1, 1, true, true, true, 'ok,falha,ok,ok', true, 'ok,ok,ok,ok', true]);
+  console.log(falhas ? '\n❌ ' + falhas + ' falha(s)' : '\n✅ takt da semana ok — o veredito em horas de linha, o porquê dia a dia, o agora em caixas');
+  process.exit(falhas ? 1 : 0);
+})();
