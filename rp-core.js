@@ -419,7 +419,7 @@ function pdiaMontar(phm, ph, cat, atual, agoraMin, o){
 
   // 1) Produtos (modelo + nome), pela régua do .gs: caixas, UEP, cores, horas.
   const prods = [], porKey = {}, porModelo = {};
-  const doPhm = [];
+  const doPhm = [], uepHora = {};
   (phm||[]).forEach((it, i) => {
     const cx = Number(it && it.caixas) || 0;
     const ini = it && it.hora ? toMin(String(it.hora)) : NaN;
@@ -429,19 +429,22 @@ function pdiaMontar(phm, ph, cat, atual, agoraMin, o){
     let p = porKey[key];
     if(!p){
       p = porKey[key] = { key, modelo, nome: nome||modelo, i, seq:null, cores:[], cx:0, uep:0, uepCx:0,
-                          he:0, ini:Infinity, fim:-Infinity, phm:[], log:[] };
+                          he:0, uepHe:0, ini:Infinity, fim:-Infinity, phm:[], log:[] };
       prods.push(p);
       (porModelo[modelo] = porModelo[modelo] || []).push(p);
     }
     const u = Number(it.uep) || 0;
     p.cx += cx;
     if(u > 0){ p.uep += u; p.uepCx += cx; }
-    if(ehHE(ini)) p.he += cx;
+    if(ehHE(ini)){ p.he += cx; if(u > 0) p.uepHe += u; }
     const cor = String(it.cor||'').trim();
     if(cor && !p.cores.includes(cor)) p.cores.push(cor);
     p.ini = Math.min(p.ini, ini); p.fim = Math.max(p.fim, fimSlot(ini));
     p.phm.push({ m:ini, hora:String(it.hora), cor, cx });
     doPhm.push({ m:ini, p, cx });
+    // UEP por caixa do produto em cada hora (a faixa pela UEP, o.porUep).
+    const r = uepHora[ini + '|' + key] = uepHora[ini + '|' + key] || { u:0, cx:0 };
+    if(u > 0){ r.u += u; r.cx += cx; }
   });
 
   // Código → produto. Com um produto só do modelo no dia, é ele; com vários
@@ -505,7 +508,14 @@ function pdiaMontar(phm, ph, cat, atual, agoraMin, o){
 
   // Faixa do dia: cada hora repartida pelas caixas de cada produto, na ordem em
   // que entraram (a planilha não guarda o minuto da troca); a hora em
-  // andamento vai só até agora.
+  // andamento vai só até agora. Com o.porUep (o PC, rp-core 1.17.0) a hora é
+  // repartida pela UEP — o tempo de linha de cada produto; um produto sem UEP
+  // naquela hora faz a hora inteira voltar às caixas (nunca mistura as duas).
+  const pesoUep = (m, p) => {
+    const r = uepHora[m + '|' + p.key];
+    if(r && r.u > 0 && r.cx > 0) return r.u / r.cx;
+    return p.uepCx > 0 ? p.uep / p.uepCx : null;
+  };
   const ini0 = prods.length ? Math.min(...prods.map(p => p.ini)) : o.turnoIni;
   const fim0 = prods.length ? Math.max(...prods.map(p => p.fim)) : o.turnoFim;
   const F = { ini: Math.min(o.turnoIni, Math.floor(ini0/60)*60), fim: Math.max(o.turnoFim, fim0) };
@@ -514,11 +524,13 @@ function pdiaMontar(phm, ph, cat, atual, agoraMin, o){
     const a = m;
     let b = fimSlot(m);
     if(agoraMin > a && agoraMin < b) b = agoraMin;
-    const tot = horas[m].reduce((s, x) => s + x.cx, 0);
+    const rs = o.porUep ? horas[m].map(x => pesoUep(m, x.p)) : null;
+    const peso = (x, j) => rs && rs.every(r => r > 0) ? x.cx * rs[j] : x.cx;
+    const tot = horas[m].reduce((s, x, j) => s + peso(x, j), 0);
     if(!(b > a) || !(tot > 0)) return;
     let t = a;
-    horas[m].forEach(x => {
-      const w = (b - a) * x.cx / tot, u = segs[segs.length-1];
+    horas[m].forEach((x, j) => {
+      const w = (b - a) * peso(x, j) / tot, u = segs[segs.length-1];
       if(u && u.p === x.p && Math.abs(u.fim - t) < 1e-6) u.fim = t + w;
       else segs.push({ p:x.p, ini:t, fim:t + w });
       t += w;
@@ -571,12 +583,14 @@ function pdiaMontar(phm, ph, cat, atual, agoraMin, o){
       cx:p.cx, uep: p.uep > 0 ? Math.round(p.uep) : null,
       uepMedia: p.uepCx > 0 ? p.uep / p.uepCx : null, semUepCx: p.cx - p.uepCx,
       he:p.he, heTxt: p.he > 0 ? (p.he === p.cx ? 'tudo em HE' : `${fmtN(p.he)} em HE`) : '',
+      uepHe: p.uepHe > 0 ? Math.round(p.uepHe) : 0,
       pct: p.uep > 0 && uepTot > 0 ? Math.round(p.uep / uepTot * 100) : null,
       tab, horas:hrs
     };
   });
   return {
     cx: prods.reduce((s, p) => s + p.cx, 0), uep: uepTot, heCx: prods.reduce((s, p) => s + p.he, 0),
+    uepHe: prods.reduce((s, p) => s + p.uepHe, 0),
     trocas, real: Number(o.real) || 0, produtos, faixa:F
   };
 }
@@ -688,7 +702,7 @@ function paradaAInformar(tipo){
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.16.0',
+  versao: '1.17.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
         'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido',

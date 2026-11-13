@@ -1136,6 +1136,16 @@ html.modo-dir #sec-dir.on{display:flex}
 .kpi-grid.c9 .kpi-lbl{margin-bottom:4px;font-size:10px;letter-spacing:1.4px}
 .kpi-grid.c9 .kpi-val{font-size:23px}
 .kpi-grid.c9 .kpi-sub{font-size:11px;margin-top:4px;line-height:1.4;color:var(--txt2)}
+/* A UEP NA FRENTE (v7.243.0): o 1º card do gerencial é o veredito do dia —
+   ocupa duas colunas e tem o número maior. A 2ª linha (caixas) é fato: sem cor,
+   com a barra lateral neutra e o número um pouco menor. */
+#sec-gerencial .kpi-grid.ger-k1 .kpi-card.ger-hero{grid-column:span 2;background:var(--elevated)}
+#sec-gerencial .kpi-grid.ger-k1 .kpi-card.ger-hero::before{width:5px}
+#sec-gerencial .kpi-grid.ger-k1 .kpi-card.ger-hero .kpi-val{font-size:38px}
+#sec-gerencial .kpi-grid.ger-k1 .kpi-card.ger-hero .kpi-sub{font-size:12px}
+#sec-gerencial .kpi-grid.ger-k1 .kpi-card.ger-hero .kpi-sub b{color:var(--txt);font-weight:600;letter-spacing:.5px}
+#sec-gerencial .kpi-grid.c9 .kpi-val small{font-size:14px;color:var(--txt2);font-weight:600;margin-left:3px}
+#sec-gerencial .kpi-grid.ger-k2 .kpi-val{font-size:20px}
 .kpi-card{background:var(--surface);border:0.5px solid var(--border);border-radius:7px;padding:14px 16px;position:relative;overflow:hidden}
 .kpi-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--border)}
 .kpi-card.ok::before{background:var(--ok)}
@@ -1219,9 +1229,18 @@ html.modo-dir #sec-dir.on{display:flex}
 #ger-pdia .pdpc-pleg .ts{margin-left:auto;font-family:var(--font-d);font-size:10px}
 #ger-pdia .pdpc-tw{overflow-x:auto}
 #ger-pdia .pdpc-tb{min-width:900px}
-#ger-pdia .pdpc-row{display:grid;grid-template-columns:22px minmax(0,2.2fr) minmax(0,1.5fr) minmax(0,1.4fr) minmax(0,.8fr) minmax(0,.8fr) minmax(0,.8fr) minmax(0,2fr);gap:0 12px;align-items:center}
+#ger-pdia .pdpc-row{display:grid;grid-template-columns:22px minmax(0,2.2fr) minmax(0,1.4fr) minmax(0,1.3fr) minmax(0,.8fr) minmax(0,.6fr) minmax(0,.8fr) minmax(0,.8fr) minmax(0,1.8fr);gap:0 12px;align-items:center}
 #ger-pdia .pdpc-th{padding:8px 16px;border-bottom:0.5px solid var(--border);font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px}
-#ger-pdia .pdpc-th .n,#ger-pdia .pdpc-cx,#ger-pdia .pdpc-u{text-align:right}
+#ger-pdia .pdpc-th .n,#ger-pdia .pdpc-cx,#ger-pdia .pdpc-u,#ger-pdia .pdpc-uu{text-align:right}
+/* A UEP NA FRENTE (v7.243.0): a UEP é o número grande da linha; as caixas e o
+   peso da caixa (UEP/CX) informam. No resumo, a UEP do dia abre o quadro com
+   a divisão jornada + hora extra (a jornada é a do card UEP DO DIA). */
+#ger-pdia .pdpc-uu{font-family:var(--font-h);font-size:20px;font-weight:700}
+#ger-pdia .pdpc-n.big b{font-size:40px}
+#ger-pdia .pdpc-n.big i{font-size:9.5px}
+#ger-pdia .pdpc-n.big em{font-style:normal;font-family:var(--font-b);font-size:12.5px;color:var(--txt2);margin-top:5px}
+#ger-pdia .pdpc-n.big em span{color:var(--acc)}
+#ger-pdia .pdpc-n.sec b{font-size:24px;color:var(--txt2)}
 #ger-pdia .pdpc-it{border-bottom:0.5px solid var(--border)}
 #ger-pdia .pdpc-bt{background:transparent;border:none;width:100%;text-align:left;cursor:pointer;color:var(--txt);font-family:var(--font-b);padding:12px 16px;min-height:48px}
 #ger-pdia .pdpc-bt:hover{background:rgba(255,255,255,.025)}
@@ -1231,7 +1250,7 @@ html.modo-dir #sec-dir.on{display:flex}
 #ger-pdia .pdpc-c{font-size:13px;color:var(--txt2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #ger-pdia .pdpc-c .ag{color:var(--acc);font-weight:600;white-space:nowrap}
 #ger-pdia .pdpc-c .ag::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--acc);margin-right:4px;vertical-align:1px}
-#ger-pdia .pdpc-cx{font-family:var(--font-h);font-size:20px;font-weight:700}
+#ger-pdia .pdpc-cx{font-family:var(--font-d);font-size:13px;text-align:right}
 #ger-pdia .pdpc-u{font-family:var(--font-d);font-size:13px}
 #ger-pdia .pdpc-bar{display:flex;align-items:center;gap:10px}
 #ger-pdia .pdpc-tr{flex:1;height:6px;background:var(--elevated);border-radius:3px}
@@ -2619,7 +2638,10 @@ if (_v7Instalado()) _v7EscondeBotao();
     <span id="ger-modo-hist" style="display:none">◷ MODO HISTÓRICO — somente leitura</span>
   </div>
 
-  <div class="kpi-grid c9" id="kpi-grid"></div>
+  <!-- A UEP NA FRENTE (v7.243.0): a 1ª linha é o veredito do dia (UEP) e o que
+       está vencido; a 2ª, as caixas, os pontos e o peso — fatos, sem cor. -->
+  <div class="kpi-grid c9 ger-k1" id="kpi-grid"></div>
+  <div class="kpi-grid c9 ger-k2" id="kpi-grid2" style="display:none"></div>
 
   <!-- PRODUTOS EMBALADOS HOJE (v7.201.0) — só o dia ao vivo: some no modo
        histórico (o dia passado não tem a produção por hora e produto) e na
@@ -2634,11 +2656,11 @@ if (_v7Instalado()) _v7EscondeBotao();
 
   <div class="charts-row">
     <div class="chart-card">
-      <div class="chart-ttl">⬛ PRODUÇÃO HORA A HORA — HOJE</div>
+      <div class="chart-ttl" id="ger-ch1-ttl">⬛ UEP HORA A HORA · META DA HORA</div>
       <div class="chart-box"><canvas id="ch-hora"></canvas></div>
     </div>
     <div class="chart-card">
-      <div class="chart-ttl">◧ REALIZADO × META</div>
+      <div class="chart-ttl" id="ger-ch2-ttl">◧ CAIXAS HORA A HORA</div>
       <div class="chart-box"><canvas id="ch-comp"></canvas></div>
     </div>
   </div>
@@ -2660,8 +2682,9 @@ if (_v7Instalado()) _v7EscondeBotao();
     </div>
     <div style="overflow-x:auto">
       <table>
-        <thead><tr><th>HORÁRIO</th><th>REALIZADO</th><th>ACUMULADO</th><th>META/H</th><th>EFICIÊNCIA</th><th id="th-uep-hora" style="display:none" title="UEP da hora (caixas × UEP do cadastro) contra a meta de UEP repartida pelos minutos da hora. * = parte das caixas sem UEP no cadastro.">UEP</th><th>STATUS</th></tr></thead>
-        <tbody id="tbl-hora-body"><tr><td colspan="6" class="empty-msg">Carregando dados…</td></tr></tbody>
+        <!-- o cabeçalho é refeito pelo render: em UEP (v7.243.0), ou em caixas no dia passado sem UEP -->
+        <thead id="ger-hora-thead"><tr><th>HORÁRIO</th><th>UEP</th><th>META UEP</th><th>% DA META</th><th>CAIXAS</th><th>META EM CX</th><th>STATUS</th></tr></thead>
+        <tbody id="tbl-hora-body"><tr><td colspan="7" class="empty-msg">Carregando dados…</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -4133,7 +4156,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.242.0';
+const APP_VER = '7.243.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -5423,7 +5446,7 @@ function _cicloLeitura(){
   // As paradas na faixa do PRODUTOS EMBALADOS HOJE (v7.236.0): depois da leitura
   // do dia, uma de cada vez, só com o gerencial ao vivo na tela.
   const v=_cicloVoo=_parDepois(_ls).then(()=>lerPontosDia()).then(()=>renderGerencial())
-    .then(()=>lerParadasDoDia()).then(r=>{ if(r!==null) renderGerProdutosDia(); }).catch(()=>{})
+    .then(()=>lerParadasDoDia()).then(r=>{ if(r!==null) renderGerProdutosDia(); }).then(()=>_gerCatSeFalta()).catch(()=>{})
     .then(()=>{ if(_cicloVoo===v) _cicloVoo=null; });
 }
 function _parDepois(prom){
@@ -5702,12 +5725,14 @@ async function verGerDia(){
   if(!/^\d{2}\/\d{2}\/\d{4}$/.test(v)) return;   // espera data completa
   if(v===hojeStr()){ gerHoje(); return; }
   if(!CFG.sheetsUrl){
+    _gerKpi2Off();
     document.getElementById('kpi-grid').innerHTML='<div class="kpi-card red" style="grid-column:1/-1"><div class="kpi-lbl">SEM CONEXÃO</div><div class="kpi-sub">Conecte o Google Sheets para ver dias anteriores.</div></div>';
     return;
   }
   GER_DATA=v; GER_HIST=null; _setModoHist(true);
+  _gerKpi2Off();
   document.getElementById('kpi-grid').innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">CARREGANDO…</div><div class="kpi-sub">buscando produção de '+v+' (pode demorar se o servidor estiver ligando)</div></div>';
-  document.getElementById('tbl-hora-body').innerHTML='<tr><td colspan="6" class="empty-msg">Carregando…</td></tr>';
+  document.getElementById('tbl-hora-body').innerHTML='<tr><td colspan="7" class="empty-msg">Carregando…</td></tr>';
   try{
     const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getHoraDia&data='+encodeURIComponent(v);
     const j=await jsonpFetch(url);
@@ -5716,6 +5741,7 @@ async function verGerDia(){
     GER_HIST={data:v, horas:(j.horas||[]), dia:j.dia||null, uepHora:j.uepHora||null};
   }catch(e){
     if(GER_DATA!==v) return;
+    _gerKpi2Off();
     document.getElementById('kpi-grid').innerHTML='<div class="kpi-card red" style="grid-column:1/-1"><div class="kpi-lbl">⚠ NÃO CARREGOU</div><div class="kpi-sub">O servidor demorou a responder. Clique em ‹ / › ou digite a data de novo.</div></div>';
     return;
   }
@@ -12748,11 +12774,18 @@ function _pdiaPcHtml(M, aberto, P){
       ? `${fmtN(M.cx)} de ${fmtN(M.real)} cx com produto · ${fmtN(M.real - M.cx)} fora da lista`
       : `Todas as ${fmtN(M.cx)} cx lançadas com produto`)
     + (M.heCx > 0 ? ` · <span class="he">${fmtN(M.heCx)} cx em hora extra</span>` : '');
+  // A UEP do dia abre o quadro (v7.243.0), com a divisão jornada + hora extra:
+  // a jornada é a mesma do card UEP DO DIA, e sem a divisão os dois números
+  // na mesma tela pareceriam um erro. A soma fecha com o total (o das linhas);
+  // a hora extra é a diferença — pode ficar 1 UEP longe de outra tela pelo
+  // arredondamento. rp-core antigo (sem uepHe): sem a divisão.
+  const uepT = Math.round(M.uep), uepJ = M.uepHe != null ? Math.round(M.uep - M.uepHe) : null, uepH = uepJ != null ? uepT - uepJ : 0;
   const res = `<div class="pdpc-res">
-      <div class="pdpc-n"><b>${fmtN(M.cx)}</b><i>CAIXAS</i></div>
-      <div class="pdpc-n"><b>${M.uep > 0 ? fmtN(Math.round(M.uep)) : '—'}</b><i>UEP</i></div>
-      <div class="pdpc-n"><b>${fmtN(M.produtos.length)}</b><i>${M.produtos.length === 1 ? 'PRODUTO' : 'PRODUTOS'}</i></div>
-      <div class="pdpc-n"><b>${fmtN(M.trocas)}</b><i>${M.trocas === 1 ? 'TROCA' : 'TROCAS'} DE PRODUTO</i></div>
+      <div class="pdpc-n big"><b>${M.uep > 0 ? fmtN(uepT) : '—'}</b><i>UEP</i>
+        ${M.uep > 0 && uepJ != null ? `<em>${fmtN(uepJ)} na jornada${uepH > 0 ? ` + <span>${fmtN(uepH)} em hora extra</span>` : ''}</em>` : ''}</div>
+      <div class="pdpc-n sec"><b>${fmtN(M.cx)}</b><i>CAIXAS</i></div>
+      <div class="pdpc-n sec"><b>${fmtN(M.produtos.length)}</b><i>${M.produtos.length === 1 ? 'PRODUTO' : 'PRODUTOS'}</i></div>
+      <div class="pdpc-n sec"><b>${fmtN(M.trocas)}</b><i>${M.trocas === 1 ? 'TROCA' : 'TROCAS'} DE PRODUTO</i></div>
       <span class="pdpc-cob">${cob}</span>
     </div>`;
   // A marca de agora tem o nome escrito no eixo; a hora cheia colada nela sai.
@@ -12773,7 +12806,7 @@ function _pdiaPcHtml(M, aberto, P){
       </div>
       ${par.leg}
     </div>`;
-  const cols = '<div class="pdpc-row pdpc-th"><span></span><span>PRODUTO</span><span>COR</span><span>HORÁRIO</span><span class="n">CAIXAS</span><span class="n">UEP</span><span class="n">EM HE</span><span>PARTE DA UEP DO DIA</span></div>';
+  const cols = '<div class="pdpc-row pdpc-th"><span></span><span>PRODUTO</span><span>COR</span><span>HORÁRIO</span><span class="n">UEP</span><span class="n" title="UEP por caixa: o peso da caixa de cada produto, pelo cadastro de hoje">UEP/CX</span><span class="n">CAIXAS</span><span class="n" title="UEP feita fora da jornada (antes das 07:00 e depois das 17:00)">EM HE · UEP</span><span>PARTE DA UEP DO DIA</span></div>';
   const seta = '<svg class="pdpc-sv" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="#8FA0B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const itens = M.produtos.map((p, i) => {
     const on = aberto === p.key;
@@ -12784,16 +12817,17 @@ function _pdiaPcHtml(M, aberto, P){
         <span class="pdpc-nm" title="${e(p.nome)}">${e(p.nome)}</span>
         <span class="pdpc-c" title="${e(p.cores.join(' · '))}">${e(p.corTxt || '—')}</span>
         <span class="pdpc-c">${hor}</span>
+        <span class="pdpc-uu">${p.uep != null ? fmtN(p.uep) : '<small>sem UEP</small>'}</span>
+        <span class="pdpc-u">${p.uepMedia != null ? p.uepMedia.toFixed(2).replace('.', ',') : '—'}</span>
         <span class="pdpc-cx">${fmtN(p.cx)}</span>
-        <span class="pdpc-u">${p.uep != null ? fmtN(p.uep) : 'sem UEP'}</span>
-        <span class="pdpc-u${p.he > 0 ? ' he' : ''}">${p.he > 0 ? fmtN(p.he) : '—'}</span>
+        <span class="pdpc-u${p.he > 0 ? ' he' : ''}"${p.he > 0 ? ` title="${fmtN(p.he)} cx em hora extra"` : ''}>${p.he > 0 ? (p.uepHe != null ? (p.uepHe > 0 ? fmtN(p.uepHe) : 'sem UEP') : fmtN(p.he) + ' cx') : '—'}</span>
         <span class="pdpc-bar"><span class="pdpc-tr"><i style="width:${p.pct != null ? p.pct : 0}%"></i></span><span class="pdpc-pc">${p.pct != null ? p.pct + '%' : '—'}</span></span>
       </button>
       ${on ? _pdiaPcDetHtml(p) : ''}
     </div>`;
   }).join('');
   return `${res}${faixa}<div class="pdpc-tw"><div class="pdpc-tb">${cols}${itens}</div></div>
-    <div class="pdpc-dica">A barra é a parte da UEP do dia, com hora extra (a do MIX DE HOJE da aba ⚖ UEP é só da jornada). Clique no produto para abrir por cor e hora.</div>`;
+    <div class="pdpc-dica">A barra é a parte da UEP do dia, com hora extra (a do MIX DE HOJE da aba ⚖ UEP é só da jornada). A faixa reparte cada hora pela UEP de cada produto. Clique no produto para abrir por cor e hora.</div>`;
 }
 function _pdiaPcDetHtml(p){
   const e = _rpEsc;
@@ -12830,7 +12864,7 @@ function renderGerProdutosDia(real){
       M = pdiaMontar(phm, PONTOS_DIA.porHora || [], _pdiaPcCat() || [], PONTOS_DIA.produtoAtual, a.getHours()*60 + a.getMinutes(), {
         turnoIni: toMin(CFG.turnoInicio), turnoFim: toMin(CFG.turnoFim),
         almIni: toMin(CFG.almocoInicio), almFim: toMin(CFG.almocoFim), real: PDIA_PC_REAL,
-        larg, linhas: PDIA_PC_LINHAS, passo: 60, atualDesc: PONTOS_DIA.produtoAtualDesc });
+        larg, linhas: PDIA_PC_LINHAS, passo: 60, atualDesc: PONTOS_DIA.produtoAtualDesc, porUep: true });
       // As paradas na faixa (v7.236.0). Falhar aqui não derruba o quadro: sai sem a faixa.
       try{ P = _pdiaParDoPainel(M.faixa, larg, `${p2(a.getHours())}:${p2(a.getMinutes())}:${p2(a.getSeconds())}`); }
       catch(errP){ console.warn('paradas na faixa:', errP.message); P = null; }
@@ -12905,6 +12939,11 @@ function renderGerencialHist(){
   const heCx=(dia.heCx===null||dia.heCx===undefined)?null:Number(dia.heCx);
 
   // ── KPIs (subconjunto que faz sentido para um dia já encerrado) ──
+  // A UEP NA FRENTE também no dia passado (v7.243.0): com a UEP gravada no
+  // fechamento, ela dá o veredito e as caixas viram fato. Dia antigo, sem UEP
+  // gravada, continua julgado em caixas — um veredito só, o que existe.
+  const comUep=dia.uep!=null;
+  const pctUep=comUep&&uepDiaMeta(dia)>0?dia.uep/uepDiaMeta(dia)*100:null;
   const kpis=[
     {l:'PRODUÇÃO REAL',    v:fmtN(real),  sub:heCx>0?`${fmtN(real-heCx)} normal + ${fmtN(heCx)} extra`:`meta ${fmtN(meta)} cx`, c:sc(ef)},
     ...(heCx>0?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(heCx), sub:temHEnaTabela?'HE na tabela, sem meta':'fora da tabela abaixo', t:`${fmtN(real-heCx)} cx em hora normal`, c:'acc'}]:[]),
@@ -12925,24 +12964,58 @@ function renderGerencialHist(){
     {l:'MELHOR HORA',      v:fmtN(melhor), sub:'cx — pico do turno',            c:'ok'},
     {l:'PIOR HORA',        v:fmtN(pior),   sub:'cx — mínimo do turno',          c:metaHora>0&&pior<metaHora*0.7?'red':''},
   ];
-  // `t` (opcional) vira o title do card: indicador cuja conta não é óbvia
-  // explica a si mesmo no hover, sem ocupar linha no grid.
-  document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
-    <div class="kpi-card ${k.c}"${k.t?` title="${_rpEsc(k.t)}"`:''}>
-      <div class="kpi-lbl">${k.l}</div>
-      <div class="kpi-val">${k.v}</div>
-      <div class="kpi-sub">${k.sub}</div>
-    </div>`).join('');
+  // A versão em UEP: 1ª linha o veredito (UEP gravada × META UEP daquele dia),
+  // 2ª linha as caixas — os mesmos números, sem cor.
+  const kUep=comUep?[
+    {l:'UEP DO DIA · META '+fmtN(uepDiaMeta(dia)), v:fmtN(Math.round(dia.uep))+' <small>UEP</small>',
+     sub:pctUep!=null?`<b>${sl(pctUep)}</b> · ${fmtP(pctUep)} da meta do dia${dia.uepHe>0?' · +'+fmtN(Math.round(dia.uepHe))+' em hora extra':''}`:'dia sem META UEP gravada',
+     t:'UEP de jornada gravada no fechamento, contra a META UEP gravada naquele dia. A hora extra fica fora da meta.', c:(pctUep!=null?sc(pctUep):'acc')+' ger-hero'},
+    // Fatos do dia em UEP, sem cor (o selo é o do 1º card).
+    ...(uepDiaMeta(dia)>0?[(()=>{ const d=Math.round(uepDiaMeta(dia)-dia.uep);
+      return d>0?{l:'FALTOU PARA A META', v:fmtN(d)+' <small>UEP</small>', c:'', sub:'meta − UEP de jornada'}
+                :{l:'META BATIDA', v:'+'+fmtN(-d)+' <small>UEP</small>', c:'', sub:'acima da meta, só jornada'}; })()]:[]),
+    {l:'UEP EM HORA EXTRA', v:fmtN(Math.round(dia.uepHe||0)), c:'', sub:dia.uepHe>0?'fora da meta':'sem hora extra'},
+    ...((real-(heCx||0))>0?[{l:'UEP POR CAIXA', v:(dia.uep/(real-(heCx||0))).toFixed(2).replace('.',','), c:'',
+      sub:'o peso médio da caixa do dia', t:'UEP de jornada ÷ caixas de jornada: quanto pesou, em média, cada caixa do dia. É ele que explica o dia em que as caixas e a UEP contam histórias diferentes.'}]:[]),
+  ]:null;
+  const kCx=comUep?[
+    {l:'CAIXAS', v:fmtN(real), c:'', sub:heCx>0?`${fmtN(real-heCx)} normal + ${fmtN(heCx)} em hora extra`:'no turno'},
+    {l:'CAIXAS PROGRAMADAS', v:fmtN(meta), c:'', sub:`${fmtP(ef)} feito · `+_metaPartesTxt(dia.metaDia!=null?{metaDia:Number(dia.metaDia), atraso:Number(dia.atrasoMeta)||0}:null, gap, true),
+     t:'A META em caixas gravada no fechamento. Sem cor: o veredito do dia é o da UEP (1º card).'},
+    {l:'RITMO MÉDIO', v:fmtN(dia.mediaH||ritmo), c:'', sub:'cx/hora no turno'},
+    {l:'SLOTS PRODUZIDOS', v:fmtN(nSlots), c:'', sub:temHEnaTabela?`${plural(nNorm,'hora','horas')} de jornada + ${plural(nSlots-nNorm,'de hora extra','de hora extra')}`:'horas com produção'},
+    {l:'MELHOR HORA', v:fmtN(melhor), c:'', sub:'cx — a hora com mais caixas'},
+    {l:'PIOR HORA', v:fmtN(pior), c:'', sub:'cx — a hora com menos caixas'},
+  ]:null;
+  if(comUep) _gerKpiPinta(kUep, kCx); else _gerKpiPinta(kpis, []);
 
   // ── Análise (pico/vale/tendência do próprio dia) ──
+  // UEP hora a hora do dia passado (.gs v5.16: getHoraDia → uepHora). Vem do log
+  // de produto × UEP do cadastro ATUAL — o total do card é o congelado no
+  // fechamento, a hora não; por isso a soma pode diferir um pouco (o title diz).
+  // Backend antigo ou sem UEP no cadastro → a tabela em caixas, nunca zero.
+  const uepHH=H.uepHora&&typeof H.uepHora==='object'?H.uepHora:null;
+  const _minHora=lbl=>{ const m=String(lbl||'').match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
+    if(!m) return 60; const d=toMin(m[2])-toMin(m[1]); return d>0&&d<=120?(d===59?60:d):60; };
+  // A forma da hora do _uepAbaHoras, para o MESMO desenho do dia de hoje.
+  const horasU=(comUep&&uepHH)?horas.map(h=>{
+    const ehHE=_horaEhHE(h.hora), u=uepHH[_uepHHMM(h.hora)]||null;
+    return { label:h.hora, he:ehHE, lancada:true, andamento:false, uep:u&&u.uep>0?u.uep:null, cxSem:u?u.cxSem:0,
+             metaH:ehHE?null:uepDiaMeta(dia)*_minHora(h.hora)/UEP_MIN_DIA };
+  }):null;
+  if(horasU){
+    document.getElementById('analise-row').innerHTML=_gerAnaliseUepHistHtml(horasU, pctUep, dia);
+  } else {
   // Pico e vale saem das horas de JORNADA: a hora extra não tem meta e não
   // disputa o título de melhor nem de pior hora do turno.
   const idxPico=prodsNorm.indexOf(melhor), idxVale=prodsNorm.indexOf(pior);
   const tendStr=prods.length>=2?(prods[prods.length-1]>=prods[prods.length-2]?'↑ CRESCENDO':'↓ QUEDA'):'—';
   const tendClr=prods.length>=2?(prods[prods.length-1]>=prods[prods.length-2]?'var(--ok)':'var(--red)'):'var(--txt2)';
+  // Com a UEP no card (dia sem a UEP hora a hora), a eficiência em caixas não julga.
+  const efClr=comUep?'var(--txt)':(ef>=96?'var(--ok)':ef>=90?'var(--warn)':'var(--red)');
   document.getElementById('analise-row').innerHTML=`
-    <div class="a-card"><div class="a-lbl">EFICIÊNCIA DO DIA</div>
-      <div class="a-val" style="color:${ef>=96?'var(--ok)':ef>=90?'var(--warn)':'var(--red)'}">${fmtP(ef)}</div>
+    <div class="a-card"><div class="a-lbl">${comUep?'CAIXAS × PROGRAMADO':'EFICIÊNCIA DO DIA'}</div>
+      <div class="a-val" style="color:${efClr}">${fmtP(ef)}</div>
       <div class="a-desc">${dia.fechado?'dia fechado':'registrado'}</div></div>
     <div class="a-card"><div class="a-lbl">TENDÊNCIA DO TURNO</div>
       <div class="a-val" style="color:${tendClr}">${tendStr}</div>
@@ -12953,47 +13026,51 @@ function renderGerencialHist(){
     <div class="a-card"><div class="a-lbl">VALE DE PRODUÇÃO</div>
       <div class="a-val" style="color:var(--red)">${idxVale>=0?horasNorm[idxVale].hora:'—'}</div>
       <div class="a-desc">${fmtN(pior)} cx</div></div>`;
+  }
 
   // ── Tabela hora a hora ──
   document.getElementById('tbl-data-lbl').textContent=H.data+(dia.fechado?' · DIA FECHADO':'');
-  // UEP hora a hora do dia passado (.gs v5.16: getHoraDia → uepHora). Vem do log
-  // de produto × UEP do cadastro ATUAL — o total do card é o congelado no
-  // fechamento, a hora não; por isso a soma pode diferir um pouco (o th diz).
-  // Backend antigo ou sem UEP no cadastro → coluna some, nunca zero.
-  const uepHH=H.uepHora&&typeof H.uepHora==='object'?H.uepHora:null;
-  const temUepH=!!uepHH;
-  { const _th=document.getElementById('th-uep-hora'); if(_th){ _th.style.display=temUepH?'':'none';
-      } }
-  const _minHora=lbl=>{ const m=String(lbl||'').match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
-    if(!m) return 60; const d=toMin(m[2])-toMin(m[1]); return d>0&&d<=120?(d===59?60:d):60; };
+  if(horasU){
+    _gerTheadUep();
+    document.getElementById('tbl-hora-body').innerHTML=horas.map((h,i)=>{
+      const cx=Number(h.real)||0, u=horasU[i];
+      // As caixas COM UEP da hora: as da hora menos as de código sem UEP (o log
+      // do dia passado não separa as lançadas sem produto — ~0 desde setembro).
+      return _gerHoraLinha(u, cx, Math.max(0, cx-(u.cxSem||0)), null);
+    }).join('')||'<tr><td colspan="7" class="empty-msg">Sem produção registrada neste dia (não foi arquivado no HISTÓRICO_HORA).</td></tr>';
+  } else {
+  _gerTheadCx();
   let acum=0;
   document.getElementById('tbl-hora-body').innerHTML=horas.map(h=>{
     const prod=Number(h.real)||0; acum+=prod;
     // Hora extra não tem meta: não ganha meta/h, nem eficiência, nem veredito —
-    // ganha a etiqueta que diz o que ela é.
+    // ganha a etiqueta que diz o que ela é. Com a UEP no card (e sem a UEP
+    // hora a hora), a hora em caixas não julga: um veredito só na tela.
     const ehHE=_horaEhHE(h.hora);
     const ef2=(!ehHE&&metaHora>0)?prod/metaHora*100:null;
-    const s2=ef2===null?'mute':ef2>=96?'ok':ef2>=90?'warn':'red';
+    const s2=ef2===null||comUep?'mute':ef2>=96?'ok':ef2>=90?'warn':'red';
     const bdg=ehHE
       ? '<span class="badge b-acc">HORA EXTRA</span>'
-      : `<span class="badge b-${s2}">${ef2===null?'—':ef2>=96?'OK':ef2>=90?'ATENÇÃO':'ABAIXO'}</span>`;
+      : `<span class="badge b-${s2}">${ef2===null||comUep?'—':ef2>=96?'OK':ef2>=90?'ATENÇÃO':'ABAIXO'}</span>`;
     return`<tr>
       <td class="hora-cell">${h.hora}</td>
       <td class="mono">${fmtN(prod)}</td>
       <td class="mono">${fmtN(acum)}</td>
       <td class="mono" style="color:var(--txt2)">${ehHE?'—':fmtN(Math.round(metaHora))}</td>
-      <td class="mono" style="color:${ef2!=null?(ef2>=96?'var(--ok)':ef2>=90?'var(--warn)':'var(--red)'):'var(--txt3)'}">${ef2!=null?fmtP(ef2):'—'}</td>
-      ${temUepH?(()=>{ const c=uepCelula(uepHH[_uepHHMM(h.hora)], uepDiaMeta(dia), _minHora(h.hora), ehHE);
-        return `<td class="mono" title="${c.title} · UEP do cadastro atual (o total do dia é o gravado no fechamento)" style="color:${c.cls?'var(--'+c.cls+')':'var(--txt2)'}">${c.txt}</td>`; })():''}
+      <td class="mono" style="color:${ef2!=null&&!comUep?(ef2>=96?'var(--ok)':ef2>=90?'var(--warn)':'var(--red)'):'var(--txt3)'}">${ef2!=null?fmtP(ef2):'—'}</td>
       <td>${bdg}</td></tr>`;
   }).join('')||'<tr><td colspan="6" class="empty-msg">Sem produção registrada neste dia (não foi arquivado no HISTÓRICO_HORA).</td></tr>';
+  }
   const _gl=document.getElementById('ger-leg-fraca'); if(_gl) _gl.style.display='none';
 
   // ── Gráficos do dia ──
+  if(horasU){ _gerChartsUep(horasU.map((h,i)=>({h, cx:Number(horas[i].real)||0}))); return; }
+  _gerChartsTtlCx();
   const labels=horas.map(h=>h.hora);
   const metaLn=prods.map(()=>Math.round(metaHora));
+  const corCx=v=>comUep?'rgba(143,160,181,0.55)':v>=metaHora*0.9?'rgba(76,175,80,0.75)':v>=metaHora*0.7?'rgba(255,152,0,0.75)':'rgba(244,67,54,0.75)';
   mkChart('ch-hora',{type:'bar',data:{labels,datasets:[
-    {label:'Realizado',data:prods,backgroundColor:prods.map(v=>v>=metaHora*0.9?'rgba(76,175,80,0.75)':v>=metaHora*0.7?'rgba(255,152,0,0.75)':'rgba(244,67,54,0.75)'),borderRadius:3},
+    {label:'Realizado',data:prods,backgroundColor:prods.map(corCx),borderRadius:3},
     {label:'Meta/h',data:metaLn,type:'line',borderColor:'#FF5C1F60',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false}
   ]},options:CHART_DEFAULTS});
   mkChart('ch-comp',{type:'bar',data:{labels,datasets:[
@@ -13001,117 +13078,56 @@ function renderGerencialHist(){
     {label:'Meta',data:metaLn,backgroundColor:'rgba(255,255,255,0.05)',borderRadius:3}
   ]},options:{...CHART_DEFAULTS,plugins:{legend:{display:false}}}});
 }
+// A análise do dia passado em UEP: o % da meta do dia, a tendência das duas
+// últimas horas de jornada e o pico e o vale pelo % da meta DA HORA.
+function _gerAnaliseUepHistHtml(horasU, pctUep, dia){
+  const fech=horasU.filter(h=>!h.he&&h.uep>0&&h.metaH>0).map(h=>({ h, p:h.uep/h.metaH*100 }));
+  let pico=null, vale=null;
+  fech.forEach(x=>{ if(!pico||x.p>pico.p) pico=x; if(!vale||x.p<vale.p) vale=x; });
+  const ult=fech.slice(-2), tend=ult.length===2?(ult[1].p>=ult[0].p?1:-1):0;
+  const ph=x=>x?`${fmtP(x.p)} da meta da hora · ${fmtN(Math.round(x.h.uep))} UEP`:'nenhuma hora de jornada com UEP';
+  return `
+    <div class="a-card"><div class="a-lbl">UEP DO DIA</div>
+      <div class="a-val" style="color:${pctUep!=null?'var(--'+sc(pctUep)+')':'var(--txt2)'}">${pctUep!=null?fmtP(pctUep):'—'}</div>
+      <div class="a-desc">da meta de UEP · ${dia.fechado?'dia fechado':'registrado'}</div></div>
+    <div class="a-card"><div class="a-lbl">TENDÊNCIA DO TURNO</div>
+      <div class="a-val" style="color:${tend>0?'var(--ok)':tend<0?'var(--red)':'var(--txt2)'}">${tend>0?'↑ CRESCENDO':tend<0?'↓ QUEDA':'—'}</div>
+      <div class="a-desc">últimas 2 horas de jornada, % da meta da hora</div></div>
+    <div class="a-card"><div class="a-lbl">PICO DE PRODUÇÃO</div>
+      <div class="a-val">${pico?pico.h.label:'—'}</div>
+      <div class="a-desc">${ph(pico)}</div></div>
+    <div class="a-card"><div class="a-lbl">VALE DE PRODUÇÃO</div>
+      <div class="a-val" style="color:var(--red)">${vale?vale.h.label:'—'}</div>
+      <div class="a-desc">${ph(vale)}</div></div>`;
+}
 
 function renderGerencial(){
   if(GER_DATA){ renderGerencialHist(); return; }
   const dh=getDadosHoje();
   const k=calcKPIs(dh);
-  // A MESMA régua da TV: a meta do dia repartida pelo turno já rodado. Painel
-  // que julga o mesmo instante de dois jeitos é o defeito que este projeto mais
-  // pagou caro.
-  const s=sc(k.efRitmo);
-
-  // ── KPIs ──
-  const kpis=[
-    {l:'PRODUÇÃO REAL',     v:fmtN(k.real),            sub:k.nHE?`${fmtN(k.realNormal)} normal + ${fmtN(k.realHE)} extra`:`meta ${fmtN(k.meta)} cx`, c:s},
-    // Hora normal × hora extra só aparece quando o dia TEM hora extra lançada —
-    // sem HE o card diria "tudo normal" e só ocuparia espaço no grid.
-    ...(k.nHE?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(k.realHE), sub:`${plural(k.nHE,'hora','horas')} de HE`, t:`${fmtN(k.realNormal)} cx em hora normal`, c:'acc'}]:[]),
-    // O GAP saiu de card próprio e virou o subtítulo daqui (15/09/2026).
-    // PRODUÇÃO REAL, META DO DIA, % DA META e GAP DA META eram QUATRO cards
-    // para uma relação só: dados o real e a meta, o % e a diferença são
-    // aritmética. O que o gap tem de útil — quantas caixas faltam — cabe na
-    // linha de apoio da própria meta, sem gastar um card do grid.
-    // v7.202.0: com atraso na META (SOMAR ATRASO), a linha de apoio diz do que
-    // ela é feita — as mesmas META DIA e ATRASO META que o FECHAR DIA grava.
-    (()=>{ const p=_metaPartes(k.meta, _metaDiaAba());
-      return {l:'META DO DIA', v:fmtN(k.meta), sub:_metaPartesTxt(p, k.gap, false),
-        t:p.metaDia==null?'':'Esta é a META que o FECHAR DIA grava no histórico. META DIA (soma das metas por hora da HORA_A_HORA): '
-          +fmtN(p.metaDia)+' cx · ATRASO META: '+fmtN(p.atraso)+' cx'+(p.atraso>0?(CFG.metaComAtraso?' (SOMAR ATRASO ligado neste computador)':' (meta ajustada neste computador)'):'')+'.',
-        c:'acc'}; })(),
-    /* O número é FATO (quanto da meta do dia já saiu, conferível de cabeça) e o
-       VEREDITO é a palavra do sub + a cor, que falam de RITMO — a troca feita
-       na TV em 01/09/2026, pelo mesmo motivo: dois "%" e dois sentidos da
-       palavra META na mesma célula confundiam quem lia.
-       A cor continua saindo de UMA conta só (efRitmo, o efNoRitmo do núcleo);
-       o que mudou foi qual número ocupa o lugar grande. A meta/hora da
-       HORA_A_HORA (k.ef) não pinta mais nada desde a v7.32. */
-    {l:'% DA META DO DIA',  v:fmtP(k.efDia),            sub:slRitmo(k.efRitmo)+' · '+fmtN(k.real)+' de '+fmtN(Math.round(k.metaAteAgora))+' cx esperadas até agora',
-     t:'O número é o quanto da META DO DIA já saiu: '+fmtN(k.real)+' de '+fmtN(k.meta)+' cx. '
-      +'A palavra e a cor são o RITMO: realizado ÷ o que a meta do dia pedia até esta altura do turno ('
-      +fmtN(Math.round(k.metaAteAgora))+' cx em '+fmt1(k.hProd)+'h rodadas) = '+fmtP(k.efRitmo)+'. '
-      +'A meta do dia é rateada pelos MINUTOS já rodados, então a régua não cobra hora que ainda não aconteceu. '
-      +'A meta/hora da planilha ('+fmtP(k.ef)+' até agora) não manda na cor: ela pode estar pedindo outra coisa que a meta do dia.', c:s},
-    // UEP DO DIA (v7.80.0, PPCP 24/09/2026): o que a linha fez em ESFORÇO, não
-    // em caixas. A UEP por caixa é parâmetro do cadastro; a conta e o texto
-    // moram no rp-core (uepCard), os mesmos do gerencial do celular.
-    _uepCardLeitura(uepCard(PONTOS_DIA.uep, PONTOS_DIA.metaUep, k.minNorm)),
-    {l:'RITMO ATUAL',       v:fmtN(k.ritmo),            sub:'média cx/hora no turno', c:'acc'},
-    // ⚠ A PROJEÇÃO NÃO DÁ VEREDITO — o selo do % DA META DO DIA dá (15/09/2026).
-    // Os dois respondiam a MESMA pergunta ("vamos bater hoje?") por duas contas:
-    // a projeção media o turno em SLOTS (real + ritmo × slots restantes, e
-    // ritmo = real ÷ nº de slots) e o selo mede em MINUTOS (efNoRitmo). Só
-    // dariam igual se toda hora tivesse 60 min — mas o slot pós-almoço
-    // 12:12-13:00 tem 48, e é isso que descola as duas.
-    //
-    // Medido no turno real (9 slots, 527 min, meta 1.800): com 4 horas lançadas
-    // a projeção cobra 800 cx e o selo cobra 820. Produção em 810 fazia a tela
-    // mostrar "▲ ACIMA DA META" ao lado de "ABAIXO DO RITMO" — dois cards
-    // vizinhos com vereditos opostos, os dois certos. Acontece em 8 das 9 horas
-    // do turno, com janela de 2 a 20 cx.
-    //
-    // O número fica (projetar é informação útil); quem julga é o selo, que
-    // rateia por minuto e é a conta mais correta. Mesma regra do relatório
-    // semanal e da TV: o número é tinta, o veredito é o selo.
-    // A TV já mostrava só o número — ela nunca teve este defeito.
-    {l:'PROJEÇÃO FINAL',    v:fmtN(k.proj),             sub:'cx no ritmo atual', t:'caixas se o ritmo de agora seguir até o fim do turno', c:'acc'},
-    {l:'HORAS PRODUTIVAS',  v:fmt1(k.hProd)+'h',  sub:`${k.n} slots registrados`,c:''},
-    // Só horas de JORNADA: a hora extra não tem meta e não disputa pico nem vale
-    // — a mesma base que o FECHAR DIA grava nas colunas MELHOR H./PIOR H.
-    {l:'MELHOR HORA',       v:k.nNorm?fmtN(k.melhor):'—', sub:k.nNorm?'cx — pico do turno':'nenhuma hora de jornada lançada', c:k.nNorm?'ok':''},
-    {l:'PIOR HORA',         v:k.nNorm?fmtN(k.pior):'—',   sub:k.nNorm?'cx — mínimo do turno':'a hora extra não entra no pico/vale', c:(k.nNorm&&k.pior<k.metaH*0.7)?'red':''},
-    // Identificação de produto é OPCIONAL: fica em 0 se ninguém selecionou produto no app.
-    {l:'PRODUÇÃO (PONTOS)', v:fmtN(PONTOS_DIA.pontos),  sub:'pts', t:'caixas × pontos do produto', c:'acc'},
-    {l:'PESO PRODUZIDO',    v:fmtN(Math.round(PONTOS_DIA.pesoKg))+' kg', sub:'', t:'caixas × peso bruto do produto', c:'acc'},
-  ];
-  // ⚠ ATRASO NA PROGRAMAÇÃO: aviso à parte, não soma na META DO DIA — só entra
-  // quando há atraso acumulado de dias anteriores ainda não embalado.
-  const _prog = PONTOS_DIA.programacao || {lista:[],metaEfetiva:0,programadoHoje:0,atrasoTotal:0};
-  if(_prog.atrasoTotal>0){
-    kpis.push({l:'⚠ ATRASO NA PROGRAMAÇÃO', v:fmtN(_prog.atrasoTotal), sub:`cx de dias anteriores + meta efetiva ${fmtN(_prog.metaEfetiva)} cx`, c:'red'});
-  }
-  // `t` (opcional) vira o title do card: indicador cuja conta não é óbvia
-  // explica a si mesmo no hover, sem ocupar linha no grid.
-  document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
-    <div class="kpi-card ${k.c}"${k.t?` title="${_rpEsc(k.t)}"`:''}>
-      <div class="kpi-lbl">${k.l}</div>
-      <div class="kpi-val">${k.v}</div>
-      <div class="kpi-sub">${k.sub}</div>
-    </div>`).join('');
+  /* ── A UEP NA FRENTE (v7.243.0) ────────────────────────────────────────────
+     PPCP, 13/11/2026: "precisamos ir adaptando a tela gerencial para priorizar
+     as UEPs" → prévia com os números do dia → "pode implantar no gerencial
+     primeiro". O veredito do dia passa a ser UM: o da UEP (meta 2.761 na
+     jornada normal, que virou a META oficial). Medido no HISTORICO de 16/10 a
+     12/11 (19 dias úteis, jornada): as duas réguas discordaram em 12 dias — a
+     tela mostrava os dois selos, o % DA META em caixas e o UEP DO DIA.
+     As caixas continuam na tela como FATO (o programado, o que faltou, o
+     ritmo em cx/h), sem cor: a UEP diz se a linha andou no ritmo; o
+     programado diz se a entrega saiu. Nenhuma leitura nova ao Apps Script —
+     tudo sai do getDados e do getPontosDia que o gerencial já lê.
+     ⚠ A TV e o celular ainda julgam em caixas (fase seguinte). */
+  const G=_gerUepModelo(k);
+  // Sem a UEP no backend ou no cadastro (nunca desde a v5.11), as caixas
+  // voltam a dar o veredito — nunca uma tela sem veredito nenhum.
+  const semUep=PONTOS_DIA.uep===false||(!!PONTOS_DIA.uep&&!(PONTOS_DIA.uep.codigos>0));
+  _gerKpiPinta(_gerUepCards(G, k), _gerCxCards(k, semUep));
   renderGerProdutosDia(k.real);   // produtos embalados hoje (v7.201.0)
   // A aba UEP lê o mesmo PONTOS_DIA: redesenha junto no refresh.
   if(_abaOn('uep')) renderUep();
 
-  // ── Análise ──
-  const tendStr=k.n>=2?(dh[k.n-1].producaoHora>=dh[k.n-2].producaoHora?'↑ CRESCENDO':'↓ QUEDA'):'SEM DADOS';
-  const tendClr=k.n>=2?(dh[k.n-1].producaoHora>=dh[k.n-2].producaoHora?'var(--ok)':'var(--red)'):'var(--txt2)';
-  // Pico e vale saem das horas de jornada (k.melhor/k.pior já excluem a HE):
-  // uma hora sem meta não é o melhor nem o pior desempenho do turno.
-  const picoR=k.nNorm?dh.find(r=>!r.he&&r.producaoHora===k.melhor):null;
-  const valeR=k.nNorm?dh.find(r=>!r.he&&r.producaoHora===k.pior):null;
-  document.getElementById('analise-row').innerHTML=`
-    <div class="a-card"><div class="a-lbl">RITMO NECESSÁRIO</div>
-      <div class="a-val" style="color:${k.slotsRest>0&&k.nec===0?'var(--ok)':'var(--warn)'}">${k.slotsRest>0?(k.nec===0?'META OK':fmtN(k.nec)+' cx/h'):'— Turno enc.'}</div>
-      <div class="a-desc">para meta em ${plural(k.slotsRest,'hora','horas')}</div></div>
-    <div class="a-card"><div class="a-lbl">TENDÊNCIA DO TURNO</div>
-      <div class="a-val" style="color:${tendClr}">${tendStr}</div>
-      <div class="a-desc">últimas 2 horas registradas</div></div>
-    <div class="a-card"><div class="a-lbl">PICO DE PRODUÇÃO</div>
-      <div class="a-val">${picoR?picoR.horario:'—'}</div>
-      <div class="a-desc">${k.nNorm?fmtN(k.melhor)+' cx':'sem hora de jornada lançada'}</div></div>
-    <div class="a-card"><div class="a-lbl">VALE DE PRODUÇÃO</div>
-      <div class="a-val" style="color:var(--red)">${valeR?valeR.horario:'—'}</div>
-      <div class="a-desc">${k.nNorm?fmtN(k.pior)+' cx':'a hora extra não disputa o vale'}</div></div>`;
+  // ── Análise ── (em UEP; sem a UEP, a de caixas)
+  document.getElementById('analise-row').innerHTML=G.ok?_gerAnaliseUepHtml(G):_gerAnaliseCxHtml(k, dh);
 
   // ── Produto atual do turno (opcional — só aparece se o operador selecionou) ──
   const gerProdEl=document.getElementById('ger-produto-atual');
@@ -13124,70 +13140,279 @@ function renderGerencial(){
     } else gerProdEl.style.display='none';
   }
 
-  // ── Tabela hora a hora ──
+  // ── Tabela hora a hora ── a cor é a da UEP da hora; as caixas só informam.
   document.getElementById('tbl-data-lbl').textContent=hojeStr();
-  let acumCalc=0;
-  // UEP hora a hora (v7.82.0): só com o backend v5.11 e a UEP cadastrada.
-  const temUepH=!!(PONTOS_DIA.uep && PONTOS_DIA.uep.codigos>0);
-  const uepH=temUepH?uepPorHora(PONTOS_DIA.porHoraModelo):{};
-  { const _th=document.getElementById('th-uep-hora'); if(_th) _th.style.display=temUepH?'':'none'; }
+  _gerTheadUep();
+  const horasU=G.horas||_uepAbaHoras(k.slots, k.allHoje, {}, PONTOS_DIA.metaUep, G.agoraMin);
+  const uepCxAgora=G.m&&G.m.prod?G.m.prod.uepCx:null;
+  const cxDe=sl=>{ const reg=k.allHoje.find(d=>d.horario===sl.inicio); return reg&&reg.producaoHora!=null?reg.producaoHora:null; };
   document.getElementById('tbl-hora-body').innerHTML=k.slots.map((sl,i)=>{
-    const reg=k.allHoje.find(d=>d.horario===sl.inicio);
-    const prod=reg?reg.producaoHora:null;
-    const metaSlot=reg?reg.metaHora:k.metaH;
-    const {atrasoHora=0, metaEfetivaHora=metaSlot} = k.atrasoHoras?.[i]||{};
-    const isHE=reg?.he||sl.he||false;
-    if(prod!==null&&prod!==undefined) acumCalc+=prod;
-    /* ── Hora extra não é julgada ──────────────────────────────────────────────
-       Sem meta não há eficiência nem veredito: a linha ganha a etiqueta que diz
-       o que ela é, exatamente como no gerencial de dia passado (v7.34.0).
-       Medido em 01/09/2026: as horas de HE das 05:00 e 06:00 apareciam com
-       META/H 245, 98,0% e 144,0% e o selo OK — cobradas contra uma meta que não
-       é delas, no mesmo painel em que o dia passado já dizia "—". */
-    const ef=(!isHE&&prod!=null)?(prod/(metaEfetivaHora||metaSlot)*100):null;
-    const s2=ef===null?'mute':ef>=96?'ok':ef>=90?'warn':'red';
-    const bdg=isHE
-      ? '<span class="badge b-acc">HORA EXTRA</span>'
-      : `<span class="badge b-${s2}">${ef===null?'PENDENTE':ef>=96?'OK':ef>=90?'ATENÇÃO':'ABAIXO'}</span>`;
-    const metaCel=isHE?'—'
-      : fmtN(metaSlot)+(atrasoHora>0?`<span style="color:var(--warn);font-size:10px;margin-left:3px" title="Meta efetiva com atraso acumulado do turno: ${fmtN(metaEfetivaHora)} cx">(+${fmtN(atrasoHora)})</span>`:'');
-    // Alerta de hora fraca: produção >15% abaixo da média histórica deste mesmo
-    // horário (≥2 dias de amostra). Compara SEMPRE o REALIZADO (prod), nunca a
-    // META, com a média histórica.
-    const _hk=normHora(sl.label);
-    const med=MEDIA_HORAS[_hk], amo=AMOSTRA_HORAS[_hk]||0;
-    // Só sinaliza horário JÁ ENCERRADO (agora >= fim do slot) e com produção real
-    // (>0): evita ⚠ em hora em andamento/futura (a planilha manda 0) ou ainda sem
-    // lançamento. Comparar uma hora incompleta com a média do dia inteiro é injusto.
-    const _ag=new Date(), _nm=_ag.getHours()*60+_ag.getMinutes();
-    const _fim = sl.fim ? toMin(sl.fim) : null;
-    // Marcador vs média histórica do MESMO horário (só hora encerrada, com
-    // produção real >0 e ≥2 dias de amostra): ▲ verde = na média ou acima;
-    // ⚠ = abaixo (>15%). Tooltip mostra a média.
-    // IMPORTANTE: se a META da hora for MENOR que a média histórica, isso é uma
-    // decisão de planejamento — não compara e não mostra ícone nenhum (nem ⚠ nem ▲),
-    // apenas exibe a meta normalmente (metaSlot>=med).
-    const _cmp = (prod!=null && prod>0 && !isHE && _fim!=null && _nm>=_fim && amo>=2 && med>0 && metaSlot>=med);
-    const fraqMark = !_cmp ? ''
-      : prod < med*0.85
-        ? `<span style="color:var(--warn);font-weight:700;font-size:12px;display:inline-block;vertical-align:middle;line-height:1;margin-left:6px" title="Abaixo da média deste horário: média ${fmtN(med)} cx em ${amo} dias">⚠</span>`
-        : `<span style="color:var(--ok);font-weight:700;font-size:13px;display:inline-block;vertical-align:middle;line-height:1;margin-left:6px" title="Na média deste horário ou acima: média ${fmtN(med)} cx em ${amo} dias">▲</span>`;
-    return`<tr class="${isHE?'he-row':''}">
-      <td class="hora-cell">${isHE?`<span class="he-dot"></span>`:''}${sl.label}${fraqMark}</td>
-      <td class="mono" style="color:${prod!=null?'var(--txt)':'var(--txt3)'}">${prod!=null?fmtN(prod):'—'}</td>
-      <td class="mono">${prod!=null?fmtN(acumCalc):'—'}</td>
-      <td class="mono" style="color:${isHE?'var(--txt3)':'var(--txt2)'}">${metaCel}</td>
-      <td class="mono" style="color:${ef!=null?(ef>=96?'var(--ok)':ef>=90?'var(--warn)':'var(--red)'):'var(--txt3)'}">${ef!=null?fmtP(ef):'—'}</td>
-      ${temUepH?(()=>{ const c=uepCelula(uepH[sl.inicio], PONTOS_DIA.metaUep, sl.min||60, isHE);
-        return `<td class="mono" title="${c.title}" style="color:${c.cls?'var(--'+c.cls+')':'var(--txt2)'}">${c.txt}</td>`; })():''}
-      <td>${bdg}</td></tr>`;
-  }).join('')||'<tr><td colspan="6" class="empty-msg">Configure o turno ou importe o Excel.</td></tr>';
-  // Legenda do ⚠: aparece só quando há alguma hora fraca na tabela.
-  const _gl=document.getElementById('ger-leg-fraca');
-  if(_gl){ const _h=document.getElementById('tbl-hora-body').innerHTML; _gl.style.display=(_h.includes('⚠')||_h.includes('▲'))?'inline':'none'; }
+    const h=horasU[i]||{label:sl.label, he:!!sl.he, lancada:false};
+    return _gerHoraLinha(h, cxDe(sl), (G.cxCom||{})[sl.inicio]||0, uepCxAgora);
+  }).join('')||'<tr><td colspan="7" class="empty-msg">Configure o turno ou importe o Excel.</td></tr>';
+  // O ⚠/▲ da média histórica de CAIXAS do mesmo horário saiu da tabela (v7.243.0):
+  // ao lado da cor da UEP, ele dava um segundo veredito por hora — às 09:00 de
+  // 13/11, 160 cx (98% em caixas) eram 88% da meta de UEP (mesa e escrivaninha
+  // PRISM, mais leves).
+  const _gl=document.getElementById('ger-leg-fraca'); if(_gl) _gl.style.display='none';
 
-  renderChartHora(dh,k.slots,k.metaH);
-  renderChartComp(dh,k.slots,k.metaH);
+  _gerChartsUep(horasU.map((h,i)=>({h, cx:cxDe(k.slots[i])})));
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// O GERENCIAL COM A UEP NA FRENTE (v7.243.0) — conta, textos e desenho
+// ════════════════════════════════════════════════════════════════════════════
+// A conta é a que já existe: o uepCard (rp-core) para o veredito, o
+// _uepAbaHoras / _uepAbaProj da aba ⚖ UEP para a hora e a projeção, e o
+// _tvUepMontar das Telas F/G para os minutos à frente/atrás, o que falta em
+// caixas do produto de agora e quando a meta sai. Nenhuma régua nova.
+function _gerUepModelo(k){
+  const U=PONTOS_DIA.uep;
+  const card=_uepCardLeitura(uepCard(U, PONTOS_DIA.metaUep, k.minNorm));
+  const a=new Date(), agoraMin=a.getHours()*60+a.getMinutes();
+  if(!U||!(U.codigos>0)) return { ok:false, card, agoraMin };
+  const meta=card.meta, feito=Number(U.normal)||0, he=Number(U.he)||0;
+  const horas=_uepAbaHoras(k.slots, k.allHoje, uepPorHora(PONTOS_DIA.porHoraModelo), meta, agoraMin);
+  const proj=_uepAbaProj(feito, k.minNorm);
+  let m=null;
+  try{
+    m=_tvUepMontar({ estado:'ok', k, card, meta, feito, he, horas }, { agoraMin,
+      prod:{ cod:PONTOS_DIA.produtoAtual, desc:PONTOS_DIA.produtoAtualDesc, cor:PONTOS_DIA.produtoAtualCor },
+      cat:_pdiaPcCat(), phm:PONTOS_DIA.porHoraModelo });
+  }catch(e){ m=null; }
+  return { ok:true, card, meta, feito, he, horas, proj, m, agoraMin, cxSem:Number(U.cxSem)||0,
+           cxCom:_gerCxComHora(PONTOS_DIA.porHoraModelo) };
+}
+// Caixas COM UEP de cada hora (HH:MM): a META EM CX da hora sai do peso delas.
+function _gerCxComHora(phm){
+  const m={};
+  (phm||[]).forEach(it=>{
+    const h=_uepHHMM(it&&it.hora);
+    if(h&&Number(it.uep)>0) m[h]=(m[h]||0)+(Number(it.caixas)||0);
+  });
+  return m;
+}
+// "28 min atrás do ritmo": a diferença para o esperado, em minutos de meta.
+function _gerMinTxt(difMin){
+  const a=Math.round(Math.abs(Number(difMin)||0));
+  return a<1?'no tempo da meta':`${a} min ${difMin<0?'atrás':'à frente'} do ritmo`;
+}
+// 1ª linha: o veredito (UEP) e o que está vencido. Só o 1º card tem selo.
+function _gerUepCards(G, k){
+  const c=G.card, L=[];
+  if(!G.ok){
+    L.push({ l:c.l, v:c.v, sub:c.sub, t:c.t, c:(c.c||'')+' ger-hero' });
+  } else {
+    const m=G.m, temJ=k.minNorm>0&&c.ef!=null;
+    const sub=temJ
+      ? `<b>${slRitmo(c.ef)}</b> · ${m?_gerMinTxt(m.difMin)+' · ':''}${fmtN(Math.round(G.feito))} de ${fmtN(Math.round(c.esperado))} UEP esperadas até agora`
+        +(G.he>0?` · +${fmtN(Math.round(G.he))} em hora extra`:'')+(G.cxSem>0?` · ${fmtN(G.cxSem)} cx sem UEP`:'')
+      : c.sub;
+    L.push({ l:'UEP DO DIA · META '+fmtN(G.meta), v:fmtN(Math.round(G.feito))+' <small>UEP</small>', sub,
+             t:c.t+' A META é de UEP desde a v7.243.0: as caixas aparecem embaixo, como fato.', c:(temJ?c.c:'acc')+' ger-hero' });
+  }
+  const atr=_gerAtrasoKpi();
+  if(atr) L.push(atr);
+  if(!G.ok) return L;
+  const p=G.proj, porH=G.meta/UEP_MIN_DIA*60;
+  L.push({ l:'RITMO · UEP/HORA', v:p?fmtN(Math.round(p.porHora))+' <small>/h</small>':'—', c:'',
+           sub:`a meta pede ${fmtN(Math.round(porH))} UEP/h`,
+           t:'UEP feita na jornada ÷ minutos de jornada já decorridos × 60 — a média da jornada, não a última hora.' });
+  L.push({ l:'PROJEÇÃO · UEP', v:p?fmtN(Math.round(p.fim)):'—', c:'',
+           sub:p?`${fmtP(p.fim/G.meta*100)} da meta · na média de hoje, só jornada`:'sem hora de jornada lançada',
+           t:'UEP feita na jornada + a média por minuto × os minutos de jornada que faltam. É projeção, não veredito — quem julga é o selo do 1º card. A hora extra não entra.' });
+  const falta=Math.max(0, G.meta-G.feito), m=G.m;
+  const pr=m&&m.prod;
+  L.push(falta<=0
+    ? { l:'PARA A META', v:'✓', c:'', sub:'meta de UEP do dia batida', t:'' }
+    : { l:'PARA A META', v:fmtN(Math.round(falta))+' <small>UEP</small>', c:'',
+        sub:[pr&&m.faltaCx?`≈ ${fmtN(m.faltaCx)} cx de ${_rpEsc(pr.nome)}`:'',
+             m?(m.chega!=null?`sai às ${fromMin(Math.round(m.chega))} no ritmo da meta`:(m.minRest>0?`não cabe até ${CFG.turnoFim||'17:00'} no ritmo da meta`:'jornada encerrada')):''].filter(Boolean).join(' · ')||'meta − UEP feita na jornada',
+        t:'Meta de UEP − UEP feita na jornada. Em caixas: a falta ÷ a UEP por caixa do produto que está rodando agora. "Sai às" anda pelos minutos de jornada que restam (o almoço fica fora), no ritmo da meta.' });
+  return L;
+}
+// O ATRASO de lotes vencidos, em horas de linha: o MESMO número do card ATRASO
+// do celular e da faixa da aba ⚖ UEP (atrasoVencido no rp-core, a paridade com o
+// _gpxMontar é testada). Sem o cadastro neste computador, as caixas.
+function _gerAtrasoKpi(){
+  const prog=PONTOS_DIA.programacao||{};
+  const cat=_pdiaPcCat();
+  const uepDe={}; (cat||[]).forEach(p=>{ if(p&&Number(p.uep)>0) uepDe[p.codigo]=Number(p.uep); });
+  const a=typeof atrasoVencido==='function'?atrasoVencido(prog.lista, uepDe, PONTOS_DIA.metaUep):null;
+  const l='⚠ ATRASO · LOTES VENCIDOS';
+  if(a&&a.n>0){
+    if(a.min!=null) return { l, c:'red',
+      v:(a.min>0?_fmtHM(a.min):'&lt;1 min')+(a.semUep?'*':'')+' <small>de linha</small>',
+      sub:`${fmtN(a.cx)} cx${a.desde?' · desde '+a.desde:''}${a.semUep?` · * ${plural(a.semUep,'código sem UEP fica','códigos sem UEP ficam')} só nas caixas`:''}`,
+      t:'Caixas de lotes com data anterior a hoje que ainda faltam, em horas de linha no ritmo da meta (UEP ÷ meta × 527 min). O programado de hoje não entra.' };
+    return { l, c:'red', v:fmtN(a.cx)+' <small>cx</small>',
+      sub:`${a.desde?'desde '+a.desde+' · ':''}${cat?'sem UEP no cadastro':'lendo o cadastro…'}` };
+  }
+  if(!a&&Number(prog.atrasoTotal)>0) return { l, c:'red', v:fmtN(prog.atrasoTotal)+' <small>cx</small>', sub:'cx de lotes com data anterior a hoje' };
+  return null;
+}
+// 2ª linha: as caixas, os pontos e o peso — fatos, SEM cor e sem selo. Só sem
+// UEP nenhuma (backend ou cadastro) o card das caixas volta a julgar.
+function _gerCxCards(k, semUep){
+  const p=_metaPartes(k.meta, _metaDiaAba());
+  return [
+    { l:'CAIXAS', v:fmtN(k.real), c:'', sub:k.nHE?`${fmtN(k.realNormal)} normal + ${fmtN(k.realHE)} em hora extra`:'no turno',
+      t:k.nHE?`${plural(k.nHE,'hora','horas')} de hora extra lançada${k.nHE>1?'s':''}`:'' },
+    { l:'CAIXAS PROGRAMADAS', v:fmtN(k.meta), c:semUep?sc(k.efRitmo):'',
+      sub:(semUep?`<b>${slRitmo(k.efRitmo)}</b> · `:'')+`${fmtP(k.efDia)} feito · `+_metaPartesTxt(p, k.gap, false),
+      t:'A META DO DIA em caixas — a que o FECHAR DIA grava no histórico.'
+        +(p.metaDia==null?'':' META DIA (soma das metas por hora da HORA_A_HORA): '+fmtN(p.metaDia)+' cx · ATRASO META: '+fmtN(p.atraso)+' cx'+(p.atraso>0?(CFG.metaComAtraso?' (SOMAR ATRASO ligado).':' (meta ajustada neste computador).'):'.'))
+        +(semUep?'':' Sem cor: o veredito do dia é o da UEP (1º card), que desconta o peso de cada caixa.') },
+    { l:'RITMO · CX/HORA', v:fmtN(k.ritmo), c:'', sub:'média no turno', t:'caixas ÷ horas lançadas' },
+    // Identificação de produto é OPCIONAL: fica em 0 se ninguém selecionou produto no app.
+    { l:'PONTOS', v:fmtN(PONTOS_DIA.pontos), c:'', sub:'pts', t:'caixas × pontos do produto' },
+    { l:'PESO', v:fmtN(Math.round(PONTOS_DIA.pesoKg))+' kg', c:'', sub:'', t:'caixas × peso bruto do produto' }
+  ];
+}
+// `t` (opcional) vira o title do card: indicador cuja conta não é óbvia
+// explica a si mesmo no hover, sem ocupar linha no grid.
+function _gerKpiHtml(kpis){
+  return (kpis||[]).map(k=>`
+    <div class="kpi-card ${k.c}"${k.t?` title="${_rpEsc(k.t)}"`:''}>
+      <div class="kpi-lbl">${k.l}</div>
+      <div class="kpi-val">${k.v}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>`).join('');
+}
+// O cadastro de UEP para o ATRASO em horas e o produto de agora (v7.243.0):
+// sem nenhum neste computador (nem o guardado), lê UMA vez por sessão, no fim
+// do ciclo — uma leitura de cada vez, só com o gerencial ao vivo na tela. É a
+// mesma leitura (e a mesma marca) do clique no PRODUTOS EMBALADOS HOJE.
+function _gerCatSeFalta(){
+  if(!_pdiaParPrecisa() || _pdiaPcCat() || PDIA_PC_CATPED) return Promise.resolve(null);
+  PDIA_PC_CATPED = true;
+  return Promise.resolve(_capBuscar()).then(() => { if(_pdiaParPrecisa()) renderGerencial(); }).catch(() => null);
+}
+function _gerKpi2Off(){ const g2=document.getElementById('kpi-grid2'); if(g2){ g2.innerHTML=''; g2.style.display='none'; } }
+function _gerKpiPinta(l1, l2){
+  document.getElementById('kpi-grid').innerHTML=_gerKpiHtml(l1);
+  const g2=document.getElementById('kpi-grid2');
+  if(g2){ g2.innerHTML=_gerKpiHtml(l2); g2.style.display=(l2&&l2.length)?'':'none'; }
+}
+// O cabeçalho da tabela hora a hora: em UEP, ou o de caixas (dia passado sem UEP).
+function _gerTheadUep(){
+  const t=document.getElementById('ger-hora-thead'); if(!t) return;
+  t.innerHTML='<tr><th>HORÁRIO</th>'
+    +'<th title="UEP da hora: caixas × UEP do cadastro. * = parte das caixas de códigos sem UEP.">UEP</th>'
+    +'<th title="A meta de UEP do dia repartida pelos minutos da hora (a do almoço, 48 min, pede menos).">META UEP</th>'
+    +'<th>% DA META</th><th>CAIXAS</th>'
+    +'<th title="A meta da hora em caixas, pelo peso das caixas que rodaram nela (a hora em andamento sem caixa: pelo produto de agora). A planilha pede o mesmo nº de caixas em toda hora; um produto leve precisa de mais caixas.">META EM CX</th>'
+    +'<th>STATUS</th></tr>';
+}
+function _gerTheadCx(){
+  const t=document.getElementById('ger-hora-thead'); if(!t) return;
+  t.innerHTML='<tr><th>HORÁRIO</th><th>REALIZADO</th><th>ACUMULADO</th><th>META/H</th><th>EFICIÊNCIA</th><th>STATUS</th></tr>';
+}
+// Uma hora da tabela em UEP (ao vivo e dia passado). h = a hora do _uepAbaHoras
+// (ou a mesma forma); cx = caixas da hora; cxCom = caixas COM UEP; uepCxAgora =
+// UEP por caixa do produto de agora. Hora extra e hora em andamento não são
+// julgadas (as regras da hora extra e da aba ⚖ UEP).
+function _gerHoraLinha(h, cx, cxCom, uepCxAgora){
+  const ehHE=!!h.he, temU=h.uep!=null&&h.uep>0;
+  const pct=!ehHE&&!h.andamento&&temU&&h.metaH>0?h.uep/h.metaH*100:null;
+  const s2=pct==null?'':sc(pct);
+  const uepTxt=temU?fmtN(Math.round(h.uep))+(h.cxSem>0?'*':''):(h.cxSem>0?'0*':'—');
+  const uepTit=temU||h.cxSem>0?`${fmtN(Math.round(h.uep||0))} UEP`+(h.cxSem>0?` · * ${fmtN(h.cxSem)} cx de códigos sem UEP ficaram fora`:''):'nenhuma caixa com produto apontada nesta hora';
+  const metaCx=ehHE||!(h.metaH>0)?null
+    :(temU&&cxCom>0?h.metaH*cxCom/h.uep:(h.andamento&&uepCxAgora>0?h.metaH/uepCxAgora:null));
+  const bdg=ehHE?'<span class="badge b-acc">HORA EXTRA</span>'
+    :h.andamento?`<span class="badge b-mute" title="hora em andamento — não é julgada">${h.ate?'ATÉ '+h.ate:'EM ANDAMENTO'}</span>`
+    :!h.lancada?'<span class="badge b-mute">PENDENTE</span>'
+    :!temU?'<span class="badge b-mute" title="as caixas desta hora não têm UEP">SEM UEP</span>'
+    :`<span class="badge b-${s2}">${pct>=96?'OK':pct>=90?'ATENÇÃO':'ABAIXO'}</span>`;
+  return `<tr class="${ehHE?'he-row':''}">
+      <td class="hora-cell">${ehHE?'<span class="he-dot"></span>':''}${h.label}</td>
+      <td class="mono" title="${_rpEsc(uepTit)}" style="color:${temU?'var(--txt)':'var(--txt3)'}">${uepTxt}</td>
+      <td class="mono" style="color:var(--txt2)">${ehHE||!(h.metaH>0)?'—':fmtN(Math.round(h.metaH))}</td>
+      <td class="mono" style="color:${pct!=null?'var(--'+s2+')':'var(--txt3)'}">${pct!=null?fmtP(pct):'—'}</td>
+      <td class="mono" style="color:${cx!=null?'var(--txt)':'var(--txt3)'}">${cx!=null?fmtN(cx):'—'}</td>
+      <td class="mono" style="color:var(--txt2)"${metaCx!=null&&!(temU&&cxCom>0)?' title="pelo produto que está rodando agora"':''}>${metaCx!=null?fmtN(Math.round(metaCx)):'—'}</td>
+      <td>${bdg}</td></tr>`;
+}
+// Os dois gráficos: a UEP de cada hora contra a meta da hora (a cor é a da
+// tabela) e as caixas de cada hora (fato, uma cor só, sem meta). Cor literal:
+// o canvas do Chart.js não resolve token CSS.
+function _gerChartsUep(L){
+  const t1=document.getElementById('ger-ch1-ttl'), t2=document.getElementById('ger-ch2-ttl');
+  if(t1) t1.textContent='⬛ UEP HORA A HORA · META DA HORA';
+  if(t2) t2.textContent='◧ CAIXAS HORA A HORA';
+  const labels=L.map(x=>x.h.label||x.h.inicio);
+  const cor=h=>h.he?'rgba(255,92,31,0.55)':h.andamento?'rgba(143,160,181,0.45)':!(h.uep>0)||!(h.metaH>0)?'rgba(42,42,42,0.4)'
+    :(()=>{ const s=sc(h.uep/h.metaH*100); return s==='ok'?'rgba(76,175,80,0.75)':s==='warn'?'rgba(255,152,0,0.75)':'rgba(244,67,54,0.75)'; })();
+  mkChart('ch-hora',{type:'bar',data:{labels,datasets:[
+    {label:'UEP',data:L.map(x=>x.h.uep>0?Math.round(x.h.uep):null),backgroundColor:L.map(x=>cor(x.h)),borderRadius:3},
+    {label:'Meta da hora',data:L.map(x=>x.h.he||!(x.h.metaH>0)?null:Math.round(x.h.metaH)),type:'line',borderColor:'#FF5C1F60',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false}
+  ]},options:CHART_DEFAULTS});
+  mkChart('ch-comp',{type:'bar',data:{labels,datasets:[
+    {label:'Caixas',data:L.map(x=>x.cx),backgroundColor:'rgba(143,160,181,0.55)',borderRadius:3}
+  ]},options:{...CHART_DEFAULTS,plugins:{legend:{display:false}}}});
+}
+function _gerChartsTtlCx(){
+  const t1=document.getElementById('ger-ch1-ttl'), t2=document.getElementById('ger-ch2-ttl');
+  if(t1) t1.textContent='⬛ PRODUÇÃO HORA A HORA';
+  if(t2) t2.textContent='◧ REALIZADO × META';
+}
+// A linha de análise em UEP: ritmo necessário, tendência, pico e vale pelo %
+// da meta DA HORA — em caixas absolutas o 12:12 (48 min) sairia sempre o vale.
+// Só horas de jornada fechadas, com UEP (a em andamento não é julgada).
+function _gerAnaliseUep(G){
+  const fech=(G.horas||[]).filter(h=>!h.he&&h.lancada&&!h.andamento&&h.uep>0&&h.metaH>0)
+    .map(h=>({ h, p:h.uep/h.metaH*100 }));
+  const m=G.m, falta=Math.max(0, G.meta-G.feito), porH=G.meta/UEP_MIN_DIA*60;
+  const nec=falta<=0?{ ok:true }:(m&&m.minRest>0?{ uepH:falta/m.minRest*60, rest:m.minRest }:null);
+  let pico=null, vale=null;
+  fech.forEach(x=>{ if(!pico||x.p>pico.p) pico=x; if(!vale||x.p<vale.p) vale=x; });
+  const ult=fech.slice(-2);
+  const tend=ult.length===2?(ult[1].p>=ult[0].p?1:-1):0;
+  return { nec, porH, pico, vale, tend, uepCx:m&&m.prod?m.prod.uepCx:null, prod:m&&m.prod?m.prod.nome:'' };
+}
+function _gerAnaliseUepHtml(G){
+  const A=_gerAnaliseUep(G), n=A.nec;
+  const necV=!n?'— Turno enc.':n.ok?'META OK':fmtN(Math.round(n.uepH))+' UEP/h';
+  const necC=!n?'var(--txt2)':n.ok||n.uepH<=A.porH?'var(--ok)':'var(--warn)';
+  const necD=!n?'jornada encerrada':n.ok?'meta de UEP do dia batida'
+    :`para a meta em ${_fmtHM(n.rest)} de jornada${A.uepCx>0?` · ≈ ${fmtN(Math.round(n.uepH/A.uepCx))} cx/h de ${_rpEsc(A.prod)}`:''}`;
+  const ph=x=>x?`${fmtP(x.p)} da meta da hora · ${fmtN(Math.round(x.h.uep))} UEP`:'nenhuma hora de jornada fechada com UEP';
+  return `
+    <div class="a-card"><div class="a-lbl">RITMO NECESSÁRIO</div>
+      <div class="a-val" style="color:${necC}">${necV}</div>
+      <div class="a-desc">${necD}</div></div>
+    <div class="a-card"><div class="a-lbl">TENDÊNCIA DO TURNO</div>
+      <div class="a-val" style="color:${A.tend>0?'var(--ok)':A.tend<0?'var(--red)':'var(--txt2)'}">${A.tend>0?'↑ CRESCENDO':A.tend<0?'↓ QUEDA':'SEM DADOS'}</div>
+      <div class="a-desc">últimas 2 horas fechadas, % da meta da hora</div></div>
+    <div class="a-card"><div class="a-lbl">PICO DE PRODUÇÃO</div>
+      <div class="a-val">${A.pico?A.pico.h.label:'—'}</div>
+      <div class="a-desc">${ph(A.pico)}</div></div>
+    <div class="a-card"><div class="a-lbl">VALE DE PRODUÇÃO</div>
+      <div class="a-val" style="color:var(--red)">${A.vale?A.vale.h.label:'—'}</div>
+      <div class="a-desc">${ph(A.vale)}</div></div>`;
+}
+// A de caixas: só quando não há UEP (backend antigo, cadastro sem UEP).
+function _gerAnaliseCxHtml(k, dh){
+  const tendStr=k.n>=2?(dh[k.n-1].producaoHora>=dh[k.n-2].producaoHora?'↑ CRESCENDO':'↓ QUEDA'):'SEM DADOS';
+  const tendClr=k.n>=2?(dh[k.n-1].producaoHora>=dh[k.n-2].producaoHora?'var(--ok)':'var(--red)'):'var(--txt2)';
+  // Pico e vale saem das horas de jornada (k.melhor/k.pior já excluem a HE):
+  // uma hora sem meta não é o melhor nem o pior desempenho do turno.
+  const picoR=k.nNorm?dh.find(r=>!r.he&&r.producaoHora===k.melhor):null;
+  const valeR=k.nNorm?dh.find(r=>!r.he&&r.producaoHora===k.pior):null;
+  return `
+    <div class="a-card"><div class="a-lbl">RITMO NECESSÁRIO</div>
+      <div class="a-val" style="color:${k.slotsRest>0&&k.nec===0?'var(--ok)':'var(--warn)'}">${k.slotsRest>0?(k.nec===0?'META OK':fmtN(k.nec)+' cx/h'):'— Turno enc.'}</div>
+      <div class="a-desc">para meta em ${plural(k.slotsRest,'hora','horas')}</div></div>
+    <div class="a-card"><div class="a-lbl">TENDÊNCIA DO TURNO</div>
+      <div class="a-val" style="color:${tendClr}">${tendStr}</div>
+      <div class="a-desc">últimas 2 horas registradas</div></div>
+    <div class="a-card"><div class="a-lbl">PICO DE PRODUÇÃO</div>
+      <div class="a-val">${picoR?picoR.horario:'—'}</div>
+      <div class="a-desc">${k.nNorm?fmtN(k.melhor)+' cx':'sem hora de jornada lançada'}</div></div>
+    <div class="a-card"><div class="a-lbl">VALE DE PRODUÇÃO</div>
+      <div class="a-val" style="color:var(--red)">${valeR?valeR.horario:'—'}</div>
+      <div class="a-desc">${k.nNorm?fmtN(k.pior)+' cx':'a hora extra não disputa o vale'}</div></div>`;
 }
 
 // ── FECHAMENTO DA SEMANA PASSADA (bloco do gerencial) ───────────────────────
@@ -26206,6 +26431,7 @@ if(CFG.sheetsUrl){
     if(_modoDir()){ lerPontosDia().finally(()=>{ renderDir(); _dirCarregar(); }); return; }
     await lerPontosDia(); renderGerencial();
     if(await lerParadasDoDia()!==null) renderGerProdutosDia();   // as paradas na faixa (v7.236.0)
+    await _gerCatSeFalta();   // o cadastro, se este computador não tem nenhum (v7.243.0)
     if(await lerMediaHorasComRetry(4)){ renderAll(); renderAnaliseHorario(); }
   });
   if(!_modoDir()) setInterval(()=>{ lerMediaHoras(); }, 60*60*1000);
