@@ -1170,16 +1170,20 @@ eval.call(global, pega('function _tkaVencidoAntes('));
       H.includes('mais que as 2h da madrugada'), (H.match(/tks4-sug[^]*?<\/div>/) || [''])[0].includes('≈')],
      [true, true, true, true, false, false]);
   const Hd = m => _taktSemanasHtml(Object.assign({}, C4, { sug:Object.assign({}, g, { porDia:m }) }), {});
-  ok('acima das 2h da madrugada, o resto depois das 17:00 (2h13 → das 05:00 às 07:00 e das 17:00 às 17:13); 2h00 exatas é só a madrugada; passando das 22:00, "não cabe num dia" (revisão: saía "às 26:40")',
-     [Hd(133).includes('2h13 a mais em cada dia programado de 09/11 a 18/11 (8 dias): das 05:00 às 07:00 e das 17:00 às 17:13 (passa das 2h00 por dia da CLT).'),
-      Hd(120).includes('2h00 a mais em cada dia programado de 09/11 a 18/11 (8 dias): das 05:00 às 07:00.'), Hd(420).includes('das 05:00 às 07:00 e das 17:00 às 22:00 (passa das 2h00 por dia da CLT).'),
-      Hd(700).includes('11h40 a mais em cada dia programado de 09/11 a 18/11 (8 dias): não cabe num dia (das 05:00 às 07:00 e das 17:00 às 22:00 dão 7h00).'), /2[3-9]:\d\d|[3-9]\d:\d\d|22:[0-5][1-9]/.test((Hd(700).match(/tks4-sug[^]*?<\/div>/) || [''])[0]),
-      Hd(133).includes('às 17:13 (passa das 2h00 por dia da CLT).'), Hd(120).includes('CLT')],
-     [true, true, true, true, false, true, false]);
+  // PPCP: "deixa no máximo 2 horas dia" — a conta corta em 2h por dia útil e o que passa vai para sábado ou feriado
+  const Fc = [{ i:0, conta:true, atraso:1500, ext:[], nUtFut:5, uIniFut:'09/11' }, { i:1, conta:true, atraso:2400, ext:[], nUtFut:5, uIniFut:'16/11' }], gc = _taktHeSugestao(Fc, 1);
+  ok('no máximo 2h por dia útil (PPCP: "deixa no máximo 2 horas dia"): 40h em 10 dias programados → 2h00 por dia, e as 20h que passam ficam para sábado ou feriado; abaixo de 2h (o fixture, 1h52) nada sobra',
+     [gc.porDia, gc.dias, gc.restoDia, g.restoDia, _fmtHM(g.porDia)], [120, 10, 1200, 0, '1h52']);
+  const Hc = _taktSemanasHtml(Object.assign({}, C4, { sug:gc }), {});
+  ok('a 2ª linha diz o máximo e o que falta: "Ou 2h00 a mais (o máximo por dia) … das 05:00 às 07:00 — ainda faltam 20h00 (sábado ou feriado)"; nunca passa de 2h nem das 07:00 (nem com um porDia maior), e 2h00 exatas cabem na madrugada',
+     [Hc.includes('nenhum sábado ou feriado livre até lá.<br><b>Ou</b> 2h00 a mais (o máximo por dia) em cada dia programado de 09/11 a 18/11 (10 dias): das 05:00 às 07:00 — ainda faltam <b>20h00</b> (sábado ou feriado).'),
+      Hd(700).includes('<b>Ou</b> 2h00 a mais (o máximo por dia) em cada dia programado de 09/11 a 18/11 (8 dias): das 05:00 às 07:00.'), /às 1[7-9]:|às 2\d:|CLT|não cabe/.test((Hd(700).match(/tks4-sug[^]*?<\/div>/) || [''])[0]),
+      Hd(120).includes('2h00 a mais (o máximo por dia) em cada dia programado de 09/11 a 18/11 (8 dias): das 05:00 às 07:00.')],
+     [true, true, false, true]);
   global.CFG = { turnoInicio:'06:00', turnoFim:'16:00' };
-  const Hj = Hd(133), Hj1 = Hd(50); delete global.CFG;
-  ok('a jornada vem do turno do ⚙ (06:00–16:00 → 50 min das 05:10 às 06:00; 2h13 das 05:00 às 06:00 e das 16:00 às 17:13); sem ⚙, 07:00–17:00',
-     [Hj1.includes('0h50 a mais em cada dia programado de 09/11 a 18/11 (8 dias): das 05:10 às 06:00.'), Hj.includes('das 05:00 às 06:00 e das 16:00 às 17:13 (passa das 2h00 por dia da CLT).'), _heSugJornada()],
+  const Hj = Hd(120), Hj1 = Hd(50); delete global.CFG;
+  ok('a jornada vem do turno do ⚙ (06:00–16:00 → 50 min das 05:10 às 06:00; 2h das 05:00 às 06:00 e das 16:00 às 17:00); sem ⚙, 07:00–17:00',
+     [Hj1.includes('0h50 a mais em cada dia programado de 09/11 a 18/11 (8 dias): das 05:10 às 06:00.'), Hj.includes('das 05:00 às 06:00 e das 16:00 às 17:00.'), _heSugJornada()],
      [true, true, { jIni:420, jFim:1020 }]);
   // feriado religioso fica fora: o 20/11 como SEXTA-FEIRA SANTA → o sábado 21/11 cobre
   const W3s = sem4(Object.assign({}, S3, { feriados:[{ data:'20/11/2026', desc:'Sexta-feira Santa' }] }));

@@ -11,6 +11,23 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.240.0 — 13/11/2026 · Hora extra sugerida em dia útil: no máximo 2h por dia
+
+PPCP: *"deixa no máximo 2 horas dia"*. Nada muda no `.gs` (sem re-deploy).
+
+- A 2ª linha da sugestão (a hora extra espalhada pelos dias programados) para
+  em **2h por dia**, na madrugada (05:00–07:00). Quando 2h por dia não fecham o
+  atraso, ela diz quanto falta: *"Ou 2h00 a mais (o máximo por dia) em cada dia
+  programado de 16/11 a 25/11 (7 dias): das 05:00 às 07:00 — ainda faltam
+  1h31 (sábado ou feriado)"*.
+- Saíram o aviso *"passa das 2h por dia da CLT"* e o *"não cabe num dia"*: a
+  conta não passa mais de 2h.
+- O sábado e o feriado continuam das 05:00 às 11:00.
+
+**Atenção:** antes a 2ª linha podia sugerir mais de 2h por dia útil (ex.: 2h13,
+das 05:00 às 07:00 e das 17:00 às 17:13). Agora ela fica em 2h00 e mostra o
+restante para sábado ou feriado.
+
 ## v7.239.0 — 13/11/2026 · Hora extra sugerida: sábado e feriado das 05:00 às 11:00, a frase em horário
 
 PPCP, com a 🖨 4 SEMANAS na mão: *"ajusta sábado das 05 às 11:00, essa frase
