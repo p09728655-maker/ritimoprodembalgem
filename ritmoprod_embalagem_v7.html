@@ -10242,7 +10242,7 @@ function _uepAtrSub(venc, hojeN){
   if(sem && !antes) return { sub: comUep ? 'sem UEP (*): fora do TAKT' : 'sem UEP: fora do TAKT',
     t:'O vencido de código sem UEP no cadastro fica fora (está só nas caixas) — ' + TK + '.' + (comUep ? ' O resto já está na barra PRECISA.' : '') };
   if(antes && !sem) return { sub:'antes de ' + sd + ': fora do TAKT', t:'O vencido de antes de ' + sd + ' fica fora — ' + TK + '. O de ' + sd + ' em diante já está na barra PRECISA.' };
-  return { sub:'parte fora do TAKT', t:'Ficam fora o vencido de antes de ' + sd + ' e o de código sem UEP — ' + TK + '. O resto já está na barra PRECISA.' };
+  return { sub:'antes de ' + sd + ' e sem UEP: fora', t:'Ficam fora o vencido de antes de ' + sd + ' e o de código sem UEP — ' + TK + '. O que for desta semana e com UEP está na barra PRECISA.' };
 }
 // O toque: PRÓXIMOS DIAS com o quadro aberto, rolado até ele.
 function _uepAtrAbrir(){
@@ -12089,7 +12089,7 @@ function _taktHeroHtml(V, o){
   let x0=0;
   const prI=P ? P.map((p, i)=>{ const a=x0; x0+=p.min; return `<i class="p${i+1}" style="left:${w(a)}%;width:${(w(x0)-w(a)).toFixed(1)}%"></i>`; }).join('')
     : `<i style="width:${w(V.precisaMin)}%"></i>`;
-  const prL=P ? `<div class="tks-bpt${V.cabe ? '' : ' pr'}">${P.map((p, i)=>`<span class="p${i+1}"><b>${hm(p.min)}</b> ${rotP[p.k]}${p.he ? ' (inclui hora extra)' : ''}</span>`).join('<em>+</em>')}</div>` : '';
+  const prL=P ? `<div class="tks-bpt${V.cabe ? '' : ' pr'}">${P.map((p, i)=>`<span class="p${i+1}"><b>${hm(p.min)}</b> ${rotP[p.k]}${p.he ? ' (com hora extra)' : ''}</span>`).join('<em>+</em>')}</div>` : '';
   const barras=nada ? '' : `<div class="tks-bars">`
     +`<div class="tks-br${V.cabe ? '' : ' pr'}"><span>PRECISA</span><span class="tks-tr">${prI}</span><b>${hm(V.precisaMin)}</b></div>`+prL
     +`<div class="tks-br"><span>TEM</span><span class="tks-tr"><i style="width:${w(V.temMin)}%"></i>${gap}</span><b>${hm(V.temMin)}</b></div>`
@@ -12145,7 +12145,7 @@ const _TKS_DOC_SKIN = `
   .tks-doc .tks-tr i.p1+i,.tks-doc .tks-tr i.p2+i{box-shadow:inset 1.5px 0 0 #fff}
   .tks-doc .tks-br .tks-tr i.p3{opacity:1;background:#fff;box-shadow:inset 0 0 0 1.5px #A0AEC0}
   .tks-doc .tks-br.pr .tks-tr i.p3{box-shadow:inset 0 0 0 1.5px #C62828}
-  .tks-doc .tks-bpt{display:flex;flex-wrap:wrap;gap:1px 6px;margin:0 0 3px 65px;font-size:9.5px;color:#5B6470}
+  .tks-doc .tks-bpt{display:flex;flex-wrap:wrap;gap:1px 6px;margin:0 0 3px;font-size:9.5px;color:#5B6470}
   .tks-doc .tks-bpt span{display:inline-flex;align-items:center;gap:4px}
   .tks-doc .tks-bpt span::before{content:'';width:8px;height:8px;border-radius:1px;background:#A0AEC0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .tks-doc .tks-bpt.pr span::before{background:#C62828}

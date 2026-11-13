@@ -548,8 +548,8 @@ ok('semana que vem: precisa de 46h08, tem 43h55 → faltam 2h13 — o MESMO do P
   // lote em sábado, domingo ou feriado que vem é hora extra (fora do TEM): a parte "dos dias que vêm" diz isso
   { const Th = { meta:2761, falta:{ uep:500 + 1000 + 300, uepVenc:500 }, dias:[{ hoje:true, saldoUep:1000 }, { util:false, saldoUep:300 }] };
     const Ph = _taktPrecisaPartes(Th, { precisaMin:Math.round(1800 * k) });
-    ok('lote no sábado que vem: a parte "vem" leva he, e a legenda diz "(inclui hora extra)"; dia útil que vem, não',
-       [Ph[2].he, 'he' in P3[2], _taktHeroHtml(V0, { semana:'esta', partes:Ph }).includes(' dos dias que vêm (inclui hora extra)</span>')], [true, false, true]); }
+    ok('lote no sábado que vem: a parte "vem" leva he, e a legenda diz "(com hora extra)"; dia útil que vem, não',
+       [Ph[2].he, 'he' in P3[2], _taktHeroHtml(V0, { semana:'esta', partes:Ph }).includes(' dos dias que vêm (com hora extra)</span>')], [true, false, true]); }
   // sorteio: a soma sempre fecha no PRECISA, toda parte > 0, nunca parte de menos de meia UEP, no máximo três, na ordem
   let ruim = 0;
   for(let i = 0; i < 4000; i++){

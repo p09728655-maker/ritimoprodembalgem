@@ -20,14 +20,14 @@ diferentes; a tela não dizia que um está dentro do outro. Nada muda no `.gs`
 
 - **A barra PRECISA da ESTA SEMANA vem em partes**, com a legenda logo embaixo:
   *1h55 vencidos desta semana + 6h41 dos lotes de hoje* e, quando há lote nos
-  dias que vêm, *+ Xh dos dias que vêm* (com *"(inclui hora extra)"* se algum
+  dias que vêm, *+ Xh dos dias que vêm* (com *"(com hora extra)"* se algum
   deles é sábado, domingo ou feriado). As partes somam o PRECISA.
 - **O card ATRASO ganhou uma 2ª linha**, curta (o detalhe fica ao passar o mouse):
   - *já está no PRECISA do TAKT* — o atraso é desta semana e tem UEP;
   - *antes de 09/11: fora do TAKT* — o TAKT só soma os lotes desta semana;
   - *sem UEP: fora do TAKT* (ou *sem UEP (\*)* quando é só uma parte) — código
     sem UEP não vira hora;
-  - *parte fora do TAKT* — os dois casos juntos;
+  - *antes de 09/11 e sem UEP: fora* — os dois casos juntos;
   - *fora do TAKT desta semana* — na segunda-feira todo o vencido é da semana
     passada.
 - A legenda diz **"vencidos desta semana"**, não "atraso": o ATRASO do card soma

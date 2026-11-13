@@ -7188,8 +7188,8 @@ feito e dá ar de verdade ao que sobrou.
     isso a faixa cresce 2 px antes do 1º desenho), texto do `_uepAtrSub(venc,
     hojeN)` (puro, pelo `A.venc`): *já está no PRECISA do TAKT* (vencido desta
     semana, com UEP) · *antes de dd/mm: fora do TAKT* (o TAKT só soma os lotes
-    de segunda em diante) · *sem UEP: fora do TAKT* / *sem UEP (\*)…* · *parte
-    fora do TAKT* (os dois) · *fora do TAKT desta semana* (hoje segunda). Até 29
+    de segunda em diante) · *sem UEP: fora do TAKT* / *sem UEP (\*)…* · *antes de
+    dd/mm e sem UEP: fora* (os dois) · *fora do TAKT desta semana* (hoje segunda). Até 30
     caracteres (o card tem ~166 px a 1280; a 1ª versão, *"o de antes de 09/11
     não conta no FALTAM da semana"*, saía cortada em toda largura) e sem a
     palavra FALTAM (com a semana fechando o veredito diz SOBRAM/FICARAM); a
@@ -7530,7 +7530,7 @@ feito e dá ar de verdade ao que sobrou.
     existe), parte de menos de meio MINUTO fora (o corte de meia UEP ainda
     deixava um "0h01" do arredondamento), menos de duas partes → null; a parte
     dos dias que vêm leva `he` quando um deles não tem jornada (sábado, domingo,
-    feriado: hora extra, fora do TEM) e a legenda diz *"(inclui hora extra)"*.
+    feriado: hora extra, fora do TEM) e a legenda diz *"(com hora extra)"*.
     ⚠ O rótulo é **"vencidos desta semana"**, nunca "atraso": o ATRASO do card
     soma também o vencido de antes da segunda (UM NOME POR INDICADOR). O
     `_taktHeroHtml` só desenha (`o.partes`; sem ele, a barra de antes). Tela
@@ -7538,7 +7538,9 @@ feito e dá ar de verdade ao que sobrou.
     não (não há atraso nelas). Pele `.tks-tr i.p1/p2/p3` (opacidade; o do meio
     sem canto redondo) e `.tks-bpt`; no papel a 3ª parte é contorno (em P&B a
     0,3 sumia). Medido: 🖨 TAKT em uma folha (703 de 718 px, com 2 e com 3
-    partes); tela 1920 e 1366 sem passar da largura.
+    partes, também com o *"(com hora extra)"* — a legenda do papel começa na
+    margem, embaixo do rótulo PRECISA; alinhada com a barra ela quebrava em 2
+    linhas e a folha ia a 716); tela 1920 e 1366 sem passar da largura.
   - **4 SEMANAS (v7.237.0**, PPCP 13/11/2026: *"tem como colocar mais
     semanas?"* → o quadro, recomendado contra mais botões; *"sempre dias
     úteis"*): `TKS_SEM` = 3, botão entre SEMANA QUE VEM e AVALIAR. Esta semana +

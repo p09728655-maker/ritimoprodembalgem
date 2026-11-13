@@ -5098,16 +5098,16 @@ console.log('\n── estudo de UEP ──');
     // larguras) e sem a palavra FALTAM (com a semana fechando, o veredito diz SOBRAM/FICARAM).
     { const v = (d, u) => ({ desde:d, uep:u === undefined ? 10 : u });
       const sub = (L, h) => { const r = _uepAtrSub(L, h); return r && r.sub; };
-      ok('2ª linha do card ATRASO: desta semana com UEP "já está no PRECISA do TAKT"; de antes da segunda, a segunda; sem UEP, fora; os dois, "parte"; hoje segunda, tudo fora',
+      ok('2ª linha do card ATRASO: desta semana com UEP "já está no PRECISA do TAKT"; de antes da segunda, a segunda; sem UEP, fora; os dois, os dois; hoje segunda, tudo fora',
          [sub([v('10/11/2026'), v('12/11/2026')], 20261113), sub([v('09/11/2026')], 20261113), sub([v('06/11/2026'), v('10/11/2026')], 20261113),
           sub([v('10/11/2026', null)], 20261113), sub([v('10/11/2026'), v('11/11/2026', null)], 20261113), sub([v('06/11/2026'), v('11/11/2026', null)], 20261113),
           sub([v('13/11/2026')], 20261116), sub([v('09/11/2026')], 20261115), sub([v('24/12/2026')], 20270101), sub([v('30/12/2026')], 20270101)],
          ['já está no PRECISA do TAKT', 'já está no PRECISA do TAKT', 'antes de 09/11: fora do TAKT', 'sem UEP: fora do TAKT', 'sem UEP (*): fora do TAKT',
-          'parte fora do TAKT', 'fora do TAKT desta semana', 'já está no PRECISA do TAKT', 'antes de 28/12: fora do TAKT', 'já está no PRECISA do TAKT']);
-      ok('sem o dia, sem lista ou sem data: nada (o card de antes); toda frase cabe no card (até 29 caracteres) e o title explica a regra',
+          'antes de 09/11 e sem UEP: fora', 'fora do TAKT desta semana', 'já está no PRECISA do TAKT', 'antes de 28/12: fora do TAKT', 'já está no PRECISA do TAKT']);
+      ok('sem o dia, sem lista ou sem data: nada (o card de antes); toda frase cabe no card (até 30 caracteres) e o title explica a regra',
          [_uepAtrSub([v('10/11/2026')]), _uepAtrSub([], 20261113), _uepAtrSub([v('')], 20261113), _uepAtrSub(null, 20261113),
-          [['10/11/2026'], ['06/11/2026'], ['10/11/2026', null], ['06/11/2026', null]].every(([d, u]) => (sub([v(d, u)], 20261113) || '').length <= 29)
-            && ['parte fora do TAKT', 'fora do TAKT desta semana', 'sem UEP (*): fora do TAKT'].every(t => t.length <= 29),
+          [['10/11/2026'], ['06/11/2026'], ['10/11/2026', null], ['06/11/2026', null]].every(([d, u]) => (sub([v(d, u)], 20261113) || '').length <= 30)
+            && ['antes de 09/11 e sem UEP: fora', 'fora do TAKT desta semana', 'sem UEP (*): fora do TAKT'].every(t => t.length <= 30),
           /TAKT DA SEMANA só soma os lotes desta semana \(de 09\/11 em diante\) e com UEP/.test(_uepAtrSub([v('06/11/2026')], 20261113).t),
           /FALTAM/.test(pega('function _uepAtrSub('))],
          [null, null, null, null, true, true, false]); }
@@ -5116,7 +5116,7 @@ console.log('\n── estudo de UEP ──');
       ok('o card com o dia: a 2ª linha (sub) e o title (subT) vêm juntos, o resto igual; o * de código sem UEP vira "sem UEP (*)"; sem o dia, sem vencido ou sem leitura, sem sub',
          [Rh.sub, /barra PRECISA/.test(Rh.subT), Rh.txt === _uepSubAtr(PA, AMh).txt, _uepSubAtr(PA, AM, null, 20261113).sub,
           'sub' in _uepSubAtr(PA, AMh), 'sub' in _uepSubAtr(PA, AM0, null, 20261113), 'sub' in _uepSubAtr(null, null, 'lendo', 20261113)],
-         ['já está no PRECISA do TAKT', true, true, 'parte fora do TAKT', false, false, false]); }
+         ['já está no PRECISA do TAKT', true, true, 'antes de 09/11 e sem UEP: fora', false, false, false]); }
     { // o efeito no DOM: o sbA real do renderProxDias pintando um <small> de mentira, nos estados que se seguem
       const RPXb = pega('function renderProxDias('), m = RPXb.match(/const sbA = o => \{[\s\S]*?\};/);
       const el = {}, sm = { style:{} }, docOrig = global.document;
