@@ -361,7 +361,7 @@ console.log('\n── a ligação com a aba ──');
 const R = pega('function renderUep('), CAR = pega('async function _uepAbaCarregar('), LD = pega('function _taktCarregar('), LER = pega('async function _taktLer(');
 ok('a 6ª sub-aba: botão, chave, painel no renderUep e o número pintado com os outros',
    [/data-sub="takt"[^>]*onclick="_uepSub\('takt'\)"><b>TAKT DA SEMANA<\/b><span id="uep-sb-takt">/.test(html), /const UEP_SUBS = \[[^\]]*'takt'\];/.test(JS),
-    R.includes("+pn('takt', bT)"), /\['hoje', 'periodo', 'prod', 'takt'\]\.forEach/.test(pega('function _uepSubPintar(')), /T, taktEst:/.test(R)],
+    R.includes("+pn('takt', bT)"), /\['hoje', 'periodo', 'prod', 'takt'\]\.forEach/.test(pega('function _uepSubPintar(')), /: T,\s*taktEst:/.test(R)],
    [true, true, true, true, true]);
 ok('a leitura: action=getProgramacaoSemana, 3 tentativas em sequência, voo compartilhado, a última da fila da aba e na fila da RÉGUAS',
    [LER.includes("action=getProgramacaoSemana"), /for\(let t=1; t<=3; t\+\+\)/.test(LER), /if\(TKS_VOO\) return TKS_VOO;/.test(LD) && /TKS_VOO=_taktLer\(''\)/.test(LD),
@@ -482,7 +482,7 @@ ok('o desenho da semana que vem (v7.232.0): sem os cartões em s por UEP e a fra
       (SV1.match(/>folga \d+h\d\d</g) || []).length, SV1.includes('var(--tks-feito)')], [3, 5, 0, true, true, 2, false]); }
 ok('a escolha da semana e o botão: o painel e o número são da semana escolhida',
    [_taktSemBotoes(0).includes('class="on" onclick="_taktSemSet(0)"'), _taktSemBotoes(1).includes('class="on" onclick="_taktSemSet(1)"'),
-    _uepSubTakt(T1, null, 'semana que vem'), /taktRot:TKS_SEM===2 \? 'avaliação' : TKS_SEM===1 \? 'semana que vem' : ''/.test(R), /T:TKS_SEM===2 \? TA : TKS_SEM===1 \? T1 : T/.test(R)],
+    _uepSubTakt(T1, null, 'semana que vem'), /taktRot:TKS_SEM===2 \? 'avaliação' : TKS_SEM===1 \? 'semana que vem' : TKS_SEM===3 \? '4 semanas' : ''/.test(R), /T:TKS_SEM===2 \? TA : TKS_SEM===1 \? T1 : T/.test(R)],
    [true, true, { txt:'semana que vem: pede ' + fmtP(T1.pede), cls:'warn' }, true, true]);
 { const LP = pega('function _taktProxCarregar('), SS = pega('function _taktSemSet(');
   ok('a leitura da semana que vem: a MESMA (_taktLer) com de/ate, só quando escolhida e na fila (uma leitura por vez); renova ao virar a semana',
@@ -1017,6 +1017,43 @@ console.log('\n── v7.224.0: a FAIXA DO TAKT — os volumes para o app de cro
       (h => h.indexOf('class="tks-nl') > h.indexOf('<b>ONDE ESTÁ O EXCESSO</b>') && h.indexOf('tks-hero') < h.indexOf('<b>ONDE ESTÁ O EXCESSO</b>'))(_taktProxHtml(T1, P1, { largura:1200, V:_taktVeredito(T1, P1, RIT) })),
       (h => h.indexOf('class="tks-nl') > h.indexOf('<b>ONDE ESTÁ O EXCESSO</b>') && h.indexOf('<textarea') < h.indexOf('tks-hero'))(_tkaHtml(L42, M42, { botoes:'' }))],
      [true, true, true]); }
+
+console.log('\n── v7.237.0: 4 SEMANAS (a programação datada do painel, semana a semana) ──');
+['function _taktSemanasFim(', 'function _taktSemanasHtml('].forEach(f => eval.call(global, pega(f)));
+eval.call(global, pegaConst('TKS_N_SEM').replace(/^const /, 'global.'));
+global.TKS4_AB = {};
+ok('o fim das 4 semanas é o domingo da 4ª (esta inclusa): 06/11 (sex) → 29/11; numa segunda, 09/11 → 06/12; num domingo, 08/11 → 29/11',
+   [_taktSemanasFim(20261106), _taktSemanasFim(20261109), _taktSemanasFim(20261108)], [20261129, 20261206, 20261129]);
+const C4 = _tkaCorrente(PAI, [], Object.assign({}, OC, { fim:20261129 }));
+const CA = _tkaCorrente(PAI, L43.itens, OC);
+ok('sem colagem: só o painel, de hoje (06/11) até 29/11, em 4 semanas (02–08, 09–15, 16–22, 23–29/11), nada duplicado nem novo',
+   [C4.ini, C4.fim, C4.semanas.length, C4.semanas.map(x => x.seg), C4.dup.length, C4.novos.length, C4.semanas.every(x => !x.col)],
+   [20261106, 20261129, 4, [20261102, 20261109, 20261116, 20261123], 0, 0, true]);
+ok('as semanas do painel batem com as do AVALIAR nos dias que os dois têm (esta, a que vem e 16–22/11: precisa e tem)',
+   C4.semanas.slice(0, 3).map(x => [x.precisa, x.tem]), CA.semanas.slice(0, 3).map(x => x.pai && !x.col ? [x.precisa, x.tem] : null).map((v, i) => v || [C4.semanas[i].precisa, C4.semanas[i].tem]));
+ok('o atraso passa adiante: o fim de cada semana é o início da seguinte; a sobra não vira crédito',
+   C4.semanas.every((x, i) => i === 0 || x.atraso === Math.max(0, Math.round(C4.dias.filter(d => d.n >= x.seg && (i + 1 >= C4.semanas.length || d.n < C4.semanas[i + 1].seg)).reduce((B, d) => Math.max(0, B + d.dem - d.cap), C4.semanas[i - 1].atraso)))), true);
+ok('com colagem continua igual (o AVALIAR não muda): o mesmo C43 de antes',
+   [CA.ini, CA.fim, CA.novos.length, CA.dup.length], [20261116, 20261123, 5, 12]);
+ok('sem colagem e sem fim: nada (o AVALIAR antes de colar)', _tkaCorrente(PAI, [], OC), null);
+{ global.TKS4_AB = {};
+  const H = _taktSemanasHtml(C4, { botoes:'' });
+  global.TKS4_AB = { 20261109:true };
+  const Ha = _taktSemanasHtml(C4, { botoes:'' });
+  const vaz = Object.assign({}, C4, { semanas: C4.semanas.map((x, i) => i === 3 ? Object.assign({}, x, { pai:false, precisa:0 }) : x) });
+  ok('o desenho: título com o período, a frase, uma linha por semana com ATRASO NO FIM, a regra; o dia a dia só da semana aberta; semana sem lote diz "sem programação datada"',
+     [H.includes('02/11') === false && H.includes('06/11–29/11'), H.includes('class="tks-ler'), (H.match(/class="tks4-s"/g) || []).length, H.includes('<th class="n">ATRASO NO FIM</th>'),
+      (H.match(/class="tks4-d"/g) || []).length, (Ha.match(/class="tks4-d"/g) || []).length, Ha.includes('09/11 seg'), _taktSemanasHtml(vaz, { botoes:'' }).includes('sem programação datada'),
+      H.includes('onclick="_tks4Tog(20261109)"'), H.includes('A sobra não vira crédito') || H.includes('a sobra não vira crédito')],
+     [true, true, 4, true, 0, 5, true, true, true, true]);
+  ok('o desenho não faz conta: nada de perda, takt ou leitura dentro dele',
+     /_tkaCorrente\(|_taktMontar\(|jsonpFetch|_taktLer\(|UEP_MIN_DIA\s*\//.test(pega('function _taktSemanasHtml(')), false);
+  global.TKS4_AB = {}; }
+ok('a ligação: 4 SEMANAS entre SEMANA QUE VEM e AVALIAR; o setter aceita 3; o render usa a conta do AVALIAR sem colagem até o fim das 4 semanas; o painel lido redesenha também a 4 SEMANAS; o botão da sub-aba',
+   [/b\(1, 'SEMANA QUE VEM'\)\}\$\{b\(3, '4 SEMANAS'\)\}\$\{b\(2, 'AVALIAR PROGRAMAÇÃO'\)/.test(pega('function _taktSemBotoes(')), /k===3 \? k : 0/.test(pega('function _taktSemSet(')),
+    /_tkaCorrente\(PN\.lin, \[\], \{[^}]*fim:fimN \}\)/.test(R) && /_taktSemanasFim\(hojeN\)/.test(R), /TKS_SEM===2 \|\| TKS_SEM===3\)\) renderUep\(\)/.test(pega('function _tkaPainelCarregar(')),
+    _uepSubTakt(null, null, '4 semanas', null).txt, _uepSubTakt(null, null, '4 semanas', { atraso:735 }), _uepSubTakt(null, null, '4 semanas', { atraso:0 }).txt],
+   [true, true, true, true, '…', { txt:'4 semanas: 12h15 de atraso', cls:'warn' }, '4 semanas: em dia']);
 
 console.log(falhas ? '\n❌ ' + falhas + ' falha(s)' : '\n✅ takt da semana ok — o veredito em horas de linha, o porquê dia a dia, o agora em caixas');
 process.exit(falhas ? 1 : 0);

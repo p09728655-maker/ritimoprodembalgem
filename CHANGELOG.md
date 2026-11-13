@@ -11,6 +11,25 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.237.0 — 13/11/2026 · TAKT DA SEMANA: 4 SEMANAS
+
+PPCP, com a SEMANA QUE VEM na tela: *"tem como colocar mais semanas?"* → o
+quadro de 4 semanas. Nada muda no `.gs` (sem re-deploy).
+
+- **⚖ UEP › TAKT DA SEMANA › 4 SEMANAS** (entre SEMANA QUE VEM e AVALIAR):
+  esta semana e as 3 seguintes, uma linha por semana — PRECISA (a programação
+  datada em horas de linha; o vencido entra hoje) · TEM (a jornada sem hora
+  extra) · NA SEMANA (falta ou sobra) · ATRASO NO FIM e no ritmo atual. O
+  atraso passa para a semana seguinte; a sobra não vira crédito. Toque na
+  semana abre o dia a dia.
+- A conta é a do SALDO DE HORAS do AVALIAR PROGRAMAÇÃO, só com a programação do
+  painel (nenhuma conta nova; as mesmas leituras). Só aparece o que está datado
+  na PROGRAMACAO: semana sem lote sai *"sem programação datada"*, e dia útil sem
+  programação fica fora da conta.
+- O botão da sub-aba diz *"4 semanas: Xh de atraso"* ou *"em dia"*.
+
+---
+
 ## v7.236.0 · mobile 1.49.0 — 13/11/2026 · as paradas na faixa do PRODUTOS EMBALADOS HOJE
 
 PPCP, com o print do gerencial do PC: *"no timeline colocar as paradas"* → no

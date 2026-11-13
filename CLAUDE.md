@@ -7497,6 +7497,19 @@ feito e dá ar de verdade ao que sobrou.
     "≈ N pontos" à centena. ⚠ **UEP não tem valor fixo em pontos** (06/11:
     PAINEL RIPADO ~46, PENTEADEIRA MEL ~90 pontos por UEP; ~70 no mês) — por
     isso a média é a dos lotes DA SEMANA, e sem cadastro de pontos nada sai.
+  - **4 SEMANAS (v7.237.0**, PPCP 13/11/2026: *"tem como colocar mais
+    semanas?"* → o quadro, recomendado contra mais botões): `TKS_SEM` = 3,
+    botão entre SEMANA QUE VEM e AVALIAR. Esta semana + as 3 seguintes
+    (`TKS_N_SEM`, `_taktSemanasFim` = o domingo da 4ª) pela conta do SALDO DE
+    HORAS: `_tkaCorrente(painel, [], { …, fim })` — sem colagem e com `o.fim`, só
+    o painel de hoje até lá (o AVALIAR não muda; o teste confere). Leituras do
+    AVALIAR (`_tkaPainel` / `_tkaPainelCarregar`, que redesenha também a 3).
+    Desenho `_taktSemanasHtml` (sem conta): a frase do fim, uma linha por semana
+    (PRECISA · TEM · NA SEMANA · ATRASO NO FIM · NO RITMO ATUAL), toque abre o
+    dia a dia (`TKS4_AB`, só na sessão); semana sem lote = *sem programação
+    datada*. ↻ `_taktSemanasLer(true)` relê a semana que vem e as faixas. Botão
+    da sub-aba: `_uepSubTakt(…, '4 semanas', C4)`. Medido no Chromium (retrato
+    de 06/11): 1920 e 1366, nada passa da largura.
   - **AVALIAR PROGRAMAÇÃO (v7.213.0**, PPCP: *"como fazer para programar
     dentro do padrão?"* → *"a no painel"*): `TKS_SEM` = 2. O PCP cola o bloco
     da semana da PLANILHA DE PRODUÇÃO (Excel, ver abaixo) e vê CABE/NÃO CABE
