@@ -11,6 +11,35 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.236.0 · mobile 1.49.0 — 13/11/2026 · as paradas na faixa do PRODUTOS EMBALADOS HOJE
+
+PPCP, com o print do gerencial do PC: *"no timeline colocar as paradas"* → no
+celular também (*"sim fazer"*). Nada muda no `.gs` (sem re-deploy).
+
+- **PRODUTOS EMBALADOS HOJE (PC e celular):** logo abaixo da faixa dos
+  produtos, uma faixa fina com as **paradas de hoje**, no mesmo horário: não
+  programada em vermelho, programada (café, refeição — a coluna CLASSE da aba
+  `TIPOS_PARADA`) em cinza e a parada **aberta** listrada até agora.
+  - No PC, o mouse na marca mostra tipo, horário, duração e motivo.
+  - No celular, tocar na linha das paradas leva às **PARADAS DO DIA** em
+    *Hoje*, com o detalhe aberto.
+- Embaixo, a linha **PARADAS**: quantas, quanto tempo (e quanto foi não
+  programado) e, com a linha parada, *"PARADA AGORA desde HH:MM"*.
+- O total é o mesmo **TEMPO TOTAL PARADO** das paradas de hoje (mesma régua:
+  almoço fora, só parada encerrada). Nenhuma perda em caixas aqui — a valoração
+  continua na aba PARADAS.
+- **Celular:** nenhuma leitura nova (usa as paradas que o app já lê a cada
+  90 s). **PC:** uma leitura a mais (`getParadas`, só o dia, com cache de 20 s
+  no Apps Script), uma vez por ciclo de atualização, depois da leitura do dia e
+  só com o GERENCIAL ao vivo na tela; ao abrir o GERENCIAL com a lista velha,
+  ela espera as outras leituras terminarem.
+- Leitura que falhou: diz *"paradas não lidas"* (ou mantém a de hoje com *"não
+  atualizou"*), nunca uma faixa vazia calada.
+
+**Atenção:** nenhum número existente mudou.
+
+---
+
 ## v7.235.1 — 12/11/2026 · tempo-alvo pela esteira: AVALIAR PROGRAMAÇÃO e o ⚙
 
 Correções da revisão da v7.235.0. Nada muda no `.gs` (sem re-deploy).

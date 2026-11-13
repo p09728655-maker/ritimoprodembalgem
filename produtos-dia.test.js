@@ -40,7 +40,7 @@ const F = { window: {} };
 vm.createContext(F);
 vm.runInContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'), F);
 // A conta é do rp-core.js (uma só para o celular e o PC); o desenho, de cada painel.
-['function _escH(', 'function _pdiaHtml(', 'function _pdiaDetHtml(']
+['function _escH(', 'function _pdiaHtml(', 'function _pdiaDetHtml(', 'function _pdiaParHtml(']
   .forEach(f => vm.runInContext(pega(MJS, f), F));
 const run = (expr, vars) => { Object.assign(F, vars || {}); return vm.runInContext(expr, F); };
 
@@ -215,7 +215,7 @@ const G = { window: {} };
 vm.createContext(G);
 vm.runInContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'), G);
 ['function _rpEsc(', 'function _pdiaPcCat(', 'function _pdiaPcHtml(', 'function _pdiaPcDetHtml(',
- 'function renderGerProdutosDia(', 'function _pdiaPcToggle(']
+ 'function renderGerProdutosDia(', 'function _pdiaPcToggle(', 'function _pdiaPcParHtml(', 'function _pdiaParDoPainel(']
   .forEach(f => vm.runInContext(pega(PC_JS, f), G));
 const PC_LARG = Number(PC_JS.match(/const PDIA_PC_LARG = (\d+);/)[1]);
 const PC_LINHAS = Number(PC_JS.match(/const PDIA_PC_LINHAS = (\d+);/)[1]);
@@ -253,7 +253,7 @@ ok('1 linha é a regra de antes (o celular não muda): o nome inteiro só se cou
    ['BUFFET 4 PT PRISM', 'BUFFET PT PRISM', 'BUFFET PT PRISM', 'HOME ANGEL']);
 { const RG = pega(PC_JS, 'function renderGerProdutosDia(');
   ok('o PC mede a faixa desta tela (sem medida, os 1.100 px), passa 2 linhas e redesenha quando a janela muda; a faixa mais alta e o nome quebra',
-     [/wReal = \(Number\(el\.clientWidth\) \|\| 0\) - 32/.test(RG), /larg: wReal > 300 \? wReal : PDIA_PC_LARG, linhas: PDIA_PC_LINHAS/.test(RG), PC_LINHAS,
+     [/wReal = \(Number\(el\.clientWidth\) \|\| 0\) - 32/.test(RG), /const larg = wReal > 300 \? wReal : PDIA_PC_LARG;[\s\S]*larg, linhas: PDIA_PC_LINHAS/.test(RG), PC_LINHAS,
       /window\.addEventListener\('resize'[^\n]*renderGerProdutosDia\(\)/.test(PC_JS),
       /#ger-pdia \.pdpc-faixa\{position:relative;height:42px;/.test(PC), /#ger-pdia \.pdpc-sg\{[^}]*white-space:normal;/.test(PC), /#ger-pdia \.pdpc-sg\{[^}]*nowrap/.test(PC)],
      [true, true, 2, true, true, true, false]); }
@@ -298,12 +298,275 @@ ok('com cadastro: nenhuma leitura no clique', grun('CAP_PED'), 0);
 const desPC = pega(PC_JS, 'function _pdiaPcHtml(') + pega(PC_JS, 'function _pdiaPcDetHtml(');
 ok('PC: desenho sem conta (nada de soma nem de montagem)', /reduce\(|pdiaMontar\(|toMin\(/.test(desPC), false);
 ok('PC: produto sem veredito: nenhum NO RITMO, verde ou vermelho no quadro', /NO RITMO|ABAIXO|var\(--ok\)|var\(--red\)/.test(desPC), false);
-const PC_CSS = (PC.match(/#ger-pdia[^{]*\{[^}]*\}/g) || []).join('\n');
-ok('PC: pele sem verde nem vermelho', [PC_CSS.length > 0, /--ok|--red/.test(PC_CSS)], [true, false]);
+const PC_REGRAS = PC.match(/#ger-pdia[^{]*\{[^}]*\}/g) || [];
+// v7.236.0: as PARADAS têm vermelho (a não programada é perda); o PRODUTO continua sem veredito.
+const PAR_RE = /\.pdpc-(par|pb|pst|pleg)\b/;
+const PC_CSS = PC_REGRAS.filter(r => !PAR_RE.test(r)).join('\n'), PAR_CSS = PC_REGRAS.filter(r => PAR_RE.test(r)).join('\n');
+ok('PC: pele do produto sem verde nem vermelho', [PC_CSS.length > 0, /--ok|--red/.test(PC_CSS)], [true, false]);
+ok('PC: pele das paradas com o vermelho e sem verde', [PAR_CSS.length > 0, /--red/.test(PAR_CSS), /--ok/.test(PAR_CSS)], [true, true, false]);
 ok('PC: o gerencial ao vivo pinta o quadro', /renderGerProdutosDia\(k\.real\)/.test(pega(PC_JS, 'function renderGerencial(')), true);
 ok('PC: some no modo histórico e na impressão do dia',
    [PC.includes('<div class="tbl-wrap ger-live-only" id="ger-pdia">'), /#ger-semana,#ger-prox,#ger-pdia,\s*\.sec:not\(\.on\)\{ display:none!important; \}/.test(PC)], [true, true]);
 ok('PC: logo abaixo dos KPIs', PC.indexOf('id="ger-pdia"') > PC.indexOf('id="kpi-grid"') && PC.indexOf('id="ger-pdia"') < PC.indexOf('id="ch-hora"'), true);
 
-console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo certo');
-process.exitCode = falhas ? 1 : 0;
+// ── AS PARADAS NA FAIXA (v7.236.0) ──
+// PPCP, 13/11/2026: "no timeline colocar as paradas". Roda a conta (_pdiaParMontar),
+// a leitura (_pdiaParDoPainel / lerParadasDoDia) e o desenho (_pdiaPcParHtml) reais.
+console.log('\n── as paradas na faixa do PC ──');
+vm.runInContext(fs.readFileSync(path.join(__dirname, 'paradas-calc.js'), 'utf8'), G);
+G.RP_PARADAS = G.window.RP_PARADAS;
+['function _fmtMinPar(', 'function _pdiaParDoPainel(', 'function _pdiaParPrecisa(',
+ 'function lerParadasDoDia(', 'function _pdiaPcParHtml(', 'function _pdiaParVelha(', 'function _pdiaParOcupada(',
+ 'function _pdiaParSeVelha(', 'function _uepDepoisDe(']
+  .forEach(f => vm.runInContext(pega(PC_JS, f), G));
+vm.runInContext(`
+  var PDIA_PAR_TTL = ${Number(PC_JS.match(/const PDIA_PAR_TTL = ([\d* ]+);/)[1].split('*').reduce((a, b) => a * Number(b), 1))};
+  var PDIA_PAR = null, PDIA_PAR_FALHA = '', _pdiaParVoo = null, PDIA_PC_P = null;
+  var PAR_CLASSE_MAP = { 'Café': 'PLANEJADA' }, PAR_CLASSE_LOADED = true, GER_DATA = null, _ABA = 'gerencial', _TV = false;
+  var JSONP = [], JSONP_RESP = [], _cicloVoo = null, _parBusy = false, _UEP_LENDO = false, _TQ = [];
+  function _uepLendo(){ return _UEP_LENDO; }
+  function _carregarClassesPar(){ return Promise.resolve(); }
+  function _modoDir(){ return false; }
+  function _paradaNaTV(){ return _TV; }
+  function _abaOn(t){ return t === _ABA; }
+  function jsonpFetch(url){ JSONP.push(url); const r = JSONP_RESP.shift(); return r instanceof Error ? Promise.reject(r) : Promise.resolve(r); }
+  function setTimeout(fn, ms){ if(ms === 500){ _TQ.push(fn); return 0; } fn(); return 0; }   // a fila do _uepDepoisDe fica na mão
+`, G);
+const CFGP = { turnoInicio: '07:00', turnoFim: '17:00', almocoInicio: '11:00', almocoFim: '12:12' };
+const PARADAS = [
+  { tipo: 'Troca de produto', ini: '05:58:10', fim: '06:09:40', obs: '' },
+  { tipo: 'Café', ini: '08:00:00', fim: '08:15:00', obs: '' },
+  { tipo: 'Parada/Empilhar peças', ini: '08:39:02', fim: '08:39:47', obs: 'pilha alta' },
+  { tipo: 'Robô', ini: '04:30', fim: '04:45', obs: '' },                                 // antes da faixa: na soma, sem marca
+  { tipo: 'Limpeza', ini: '07:10', fim: '07:10', obs: 'encerrada automaticamente' },     // FIM = INÍCIO: fora de tudo
+  { tipo: 'X', ini: '', fim: '' },                                                       // sem horário: fora
+  { tipo: 'A INFORMAR', ini: '09:30:00', fim: '', obs: '' },                             // aberta: até agora, fora da soma
+];
+const parO = (lista, F, larg, agoraTxt) => grun('pdiaParMontar(_l, _F, { R: RP_PARADAS, cfg: _cfg, classeMap: PAR_CLASSE_MAP, agoraTxt: _ag, larg: _lg })',
+  { _l: lista, _F: F, _cfg: CFGP, _ag: agoraTxt || '09:41:00', _lg: larg || 1100 });
+const PP = parO(PARADAS, MP.faixa);
+const ST = grun('RP_PARADAS.stats(_l, { cfg: _cfg, classeMap: PAR_CLASSE_MAP })', { _l: PARADAS, _cfg: CFGP });
+ok('os totais fecham com o RP_PARADAS.stats (o TEMPO TOTAL PARADO da aba PARADAS): nº, minutos e não programados',
+   [PP.n, Math.round(PP.min * 100), Math.round(PP.minNP * 100)], [ST.nParadas, Math.round(ST.totMin * 100), Math.round(ST.totMinNP * 100)]);
+ok('4 encerradas, 42m15s no total (15 min de café programado fora do não programado)', [PP.n, grun('_fmtMinPar(_m)', { _m: PP.min }), grun('_fmtMinPar(_m)', { _m: PP.minNP })], [4, '42m15s', '27m15s']);
+ok('marcas na faixa: troca, café, microparada e a aberta (a de antes da faixa, a de zero e a sem horário fora)',
+   PP.segs.map(s => s.cls), ['np', 'pl', 'np', 'np ab']);
+ok('a aberta vai até agora e diz isso', [PP.aberta.ini, PP.aberta.nome, Math.round(PP.aberta.min), PP.segs[3].fim, PP.segs[3].tit],
+   ['09:30', 'A INFORMAR (motivo pendente no app)', 11, 581, 'A INFORMAR (motivo pendente no app) · 09:30–agora · 11 min até agora · EM ANDAMENTO · NÃO PROGRAMADA']);
+ok('o motivo no title, com o horário em HH:mm e a duração do paradas-calc',
+   PP.segs[2].tit, 'Parada/Empilhar peças · 08:39–08:39 · 45 s · NÃO PROGRAMADA · pilha alta');
+ok('a duração escrita só na marca que cabe (a 1.100 px nenhuma; a 3.000 px a troca, o café e a aberta)',
+   [PP.segs.map(s => s.rot), parO(PARADAS, MP.faixa, 3000).segs.map(s => s.rot)], [['', '', '', ''], ['11m30s', '15 min', '', '11 min']]);
+{ // o almoço sai da marca e da soma; parada toda no almoço some
+  const FA = { ini: 300, fim: 1020 };
+  const PA = parO([{ tipo: 'Manutenção', ini: '10:50', fim: '12:20' }, { tipo: 'Robô', ini: '11:10', fim: '11:50' }], FA, 4000, '16:00:00');
+  ok('parada que atravessa o almoço: duas marcas (10:50–11:00 e 12:12–12:20), 18 min na soma; a de dentro do almoço fora',
+     [PA.segs.map(s => [s.ini, s.fim]), PA.n, PA.min, PA.segs.map(s => s.rot)], [[[650, 660], [732, 740]], 1, 18, ['18 min', '']]);
+}
+const HPP = grun('_pdiaPcHtml(_M, "", _P)', { _M: MP, _P: PP });
+ok('desenho: a faixa de paradas entre a sequência e o eixo, uma marca por parada',
+   [HPP.indexOf('class="pdpc-par"') > HPP.indexOf('class="pdpc-faixa"'), HPP.indexOf('class="pdpc-par"') < HPP.indexOf('class="pdpc-eixo"'),
+    (HPP.match(/class="pdpc-pb /g) || []).length], [true, true, 4]);
+ok('linha embaixo: o total, os não programados, a parada de agora e a legenda',
+   ['<b>4 paradas · 42m15s</b> (27m15s não programadas)', '● PARADA AGORA desde 09:30 · A INFORMAR (motivo pendente no app) · 11 min',
+    '<i class="np"></i>não programada <i class="pl"></i>programada'].every(t => HPP.includes(t)), true);
+ok('sem parada nenhuma: diz isso, nunca faixa vazia calada',
+   grun('_pdiaPcHtml(_M, "", _P)', { _M: MP, _P: parO([], MP.faixa) }).includes('<b>nenhuma parada apontada hoje</b>'), true);
+ok('sem as paradas (null): o quadro de antes, sem faixa nem linha', [grun('_pdiaPcHtml(_M, "", null)', { _M: MP }) === HP, HP.includes('pdpc-par')], [true, false]);
+ok('tipo e motivo escapados', grun('_pdiaPcHtml(_M, "", _P)', { _M: MP, _P: parO([{ tipo: '<img src=x>', ini: '08:00', fim: '08:30', obs: '<b>' }], MP.faixa) }).includes('<img src=x>'), false);
+{ // revisão da v7.236.0: o motivo vai em ATRIBUTO (title e aria-label) — aspas não podem abrir o atributo
+  const HQ = grun('_pdiaPcHtml(_M, "", _P)', { _M: MP, _P: parO([{ tipo: 'Outros', ini: '09:00', fim: '09:10', obs: 'x" onmouseover="alert(1)' },
+    { tipo: "Robô", ini: '08:00', fim: '08:05', obs: "rolo de 12\" quebrou e 'parou'" }], MP.faixa) });
+  ok('motivo com aspas: nenhum atributo aberto (title e aria-label com &quot;)',
+     [/onmouseover="/.test(HQ), HQ.includes('x&quot; onmouseover=&quot;alert(1)'), HQ.includes('rolo de 12&quot; quebrou e &#39;parou&#39;'),
+      (HQ.match(/<div class="pdpc-pb [^"]*" style="[^"]*" title="[^"]*">/g) || []).length], [false, true, true, 2]); }
+{ // revisão: o relógio deste aparelho atrás do INÍCIO gravado pelo celular — a aberta não some
+  const PA = parO([{ tipo: 'Outros', ini: '09:45:00', fim: '', obs: '' }], MP.faixa, 1100, '09:41:00');
+  ok('aberta com o relógio deste aparelho atrás: continua PARADA AGORA (zero), sem marca e fora do total',
+     [PA.aberta && PA.aberta.ini, PA.aberta && PA.aberta.min, PA.segs.length, PA.n], ['09:45', 0, 0, 0]);
+  ok('a linha diz PARADA AGORA, nunca "nenhuma parada apontada hoje"',
+     [grun('_pdiaPcHtml(_M, "", _P)', { _M: MP, _P: PA }).includes('● PARADA AGORA desde 09:45'), grun('_pdiaPcHtml(_M, "", _P)', { _M: MP, _P: PA }).includes('nenhuma parada')], [true, false]);
+  const PL = parO([{ tipo: 'Café', ini: '08:00', fim: '08:15', obs: '' }], MP.faixa);
+  ok('todas programadas: sem "(0 s não programadas)"', grun('_pdiaPcHtml(_M, "", _P)', { _M: MP, _P: PL }).includes('não programadas'), false);
+}
+ok('hora digitada com um dígito sai HH:mm (8:05:30 → 08:05), nunca "8:05:"',
+   parO([{ tipo: 'Outros', ini: '8:05:30', fim: '8:20:00', obs: '' }], MP.faixa).segs[0].tit, 'Outros · 08:05–08:20 · 14m30s · NÃO PROGRAMADA');
+// A leitura: VAZIO NÃO É UMA COISA SÓ (lendo × falhou × sem módulo × sem Apps Script).
+const estado = () => { const P = grun('_pdiaParDoPainel(_F, 1100, "09:41:00")', { _F: MP.faixa }); return P && (P.estado + ':' + (P.txt || '')); };
+grun('CFG.sheetsUrl = ""');
+ok('sem Apps Script: sem faixa', estado(), null);
+grun('CFG.sheetsUrl = "https://x/exec"; window.RP_PARADAS = null');
+ok('sem o paradas-calc: diz isso', estado(), 'sem-modulo:o módulo das paradas não carregou — recarregue o painel');
+grun('window.RP_PARADAS = RP_PARADAS; PDIA_PAR = null; PDIA_PAR_FALHA = ""');
+ok('antes da 1ª leitura: lendo', estado(), 'lendo:lendo as paradas de hoje…');
+grun('PDIA_PAR_FALHA = "sem-resposta"');
+ok('a leitura falhou: diz isso', estado(), 'falha:paradas não lidas — o painel tenta de novo no próximo ciclo');
+grun('PDIA_PAR = { dia: "03/11/2026", ts: 1, lista: _l }; PDIA_PAR_FALHA = ""', { _l: PARADAS });
+ok('a lista de ontem não vale para hoje', estado(), 'lendo:lendo as paradas de hoje…');
+grun('PDIA_PAR = { dia: "04/11/2026", ts: new Date(2026, 10, 4, 9, 40).getTime(), lista: _l }; PDIA_PAR_FALHA = "sem-resposta"', { _l: PARADAS });
+{ const P = grun('_pdiaParDoPainel(_F, 1100, "09:41:00")', { _F: MP.faixa });
+  ok('falhou com a de hoje na mão: mostra a de hoje e diz que não atualizou',
+     [P.estado, P.velho, grun('_pdiaPcHtml(_M, "", _P)', { _M: MP, _P: P }).includes('⚠ não atualizou — lidas às 09:40')], ['ok', true, true]); }
+{ // revisão: "não atualizou" pelo intervalo de atualização do painel (1–60 min), não 10 min fixos
+  const v = (min, int) => grun('window._intervaloMin = _i; PDIA_PAR.ts = Date.now() - _m * 60000; PDIA_PAR_FALHA = ""; _pdiaParDoPainel(_F, 1100, "09:41:00").velho',
+    { _i: int, _m: min, _F: MP.faixa });
+  ok('lista velha = mais de dois ciclos: 5 min → 11 min já é velha; 15 min → 12 min não é, 31 min é', [v(9, 5), v(11, 5), v(12, 15), v(31, 15)], [false, true, false, true]);
+  grun('window._intervaloMin = undefined; PDIA_PAR.ts = new Date(2026, 10, 4, 9, 40).getTime()');
+}
+// o render passa as paradas ao quadro, e o clique no produto não as perde
+grun('PDIA_PAR_FALHA = ""; PDIA_PC_ABERTO = ""; CAP_RAW = _cat; renderGerProdutosDia(596)', { _cat: CAT });
+ok('render: o quadro com a faixa de paradas', [gEl['ger-pdia-corpo'].innerHTML.includes('class="pdpc-par"'), (gEl['ger-pdia-corpo'].innerHTML.match(/class="pdpc-pb /g) || []).length], [true, 4]);
+grun('_pdiaPcToggle(0)');
+ok('abrir um produto mantém a faixa de paradas', gEl['ger-pdia-corpo'].innerHTML.includes('class="pdpc-par"'), true);
+grun('_pdiaPcToggle(0); CFG.sheetsUrl = ""');
+// lerParadasDoDia: só com o gerencial ao vivo; 2 tentativas em sequência; nunca apaga a de hoje na falha
+const _asinc = [];
+_asinc.push((async () => {
+  grun('CFG.sheetsUrl = "https://x/exec"; JSONP = []; _ABA = "uep"');
+  const r1 = await grun('lerParadasDoDia()');
+  grun('_ABA = "gerencial"; GER_DATA = "03/11/2026"');
+  const r2 = await grun('lerParadasDoDia()');
+  grun('GER_DATA = null; _TV = true');
+  const r3 = await grun('lerParadasDoDia()');
+  ok('fora do gerencial ao vivo (outra aba, dia passado, TV): nenhuma leitura', [r1, r2, r3, grun('JSONP.length')], [null, null, null, 0]);
+  grun('_TV = false; PDIA_PAR = null; JSONP_RESP = [new Error("Timeout"), { ok: true, paradas: _l }]', { _l: PARADAS });
+  const r4 = await grun('lerParadasDoDia()');
+  ok('a 1ª não respondeu, a 2ª leu: guarda a lista de hoje', [r4, grun('JSONP.length'), /action=getParadas$/.test(grun('JSONP[0]')), grun('PDIA_PAR.dia'), grun('PDIA_PAR.lista.length'), grun('PDIA_PAR_FALHA')],
+     [true, 2, true, '04/11/2026', 7, '']);
+  grun('JSONP = []; JSONP_RESP = [new Error("Timeout"), { ok: false, erro: "x" }]');
+  const r5 = await grun('lerParadasDoDia()');
+  ok('as duas falharam: diz a falha e mantém a lista de hoje', [r5, grun('JSONP.length'), grun('PDIA_PAR_FALHA'), grun('PDIA_PAR.lista.length')], [false, 2, 'erro', 7]);
+  grun('JSONP = []; JSONP_RESP = [{ ok: true, paradas: [] }]');
+  const [a, b] = await Promise.all([grun('lerParadasDoDia()'), grun('lerParadasDoDia()')]);
+  ok('dois pedidos juntos viram UMA leitura (voo compartilhado)', [a, b, grun('JSONP.length')], [true, true, 1]);
+  // abrir o GERENCIAL com a lista velha: espera o que estiver no ar (o ciclo, a aba PARADAS, a ⚖ UEP)
+  grun('JSONP = []; _TQ = []; PDIA_PAR.ts = Date.now() - PDIA_PAR_TTL - 1; _cicloVoo = {}; JSONP_RESP = [{ ok: true, paradas: _l }]', { _l: PARADAS });
+  grun('_pdiaParSeVelha()');
+  const n1 = grun('JSONP.length');
+  grun('_cicloVoo = null; _parBusy = true; _TQ.shift()()');
+  const n2 = grun('JSONP.length');
+  grun('_parBusy = false; _UEP_LENDO = true; _TQ.shift()()');
+  const n3 = grun('JSONP.length');
+  grun('_UEP_LENDO = false; _TQ.shift()()');
+  await grun('_pdiaParVoo');
+  ok('abrir o GERENCIAL com a lista velha: espera o ciclo, a aba PARADAS e a ⚖ UEP, e só então lê', [n1, n2, n3, grun('JSONP.length'), grun('_TQ.length')], [0, 0, 0, 1, 0]);
+  grun('JSONP = []; PDIA_PAR.ts = Date.now(); _pdiaParSeVelha()');
+  ok('com a lista nova, não lê', [grun('JSONP.length'), grun('_TQ.length')], [0, 0]);
+  grun('PDIA_PAR.ts = Date.now() - PDIA_PAR_TTL - 1; _cicloVoo = {}; _pdiaParSeVelha(); PDIA_PAR.ts = Date.now(); _cicloVoo = null; _TQ.shift()()');
+  ok('o ciclo que estava no ar já leu: não lê de novo', grun('JSONP.length'), 0);
+})());
+const desPar = pega(PC_JS, 'function _pdiaPcParHtml(');
+ok('desenho das paradas sem conta', /reduce\(|horaMin\(|durProdutiva\(|ehPlanejada\(|toMin\(|stats\(/.test(desPar), false);
+{ const PM = pega(CORE, 'function pdiaParMontar(');
+  ok('a régua é a do paradas-calc (durProdutiva e ehPlanejada), nunca uma conta de perda',
+     [/R\.durProdutiva\(/.test(PM), /R\.ehPlanejada\(/.test(PM), /perdaDeMin|perdaAoRitmo|perdaBrutaDeMin/.test(PM)], [true, true, false]);
+  ok('a conta das paradas mora só no rp-core.js (nenhum painel com cópia) e os dois painéis a chamam',
+     [/function _?pdiaParMontar\(/.test(MJS), /function _?pdiaParMontar\(/.test(PC_JS), /pdiaParMontar\(PARADAS_HOJE, F,/.test(MJS), /pdiaParMontar\(PDIA_PAR\.lista, F,/.test(PC_JS),
+      /'pdiaParMontar'/.test(CORE)], [false, false, true, true, true]); }
+{ const CIC = pega(PC_JS, 'function _cicloLeitura(');
+  ok('no ciclo: depois da leitura do dia e do gerencial, uma de cada vez',
+     CIC.indexOf('lerPontosDia()') < CIC.indexOf('renderGerencial()') && CIC.indexOf('renderGerencial()') < CIC.indexOf('lerParadasDoDia()'), true);
+  ok('só o gerencial ao vivo lê', /_abaOn\('gerencial'\) && !GER_DATA/.test(pega(PC_JS, 'function _pdiaParPrecisa(')), true);
+  ok('abrir o GERENCIAL relê a lista velha', /if\(tab==='gerencial'\) _pdiaParSeVelha\(\)/.test(pega(PC_JS, 'function setTab(')), true);
+  ok('o ciclo marca que está no ar e desmarca no fim (até na falha)',
+     [/const v=_cicloVoo=_parDepois\(_ls\)/.test(CIC), /\.catch\(\(\)=>\{\}\)\s*\.then\(\(\)=>\{ if\(_cicloVoo===v\) _cicloVoo=null; \}\);/.test(CIC)], [true, true]); }
+
+// ── as paradas na faixa do CELULAR (1.49.0): a MESMA conta, o PARADAS_HOJE do ciclo ──
+console.log('\n── as paradas na faixa do celular ──');
+vm.runInContext(fs.readFileSync(path.join(__dirname, 'paradas-calc.js'), 'utf8'), F);
+F.RP_PARADAS = F.window.RP_PARADAS;
+['function _pdiaParDoPainel(', 'function _pdiaParVer(', 'function renderGerProdutosDia(', 'function _pdiaToggle(',
+ 'function _pontosDiaDeHoje(', 'function _pontosDiaVazio(', 'async function carregarParadas(', 'function _parFalhouLeitura(']
+  .forEach(f => vm.runInContext(pega(MJS, f), F));
+vm.runInContext(`
+  var CFG = { sheetsUrl: 'https://x/exec', turnoInicio: '07:00', turnoFim: '17:00', almocoInicio: '11:00', almocoFim: '12:12' };
+  var PARADAS_HOJE = [], PARADAS_HOJE_TS = 0, PARADAS_HOJE_DIA = '', PARADAS_HOJE_FALHA = false, PAR_CLASSE_MAP_M = { 'Café': 'PLANEJADA' };
+  var PAR_DET_ABERTO = false, _MUDOU = 0, _ROLOU = 0, _SEL = { value: '7' };
+  function mudarPeriodoParadas(){ _MUDOU++; }
+  function aplicarDetalheParadas(){}
+  var _ELM = { innerHTML: '', clientWidth: 360 }, PDIA_ABERTO = '', PDIA_M = null, PDIA_P = null, PDIA_REAL = 0, PRODUTOS = [], PROD_ATUAL = '';
+  var PONTOS_DIA = { porHoraModelo: [], porHora: [] };
+  var _parEscrevendo = false, _paradaLocalAberta = null, _JR = [], _QUEBRA = '', _RENDERS = 0;
+  function jsonpFetch(){ const r = _JR.shift(); return r instanceof Error ? Promise.reject(r) : Promise.resolve(r); }
+  function _aplicarFechadasLocais(l){ return l; }
+  function _rq(n){ if(_QUEBRA === n) throw new Error('quebrou ' + n); }
+  function renderParadasList(){ _rq('lista'); } function renderParadaEstado(){} function renderParadaEdit(){}
+  function atualizarBadgeParadas(){} function renderGerParada(){ _rq('banner'); } function renderGerParadasResumo(){}
+  var document = { getElementById: id => id === 'par-periodo' ? _SEL : (id === 'ger-par-lbl' ? { scrollIntoView(){ _ROLOU++; } } : (id === 'ger-pdia' ? _ELM : null)) };
+  var _D0m = Date;
+  Date = class extends _D0m { constructor(...a){ super(...(a.length ? a : [2026, 10, 4, 9, 41])); } };
+`, F);
+const mEst = () => { const P = run('_pdiaParDoPainel(_F, 340, "09:41:00")', { _F: M.faixa }); return P && (P.estado + ':' + (P.txt || '')); };
+ok('celular: antes da 1ª leitura das paradas, lendo (nunca "nenhuma")', mEst(), 'lendo:lendo as paradas de hoje…');
+run('PARADAS_HOJE_FALHA = true');
+ok('celular: a leitura falhou, diz isso', mEst(), 'falha:paradas não lidas — o app tenta de novo');
+run('PARADAS_HOJE = _l; PARADAS_HOJE_TS = 1; PARADAS_HOJE_DIA = "03/11/2026"; PARADAS_HOJE_FALHA = false', { _l: PARADAS });
+ok('celular: a lista de ontem não vale para hoje', mEst(), 'lendo:lendo as paradas de hoje…');
+run('PARADAS_HOJE_DIA = "04/11/2026"; PARADAS_HOJE_TS = new Date(2026, 10, 4, 9, 40).getTime()');
+const PM1 = run('_pdiaParDoPainel(_F, 340, "09:41:00")', { _F: M.faixa });
+const PPm = grun('pdiaParMontar(_l, _F, { R: RP_PARADAS, cfg: _cfg, classeMap: PAR_CLASSE_MAP, agoraTxt: "09:41:00", larg: 340 })', { _l: PARADAS, _F: MP.faixa, _cfg: CFGP });
+ok('celular e PC: a MESMA conta (marcas, totais e a aberta)',
+   [PM1.segs.map(s => s.cls), PM1.n, PM1.min, PM1.minNP, PM1.aberta.ini], [PPm.segs.map(s => s.cls), PPm.n, PPm.min, PPm.minNP, PPm.aberta.ini]);
+const HMP = run('_pdiaHtml(_M, "", 0, _P)', { _M: M, _P: PM1 });
+ok('celular: a faixa de paradas entre a sequência e o eixo, uma marca por parada',
+   [HMP.indexOf('class="pdia-par"') > HMP.indexOf('class="pdia-faixa"'), HMP.indexOf('class="pdia-par"') < HMP.indexOf('class="pdia-eixo"'),
+    (HMP.match(/class="pdia-pb /g) || []).length], [true, true, 4]);
+ok('celular: a linha das paradas é um botão que leva às PARADAS DO DIA, com o total e a parada de agora',
+   ['<button type="button" class="pdia-pleg" onclick="_pdiaParVer()">', '<b>4 paradas · 42m15s</b> (27m15s não prog.)', '● PARADA AGORA desde 09:30 · A INFORMAR</span>', 'VER ›'].every(t => HMP.includes(t)), true);
+ok('celular: sem as paradas (null), o quadro de antes', run('_pdiaHtml(_M, "", 0, null)', { _M: M }) === run('_pdiaHtml(_M, "", 0)', { _M: M }), true);
+ok('celular: tipo e motivo escapados (só no aria — no celular não há title)',
+   run('_pdiaHtml(_M, "", 0, _P)', { _M: M, _P: run('_pdiaParDoPainel(_F, 340, "09:41:00")', { _F: M.faixa, PARADAS_HOJE: [{ tipo: '<img src=x>', ini: '08:00', fim: '08:30', obs: '<b>' }] }) }).includes('<img src=x>'), false);
+run('PARADAS_HOJE = _l', { _l: PARADAS });
+run('PONTOS_DIA = { porHoraModelo: _phm, porHora: _ph }; PRODUTOS = _cat; PROD_ATUAL = "501136001"; renderGerProdutosDia(596)', { _phm: PHM, _ph: PH, _cat: CAT });
+ok('celular: o render passa as paradas ao quadro', [run('_ELM.innerHTML').includes('class="pdia-par"'), (run('_ELM.innerHTML').match(/class="pdia-pb /g) || []).length], [true, 4]);
+run('_pdiaToggle(0)');
+ok('celular: abrir um produto mantém a faixa de paradas', [run('_ELM.innerHTML').includes('pdia-it on'), run('_ELM.innerHTML').includes('class="pdia-par"')], [true, true]);
+run('_pdiaToggle(0)');
+{ // revisão: na virada do dia, a leitura de ontem não vale (o carregarParadas redesenha o quadro a cada 90 s)
+  run('PONTOS_DIA = { porHoraModelo: _phm, porHora: _ph, lidoEm: new Date(2026, 10, 3, 16, 50).getTime() }; renderGerProdutosDia()', { _phm: PHM, _ph: PH });
+  ok('celular: produtos de ontem nunca com as paradas de hoje (virada do dia)', [run('_ELM.innerHTML').includes('pdia-par'), run('_ELM.innerHTML').includes('Lendo a produção do dia')], [false, true]);
+  run('PONTOS_DIA = { porHoraModelo: _phm, porHora: _ph }; renderGerProdutosDia()', { _phm: PHM, _ph: PH });
+}
+_asinc.push((async () => {   // o carregarParadas REAL: só a leitura marca falha; o redesenho no erro não escapa
+  run('PARADAS_HOJE_TS = 0; PARADAS_HOJE_DIA = ""; PARADAS_HOJE_FALHA = false; _JR = [{ ok: true, paradas: _l }]; _QUEBRA = ""', { _l: PARADAS });
+  await run('carregarParadas()');
+  const a = [run('PARADAS_HOJE_TS > 0'), run('PARADAS_HOJE_DIA'), run('PARADAS_HOJE_FALHA'), run('_ELM.innerHTML').includes('class="pdia-par"')];
+  run('PARADAS_HOJE_TS = 0; _JR = [{ ok: true, paradas: _l }]; _QUEBRA = "banner"', { _l: PARADAS });
+  await run('carregarParadas()');
+  const b = [run('PARADAS_HOJE_TS > 0'), run('PARADAS_HOJE_FALHA')];
+  run('_JR = [new Error("Timeout")]; _QUEBRA = ""');
+  await run('carregarParadas()');
+  const c = [run('PARADAS_HOJE_FALHA'), run('_ELM.innerHTML').includes('⚠ não atualizou')];
+  run('_JR = [{ ok: false }]; PARADAS_HOJE_FALHA = false');
+  await run('carregarParadas()');
+  const d = run('PARADAS_HOJE_FALHA');
+  // o redesenho quebrando dentro da falha não pode escapar (o REGISTRAR/START espera o carregarParadas)
+  run('_JR = [new Error("Timeout")]; _RGP = renderGerProdutosDia; renderGerProdutosDia = function(){ throw new Error("x"); }');
+  let escapou = false; try{ await run('carregarParadas()'); }catch(e){ escapou = true; }
+  run('renderGerProdutosDia = _RGP; PARADAS_HOJE_FALHA = false');
+  ok('celular: a leitura boa marca dia e hora e redesenha a faixa', a, [true, '04/11/2026', false, true]);
+  ok('celular: leitura boa com um desenho quebrado NÃO vira "não atualizou"', b, [true, false]);
+  ok('celular: sem resposta ou ok:false → falha dita, com a lista de hoje mantida', [c, d], [[true, true], true]);
+  ok('celular: o redesenho que quebra na falha não escapa do carregarParadas', escapou, false);
+})());
+run('_pdiaParVer()');
+ok('celular: o toque põe as PARADAS DO DIA em Hoje, abre o detalhe e rola até lá', [run('_SEL.value'), run('_MUDOU'), run('PAR_DET_ABERTO'), run('_ROLOU')], ['0', 1, true, 1]);
+run('_pdiaParVer()');
+ok('celular: já em Hoje, não recarrega o período', run('_MUDOU'), 1);
+{ const CP = pega(MJS, 'async function carregarParadas(');
+  ok('celular: a leitura das paradas marca o dia e a hora e redesenha a faixa; falhou, diz e redesenha',
+     [/PARADAS_HOJE_TS = Date\.now\(\); PARADAS_HOJE_DIA = hojeStr\(\); PARADAS_HOJE_FALHA = false; leu = true;/.test(CP), (CP.match(/renderGerProdutosDia\(\)/g) || []).length,
+      (CP.match(/_parFalhouLeitura\(\)/g) || []).length, /if\(!leu\) _parFalhouLeitura\(\);/.test(CP)], [true, 1, 2, true]); }
+{ const MR = (MOB.match(/^\.pdia[^{]*\{[^}]*\}/gm) || []);
+  const PR = /\.pdia-(par|pb|pst|pleg)\b/;
+  ok('celular: pele do produto sem verde nem vermelho; o vermelho só nas paradas',
+     [MR.filter(r => !PR.test(r)).length > 10, /--ok|--red/.test(MR.filter(r => !PR.test(r)).join('\n')), /--red/.test(MR.filter(r => PR.test(r)).join('\n')), /--ok/.test(MR.filter(r => PR.test(r)).join('\n'))],
+     [true, false, true, false]); }
+ok('celular: desenho das paradas sem conta', /reduce\(|horaMin\(|durProdutiva\(|ehPlanejada\(|toMin\(|stats\(/.test(pega(MJS, 'function _pdiaParHtml(')), false);
+ok('celular: o desenho do produto continua sem verde nem vermelho', /var\(--ok\)|var\(--red\)/.test(pega(MJS, 'function _pdiaHtml(') + pega(MJS, 'function _pdiaParHtml(')), false);
+
+Promise.all(_asinc).catch(e => { falhas++; console.log('  ❌ o teste assíncrono quebrou: ' + e.message); }).then(() => {
+  console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo certo');
+  process.exitCode = falhas ? 1 : 0;
+});
+process.exitCode = 1;   // teste assíncrono que não termina não sai 0

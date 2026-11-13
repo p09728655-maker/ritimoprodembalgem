@@ -581,6 +581,53 @@ function pdiaMontar(phm, ph, cat, atual, agoraMin, o){
   };
 }
 
+// AS PARADAS NA FAIXA DO PRODUTOS EMBALADOS HOJE (rp-core 1.16.0 — PC v7.236.0,
+// celular 1.49.0). PPCP, 13/11/2026: "no timeline colocar as paradas". Cada
+// parada de hoje vira uma marca no MESMO eixo da faixa dos produtos (F, do
+// pdiaMontar). A régua é a do paradas-calc (R = RP_PARADAS: durProdutiva e
+// ehPlanejada): o almoço sai da marca e da soma; parada toda no almoço, de zero
+// (FIM = INÍCIO) ou sem horário fica fora. Os totais (só as ENCERRADAS) fecham
+// com o RP_PARADAS.stats — o TEMPO TOTAL PARADO da aba PARADAS em HOJE. A aberta
+// vai até agora (o.agoraTxt) e fica fora do total. Nenhuma perda em caixas.
+// o = { R, cfg (almocoInicio/almocoFim), classeMap, agoraTxt 'HH:mm:ss', larg (px da faixa) }.
+const PDIA_PAR_ROT_PX = 44;   // a duração escrita na marca só a partir desta largura (px)
+function pdiaParMontar(lista, F, o){
+  const R = o.R, cfg = o.cfg || {}, span = F.fim - F.ini, larg = Number(o.larg) || PDIA_LARG;
+  const HR = /^\d{1,2}:\d{2}(:\d{2})?$/, hm = s => { const t = String(s).split(':'); return p2(Number(t[0])) + ':' + t[1]; };
+  const almI = R.horaMin(cfg.almocoInicio), almF = R.horaMin(cfg.almocoFim), temAlm = almF > almI;
+  const agora = R.horaMin(o.agoraTxt);
+  const P = { estado: 'ok', segs: [], itens: [], n: 0, min: 0, minNP: 0, aberta: null };
+  (lista || []).forEach(p => {
+    const ini = String(p.ini || '').trim(), fim = String(p.fim || '').trim(), ab = !fim;
+    if(!HR.test(ini) || (!ab && !HR.test(fim))) return;
+    // Encerrada: a duração da aba PARADAS. Aberta: até agora, com a mesma régua —
+    // e com o relógio deste aparelho atrás do INÍCIO gravado pelo celular, até o
+    // INÍCIO (zero): a parada aberta não some da linha.
+    const a = R.horaMin(ini), fimAb = ab && agora < a ? ini : o.agoraTxt;
+    const d = R.durProdutiva(ini, ab ? fimAb : fim, cfg);
+    if(d == null || (!ab && !(d > 0))) return;
+    const plan = R.ehPlanejada(p.tipo, o.classeMap);
+    if(!ab){ P.n++; P.min += d; if(!plan) P.minNP += d; }
+    const nome = paradaAInformar(p.tipo) ? 'A INFORMAR (motivo pendente no app)' : String(p.tipo).trim();
+    const obs = String(p.obs || '').trim();
+    const tit = `${nome} · ${hm(ini)}–${ab ? 'agora' : hm(fim)} · ${R.fmtMin(d)}${ab ? ' até agora · EM ANDAMENTO' : ''}`
+      + ` · ${plan ? 'PROGRAMADA' : 'NÃO PROGRAMADA'}${obs ? ' · ' + obs : ''}`;
+    P.itens.push({ tit });
+    if(ab) P.aberta = { nome, curto: paradaAInformar(p.tipo) ? 'A INFORMAR' : nome, ini: hm(ini), min: d, plan };   // curto: a linha do celular
+    // O almoço sai da marca (como sai da soma); o que sobra é cortado na faixa.
+    const b = ab ? Math.max(agora, a) : R.horaMin(fim);
+    let pc = [[a, b]];
+    if(temAlm) pc = [[a, Math.min(b, almI)], [Math.max(a, almF), b]];
+    pc = pc.map(([x, y]) => [Math.max(x, F.ini), Math.min(y, F.fim)]).filter(([x, y]) => y > x);
+    if(!pc.length) return;
+    const px = s => (s[1] - s[0]) / span * larg;
+    const larga = pc.reduce((m, s) => (px(s) > px(m) ? s : m), pc[0]);
+    pc.forEach(s => P.segs.push({ ini: s[0], fim: s[1], cls: (plan ? 'pl' : 'np') + (ab ? ' ab' : ''), tit,
+      rot: s === larga && px(s) >= PDIA_PAR_ROT_PX ? R.fmtMin(d) : '' }));
+  });
+  return P;
+}
+
 // ATRASO VENCIDO (rp-core 1.14.0, card ATRASO do gerencial do celular 1.43.0):
 // os lotes com data ANTES de hoje que ainda têm saldo — o `atraso` de cada código
 // do calcularProgramacao (FIFO; linha com X fora) — em CAIXAS e em HORAS DE LINHA
@@ -641,9 +688,9 @@ function paradaAInformar(tipo){
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.15.0',
+  versao: '1.16.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
         'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido',
-        'pdiaVol', 'pdiaBase', 'pdiaCurto', 'pdiaMontar', 'atrasoVencido', 'paradaAInformar']
+        'pdiaVol', 'pdiaBase', 'pdiaCurto', 'pdiaMontar', 'pdiaParMontar', 'atrasoVencido', 'paradaAInformar']
 };

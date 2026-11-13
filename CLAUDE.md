@@ -11,7 +11,8 @@ via Google Apps Script (JSONP).
 - `rp-core.js` — **núcleo comum dos dois painéis, implementação ÚNICA**:
   formatação (`p2`/`fmtN`/`fmtP`), horário (`toMin`/`fromMin`/`normHora`), data
   (`hojeStr`/`dtToStr`), `mergeMedias`, `calcAtrasoHoras`, `sc`,
-  `atrasoVencido` (o card ATRASO do celular, 1.14.0). Só função
+  `atrasoVencido` (o card ATRASO do celular, 1.14.0), `pdiaParMontar` (as
+  paradas na faixa do PRODUTOS EMBALADOS HOJE, 1.16.0). Só função
   **pura** entra aqui — nada que leia `DADOS`/`CFG` ou toque no DOM.
   `node rp-core.test.js` cobre a regra e falha se algum HTML voltar a declarar
   a própria cópia.
@@ -135,7 +136,10 @@ via Google Apps Script (JSONP).
   HOME ANGEL, LIVREIRO): ordem, trocas, faixa, cor × volume, AGORA, hora extra,
   cobertura e os casos de borda (A,B,A,B na hora, madrugada lançada depois,
   501130 com mesas irmãs, sem UEP); no PC, o "lendo" antes da 1ª leitura e o
-  cadastro lido no clique uma vez só: `node produtos-dia.test.js`.
+  cadastro lido no clique uma vez só; e (v7.236.0 / mobile 1.49.0) as PARADAS
+  NA FAIXA: a `pdiaParMontar` contra o `RP_PARADAS.stats`, o almoço, a aberta,
+  os estados da leitura, o motivo com aspas, a fila ao abrir o GERENCIAL e o
+  toque do celular (15 de 15 mutações): `node produtos-dia.test.js`.
 - `takt-semana.test.js` — sub-aba TAKT DA SEMANA da ⚖ UEP (v7.209.0), com o
   retrato real de 06/11/2026 11:58 (as 49 linhas da semana 02–08/11 do
   `getProgramacaoSemana`, os dias fechados do HISTORICO e o hoje da aba): os
@@ -472,6 +476,62 @@ via Google Apps Script (JSONP).
     PENTEADEIRA CAMARIM MEL (2 linhas, bloco de 99 px); 1366/1280 → CAMARIM
     MEL (69/65 px). HTML novo com `rp-core.js` velho em cache: o 3º argumento é
     ignorado e cai na regra de 1 linha (sem quebrar nada).
+  - **AS PARADAS NA FAIXA (v7.236.0 / mobile 1.49.0 / rp-core 1.16.0**, PPCP
+    13/11/2026, com o print: *"no timeline colocar as paradas"* → *"sim fazer"*
+    no celular). Faixa fina logo abaixo da sequência, no MESMO eixo (PC
+    `.pdpc-par` 16 px, celular `.pdia-par` 12 px): não programada `var(--red)`,
+    programada (`ehPlanejada` com o mapa de classes) cinza, aberta listrada até
+    agora. Linha embaixo do eixo: N paradas · tempo (não programadas) · PARADA
+    AGORA · legenda. No PC o `title` da marca diz tipo, horário, duração e
+    motivo; no celular a linha é um botão (`_pdiaParVer`) que põe as PARADAS DO
+    DIA em *Hoje*, abre o detalhe e rola até lá.
+    - **Conta** `pdiaParMontar(lista, F, o)` no **`rp-core.js`** (UMA para os
+      dois; o teste falha se um painel tiver cópia): `durProdutiva` +
+      `ehPlanejada` do `paradas-calc` (o almoço sai da marca e da soma; parada
+      toda no almoço, de zero ou sem horário, fora). Os totais (só ENCERRADAS)
+      fecham com o `RP_PARADAS.stats` = o TEMPO TOTAL PARADO das paradas de HOJE
+      (o teste confere). Nenhuma perda em caixas aqui. `PDIA_PAR_ROT_PX`=44: a
+      duração escrita na marca só a partir dessa largura. **Desenho**
+      `_pdiaPcParHtml` / `_pdiaParHtml` (sem conta); `_pdiaPcHtml(M, aberto, P)`
+      e `_pdiaHtml(M, aberto, lidoEm, P)` — sem `P` (null), o quadro de antes.
+    - **Leitura do PC** `lerParadasDoDia` → `getParadas` (só o dia; lê a aba
+      PARADAS inteira, barato só pelo cache de 20 s do `.gs`), 2 tentativas em
+      sequência, voo compartilhado, `PDIA_PAR = {dia, ts, lista}`; falhou →
+      `PDIA_PAR_FALHA`, mantém a lista de HOJE (*"não atualizou"*, também com a
+      lista de mais de dois ciclos — o ciclo é o intervalo de atualização do
+      painel, 1–60 min, nunca menos que 5). Só com `_pdiaParPrecisa()`: GERENCIAL ao vivo
+      (`!GER_DATA`), fora da diretoria e da TV. No `_cicloLeitura` DEPOIS do
+      `renderGerencial` (`_cicloVoo` marca o ciclo no ar e só o dono a
+      desmarca — o ↻ com um ciclo no ar não a zera antes), na carga inicial
+      depois da leitura do dia, e ao abrir a aba (`_pdiaParSeVelha`: lista com
+      mais de 5 min → espera `_pdiaParOcupada` = o ciclo, a aba PARADAS
+      `_parBusy` e o `_uepLendo`, reconfere e só então lê).
+    - **Leitura do celular**: nenhuma nova — o `PARADAS_HOJE` do `carregarParadas`
+      (90 s), que agora marca `PARADAS_HOJE_TS`/`_DIA`/`_FALHA` e redesenha o
+      quadro. Só a LEITURA marca falha (`leu`): erro de desenho depois de uma
+      leitura boa não vira *"não atualizou"*; e o redesenho na falha
+      (`_parFalhouLeitura`) não escapa — o REGISTRAR/START espera o
+      `carregarParadas` para soltar o botão. O `renderGerProdutosDia` chama o
+      `_pontosDiaDeHoje` (redesenhado a cada 90 s, na virada não mistura os
+      produtos de ontem com as paradas de hoje).
+    - Parada ABERTA com o relógio do aparelho atrás do INÍCIO gravado pelo
+      celular do operador: continua PARADA AGORA (zero, sem marca), nunca some.
+    - Todas programadas: sem o *"(0 s não programadas)"*.
+    - Estados da faixa (`_pdiaParDoPainel`, um por painel): sem Apps Script →
+      sem faixa; sem o `paradas-calc` ou rp-core antigo (sem `pdiaParMontar`) →
+      diz; antes da 1ª leitura (ou lista de outro dia) → *lendo*; falhou →
+      *paradas não lidas*; zero → *nenhuma parada apontada hoje*.
+    - ⚠ **O motivo vai em ATRIBUTO no PC** (`title`, `aria-label`): o `_rpEsc`
+      só escapa `&<>`, então o desenho usa `ea` (escapa `"` e `'` também) —
+      achado da revisão: `x" onmouseover="…` abria o atributo. O `_escH` do
+      celular já escapa aspas. ⚠ O `title`/`aria-label` do NOME do produto no
+      `_pdiaPcHtml` ainda usa o `_rpEsc` (pré-existente, não mexido).
+    - ⚠ A pele do PRODUTO continua sem verde/vermelho; o vermelho é só das
+      regras de paradas (o teste separa as duas peles).
+    - Sem produto lançado o quadro sai cedo (sem faixa): com a linha parada
+      desde o começo do turno, a PARADA AGORA não aparece aqui.
+    - Medido no Chromium: PC 1920 e 1366, celular 360, 390 e 430 — nada passa
+      da largura; a linha das paradas quebra em duas a 1366 e no celular.
 
 ## Excluir lançamento pelo app (mobile 1.34.0 / `.gs` v5.25)
 - PPCP, 16/10/2026, com o WhatsApp do operador na mão: *"esse 60 foi duas
