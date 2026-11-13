@@ -7564,8 +7564,36 @@ feito e dá ar de verdade ao que sobrou.
       última semana e respeita o mesmo teto (`desde`), com o aviso acima das 2h
       da madrugada (05–07). A frase diz *"na média da linha"*: no ritmo atual as
       horas sugeridas não fecham. Linha `.tks4-sug` abaixo da frase; o sábado sugerido
-      também na linha da semana. ⚠ Sábado = 8h47 de linha (uma jornada na
-      média): o turno real de sábado pode ser menor.
+      também na linha da semana. ~~⚠ Sábado = 8h47 de linha~~ — revogado
+      na v7.239.0 (abaixo).
+    - **SÁBADO E FERIADO DAS 05:00 ÀS 11:00 (v7.239.0**, PPCP 13/11/2026, com
+      a 🖨 na mão: *"ajusta sábado das 05 às 11:00, essa frase deixa dúvida"* →
+      *"dia 20/11 tbm pode incluir na sugestão, só feriado santo que não
+      pode"*). `HE_SUG = { ini:300, min:360, jIni:420, jFim:1020 }`. Cada
+      semana leva `ext` (era `sab`): os sábados e feriados de dia útil que vêm,
+      menos os religiosos, com `livre` = 6h − o lote que o dia já tem e `ini` =
+      05:00 + esse lote (o lote ocupa o começo). O `_taktHeSugestao` preenche
+      em ordem de data, com o mesmo teto (menor atraso até o fim), e devolve
+      `ext` (era `sab`) com `ini`/`fer`.
+      - **Feriado religioso fora** (`_feriadoSanto`, `FERIADO_SANTO_RE`), pela
+        DESCRICAO da aba FERIADOS sem acento: santa/santo, são, paixão, corpus,
+        páscoa, natal, aparecida, finados, padroeiro, imaculada, assunção,
+        nossa senhora, cinzas, ascensão, pentecostes, reis. Na dúvida o nome
+        fica fora (sugerir HE num dia santo é pior que não sugerir num civil).
+        Feriado religioso com outro nome na aba → acrescentar na regra.
+      - **A frase é o dia e o horário**: *"Hora extra sugerida (na média da
+        linha): sábado 14/11 das 05:00 às 11:00 · feriado 20/11 das 05:00 às
+        07:52"* e, numa 2ª linha, *"Ou 2h13 a mais em cada dia útil de 16/11 a
+        25/11 (7 dias): das 05:00 às 07:00 e das 17:00 às 17:13"* — até 2h,
+        só a madrugada terminando às 07:00; passando, o resto depois das 17:00.
+        Saiu o *"≈ … por dia útil (N dias com lote…), mais que as 2h da
+        madrugada (05–07)"*, que deixava dúvida. A linha da semana diz
+        *"sugestão: feriado 20/11 das 05:00 às 07:52"*.
+      - Testes: o fixture real (07/11 e 14/11 das 05:00 às 11:00, 20/11 até
+        07:52, o 21/11 não precisa), o 20/11 como Sexta-feira Santa (sai, entra
+        o 21/11), a lista de religiosos e civis, o sábado com lote, os 2h13 e
+        dois dias na mesma semana; 7 de 7 mutações. 🖨 4 SEMANAS: uma folha,
+        575 de 718 px.
     - **🖨 4 SEMANAS (v7.238.0**, PPCP: *"colocar impressão"*):
       `gerarRelatorio4Semanas`, no menu 🖨 IMPRIMIR ▾. A montagem é UMA
       (`_taktSemanasDoPainel`, a tela e o papel) e o desenho o MESMO

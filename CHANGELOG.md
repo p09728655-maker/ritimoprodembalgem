@@ -11,6 +11,27 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.239.0 — 13/11/2026 · Hora extra sugerida: sábado e feriado das 05:00 às 11:00, a frase em horário
+
+PPCP, com a 🖨 4 SEMANAS na mão: *"ajusta sábado das 05 às 11:00, essa frase
+deixa dúvida, ajustar forma simples e direta"* → *"dia 20/11 tbm pode incluir
+na sugestão, só feriado santo que não pode"*. Nada muda no `.gs` (sem
+re-deploy).
+
+- **Sábado vale 6h (05:00–11:00)**, não mais 8h47 — menos o lote que ele já
+  tem, que ocupa o começo da janela.
+- **Feriado de dia útil entra na sugestão** (o 20/11, Consciência Negra), na
+  mesma janela. **Feriado religioso fica fora** — reconhecido pela descrição
+  da aba FERIADOS (santa, paixão, corpus, natal, aparecida, finados, reis…).
+- **A frase diz o dia e o horário**: *"Hora extra sugerida: sábado 14/11 das
+  05:00 às 11:00 · feriado 20/11 das 05:00 às 07:52"*. A outra forma vem
+  numa 2ª linha, também em horário: *"Ou 2h13 a mais em cada dia útil de 16/11
+  a 25/11 (7 dias): das 05:00 às 07:00 e das 17:00 às 17:13"*.
+
+**Atenção:** a sugestão muda de número — com o mesmo atraso, cada sábado cobre
+6h em vez de 8h47, então entram mais dias (e o feriado). O atraso, o "a
+programar" e a tabela não mudam.
+
 ## v7.238.0 — 13/11/2026 · 4 SEMANAS responde "vamos precisar de hora extra?" · AVALIAR alinhado · 🖨 4 SEMANAS
 
 PPCP: *"sim corrigir e avaliar, colocar impressão"* → *"o intuito dessa tela é
