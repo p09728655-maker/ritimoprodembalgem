@@ -174,7 +174,9 @@ via Google Apps Script (JSONP).
   digitado antes do re-deploy, a resposta da planilha); e (v7.232.0) a tela
   enxuta: o agora em s por caixa na faixa NA LINHA E NO APP, o que saiu (cartões
   em s por UEP, frase, cascata, AGORA e DETALHES da esta semana), a ordem do
-  olhar nas três telas e o PARA FECHAR numa linha sem repetir as caixas:
+  olhar nas três telas e o PARA FECHAR numa linha sem repetir as caixas; e
+  (v7.242.0) o PRECISA em partes (atraso · hoje · dias que vêm, o retrato real
+  de 13/11, o arredondamento do acumulado, 4.000 sorteios, a tela e o 🖨):
   `node takt-semana.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
@@ -7180,6 +7182,27 @@ feito e dá ar de verdade ao que sobrou.
       `PONTOS_DIA.lidoEm` de outro dia, o objeto volta ao vazio
       (`_pontosDiaVazio`) — UEP DO DIA "aguardando", META pela HORA_A_HORA,
       pontos/peso/produtos do dia esperando a leitura de hoje.
+  - **A 2ª LINHA DO CARD (v7.242.0**, PPCP 13/11/2026 com a tela: card 1h55 ×
+    TAKT *"faltam 6h16"* — *"como falta 6?"* → prévia → *"pode subir"*):
+    `<small id="uep-sb-atr-s" style="display:none">` (nasce escondida: sem
+    isso a faixa cresce 2 px antes do 1º desenho), texto do `_uepAtrSub(venc,
+    hojeN)` (puro, pelo `A.venc`): *já está no PRECISA do TAKT* (vencido desta
+    semana, com UEP) · *antes de dd/mm: fora do TAKT* (o TAKT só soma os lotes
+    de segunda em diante) · *sem UEP: fora do TAKT* / *sem UEP (\*)…* · *antes de
+    dd/mm e sem UEP: fora* (os dois) · *fora do TAKT desta semana* (hoje segunda). Até 30
+    caracteres (o card tem ~166 px a 1280; a 1ª versão, *"o de antes de 09/11
+    não conta no FALTAM da semana"*, saía cortada em toda largura) e sem a
+    palavra FALTAM (com a semana fechando o veredito diz SOBRAM/FICARAM); a
+    explicação vai no `title` (`subT`). O `_uepSubAtr(P, A, est, hojeN)` devolve
+    `sub`/`subT` só com o dia e com vencido; o `sbA` do `renderProxDias` pinta e
+    esconde a linha no estado seguinte sem `sub`.
+    - ⚠ Pela data do lote mais antigo de cada código (`desde`): um código com
+      vencido de antes E desta semana cai em *antes de dd/mm* (a frase vale: o
+      de antes fica fora).
+    - ⚠ Fontes diferentes: o card é o atraso por código (FIFO, `PONTOS_DIA` +
+      `getProgramacaoDetalhada`), o TAKT o saldo de cada linha
+      (`getProgramacaoSemana`), com caches diferentes — podem diferir por
+      minutos depois de um lançamento num lote vencido.
   - A ênfase do TAKT NO APP na faixa da TAKT DA SEMANA (número grande ao lado
     dos volumes) foi feita, mostrada em prévia e **guardada fora** do commit
     (*"só card de atraso"*): não está no painel.
@@ -7497,6 +7520,27 @@ feito e dá ar de verdade ao que sobrou.
     "≈ N pontos" à centena. ⚠ **UEP não tem valor fixo em pontos** (06/11:
     PAINEL RIPADO ~46, PENTEADEIRA MEL ~90 pontos por UEP; ~70 no mês) — por
     isso a média é a dos lotes DA SEMANA, e sem cadastro de pontos nada sai.
+  - **O PRECISA EM PARTES (v7.242.0**, o mesmo pedido da 2ª linha do card
+    ATRASO): na ESTA SEMANA a barra PRECISA vem em segmentos — o que venceu
+    (`T.falta.uepVenc`), o de hoje (`saldoUep` do dia) e o dos dias que vêm —,
+    com a legenda embaixo (*1h55 de atraso (lotes vencidos) + 6h41 dos lotes de
+    hoje*). Conta `_taktPrecisaPartes(T, V)` (pura): os mesmos minutos do
+    veredito, arredondando o ACUMULADO (a última parte fecha no `precisaMin` —
+    arredondar cada parte sozinha deixava um *"0h01 dos dias que vêm"* que não
+    existe), parte de menos de meio MINUTO fora (o corte de meia UEP ainda
+    deixava um "0h01" do arredondamento), menos de duas partes → null; a parte
+    dos dias que vêm leva `he` quando um deles não tem jornada (sábado, domingo,
+    feriado: hora extra, fora do TEM) e a legenda diz *"(com hora extra)"*.
+    ⚠ O rótulo é **"vencidos desta semana"**, nunca "atraso": o ATRASO do card
+    soma também o vencido de antes da segunda (UM NOME POR INDICADOR). O
+    `_taktHeroHtml` só desenha (`o.partes`; sem ele, a barra de antes). Tela
+    (`_taktHtml`) e 🖨 (`_taktDocHtml`) passam; a SEMANA QUE VEM e a AVALIAR
+    não (não há atraso nelas). Pele `.tks-tr i.p1/p2/p3` (opacidade; o do meio
+    sem canto redondo) e `.tks-bpt`; no papel a 3ª parte é contorno (em P&B a
+    0,3 sumia). Medido: 🖨 TAKT em uma folha (703 de 718 px, com 2 e com 3
+    partes, também com o *"(com hora extra)"* — a legenda do papel começa na
+    margem, embaixo do rótulo PRECISA; alinhada com a barra ela quebrava em 2
+    linhas e a folha ia a 716); tela 1920 e 1366 sem passar da largura.
   - **4 SEMANAS (v7.237.0**, PPCP 13/11/2026: *"tem como colocar mais
     semanas?"* → o quadro, recomendado contra mais botões; *"sempre dias
     úteis"*): `TKS_SEM` = 3, botão entre SEMANA QUE VEM e AVALIAR. Esta semana +

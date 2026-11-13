@@ -545,6 +545,7 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-uep .ucv-sb{padding:12px 16px 13px}
 #sec-uep .ucv-sb b{font-size:12px}
 #sec-uep .ucv-sb span{font-size:14.5px}
+#sec-uep .ucv-sb.uep-sb-atr small{font-family:var(--font-b);font-size:12px;color:var(--txt2);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:-2px}   /* v7.242.0 */
 #sec-uep .uep-leg .tks-lpw::before{background:none;border:1.5px dashed var(--warn);width:8px;height:8px}
 #sec-uep .tks-sim{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
 /* v7.213.0: AVALIAR PROGRAMAÇÃO — a caixa de colar */
@@ -599,6 +600,15 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-uep .tks-tr{position:relative;display:block;height:22px}
 #sec-uep .tks-tr i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--tks-base)}
 #sec-uep .tks-br.pr .tks-tr i{background:var(--red)}
+#sec-uep .tks-tr i.p2{opacity:.55} #sec-uep .tks-tr i.p3{opacity:.3}   /* v7.242.0: o PRECISA em partes (atraso · hoje · dias que vêm) */
+#sec-uep .tks-tr i.p1{border-radius:3px 0 0 3px} #sec-uep .tks-tr i.p2,#sec-uep .tks-tr i.p3{border-radius:0;box-shadow:inset 2px 0 0 rgba(0,0,0,.45)}
+#sec-uep .tks-tr i[class^="p"]:last-child{border-top-right-radius:3px;border-bottom-right-radius:3px}
+#sec-uep .tks-bpt{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;margin:-1px 62px 7px 74px;font-size:13px;color:var(--txt2)}
+#sec-uep .tks-bpt span{display:inline-flex;align-items:center;gap:6px}
+#sec-uep .tks-bpt span::before{content:'';width:11px;height:11px;border-radius:2px;background:var(--tks-base)}
+#sec-uep .tks-bpt.pr span::before{background:var(--red)}
+#sec-uep .tks-bpt .p2::before{opacity:.55} #sec-uep .tks-bpt .p3::before{opacity:.3}
+#sec-uep .tks-bpt b{color:var(--txt);font-weight:600} #sec-uep .tks-bpt em{font-style:normal}
 #sec-uep .tks-tr em{position:absolute;top:0;bottom:0;border-radius:0 3px 3px 0;background:repeating-linear-gradient(135deg,rgba(245,85,74,.8) 0 6px,rgba(245,85,74,.25) 6px 12px)}
 #sec-uep .tks-br b{font-family:var(--font-h);font-size:24px;color:var(--txt);letter-spacing:0;text-align:right}
 #sec-uep .tks-bcap{font-size:12px;color:var(--txt2);text-align:right;margin-top:2px}
@@ -3441,7 +3451,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     <button type="button" class="ucv-sb" data-sub="prod" role="tab" aria-selected="false" onclick="_uepSub('prod')"><b>POR PRODUTO</b><span id="uep-sb-prod">…</span></button>
     <button type="button" class="ucv-sb" data-sub="reguas" role="tab" aria-selected="false" onclick="_uepSub('reguas')"><b>RÉGUAS</b><span id="uep-sb-reguas">caixas × pontos × UEP</span></button>
     <button type="button" class="ucv-sb" data-sub="takt" role="tab" aria-selected="false" onclick="_uepSub('takt')"><b>TAKT DA SEMANA</b><span id="uep-sb-takt">…</span></button>
-    <button type="button" class="ucv-sb uep-sb-atr" onclick="_uepAtrAbrir()" title="Os lotes com data ANTES de hoje que ainda têm saldo na PROGRAMACAO (o STATUS EM ATRASO; linha com X fora), em horas de linha no ritmo da META UEP (o dia de 527 min). O programado de hoje não é atraso. Toque: o quadro código a código, em PRÓXIMOS DIAS."><b>ATRASO</b><span id="uep-sb-atr">…</span></button>
+    <button type="button" class="ucv-sb uep-sb-atr" onclick="_uepAtrAbrir()" title="Os lotes com data ANTES de hoje que ainda têm saldo na PROGRAMACAO (o STATUS EM ATRASO; linha com X fora), em horas de linha no ritmo da META UEP (o dia de 527 min). O programado de hoje não é atraso. Toque: o quadro código a código, em PRÓXIMOS DIAS."><b>ATRASO</b><span id="uep-sb-atr">…</span><small id="uep-sb-atr-s" style="display:none"></small></button>
     <span class="uep-sb-irs"><button type="button" class="btn btn-ghost ucv-sb-ir" onclick="setTab('crono')" title="Converter o tempo por volume da cronoanálise em UEP (aba própria)">⏱ CRONOANÁLISE → UEP</button></span>
   </div>
   <div id="uep-bloco"><div class="empty-msg">Carregando…</div></div>
@@ -4123,7 +4133,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.241.0';
+const APP_VER = '7.242.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -10199,7 +10209,7 @@ function _uepSubProx(W, est){
 // ainda"). Horas só dos códigos com UEP: código sem UEP fica nas caixas e leva *.
 // est: 'lendo' | 'falha' | 'sem-uep' | 'sem-lista' (o .gs sem o atraso por código)
 // | 'vazia' (o dia lido, nada em aberto).
-function _uepSubAtr(P, A, est){
+function _uepSubAtr(P, A, est, hojeN){
   if(est) return est === 'vazia' ? { txt:'nada vencido', cls:'ok' }
     : { txt: est === 'falha' ? 'programação não lida' : est === 'sem-uep' ? 'sem UEP na programação' : est === 'sem-lista' ? '—' : '…', cls:'' };
   if(!A) return { txt:'…', cls:'' };
@@ -10208,7 +10218,31 @@ function _uepSubAtr(P, A, est){
   // para 0 — tem UEP (uVenc > 0), então é "menos de 1 min", nunca "sem UEP"
   const k = P && P.conta, h = k && k.venc != null && k.uVenc > 0 ? (k.venc > 0 ? _fmtHM(k.venc) : 'menos de 1 min') + (A.semUep ? '*' : '') : null;
   const desde = (A.venc[0].desde || '').slice(0, 5);
-  return { txt:`${h ? h + ' · ' : ''}${fmtN(A.cxVenc)} cx${h ? '' : ' · sem UEP'}${desde ? ' · desde ' + desde : ''}`, cls:'red' };
+  const S = _uepAtrSub(A.venc, hojeN);
+  return Object.assign({ txt:`${h ? h + ' · ' : ''}${fmtN(A.cxVenc)} cx${h ? '' : ' · sem UEP'}${desde ? ' · desde ' + desde : ''}`, cls:'red' },
+    S ? { sub:S.sub, subT:S.t } : {});
+}
+// v7.242.0 (PPCP: "1h55 de atraso, como falta 6h16?"): a 2ª linha do card diz se o
+// atraso já está na barra PRECISA do TAKT DA SEMANA — não é um 2º problema para
+// somar. O TAKT só soma os lotes DESTA semana (segunda em diante) e só com UEP:
+// o vencido de antes da segunda e o de código sem UEP ficam fora, e a linha diz.
+// Curta de propósito (o card tem ~166 px a 1280); a explicação vai no title.
+// venc = A.venc (desde dd/MM/yyyy, uep null = sem UEP); hojeN = aaaammdd.
+function _uepAtrSub(venc, hojeN){
+  const h = Number(hojeN) || 0, L = (Array.isArray(venc) ? venc : []).filter(x => _cartNum(x && x.desde));
+  if(!h || !L.length) return null;
+  const x = new Date(Math.floor(h / 10000), Math.floor(h / 100) % 100 - 1, h % 100);
+  x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+  const seg = x.getFullYear() * 10000 + (x.getMonth() + 1) * 100 + x.getDate(), sd = `${p2(x.getDate())}/${p2(x.getMonth() + 1)}`;
+  const TK = 'o TAKT DA SEMANA só soma os lotes desta semana (de ' + sd + ' em diante) e com UEP';
+  if(h === seg) return { sub:'fora do TAKT desta semana', t:'Hoje é segunda: todo o vencido é de antes desta semana — ' + TK + '.' };
+  const antes = L.some(v => _cartNum(v.desde) < seg), sem = L.some(v => v.uep == null);
+  if(!antes && !sem) return { sub:'já está no PRECISA do TAKT', t:'Este atraso já está dentro da barra PRECISA do TAKT DA SEMANA (a legenda mostra quanto): não some com o que falta da semana.' };
+  const comUep = L.some(v => v.uep != null);
+  if(sem && !antes) return { sub: comUep ? 'sem UEP (*): fora do TAKT' : 'sem UEP: fora do TAKT',
+    t:'O vencido de código sem UEP no cadastro fica fora (está só nas caixas) — ' + TK + '.' + (comUep ? ' O resto já está na barra PRECISA.' : '') };
+  if(antes && !sem) return { sub:'antes de ' + sd + ': fora do TAKT', t:'O vencido de antes de ' + sd + ' fica fora — ' + TK + '. O de ' + sd + ' em diante já está na barra PRECISA.' };
+  return { sub:'antes de ' + sd + ' e sem UEP: fora', t:'Ficam fora o vencido de antes de ' + sd + ' e o de código sem UEP — ' + TK + '. O que for desta semana e com UEP está na barra PRECISA.' };
 }
 // O toque: PRÓXIMOS DIAS com o quadro aberto, rolado até ele.
 function _uepAtrAbrir(){
@@ -10796,6 +10830,29 @@ function _taktVeredito(T, P, rit){
     faltaCx:uepCx && faltaMin>0 ? faltaUep/uepCx : null, faltaPts:ptsUep && faltaMin>0 ? faltaUep*ptsUep : null,
     ritmo:r ? { pct:r/m*100, faltaMin:rFalta, faltaCx:uepCx && rFalta>0 ? rUep/uepCx : null, faltaPts:ptsUep && rFalta>0 ? rUep*ptsUep : null } : null };
 }
+// O PRECISA EM PARTES (v7.242.0, PPCP 13/11/2026, com a tela: o card ATRASO dizia
+// 1h55 e o TAKT "faltam 6h16" — "como falta 6?"). A barra PRECISA da ESTA SEMANA
+// dividida no que já venceu (lote da semana com data antes de hoje), no de hoje e
+// no dos dias que vêm — os MESMOS minutos do veredito (a soma é o precisaMin).
+// Conta pura; menos de duas partes → null (não há o que separar). Arredonda o
+// ACUMULADO (e a última parte fecha no precisaMin): arredondar cada parte sozinha
+// deixava sobrar 1 min, e aparecia um "0h01 dos dias que vêm" que não existe.
+function _taktPrecisaPartes(T, V){
+  if(!T || !T.falta || !V || !(V.precisaMin>0) || !(T.meta>0)) return null;
+  const k=UEP_MIN_DIA/T.meta, dH=(T.dias||[]).find(d=>d.hoje);
+  const uV=Math.max(0, Number(T.falta.uepVenc)||0), uH=dH ? Math.max(0, Number(dH.saldoUep)||0) : 0;
+  const uR=Math.max(0, (Number(T.falta.uep)||0)-uV-uH);
+  // lote em dia sem jornada (sábado, domingo, feriado) entre os que vêm: é hora extra, fora do TEM
+  const he=(T.dias||[]).some(d=>!d.passado && !d.hoje && !d.util && d.saldoUep*k>=0.5);
+  const raw=[['venc', uV], ['hoje', uH], ['vem', uR]].filter(x=>x[1]*k>=0.5);   // menos de meio minuto não é parte
+  let acc=0, ant=0;
+  const p=raw.map(([kk, u], i)=>{
+    acc+=u;
+    const fim=i===raw.length-1 ? V.precisaMin : Math.min(Math.round(acc*k), V.precisaMin), m=fim-ant;
+    ant=fim; return kk==='vem' && he ? { k:kk, min:m, he:true } : { k:kk, min:m };
+  }).filter(x=>x.min>0);
+  return p.length>1 ? p : null;
+}
 // SIMULAÇÃO (v7.210.0, PPCP: "simulação e impressão para diretoria ver que não
 // cabe"): o saldo da semana que vem contra a capacidade da linha em mais de um
 // ritmo. Cenários (_taktCenarios): a REFERÊNCIA; o RITMO DESTA SEMANA (UEP de
@@ -11037,7 +11094,7 @@ function _taktHtml(T, G, opt){
     +(tot>=1 ? `. Do que não saiu nos dias fechados, ${pc(C.carga)} foi excesso de programação e ${pc(C.ritmo)} ritmo da linha` : '')+'.';
   const porR=tot>=1 ? `do que não saiu: <b>${pc(C.carga)} excesso de programação</b> · <b>${pc(C.ritmo)} ritmo da linha</b>`
     : `a programação pede <b>${fmtP(T.pede)}</b> da média${X.pct!=null ? ` · a linha rodou a <b>${fmtP(X.pct)}</b>` : ''}`;
-  return tit+_taktHeroHtml(o.V, { semana:'esta', ate:F.ate })
+  return tit+_taktHeroHtml(o.V, { semana:'esta', ate:F.ate, partes:_taktPrecisaPartes(T, o.V) })
     +_taktFecharHtml(_taktFecharDados(o.V, { semana:'esta', ate:F.ate }))
     +`<div class="uep-sec"><b>DIA A DIA</b> horas de linha · programado × feito<span class="tks-sec-r" title="${e(porT)}">${porR}</span></div><div class="uep-card" id="tks-g-box">${svg}`
     +`<div class="uep-leg"><span class="tks-lb">programado até 1 dia de linha</span><span class="tks-lx">programado acima de 1 dia</span><span style="--c:var(--tks-feito)">feito na jornada</span><span style="--c:var(--warn)">hora extra</span><span class="tks-lr">1 dia de linha (${_fmtHM(UEP_MIN_DIA)} = média de ${n0(T.meta)} UEP entregues sem hora extra)</span></div></div>`
@@ -12026,8 +12083,15 @@ function _taktHeroHtml(V, o){
   const gap=!V.cabe && V.precisaMin>V.temMin ? `<em style="left:${w(V.temMin)}%;width:${(w(V.precisaMin)-w(V.temMin)).toFixed(1)}%"></em>` : '';
   const cap=esta ? (V.encerrada ? 'a jornada da semana acabou' : `jornada que resta${o.ate ? ' até '+_rpEsc(o.ate) : ''}`)
     : `${o.nUteis} ${o.nUteis===1 ? 'dia' : 'dias'} de ${hm(UEP_MIN_DIA)} de jornada`;
+  // v7.242.0: com o.partes (_taktPrecisaPartes) a barra PRECISA mostra de onde vem — atraso, hoje, dias que vêm
+  // ⚠ "vencidos desta semana", nunca "atraso": o ATRASO do card soma também o vencido de antes da segunda (UM NOME POR INDICADOR)
+  const P=o.partes, rotP={ venc:'vencidos desta semana', hoje:'dos lotes de hoje', vem:'dos dias que vêm' };
+  let x0=0;
+  const prI=P ? P.map((p, i)=>{ const a=x0; x0+=p.min; return `<i class="p${i+1}" style="left:${w(a)}%;width:${(w(x0)-w(a)).toFixed(1)}%"></i>`; }).join('')
+    : `<i style="width:${w(V.precisaMin)}%"></i>`;
+  const prL=P ? `<div class="tks-bpt${V.cabe ? '' : ' pr'}">${P.map((p, i)=>`<span class="p${i+1}"><b>${hm(p.min)}</b> ${rotP[p.k]}${p.he ? ' (com hora extra)' : ''}</span>`).join('<em>+</em>')}</div>` : '';
   const barras=nada ? '' : `<div class="tks-bars">`
-    +`<div class="tks-br${V.cabe ? '' : ' pr'}"><span>PRECISA</span><span class="tks-tr"><i style="width:${w(V.precisaMin)}%"></i></span><b>${hm(V.precisaMin)}</b></div>`
+    +`<div class="tks-br${V.cabe ? '' : ' pr'}"><span>PRECISA</span><span class="tks-tr">${prI}</span><b>${hm(V.precisaMin)}</b></div>`+prL
     +`<div class="tks-br"><span>TEM</span><span class="tks-tr"><i style="width:${w(V.temMin)}%"></i>${gap}</span><b>${hm(V.temMin)}</b></div>`
     +`<div class="tks-bcap">${cap}</div></div>`;
   return `<div class="tks-hero ${cls}"><div class="tks-hv">${pal}${sub ? `<small>${sub}</small>` : ''}</div><div class="tks-hb">${corpo}</div>${barras}</div>`;
@@ -12077,6 +12141,17 @@ const _TKS_DOC_SKIN = `
   .tks-doc .tks-tr{position:relative;display:block;height:13px}
   .tks-doc .tks-tr i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:#A0AEC0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .tks-doc .tks-br.pr .tks-tr i{background:#C62828}
+  .tks-doc .tks-tr i.p2{opacity:.55} .tks-doc .tks-tr i.p3{opacity:.3}
+  .tks-doc .tks-tr i.p1+i,.tks-doc .tks-tr i.p2+i{box-shadow:inset 1.5px 0 0 #fff}
+  .tks-doc .tks-br .tks-tr i.p3{opacity:1;background:#fff;box-shadow:inset 0 0 0 1.5px #A0AEC0}
+  .tks-doc .tks-br.pr .tks-tr i.p3{box-shadow:inset 0 0 0 1.5px #C62828}
+  .tks-doc .tks-bpt{display:flex;flex-wrap:wrap;gap:1px 6px;margin:0 0 3px;font-size:9.5px;color:#5B6470}
+  .tks-doc .tks-bpt span{display:inline-flex;align-items:center;gap:4px}
+  .tks-doc .tks-bpt span::before{content:'';width:8px;height:8px;border-radius:1px;background:#A0AEC0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .tks-doc .tks-bpt.pr span::before{background:#C62828}
+  .tks-doc .tks-bpt .p2::before{opacity:.55} .tks-doc .tks-bpt .p3::before{background:#fff;box-shadow:inset 0 0 0 1.5px #A0AEC0}
+  .tks-doc .tks-bpt.pr .p3::before{background:#fff;box-shadow:inset 0 0 0 1.5px #C62828}
+  .tks-doc .tks-bpt b{color:#1F2328} .tks-doc .tks-bpt em{font-style:normal}
   .tks-doc .tks-tr em{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(135deg,#C62828 0 4px,#f3c4c4 4px 8px);-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .tks-doc .tks-bcap{font-size:9px;color:#5B6470;text-align:right}
   .tks-doc .tks-br b{font-family:'Barlow Condensed',sans-serif;font-size:15px;color:#1F2328;text-align:right;letter-spacing:0}
@@ -12109,7 +12184,7 @@ function _taktDocHtml(A, ctx){
   if(T && T.takt!=null){
     const C=T.cas, t2=C.carga+C.ritmo, pc=v=>Math.round(v/t2*100)+'%';
     esq=`<div class="td-h">ESTA SEMANA<small>${per(T)} · até ${e(ctx.hora)}</small></div>`
-      +_taktHeroHtml(V0, { semana:'esta', ate:T.falta.ate })
+      +_taktHeroHtml(V0, { semana:'esta', ate:T.falta.ate, partes:_taktPrecisaPartes(T, V0) })
       +_taktFecharHtml(_taktFecharDados(V0, { semana:'esta', ate:T.falta.ate }), { papel:true })
       +`<div class="tks-por"><b>Por quê:</b> a programação pediu <b>${fmtP(T.pede)}</b> da média que a linha entrega sem hora extra`
       +(T.exec.pct!=null ? `, e a linha rodou a <b>${fmtP(T.exec.pct)}</b> dessa média` : '')
@@ -20205,7 +20280,8 @@ function renderProxDias(){
   }
   box.style.display = '';
   const sb = o => _sbPinta(document.getElementById('uep-sb-prox'), o);   // o número do botão PRÓXIMOS DIAS (v7.198.0)
-  const sbA = o => _sbPinta(document.getElementById('uep-sb-atr'), o);   // o cartão ATRASO (v7.227.0)
+  const sbA = o => { _sbPinta(document.getElementById('uep-sb-atr'), o);   // o cartão ATRASO (v7.227.0)
+    const s = document.getElementById('uep-sb-atr-s'); if(s && o){ s.textContent = o.sub || ''; s.title = o.subT || o.sub || ''; s.style.display = o.sub ? '' : 'none'; } };
   if(!PROG_DET_TS){
     const f = !GPX_CARREGANDO && _progDetFalhaInfo();
     corpo.innerHTML = f ? `<div class="empty-msg" style="padding:14px 16px;color:var(--warn)">${f.t} — ${f.d}</div>`
@@ -20220,7 +20296,7 @@ function renderProxDias(){
   sb(_uepSubProx(W));
   // sem a lista por código: o dia ainda não foi lido ('…'), nada em aberto, ou o .gs sem o atraso por código
   const lista = (PONTOS_DIA.programacao && PONTOS_DIA.programacao.lista) || [];
-  sbA(_uepSubAtr(P, A, A ? null : !PONTOS_DIA_TS ? 'lendo' : lista.length ? 'sem-lista' : 'vazia'));
+  sbA(_uepSubAtr(P, A, A ? null : !PONTOS_DIA_TS ? 'lendo' : lista.length ? 'sem-lista' : 'vazia', _cartNum(hojeStr())));
   const sub = document.getElementById('gpx-sub');
   if(sub) sub.textContent = 'horas de linha · jornada ' + _fmtHM(UEP_MIN_DIA) + ' · programação de ' + new Date(PROG_DET_TS).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 }
