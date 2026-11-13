@@ -3684,8 +3684,14 @@ feito e dá ar de verdade ao que sobrou.
     manhã). Às 16:22 de 13/11 restam 37 min → o ritmo necessário é **738 UEP/h**
     (o "463" da v7.243.0 era de um modelo escrito à mão no teste).
   - **`semUep = !G.ok`**: sem a UEP do dia (lendo, falhou, backend, cadastro), as
-    caixas programadas julgam; as horas lançadas dizem LENDO… (`G.lendo`). Nunca
-    uma tela sem veredito.
+    caixas programadas julgam; as horas lançadas dizem LENDO… (`G.lendo`) ou NÃO
+    LIDA (`PONTOS_LEIT.falha`), e NÃO pintam o % — nem a que fechou em zero
+    (`o.est` desliga o `_gerHoraJulga`; o gráfico recebe `!G.ok`). Nunca uma tela
+    sem veredito, nunca dois.
+  - **A hora que acabou de fechar ainda aceita lançamento** (`GER_TOL_MIN` = 15 =
+    o `LANC_TOLERANCIA_MIN` do celular; o teste confere): com 0 caixas e até 15
+    min depois do fim, `h.tol` → AINDA ACEITA, sem veredito e fora do vale. Sem
+    isso o vale do dia era sempre a última hora fechada (2ª revisão).
   - **Dia passado: `_gerHorasHist(horas, metaDia, uepHH, data)`** — em sábado e
     domingo a meta da hora é a META UEP gravada ÷ os minutos de jornada com
     produção (a gravada já é a das horas trabalhadas desde o `.gs` v5.60: 07/11 =
@@ -3700,7 +3706,8 @@ feito e dá ar de verdade ao que sobrou.
     *<1* abaixo de 0,5). `renderChartHora`/`renderChartComp` apagados (sem uso).
   - Testes rodam a montagem real (`_gerUepModelo` + `_tvUepMontar`), a hora em
     zero, a parte sem UEP, o sábado de 07/11, a manhã sem jornada, o LENDO…, o
-    cadastro que falhou e a impressão. 10 de 10 mutações pegas.
+    cadastro que falhou, a impressão, a hora em tolerância e o NÃO LIDA. 14 de 14
+    mutações pegas.
   - Em aberto (menor): o resumo do PRODUTOS EMBALADOS pode dizer *586 em hora
     extra* com a coluna somando 587 (arredondamento das três partes).
 

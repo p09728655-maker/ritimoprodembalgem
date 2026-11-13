@@ -13161,7 +13161,8 @@ function renderGerencial(){
   const horasU=G.horas||_uepAbaHoras(k.slots, k.allHoje, {}, PONTOS_DIA.metaUep, G.agoraMin);
   const uepCxAgora=G.m&&G.m.prod?G.m.prod.uepCx:null;
   const cxDe=sl=>{ const reg=k.allHoje.find(d=>d.horario===sl.inicio); return reg&&reg.producaoHora!=null?reg.producaoHora:null; };
-  const oLin=G.ok?null:{ est:G.lendo?'LENDO…':'SEM UEP', estT:G.lendo?_pontosEstadoTxt(true):'sem a UEP do dia' };
+  const oLin=G.ok?null:{ est:!G.lendo?'SEM UEP':PONTOS_LEIT.falha?'NÃO LIDA':'LENDO…',
+                          estT:G.lendo?_pontosEstadoTxt(true):'sem a UEP do dia' };
   document.getElementById('tbl-hora-body').innerHTML=k.slots.map((sl,i)=>{
     const h=horasU[i]||{label:sl.label, he:!!sl.he, lancada:false};
     return _gerHoraLinha(h, cxDe(sl), (G.cxCom||{})[sl.inicio]||0, uepCxAgora, oLin);
@@ -13172,7 +13173,7 @@ function renderGerencial(){
   // PRISM, mais leves).
   const _gl=document.getElementById('ger-leg-fraca'); if(_gl) _gl.style.display='none';
 
-  _gerChartsUep(horasU.map((h,i)=>({h, cx:cxDe(k.slots[i]), cxCom:(G.cxCom||{})[k.slots[i].inicio]||0})));
+  _gerChartsUep(horasU.map((h,i)=>({h, cx:cxDe(k.slots[i]), cxCom:(G.cxCom||{})[k.slots[i].inicio]||0})), !G.ok);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -13196,6 +13197,11 @@ function _gerUepModelo(k, agoraMin){
     const sl=k.slots[i]||{}, reg=(k.allHoje||[]).find(d=>d.horario===h.inicio);
     h.cx=reg&&reg.producaoHora!=null?Number(reg.producaoHora):null;
     h.min=sl.min||60;
+    // A hora que acabou de fechar ainda aceita lançamento no app por
+    // GER_TOL_MIN (o LANC_TOLERANCIA_MIN do celular): zero aí é "ainda não
+    // lançou", não "fechou em zero" — não é julgada até a janela passar.
+    const fim=toMin(h.inicio)+h.min;
+    h.tol=!h.he&&h.cx===0&&agoraMin>=fim&&agoraMin<fim+GER_TOL_MIN;
   });
   const minRest=horas.filter(h=>!h.he).reduce((t,h)=>{ const i0=toMin(h.inicio), f0=i0+h.min;
     return t+Math.max(0, f0-Math.max(i0, agoraMin)); }, 0);
@@ -13216,9 +13222,10 @@ function _gerUepModelo(k, agoraMin){
 // caixas não tem UEP (código sem UEP, ou lançada sem produto: caixas da hora
 // maiores que as do registro) sai com `parte`: o % é mostrado, sem veredito —
 // a UEP dela está incompleta e a hora sairia ABAIXO sem ser.
+const GER_TOL_MIN=15;   // = o LANC_TOLERANCIA_MIN do celular (a hora recém-fechada ainda aceita lançamento)
 function _gerHoraJulga(h, cx, cxCom){
   if(!h || h.he || h.andamento || !h.lancada || !(h.metaH>0)) return null;
-  if(!(h.uep>0)) return cx===0 && !(h.cxSem>0) ? { uep:0, pct:0 } : null;
+  if(!(h.uep>0)) return cx===0 && !(h.cxSem>0) && !h.tol ? { uep:0, pct:0 } : null;
   const pct=h.uep/h.metaH*100;
   const semProd=cx!=null && cxCom!=null && cx>(Number(cxCom)||0)+(Number(h.cxSem)||0);
   return (h.cxSem>0 || semProd) ? { uep:h.uep, pct, parte:true } : { uep:h.uep, pct };
@@ -13375,8 +13382,9 @@ function _gerTheadCx(){
 function _gerHoraLinha(h, cx, cxCom, uepCxAgora, o){
   o=o||{};
   const ehHE=!!h.he, temU=h.uep!=null&&h.uep>0;
-  // a regra de julgar é UMA (_gerHoraJulga): tabela, análise e gráfico
-  const J=_gerHoraJulga(h, cx, cxCom);
+  // a regra de julgar é UMA (_gerHoraJulga): tabela, análise e gráfico. Sem a
+  // UEP do dia (o.est) a hora não julga nada — quem julga é o card das caixas.
+  const J=o.est?null:_gerHoraJulga(h, cx, cxCom);
   const pct=J&&!J.parte?J.pct:null;
   const s2=pct==null?'':sc(pct);
   const uepTxt=temU?fmtN(Math.round(h.uep))+(J&&J.parte?'*':''):(J&&J.uep===0?'0':(h.cxSem>0?'0*':'—'));
@@ -13391,6 +13399,7 @@ function _gerHoraLinha(h, cx, cxCom, uepCxAgora, o){
     :h.andamento?`<span class="badge b-mute" title="hora em andamento — não é julgada">${h.ate?'ATÉ '+h.ate:'EM ANDAMENTO'}</span>`
     :!h.lancada?'<span class="badge b-mute">PENDENTE</span>'
     :o.est?`<span class="badge b-mute" title="${_rpEsc(o.estT||'')}">${o.est}</span>`
+    :h.tol&&cx===0?'<span class="badge b-mute" title="a hora acabou de fechar e ainda aceita lançamento no app (15 min)">AINDA ACEITA</span>'
     :!(h.metaH>0)?'<span class="badge b-mute">—</span>'
     :!J?'<span class="badge b-mute" title="as caixas desta hora não têm UEP">SEM UEP</span>'
     :J.parte?'<span class="badge b-mute" title="parte das caixas desta hora não tem UEP: o % fica incompleto e a hora não é julgada">PARTE SEM UEP</span>'
@@ -13407,17 +13416,17 @@ function _gerHoraLinha(h, cx, cxCom, uepCxAgora, o){
 // Os dois gráficos: a UEP de cada hora contra a meta da hora (a cor é a da
 // tabela, pela mesma _gerHoraJulga) e as caixas de cada hora (fato, uma cor só,
 // sem meta). Cor literal: o canvas do Chart.js não resolve token CSS.
-function _gerChartsUep(L){
+function _gerChartsUep(L, semJulgar){
   const t1=document.getElementById('ger-ch1-ttl'), t2=document.getElementById('ger-ch2-ttl');
   if(t1) t1.textContent='⬛ UEP HORA A HORA · META DA HORA';
   if(t2) t2.textContent='◧ CAIXAS HORA A HORA';
   const labels=L.map(x=>x.h.label||x.h.inicio);
-  const cor=x=>{ const h=x.h, J=_gerHoraJulga(h, x.cx, x.cxCom);
+  const cor=x=>{ const h=x.h, J=semJulgar?null:_gerHoraJulga(h, x.cx, x.cxCom);
     if(h.he) return 'rgba(255,92,31,0.55)';
     if(!J||J.parte) return 'rgba(143,160,181,0.45)';
     const s=sc(J.pct); return s==='ok'?'rgba(76,175,80,0.75)':s==='warn'?'rgba(255,152,0,0.75)':'rgba(244,67,54,0.75)'; };
   mkChart('ch-hora',{type:'bar',data:{labels,datasets:[
-    {label:'UEP',data:L.map(x=>x.h.uep>0?Math.round(x.h.uep):(_gerHoraJulga(x.h, x.cx, x.cxCom)?0:null)),backgroundColor:L.map(cor),borderRadius:3},
+    {label:'UEP',data:L.map(x=>x.h.uep>0?Math.round(x.h.uep):(!semJulgar&&_gerHoraJulga(x.h, x.cx, x.cxCom)?0:null)),backgroundColor:L.map(cor),borderRadius:3},
     {label:'Meta da hora',data:L.map(x=>x.h.he||!(x.h.metaH>0)?null:Math.round(x.h.metaH)),type:'line',borderColor:'#FF5C1F60',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false}
   ]},options:CHART_DEFAULTS});
   mkChart('ch-comp',{type:'bar',data:{labels,datasets:[

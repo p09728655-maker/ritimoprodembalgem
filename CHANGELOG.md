@@ -29,9 +29,13 @@ correções ficam num PR aberto, sem merge, para ele conferir. Nada muda no `.gs
   sem produto) mostra o % com `*` e o status PARTE SEM UEP, sem cor. Antes saía
   ABAIXO em vermelho.
 - **Sem a UEP do dia** (a leitura ainda chegando ou falhou), as caixas
-  programadas voltam a dar o selo, e as horas lançadas dizem LENDO… em vez de
-  "SEM UEP". A tela nunca fica sem veredito; quando a UEP chega, o selo passa
-  para ela.
+  programadas voltam a dar o selo, e as horas lançadas dizem LENDO… (ou NÃO
+  LIDA, se as 3 tentativas falharam) em vez de "SEM UEP". Nesse estado a hora
+  não pinta o % (quem julga é o card das caixas). A tela nunca fica sem
+  veredito; quando a UEP chega, o selo passa para ela.
+- **A hora que acabou de fechar e ainda aceita lançamento** no app (15 min)
+  aparece como AINDA ACEITA. Ela não sai 0% ABAIXO nem vira o vale antes de o
+  operador lançar; depois dos 15 min, o zero é cobrado.
 - **De manhã, antes do 1º lançamento da jornada**, o ritmo necessário é o da
   meta inteira (314 UEP/h em 8h47). Antes dizia "jornada encerrada".
 - **ATRASO:** se a leitura do cadastro falhar, o card diz "cadastro não lido"
@@ -46,7 +50,7 @@ correções ficam num PR aberto, sem merge, para ele conferir. Nada muda no `.gs
   arredondar).
 - **Testes:** passam a rodar a montagem real do gerencial. Às 16:22 de 13/11
   restam 37 min de jornada, e o ritmo necessário é 738 UEP/h; o teste da
-  v7.243.0 afirmava 463 com um modelo escrito à mão. 10 de 10 mutações pegas.
+  v7.243.0 afirmava 463 com um modelo escrito à mão. 14 de 14 mutações pegas.
 - Saíram o `renderChartHora` e o `renderChartComp`, que ficaram sem uso.
 
 **Atenção:** o número que muda é o do **ritmo necessário**, que agora conta os

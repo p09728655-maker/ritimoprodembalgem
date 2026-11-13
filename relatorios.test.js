@@ -5944,6 +5944,9 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
    'function _metaPartesTxt(', 'function _gerAnaliseUep(', 'function _gerCxComHora(', 'function _gerKpiHtml(', 'function _gerUepModelo(',
    'function _uepCardLeitura(', 'function _tvUepMontar(', 'function _tvUepDoProduto(', 'function _gerHorasHist(', 'function _gerInfoImpressao(']
     .forEach(f => vm.runInContext(pega(f), C));
+  const _tol = JS.match(/const GER_TOL_MIN=(\d+);/), _tolMob = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8').match(/const LANC_TOLERANCIA_MIN = (\d+);/);
+  ok('a janela da hora recém-fechada é a MESMA do app (LANC_TOLERANCIA_MIN do celular)', [_tol && _tol[1], _tolMob && _tolMob[1]], ['15', '15']);
+  vm.runInContext(`var GER_TOL_MIN = ${_tol ? _tol[1] : 15};`, C);
   vm.runInContext(`var CFG = { turnoInicio:'07:00', turnoFim:'17:00' }; var GER_CAT_FALHA = false;
     var _CAT = [{ codigo:'501.089.003', uep:2 }]; function _pdiaPcCat(){ return _CAT; } function _metaDiaAba(){ return 1800; }
     function _pontosEstadoTxt(){ return 'lendo a produção do dia…'; }`, C);
@@ -6010,6 +6013,22 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
     ok('a hora que fechou com ZERO caixas: 0 · 314 · 0,0% · ABAIXO, e é o VALE (era "SEM UEP" e sumia da análise)',
        [cel(R('_gerHoraLinha(_h, 0, 0, 2)', { _h:G0.horas[3] })), R('_gerAnaliseUep(_G).vale.h.label', { _G:G0 })],
        [['08:00', '0', '314', '0,0%', '0', '—', 'ABAIXO'], '08:00']); }
+  // v7.244.0 (2ª revisão): a hora que ACABOU de fechar ainda aceita lançamento no
+  // app por 15 min — o zero aí é "ainda não lançou", não "fechou em zero".
+  { const K1 = Object.assign({}, K, { allHoje: allHoje.filter(r => r.horario < '12:12').concat([{ horario:'12:12', producaoHora:0, he:false }]) });
+    const PHM1 = PHM.filter(x => x.hora < '12:12');
+    const G13 = R('PONTOS_DIA = Object.assign({}, _pd, { porHoraModelo:_phm }); _gerUepModelo(_k, 782)', { _pd:PD, _phm:PHM1, _k:K1 });   // 13:02
+    const G16 = R('PONTOS_DIA = Object.assign({}, _pd, { porHoraModelo:_phm }); _gerUepModelo(_k, 796)', { _pd:PD, _phm:PHM1, _k:K1 });   // 13:16
+    ok('13:02, o 12:12-13:00 em zero e ainda aceitando lançamento: AINDA ACEITA, fora do vale; às 13:16 é zero de verdade (0%, ABAIXO, o vale)',
+       [cel(R('_gerHoraLinha(_h, 0, 0, 2)', { _h:G13.horas[6] })).slice(3), R('_gerAnaliseUep(_G).vale.h.label', { _G:G13 }),
+        cel(R('_gerHoraLinha(_h, 0, 0, 2)', { _h:G16.horas[6] })).slice(3), R('_gerAnaliseUep(_G).vale.h.label', { _G:G16 })],
+       [['—', '0', '—', 'AINDA ACEITA'], '07:00', ['0,0%', '0', '—', 'ABAIXO'], '12:12']); }
+  R('PONTOS_DIA = _pd', { _pd:PD });
+  ok('sem a UEP do dia a hora não julga nada: a que fechou em zero não pinta o % (quem julga é o card das caixas); o selo diz LENDO… ou NÃO LIDA',
+     [(h => [cel(h).slice(3), /var\(--(red|ok|warn)\)/.test(h)])(R('_gerHoraLinha(_h, 0, 0, null, { est:"NÃO LIDA" })', { _h:{ label:'08:00', he:false, lancada:true, andamento:false, uep:null, cxSem:0, metaH:314 } })),
+      /est:!G\.lendo\?'SEM UEP':PONTOS_LEIT\.falha\?'NÃO LIDA':'LENDO…'/.test(pega('function renderGerencial(')),
+      /_gerChartsUep\([\s\S]*\), !G\.ok\);/.test(pega('function renderGerencial('))],
+     [[['—', '0', '—', 'NÃO LIDA'], false], true, true]);
   // v7.244.0 (revisão): parte das caixas sem UEP não é julgada ABAIXO
   ok('hora com parte das caixas de código sem UEP: o % com *, PARTE SEM UEP, sem cor',
      [cel(R('_gerHoraLinha(_h, 160, 80, null)', { _h:{ label:'11:00', he:false, lancada:true, andamento:false, uep:80, cxSem:80, metaH:314 } })),
