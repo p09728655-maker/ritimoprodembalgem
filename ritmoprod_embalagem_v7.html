@@ -5400,13 +5400,15 @@ function forcarRefresh(){
 // saía JUNTO com o getDados: os dois disputavam o Apps Script, o getDados
 // estourava os 25 s ("Sheets: Timeout" no selo) e a aba UEP ficava parada em
 // "Aguardando a leitura do dia…" (v7.127.0, PPCP 25/09/2026).
+let _cicloVoo=null;   // o ciclo de leitura em curso: abrir o GERENCIAL espera por ele antes de ler as paradas
 function _cicloLeitura(){
   if(!CFG.sheetsUrl){ lerArquivo(); _parDepois(null); return; }
   const _ls=lerSheets();
   // As paradas na faixa do PRODUTOS EMBALADOS HOJE (v7.236.0): depois da leitura
   // do dia, uma de cada vez, só com o gerencial ao vivo na tela.
-  _parDepois(_ls).then(()=>lerPontosDia()).then(()=>renderGerencial())
-    .then(()=>lerParadasDoDia()).then(r=>{ if(r!==null) renderGerProdutosDia(); }).catch(()=>{});
+  _cicloVoo=_parDepois(_ls).then(()=>lerPontosDia()).then(()=>renderGerencial())
+    .then(()=>lerParadasDoDia()).then(r=>{ if(r!==null) renderGerProdutosDia(); }).catch(()=>{})
+    .then(()=>{ _cicloVoo=null; });
 }
 function _parDepois(prom){
   return Promise.resolve(prom).catch(()=>{}).then(()=>{
@@ -12164,59 +12166,27 @@ function _pdiaPcCat(){
 // cada parada apontada no app vira uma marca (não programada em vermelho,
 // programada em cinza, a aberta listrada até agora); o mouse na marca diz o
 // tipo, o horário, a duração e o motivo.
-// A régua é a do paradas-calc (durProdutiva e ehPlanejada): o almoço sai da
-// marca e da soma, e os totais fecham com o TEMPO TOTAL PARADO da aba PARADAS
-// em HOJE (o teste confere contra o RP_PARADAS.stats). Nenhuma perda em caixas
-// aqui — a valoração mora na aba PARADAS.
+// A CONTA é a pdiaParMontar do rp-core.js (a mesma do celular 1.49.0), com a
+// régua do paradas-calc (durProdutiva e ehPlanejada): o almoço sai da marca e
+// da soma, e os totais fecham com o TEMPO TOTAL PARADO da aba PARADAS em HOJE
+// (o teste confere contra o RP_PARADAS.stats). Nenhuma perda em caixas aqui —
+// a valoração mora na aba PARADAS.
 // Leitura: o getParadas (só o dia, o mesmo do banner da TV), UMA vez por ciclo
 // e depois da leitura do dia, só com o gerencial AO VIVO na tela.
 const PDIA_PAR_TTL = 5 * 60 * 1000;   // com a aba recém-aberta, relê se a última leitura passou disso
-const PDIA_PAR_ROT_PX = 44;           // a duração escrita na marca só a partir desta largura (px)
 let PDIA_PAR = null, PDIA_PAR_FALHA = '', _pdiaParVoo = null;   // PDIA_PAR = { dia, ts, lista }
-// CONTA (pura): as marcas e os totais. o = { R (RP_PARADAS), cfg, classeMap, agoraTxt 'HH:mm:ss', larg }.
-function _pdiaParMontar(lista, F, o){
-  const R = o.R, cfg = o.cfg || {}, span = F.fim - F.ini, larg = Number(o.larg) || PDIA_PC_LARG;
-  const HR = /^\d{1,2}:\d{2}(:\d{2})?$/, hm = s => String(s).slice(0, 5);
-  const almI = R.horaMin(cfg.almocoInicio), almF = R.horaMin(cfg.almocoFim), temAlm = almF > almI;
-  const agora = R.horaMin(o.agoraTxt);
-  const P = { estado: 'ok', segs: [], itens: [], n: 0, min: 0, minNP: 0, aberta: null };
-  (lista || []).forEach(p => {
-    const ini = String(p.ini || '').trim(), fim = String(p.fim || '').trim(), ab = !fim;
-    if(!HR.test(ini) || (!ab && !HR.test(fim))) return;
-    // Encerrada: a duração da aba PARADAS. Aberta: até agora, com a mesma régua.
-    const d = R.durProdutiva(ini, ab ? o.agoraTxt : fim, cfg);
-    if(d == null || !(d > 0)) return;   // horário trocado, zero (FIM = INÍCIO) ou toda dentro do almoço
-    const plan = R.ehPlanejada(p.tipo, o.classeMap);
-    if(!ab){ P.n++; P.min += d; if(!plan) P.minNP += d; }
-    const nome = paradaAInformar(p.tipo) ? 'A INFORMAR (motivo pendente no app)' : String(p.tipo).trim();
-    const obs = String(p.obs || '').trim();
-    const tit = `${nome} · ${hm(ini)}–${ab ? 'agora' : hm(fim)} · ${R.fmtMin(d)}${ab ? ' até agora · EM ANDAMENTO' : ''}`
-      + ` · ${plan ? 'PROGRAMADA' : 'NÃO PROGRAMADA'}${obs ? ' · ' + obs : ''}`;
-    P.itens.push({ tit });
-    if(ab) P.aberta = { nome, ini: hm(ini), min: d, plan };
-    // O almoço sai da marca (como sai da soma); o que sobra é cortado na faixa.
-    const a = R.horaMin(ini), b = ab ? agora : R.horaMin(fim);
-    let pc = [[a, b]];
-    if(temAlm) pc = [[a, Math.min(b, almI)], [Math.max(a, almF), b]];
-    pc = pc.map(([x, y]) => [Math.max(x, F.ini), Math.min(y, F.fim)]).filter(([x, y]) => y > x);
-    if(!pc.length) return;
-    const px = s => (s[1] - s[0]) / span * larg;
-    const larga = pc.reduce((m, s) => (px(s) > px(m) ? s : m), pc[0]);
-    pc.forEach(s => P.segs.push({ ini: s[0], fim: s[1], cls: (plan ? 'pl' : 'np') + (ab ? ' ab' : ''), tit,
-      rot: s === larga && px(s) >= PDIA_PAR_ROT_PX ? R.fmtMin(d) : '' }));
-  });
-  return P;
-}
 // LEITURA: o que a faixa de paradas mostra agora (null = sem faixa: sem Apps Script).
 function _pdiaParDoPainel(F, larg, agoraTxt){
   if(!CFG.sheetsUrl) return null;
-  if(!_rpOk()) return { estado: 'sem-modulo', txt: 'o módulo das paradas não carregou — recarregue o painel' };
+  // sem o paradas-calc, ou o rp-core.js antigo em cache (sem a pdiaParMontar)
+  if(!_rpOk() || typeof pdiaParMontar !== 'function') return { estado: 'sem-modulo', txt: 'o módulo das paradas não carregou — recarregue o painel' };
   if(!PDIA_PAR || PDIA_PAR.dia !== hojeStr())
     return PDIA_PAR_FALHA
       ? { estado: 'falha', txt: 'paradas não lidas — o painel tenta de novo no próximo ciclo' }
       : { estado: 'lendo', txt: 'lendo as paradas de hoje…' };
-  const P = _pdiaParMontar(PDIA_PAR.lista, F, { R: RP_PARADAS, cfg: CFG, classeMap: PAR_CLASSE_MAP, agoraTxt, larg });
-  P.ts = PDIA_PAR.ts; P.velho = !!PDIA_PAR_FALHA;
+  const P = pdiaParMontar(PDIA_PAR.lista, F, { R: RP_PARADAS, cfg: CFG, classeMap: PAR_CLASSE_MAP, agoraTxt, larg });
+  // falhou, ou a lista é de mais de dois ciclos (o gerencial ficou fechado): diz de quando é
+  P.ts = PDIA_PAR.ts; P.velho = !!PDIA_PAR_FALHA || Date.now() - PDIA_PAR.ts > 2 * PDIA_PAR_TTL;
   return P;
 }
 // Só o gerencial AO VIVO mostra a faixa: fora dele, nenhuma leitura.
@@ -12245,22 +12215,28 @@ function lerParadasDoDia(){
   })().finally(() => { _pdiaParVoo = null; });
   return _pdiaParVoo;
 }
-// Ao abrir o GERENCIAL: relê se a última leitura é velha — depois da leitura do
-// dia que estiver em curso (uma chamada de cada vez no Apps Script).
+// Ao abrir o GERENCIAL: relê se a última leitura é velha — quando nenhuma outra
+// leitura conhecida está no ar (o ciclo, a aba PARADAS, as da ⚖ UEP, a da
+// PROGRAMAÇÃO e a do dia): uma chamada de cada vez no Apps Script.
+function _pdiaParVelha(){ return !(PDIA_PAR && PDIA_PAR.dia === hojeStr() && Date.now() - PDIA_PAR.ts < PDIA_PAR_TTL); }
+function _pdiaParOcupada(){ return !!(_cicloVoo || _parBusy || _uepLendo()); }
 function _pdiaParSeVelha(){
-  if(!_pdiaParPrecisa()) return;
-  if(PDIA_PAR && PDIA_PAR.dia === hojeStr() && Date.now() - PDIA_PAR.ts < PDIA_PAR_TTL) return;
-  Promise.resolve(_pontosVoo).catch(() => {}).then(() => lerParadasDoDia())
-    .then(r => { if(r !== null) renderGerProdutosDia(); }).catch(() => {});
+  if(!_pdiaParPrecisa() || !_pdiaParVelha()) return;
+  _uepDepoisDe(_pdiaParOcupada, () => {
+    if(!_pdiaParPrecisa() || !_pdiaParVelha()) return;   // o ciclo que estava no ar já leu, ou a aba mudou
+    lerParadasDoDia().then(r => { if(r !== null) renderGerProdutosDia(); }).catch(() => {});
+  });
 }
 // DESENHO da faixa de paradas e da linha embaixo dela (sem conta: tudo vem pronto).
 function _pdiaPcParHtml(P, F, pos, larg){
   if(!P) return { faixa: '', leg: '' };
-  const e = _rpEsc, ok = P.estado === 'ok';
+  // O motivo é texto livre do operador e vai em ATRIBUTO: aspas também escapam
+  // (o _rpEsc só escapa &<>; um motivo com " abriria o atributo — revisão da v7.236.0).
+  const e = _rpEsc, ea = s => _rpEsc(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;'), ok = P.estado === 'ok';
   const aria = 'Paradas de hoje: ' + (ok ? (P.itens.length ? P.itens.map(i => i.tit).join('; ') : 'nenhuma') : P.txt);
-  const faixa = `<div class="pdpc-par" role="img" aria-label="${e(aria)}">
+  const faixa = `<div class="pdpc-par" role="img" aria-label="${ea(aria)}">
         ${F.alm ? `<div class="pdpc-alm" style="left:${pos(F.alm[0])};width:${larg(F.alm[0], F.alm[1])}"></div>` : ''}
-        ${ok ? P.segs.map(s => `<div class="pdpc-pb ${s.cls}" style="left:${pos(s.ini)};width:${larg(s.ini, s.fim)}" title="${e(s.tit)}">${e(s.rot)}</div>`).join('')
+        ${ok ? P.segs.map(s => `<div class="pdpc-pb ${s.cls}" style="left:${pos(s.ini)};width:${larg(s.ini, s.fim)}" title="${ea(s.tit)}">${e(s.rot)}</div>`).join('')
              : `<span class="pdpc-pst">${e(P.txt)}</span>`}
         ${F.agora != null ? `<div class="pdpc-ag" style="left:calc(${pos(F.agora)} - 1px)"></div>` : ''}
       </div>`;

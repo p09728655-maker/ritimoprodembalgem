@@ -245,6 +245,25 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .pdia-eixo span.he{color:var(--warn)}
 .pdia-he{position:absolute;top:0;height:2px;background:var(--warn)}
 .pdia-cob{font-size:11px;color:var(--txt2)}
+/* As paradas na faixa (1.49.0): o vermelho é só da parada NÃO PROGRAMADA (perda),
+   nunca de produto — a linha de produto continua sem veredito. */
+.pdia-par{position:relative;height:12px;background:var(--bg);border-radius:3px;overflow:hidden}
+.pdia-pb{position:absolute;top:0;bottom:0;min-width:3px;display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:8.5px;font-weight:600;color:#0B1622;overflow:hidden;white-space:nowrap;box-sizing:border-box;border-radius:2px}
+.pdia-pb.np{background:var(--red)}
+.pdia-pb.pl{background:#8FA0B5}
+.pdia-pb.np.ab{background:repeating-linear-gradient(135deg,var(--red) 0 3px,#9E2F28 3px 6px);color:var(--txt)}
+.pdia-pb.pl.ab{background:repeating-linear-gradient(135deg,#8FA0B5 0 3px,#5B6B80 3px 6px)}
+.pdia-pst{position:absolute;inset:0;display:flex;align-items:center;padding-left:6px;font-family:var(--font-d);font-size:8.5px;color:var(--txt2);white-space:nowrap}
+.pdia-pleg{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;width:100%;min-height:40px;padding:4px 0;margin:0;background:transparent;border:none;text-align:left;color:var(--txt2);font-family:var(--font-b);font-size:11px;cursor:pointer}
+.pdia-pleg .t{font-family:var(--font-d);font-size:9px;letter-spacing:1px}
+.pdia-pleg b{color:var(--txt);font-weight:600}
+.pdia-pleg .ab{color:var(--red);font-weight:600}
+.pdia-pleg .vl{color:var(--warn)}
+.pdia-pleg .lg i{display:inline-block;width:9px;height:9px;border-radius:2px;vertical-align:-1px;margin:0 3px 0 6px}
+.pdia-pleg .lg i:first-child{margin-left:0}
+.pdia-pleg .lg i.np{background:var(--red)}
+.pdia-pleg .lg i.pl{background:#8FA0B5}
+.pdia-pleg .ver{margin-left:auto;font-family:var(--font-d);font-size:10px;color:var(--acc);letter-spacing:.5px}
 .pdia-cob .he{color:var(--warn)}
 .pdia-it{border-bottom:0.5px solid var(--border)}
 .pdia-bt{background:transparent;border:none;width:100%;text-align:left;padding:11px 12px 10px;cursor:pointer;display:flex;flex-direction:column;gap:7px;min-height:56px;color:var(--txt);font-family:var(--font-b)}
@@ -1080,7 +1099,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.48.0';
+const APP_VER   = '1.49.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -1114,6 +1133,9 @@ const PROD_CAT_TTL = 30 * 60 * 1000;
 let PROD_ATUAL = '';
 let _prodConfSel = null;   // o seletor foi aberto por uma pergunta do lançamento (1.46.0): a escolha vale como conferida
 let PARADAS_HOJE = [];
+// A leitura das paradas de hoje (1.49.0): a faixa do PRODUTOS EMBALADOS HOJE
+// precisa separar "lendo" de "nenhuma parada" (VAZIO NÃO É UMA COISA SÓ).
+let PARADAS_HOJE_TS = 0, PARADAS_HOJE_DIA = '', PARADAS_HOJE_FALHA = false;
 // Produtos programados para hoje (+ em atraso) — lista rápida no seletor.
 let PROG_HOJE = [];
 // Códigos (só dígitos) com lote nos próximos dias úteis e a quantidade desses
@@ -2250,6 +2272,7 @@ async function carregarParadas(){
     const json = await jsonpFetch(url);
     if(json && json.ok){
       PARADAS_HOJE = _aplicarFechadasLocais(json.paradas||[]);
+      PARADAS_HOJE_TS = Date.now(); PARADAS_HOJE_DIA = hojeStr(); PARADAS_HOJE_FALHA = false;
       // Reconcilia com a parada local otimista.
       if(_paradaLocalAberta){
         const temEssa   = PARADAS_HOJE.some(p=>String(p.id)===String(_paradaLocalAberta.id));
@@ -2266,8 +2289,9 @@ async function carregarParadas(){
       atualizarBadgeParadas();
       renderGerParada();          // banner da gerencial (mobile)
       renderGerParadasResumo();   // resumo/análise de paradas (gerencial)
-    }
-  }catch(e){ console.warn('carregarParadas:', e.message); }
+      renderGerProdutosDia();     // as paradas na faixa do PRODUTOS EMBALADOS HOJE (1.49.0)
+    } else { PARADAS_HOJE_FALHA = true; renderGerProdutosDia(); }
+  }catch(e){ console.warn('carregarParadas:', e.message); PARADAS_HOJE_FALHA = true; renderGerProdutosDia(); }
 }
 function atualizarBadgeParadas(){
   const btn = document.getElementById('btn-paradas');
@@ -3831,10 +3855,65 @@ function renderGerencial(){
 // ⚠ SEM VEREDITO POR PRODUTO (nem verde/vermelho, nem cx/h): o veredito do dia
 // é o selo do % DA META, e hora parcial distorce o ritmo de um produto.
 let PDIA_ABERTO = '';    // produto aberto (chave) — só na memória da sessão
-let PDIA_M = null, PDIA_REAL = 0;
+let PDIA_M = null, PDIA_P = null, PDIA_REAL = 0;
+
+// ── AS PARADAS NA FAIXA (1.49.0 / PC v7.236.0) ─────────────────────────────
+// PPCP, 13/11/2026: "no timeline colocar as paradas" (no PC) → "sim fazer" (no
+// celular). A CONTA é a pdiaParMontar do rp-core.js, a MESMA do PC (régua do
+// paradas-calc: almoço fora; os totais fecham com o TEMPO TOTAL PARADO das
+// PARADAS DO DIA). Nenhuma leitura nova: o PARADAS_HOJE que o getParadas do
+// ciclo (90 s) já traz. Sem mouse no celular: tocar na linha das paradas leva
+// às PARADAS DO DIA (Hoje) com o detalhe aberto.
+// LEITURA: o que a faixa de paradas mostra agora (null = sem faixa: sem Apps Script).
+function _pdiaParDoPainel(F, larg, agoraTxt){
+  if(!CFG.sheetsUrl) return null;
+  // sem o paradas-calc, ou o rp-core.js antigo em cache (sem a pdiaParMontar)
+  if(!_rpOk() || typeof pdiaParMontar !== 'function') return { estado: 'sem-modulo', txt: 'o módulo das paradas não carregou — atualize o app' };
+  if(!PARADAS_HOJE_TS || PARADAS_HOJE_DIA !== hojeStr())
+    return PARADAS_HOJE_FALHA
+      ? { estado: 'falha', txt: 'paradas não lidas — o app tenta de novo' }
+      : { estado: 'lendo', txt: 'lendo as paradas de hoje…' };
+  const P = pdiaParMontar(PARADAS_HOJE, F, { R: RP_PARADAS, cfg: CFG, classeMap: PAR_CLASSE_MAP_M, agoraTxt, larg });
+  P.ts = PARADAS_HOJE_TS; P.velho = PARADAS_HOJE_FALHA;
+  return P;
+}
+// DESENHO da faixa de paradas e da linha embaixo dela (sem conta: tudo vem pronto).
+function _pdiaParHtml(P, F, pos, larg){
+  if(!P) return { faixa: '', leg: '' };
+  const e = _escH, ok = P.estado === 'ok';
+  const aria = 'Paradas de hoje: ' + (ok ? (P.itens.length ? P.itens.map(i => i.tit).join('; ') : 'nenhuma') : P.txt);
+  const faixa = `<div class="pdia-par" role="img" aria-label="${e(aria)}">
+      ${F.alm ? `<div class="pdia-alm" style="left:${pos(F.alm[0])};width:${larg(F.alm[0], F.alm[1])}"></div>` : ''}
+      ${ok ? P.segs.map(s => `<div class="pdia-pb ${s.cls}" style="left:${pos(s.ini)};width:${larg(s.ini, s.fim)}">${e(s.rot)}</div>`).join('')
+           : `<span class="pdia-pst">${e(P.txt)}</span>`}
+      ${F.agora != null ? `<div class="pdia-agora" style="left:calc(${pos(F.agora)} - 1px)"></div>` : ''}
+    </div>`;
+  if(!ok) return { faixa, leg: '' };
+  const fm = m => RP_PARADAS.fmtMin(m);
+  const d = P.ts ? new Date(P.ts) : null;
+  const tot = P.n
+    ? `<b>${plural(P.n, 'parada', 'paradas')} · ${fm(P.min)}</b>${P.minNP < P.min ? ` (${fm(P.minNP)} não prog.)` : ''}`
+    : (P.aberta ? '' : '<b>nenhuma parada apontada hoje</b>');
+  const ab = P.aberta ? `<span class="ab">● PARADA AGORA desde ${e(P.aberta.ini)} · ${e(P.aberta.curto)}</span>` : '';
+  const leg = `<button type="button" class="pdia-pleg" onclick="_pdiaParVer()">
+      <span class="t">PARADAS</span>${tot ? `<span>${tot}</span>` : ''}${ab}
+      <span class="lg"><i class="np"></i>não prog. <i class="pl"></i>prog.</span>
+      ${P.velho && d ? `<span class="vl">⚠ não atualizou — de ${p2(d.getHours())}:${p2(d.getMinutes())}</span>` : ''}
+      <span class="ver">VER ›</span>
+    </button>`;
+  return { faixa, leg };
+}
+// O toque na linha das paradas: as PARADAS DO DIA (Hoje), com o detalhe aberto.
+function _pdiaParVer(){
+  const sel = document.getElementById('par-periodo');
+  if(sel && sel.value !== '0'){ sel.value = '0'; mudarPeriodoParadas(); }
+  PAR_DET_ABERTO = true; aplicarDetalheParadas();
+  const alvo = document.getElementById('ger-par-lbl');
+  if(alvo && alvo.scrollIntoView) alvo.scrollIntoView({ block: 'start' });
+}
 
 // DESENHO do quadro (sem conta: tudo vem pronto do pdiaMontar).
-function _pdiaHtml(M, aberto, lidoEm){
+function _pdiaHtml(M, aberto, lidoEm, P){
   if(!M) return '<div class="pdia-vazio">Lendo a produção do dia…</div>';
   if(!M.produtos.length)
     return `<div class="pdia-vazio">${M.real > 0 ? `Nenhuma das ${fmtN(M.real)} cx de hoje foi lançada com produto.` : 'Nenhuma caixa lançada hoje.'}</div>`;
@@ -3847,15 +3926,18 @@ function _pdiaHtml(M, aberto, lidoEm){
       <div class="pdia-res-n dir"><b>${plural(M.produtos.length, 'produto', 'produtos')}</b><i>${plural(M.trocas, 'TROCA', 'TROCAS')} DE PRODUTO</i></div>
     </div>`;
   const aria = 'Sequência do dia: ' + F.segs.map(s => `${s.nome} ${fromMin(Math.round(s.ini))} a ${fromMin(Math.round(s.fim))}`).join(', ');
+  const par = _pdiaParHtml(P, F, pos, larg);
   const faixa = `<div class="pdia-faixa" role="img" aria-label="${e(aria)}">
       ${F.alm ? `<div class="pdia-alm" style="left:${pos(F.alm[0])};width:${larg(F.alm[0], F.alm[1])}"></div>` : ''}
       ${F.segs.map(s => `<div class="pdia-sg ${s.cls}" style="left:${pos(s.ini)};width:${larg(s.ini, s.fim)}">${e(s.rot)}</div>`).join('')}
       ${F.agora != null ? `<div class="pdia-agora" style="left:calc(${pos(F.agora)} - 1px)"></div>` : ''}
     </div>
+    ${par.faixa}
     <div class="pdia-eixo" aria-hidden="true">
       ${F.he.map(r => `<div class="pdia-he" style="left:${pos(r[0])};width:${larg(r[0], r[1])}"></div>`).join('')}
       ${F.ticks.map((t, i, a) => `<span class="${i === 0 ? 'ini' : (i === a.length-1 && t.m === F.fim ? 'fim' : '')}${t.he ? ' he' : ''}" style="left:${pos(t.m)}">${t.txt}</span>`).join('')}
-    </div>`;
+    </div>
+    ${par.leg}`;
   const hora = lidoEm ? (() => { const d = new Date(lidoEm); return `${p2(d.getHours())}:${p2(d.getMinutes())}`; })() : '';
   const cob = (M.real > M.cx
       ? `${fmtN(M.cx)} de ${fmtN(M.real)} cx com produto · ${fmtN(M.real - M.cx)} fora da lista`
@@ -3907,30 +3989,35 @@ function renderGerProdutosDia(real){
   const el = document.getElementById('ger-pdia');
   if(!el) return;
   const phm = PONTOS_DIA && PONTOS_DIA.porHoraModelo;
-  let M = null;
+  let M = null, P = null;
   if(Array.isArray(phm)){
     try{
       const a = new Date();
       M = pdiaMontar(phm, PONTOS_DIA.porHora || [], PRODUTOS, PROD_ATUAL, a.getHours()*60 + a.getMinutes(), {
         turnoIni: toMin(CFG.turnoInicio), turnoFim: toMin(CFG.turnoFim),
         almIni: toMin(CFG.almocoInicio), almFim: toMin(CFG.almocoFim), real: PDIA_REAL });
+      // As paradas na faixa (1.49.0). Falhar aqui não derruba o quadro: sai sem a faixa.
+      try{
+        const w = (Number(el.clientWidth) || 0) - 24;   // a faixa = o quadro − o recuo de 12 px de cada lado
+        P = _pdiaParDoPainel(M.faixa, w > 200 ? w : PDIA_LARG, `${p2(a.getHours())}:${p2(a.getMinutes())}:${p2(a.getSeconds())}`);
+      }catch(errP){ console.warn('paradas na faixa:', errP.message); P = null; }
     }catch(err){
       // Falhou a conta: diz isso, nunca "lendo" (que pareceria leitura em curso).
       console.warn('produtos do dia:', err.message);
-      PDIA_M = null;
+      PDIA_M = null; PDIA_P = null;
       el.innerHTML = '<div class="pdia-vazio">Não deu para montar a lista agora. Toque em ↻ ATUALIZAR.</div>';
       return;
     }
   }
-  PDIA_M = M;
-  el.innerHTML = _pdiaHtml(M, PDIA_ABERTO, PONTOS_DIA && PONTOS_DIA.lidoEm);
+  PDIA_M = M; PDIA_P = P;
+  el.innerHTML = _pdiaHtml(M, PDIA_ABERTO, PONTOS_DIA && PONTOS_DIA.lidoEm, P);
 }
 function _pdiaToggle(i){
   const p = PDIA_M && PDIA_M.produtos[i];
   if(!p) return;
   PDIA_ABERTO = PDIA_ABERTO === p.key ? '' : p.key;
   const el = document.getElementById('ger-pdia');
-  if(el) el.innerHTML = _pdiaHtml(PDIA_M, PDIA_ABERTO, PONTOS_DIA && PONTOS_DIA.lidoEm);
+  if(el) el.innerHTML = _pdiaHtml(PDIA_M, PDIA_ABERTO, PONTOS_DIA && PONTOS_DIA.lidoEm, PDIA_P);
 }
 
 // ════════════════════════════════════════════════
