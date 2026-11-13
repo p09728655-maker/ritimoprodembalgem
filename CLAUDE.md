@@ -7874,7 +7874,7 @@ feito e dá ar de verdade ao que sobrou.
     para o takt da mesma semana: 1.252 a mais, origem não apurada. O takt do
     painel é do painel; não comparar os dois números como se fossem o mesmo.
 
-## PLANILHA DE PRODUÇÃO (Excel do PCP) — ajustes de 06/11/2026
+## PLANILHA DE PRODUÇÃO (Excel do PCP) — ajustes de 06/11 e 13/11/2026
 - Arquivo do PCP fora do repositório: `PLANILHA_PRODUÇÃO_SEM_COR - 2026.xlsx`
   (uma aba por semana de corte `NNN-26`; cada bloco de 8 linhas = UM LOTE =
   UM DIA de embalagem, PREV EMB na coluna I; QTDE em PRODUTOS (jogos) na F e o
@@ -7914,6 +7914,53 @@ feito e dá ar de verdade ao que sobrou.
     X48 (042): *FALTAM = PRECISA − TEM: NÃO CABE · SOBRAM = TEM − PRECISA:
     CABE · a sobra não passa para a semana seguinte*. SITUAÇÃO e UEP/DIA MÉD.
     (T46/U46) reduzem a letra (se encostavam).
+- **ATUALIZAÇÃO DAS UEP, 13/11/2026** (PPCP: *"atualizar as ueps"*, com o
+  arquivo). Conferido código a código: o PRODUTO_CODIGO lido pela API do Sheets
+  (colunas A e K, 429 códigos; o `/exec` do Apps Script é recusado pelo proxy
+  da sessão) contra os códigos da coluna Z de cada linha da aba UEP (UEP/CX =
+  média das cores de cada volume, soma ÷ nº de volumes). **4 diferenças, todas
+  trocas do cadastro depois de 06/11** (a `UEP_VERSOES` e a `UEP_TRAVAS`
+  confirmam): PAINEL MOON 2.2 1,82 → 2,80 e DIAMANTE 1,83 → 2,48 (cronoanálise
+  de 06/11), SAPATEIRA VIVARE 1,89 → 2,16 e PENTEADEIRA PRINCESA 1,90 → 2,14
+  (TRAVA DA UEP, 12/11). RACK SIRIUS 0.9 trocado e desfeito em 12/11: 1,85.
+  MULTIUSO CAUE (501.092) está no cadastro sem linha na aba UEP (já era assim).
+  - Linhas 21, 26, 36, 42 e 119 (F, o cache da V, H, X, Y), trocas em
+    AB28:AF31, nota A3 refeita, `fullCalcOnLoad="1"` de novo (o Excel tira ao
+    salvar).
+  - **DIAMANTE**: a F26 já estava 2,48, mas sem a troca e com a vigência
+    digitada na coluna H (ORIGEM). Troca registrada com data **05/11**: o lote
+    204/26 (PREV EMB 05/11) foi embalado em 06/11 das 12:12 às 16:00 e a troca
+    no cadastro foi às 15:32 — o critério do HOME ANGEL de 04/11, nenhum número
+    muda. **Decisão do PPCP em aberto**: com AC28 = 06/11 o lote cai de 1.116
+    para 823,5 UEP.
+  - Efeito, recalculando uma cópia antes e depois: só a PRINCESA de 17/11 em
+    diante — 043-26 +240 UEP, 110% → 112%, FALTAM 4h32 → 5h18, lote 212/26
+    CABE → PASSA 0h11; 044-26 (e a B e a C) +240, FALTAM 6h59 → 7h45. Os 25
+    `#N/A` da RESUMO M² (T224 em diante) já estavam no arquivo.
+  - Abas novas desde 06/11 (do PCP): UEP ESTIMADAS (linhas 95–139 da aba UEP),
+    LISTA PRODUTOS (a lista suspensa do PRODUTO das semanais, gerada da coluna
+    C da aba UEP) e 044-26 B / C (cenários). A 044-26 e as B/C pegam a UEP
+    direto da aba UEP (`INDEX`/`MATCH` na coluna V), sem o registro de trocas:
+    vale a UEP de hoje para todo lote delas.
+  - ⚠ **O EXCEL REPAROU A 1ª ENTREGA** (*"Registros Removidos: Fórmula de
+    parte de /xl/worksheets/sheet55.xml"* e do `calcChain.xml`). Causa: ao
+    trocar o valor da V42 eu reescrevi o `<f t="shared" si="1"/>` — ela é do
+    bloco `si="2"` (mestre V37, ref V37:V68). Filho fora da faixa do mestre é
+    fórmula inválida para o Excel, e o **LibreOffice aceita calado**: a
+    recalculação da cópia não pegou. A aba UEP tem 6 blocos compartilhados
+    (M5:M17, V5:V36, V37:V68, V69:V100, V101:V132, V133:V138).
+    - **Regra: em célula com fórmula, trocar só o `<v>`; o `<f>` fica byte a
+      byte.**
+    - **Antes de entregar xlsx editado no XML, validar a estrutura** (o que o
+      Excel cobra e o LibreOffice não): todo `<f>` igual ao original; filho de
+      fórmula compartilhada dentro do `ref` do mestre; células em ordem de
+      coluna e da própria linha; índices de texto (`sst`) e de estilo
+      (`cellXfs`) existentes; `count`/`uniqueCount` do sharedStrings certos;
+      calcChain só com células que têm fórmula (o `i` do calcChain é o
+      **sheetId** da aba — UEP = 328 —, não a posição). Re-zipar com as mesmas
+      partes na mesma ordem e conferir quais mudaram (aqui só `workbook.xml`,
+      `sheet55.xml` e `sharedStrings.xml`).
+    - Com a correção, abriu sem aviso no Excel do PPCP (13/11/2026).
 
 ## ONDE O TEMPO VAI — estudo × produção × meta (v7.194.0)
 - ⚠ **Desde a v7.207.0 é a 5ª sub-aba da ⏱ CRONOANÁLISE** (a *aba própria* da
