@@ -1164,7 +1164,7 @@ eval.call(global, pega('function _tkaVencidoAntes('));
   ok('a sugestão, sábado primeiro (PPCP: "sábado das 05 às 11:00"): sábados 07/11 e 14/11 das 05:00 às 11:00 e 21/11 das 05:00 às 07:52 fecham as 14h52 — o atraso fecha em zero, sem hora paga à toa; o feriado 20/11 é candidato, mas o sábado da mesma semana vem antes',
      [A.ext.map(x => [x.data, x.fer, fromMin(x.ini), fromMin(x.ini + x.min)]), A.dias.length, A.falta, encad(A), C4.semanas[2].ext.map(x => [x.data, x.fer])],
      [[['07/11/2026', false, '05:00', '11:00'], ['14/11/2026', false, '05:00', '11:00'], ['21/11/2026', false, '05:00', '07:52']], 0, 0, [0, 0], [['20/11/2026', true], ['21/11/2026', false]]]);
-  ok('a outra forma, dia útil primeiro (PPCP: "deixa no máximo 2 horas dia"): 2h00 por dia em 09–13/11 e o resto (1h38 por dia, arredondado para cima) em 16–18/11 — nunca mais de 2h, fecha em zero, sem hora paga à toa',
+  ok('a outra forma, dia útil primeiro (PPCP: "deixa no máximo 2 horas dia"): 2h00 por dia em 09–13/11 e o resto (1h38 por dia, arredondado para cima) em 16–18/11 — nunca mais de 2h, o que vai para cada semana fecha em zero sem hora paga à toa (o por dia arredondado para cima cobre com menos de 1 min a mais por dia)',
      [B.dias.map(x => [x.i, x.min, x.n, x.porDia, x.de, x.ate]), B.ext.length, B.falta, encad(B), B.dias.every(x => x.min <= 120 * x.n)],
      [[[1, 600, 5, 120, '09/11/2026', '13/11/2026'], [2, 292, 3, 98, '16/11/2026', '18/11/2026']], 0, 0, [0, 0], true]);
   const H = _taktSemanasHtml(C4, { botoes:'' });

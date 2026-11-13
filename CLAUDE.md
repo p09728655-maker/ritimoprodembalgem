@@ -7602,9 +7602,9 @@ feito e dá ar de verdade ao que sobrou.
         07:52"* e, numa 2ª linha, *"Ou 2h13 a mais em cada dia programado de
         16/11 a 25/11 (7 dias): das 05:00 às 07:00 e das 17:00 às 17:13"* — até
         a madrugada inteira (2h), só ela terminando no início do turno;
-        passando, o resto depois do fim do turno; passando das 22:00
-        (`HE_SUG.noite`), *"não cabe num dia (… dão 7h00)"* (revisão: saía
-        "às 26:40"); acima de 2h, *"(passa das 2h00 por dia da CLT)"* (art. 59).
+        passando, o resto depois do fim do turno; ~~passando das 22:00
+        (`HE_SUG.noite`), *"não cabe num dia (… dão 7h00)"*; acima de 2h,
+        *"(passa das 2h00 por dia da CLT)"*~~ (saíram na v7.240.0).
         A jornada vem do turno do ⚙ (`_heSugJornada`; sem ele, 07:00–17:00).
         "Dia programado" porque o N conta só os dias úteis com lote. Saiu o
         *"≈ … por dia útil (N dias com lote…), mais que as 2h da madrugada
