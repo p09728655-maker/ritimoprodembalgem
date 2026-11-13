@@ -26,8 +26,9 @@ Correção da v7.240.0, achada na revisão depois do merge. Nada muda no `.gs` (
 - Duas formas na tela:
   - a 1ª usa o **sábado primeiro**;
   - *"Ou, mais em dia útil"* usa o **dia útil primeiro**, em faixas: *"2h00
-    por dia útil de 09/11 a 13/11 (5 dias, das 05:00 às 07:00) · 1h37 por dia
-    útil de 16/11 a 18/11 (3 dias, das 05:23 às 07:00)"*.
+    por dia programado de 09/11 a 13/11 (5 dias, das 05:00 às 07:00) · 1h38
+    por dia programado de 16/11 a 18/11 (3 dias, das 05:22 às 07:00)"*. O por
+    dia é arredondado para cima: nunca sai 0h00 e sempre cobre o atraso.
 - Quando nem sábado, feriado e 2h por dia juntos cobrem o atraso, a tela diz:
   *"Nem assim fecha: faltam Xh"*.
 - A 1ª forma também respeita as 2h por dia. Antes, *"e ainda 28h00 nos dias

@@ -1164,12 +1164,12 @@ eval.call(global, pega('function _tkaVencidoAntes('));
   ok('a sugestão, sábado primeiro (PPCP: "sábado das 05 às 11:00"): sábados 07/11 e 14/11 das 05:00 às 11:00 e 21/11 das 05:00 às 07:52 fecham as 14h52 — o atraso fecha em zero, sem hora paga à toa; o feriado 20/11 é candidato, mas o sábado da mesma semana vem antes',
      [A.ext.map(x => [x.data, x.fer, fromMin(x.ini), fromMin(x.ini + x.min)]), A.dias.length, A.falta, encad(A), C4.semanas[2].ext.map(x => [x.data, x.fer])],
      [[['07/11/2026', false, '05:00', '11:00'], ['14/11/2026', false, '05:00', '11:00'], ['21/11/2026', false, '05:00', '07:52']], 0, 0, [0, 0], [['20/11/2026', true], ['21/11/2026', false]]]);
-  ok('a outra forma, dia útil primeiro (PPCP: "deixa no máximo 2 horas dia"): 2h00 por dia em 09–13/11 e o resto (1h37 por dia) em 16–18/11 — nunca mais de 2h, fecha em zero, sem hora paga à toa',
+  ok('a outra forma, dia útil primeiro (PPCP: "deixa no máximo 2 horas dia"): 2h00 por dia em 09–13/11 e o resto (1h38 por dia, arredondado para cima) em 16–18/11 — nunca mais de 2h, fecha em zero, sem hora paga à toa',
      [B.dias.map(x => [x.i, x.min, x.n, x.porDia, x.de, x.ate]), B.ext.length, B.falta, encad(B), B.dias.every(x => x.min <= 120 * x.n)],
-     [[[1, 600, 5, 120, '09/11/2026', '13/11/2026'], [2, 292, 3, 97, '16/11/2026', '18/11/2026']], 0, 0, [0, 0], true]);
+     [[[1, 600, 5, 120, '09/11/2026', '13/11/2026'], [2, 292, 3, 98, '16/11/2026', '18/11/2026']], 0, 0, [0, 0], true]);
   const H = _taktSemanasHtml(C4, { botoes:'' });
   ok('na tela: o dia e o horário, a 2ª forma em faixas de dia útil com o horário da madrugada; o dia sugerido na linha da semana',
-     [H.includes('<b>Hora extra sugerida</b> (na média da linha): <b>sábado 07/11 das 05:00 às 11:00</b> · <b>sábado 14/11 das 05:00 às 11:00</b> · <b>sábado 21/11 das 05:00 às 07:52</b>.<br><b>Ou, mais em dia útil:</b> <b>2h00 por dia útil de 09/11 a 13/11</b> (5 dias, das 05:00 às 07:00) · <b>1h37 por dia útil de 16/11 a 18/11</b> (3 dias, das 05:23 às 07:00).</div>'),
+     [H.includes('<b>Hora extra sugerida</b> (na média da linha): <b>sábado 07/11 das 05:00 às 11:00</b> · <b>sábado 14/11 das 05:00 às 11:00</b> · <b>sábado 21/11 das 05:00 às 07:52</b>.<br><b>Ou, mais em dia útil:</b> <b>2h00 por dia programado de 09/11 a 13/11</b> (5 dias, das 05:00 às 07:00) · <b>1h38 por dia programado de 16/11 a 18/11</b> (3 dias, das 05:22 às 07:00).</div>'),
       H.indexOf('tks4-sug') > H.indexOf('Hora extra até') && H.indexOf('tks4-sug') < H.indexOf('<table'), H.includes('sugestão: sábado 21/11 das 05:00 às 07:52'), H.includes('sugestão: sábado 14/11 das 05:00 às 11:00'),
       /CLT|não cabe|ainda faltam|Nem assim|≈/.test((H.match(/tks4-sug[^]*?<\/div>/) || [''])[0])],
      [true, true, true, true, false]);
@@ -1180,7 +1180,7 @@ eval.call(global, pega('function _tkaVencidoAntes('));
   const Hc1 = _taktSemanasHtml(Object.assign({}, C4, { sug:c1 }), {}), Hc2 = _taktSemanasHtml(Object.assign({}, C4, { sug:c2 }), {});
   ok('revisão (5h · 15h · 25h · 35h, sem sábado): 1h00 por dia em 09–13/11 e 2h00 de 16/11 a 04/12 fecham as 35h — nada falta (a v7.240.0 dizia "ainda faltam 5h00"); 8h20 · 25h: 1h40 e 2h00 por dia, faltam 6h40 (dizia 15h00)',
      [c1.A.dias.map(x => x.porDia), c1.A.falta, c2.A.dias.map(x => x.porDia), c2.A.falta,
-      Hc1.includes('<b>Hora extra sugerida</b> (na média da linha): <b>1h00 por dia útil de 09/11 a 13/11</b> (5 dias, das 06:00 às 07:00) · <b>2h00 por dia útil de 16/11 a 04/12</b> (15 dias, das 05:00 às 07:00).</div>'),
+      Hc1.includes('<b>Hora extra sugerida</b> (na média da linha): <b>1h00 por dia programado de 09/11 a 13/11</b> (5 dias, das 06:00 às 07:00) · <b>2h00 por dia programado de 16/11 a 04/12</b> (15 dias, das 05:00 às 07:00).</div>'),
       Hc2.includes('<br><b>Nem assim fecha:</b> faltam <b>6h40</b> — sábado e feriado só das 05:00 às 11:00 e dia útil no máximo 2h por dia.')],
      [[60, 120, 120, 120], 0, [100, 120], 400, true, true]);
   // as duas formas dão o MESMO total (o máximo possível), e nenhuma passa dos tetos nem paga hora à toa — sorteio
@@ -1196,18 +1196,22 @@ eval.call(global, pega('function _tkaVencidoAntes('));
     [G.A, G.B].forEach(P => {
       let Pc = 0; Ws.forEach(w => { Pc += hSem(P, w.i); if(Pc > w.atraso) viol++; });
       if(Pc + P.falta !== G.total) viol++;
-      P.dias.forEach(x => { if(x.min > 120 * x.n || x.porDia > 120) viol++; });
+      P.dias.forEach(x => { if(x.min > 120 * x.n || x.porDia > 120 || x.porDia < 1 || x.porDia * x.n < x.min || x.porDia * x.n - x.min >= x.n) viol++; });
       P.ext.forEach(x => { const o = Ws[x.i].ext.find(e => e.data === x.data); if(!o || x.min > o.livre) viol++; });
     });
     if(G.A.falta !== G.B.falta) difTot++;
   }
-  ok('sorteio de 4.000 casos: nenhuma semana recebe hora sem atraso para cobrir, dia útil nunca passa de 2h, sábado/feriado nunca passa do livre, o total + a falta fecham, e as duas formas dão a mesma falta',
+  ok('sorteio de 4.000 casos: nenhuma semana recebe hora sem atraso para cobrir, dia útil nunca passa de 2h nem sai 0h00 (o por dia para cima: cobre a semana com menos de 1 min a mais por dia), sábado/feriado nunca passa do livre, o total + a falta fecham, e as duas formas dão a mesma falta',
      [casosS > 1000, viol, difTot], [true, 0, 0]);
+  const cb = _taktHeSugestao([{ i:0, conta:true, atraso:362, ext:[{ data:'14/11', dow:6, livre:360, ini:300 }], nUtFut:5, uIniFut:'09/11', uFimFut:'13/11' }], 0);
+  const Hcb = _taktSemanasHtml(Object.assign({}, C4, { sug:cb }), {});
+  ok('revisão: 2 min de dia útil em 5 dias não vira "0h00 por dia" (das 07:00 às 07:00): sobe para 0h01 por dia',
+     [cb.A.dias.map(x => [x.min, x.porDia]), Hcb.includes('0h00 por dia'), Hcb.includes('<b>0h01 por dia programado de 09/11 a 13/11</b> (5 dias, das 06:59 às 07:00)')], [[[2, 1]], false, true]);
   global.CFG = { turnoInicio:'06:00', turnoFim:'16:00' };
   const sgT = m => ({ total:m * 3, A:{ ext:[], dias:[{ i:1, min:m * 3, n:3, de:'16/11', ate:'18/11', porDia:m }], falta:0 }, B:{ ext:[], dias:[{ i:1, min:m * 3, n:3, de:'16/11', ate:'18/11', porDia:m }], falta:0 } });
   const Hj = _taktSemanasHtml(Object.assign({}, C4, { sug:sgT(120) }), {}), Hj1 = _taktSemanasHtml(Object.assign({}, C4, { sug:sgT(50) }), {}); delete global.CFG;
   ok('a jornada vem do turno do ⚙ (06:00–16:00 → 50 min das 05:10 às 06:00; 2h das 05:00 às 06:00 e das 16:00 às 17:00); sem ⚙, 07:00–17:00',
-     [Hj1.includes('<b>0h50 por dia útil de 16/11 a 18/11</b> (3 dias, das 05:10 às 06:00)'), Hj.includes('<b>2h00 por dia útil de 16/11 a 18/11</b> (3 dias, das 05:00 às 06:00 e das 16:00 às 17:00)'), _heSugJornada()],
+     [Hj1.includes('<b>0h50 por dia programado de 16/11 a 18/11</b> (3 dias, das 05:10 às 06:00)'), Hj.includes('<b>2h00 por dia programado de 16/11 a 18/11</b> (3 dias, das 05:00 às 06:00 e das 16:00 às 17:00)'), _heSugJornada()],
      [true, true, { jIni:420, jFim:1020 }]);
   // feriado religioso fica fora: o 20/11 como SEXTA-FEIRA SANTA → o sábado 21/11 cobre
   const W3s = sem4(Object.assign({}, S3, { feriados:[{ data:'20/11/2026', desc:'Sexta-feira Santa' }] }));
@@ -1258,7 +1262,7 @@ eval.call(global, pega('function _tkaVencidoAntes('));
   ok('revisão: 10h · 2h · 7h → 2h no 1º sábado e 5h no 3º (era 7h no 1º, sobravam 5h)', casos[0][0], [[0, 120], [2, 300]]);
   const sem = F.map(x => Object.assign({}, x, { ext:[] })), gs = _taktHeSugestao(sem, 3), Hs = _taktSemanasHtml(Object.assign({}, C4, { sug:gs }), {});
   ok('sem sábado nem feriado livre: as duas formas são a mesma (dia útil) e a tela mostra uma linha só',
-     [gs.A.ext.length, JSON.stringify(gs.A) === JSON.stringify(gs.B), Hs.includes('<b>Hora extra sugerida</b> (na média da linha): <b>0h50 por dia útil de 16/11 a 19/11</b> (4 dias, das 06:10 às 07:00) · <b>0h12 por dia útil de 23/11 a 27/11</b> (5 dias, das 06:48 às 07:00).</div>'), Hs.includes('Ou, mais')],
+     [gs.A.ext.length, JSON.stringify(gs.A) === JSON.stringify(gs.B), Hs.includes('<b>Hora extra sugerida</b> (na média da linha): <b>0h50 por dia programado de 16/11 a 19/11</b> (4 dias, das 06:10 às 07:00) · <b>0h12 por dia programado de 23/11 a 27/11</b> (5 dias, das 06:48 às 07:00).</div>'), Hs.includes('Ou, mais')],
      [0, true, true, false]);
   ok('dois dias na mesma semana: o sábado enche primeiro (feriado trabalhado custa mais), o feriado só com o que falta; os dois somam até o menor atraso até o fim (nunca mais); na tela, a ordem da data',
      _taktHeSugestao([{ i:0, conta:true, atraso:500, ext:[{ data:'20/11', livre:360, ini:300, fer:true }, { data:'21/11', livre:360, ini:300 }], nUtFut:3 }], 0).A.ext.map(x => [x.data, x.fer, x.min]),

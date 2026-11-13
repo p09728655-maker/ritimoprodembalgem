@@ -11692,7 +11692,9 @@ function _taktHeSugestao(semanas, iU){
         const h=Math.min(Math.max(0, x.livre||0), resta);
         if(h>0){ ext.push({ data:x.data, dow:x.dow, fer:!!x.fer, ini:x.ini, min:h, i, o:x.o }); resta-=h; }
       });
-      if(hd[i]>0) dias.push({ i, min:hd[i], n:sem.nUtFut, de:sem.uIniFut, ate:sem.uFimFut, porDia:Math.round(hd[i]/sem.nUtFut) });
+      // por dia para CIMA (revisão: com o round, 2 min em 5 dias viravam "0h00 por dia"): nunca 0, nunca
+      // passa de 2h (a semana recebe no máximo 2h × os dias) e sempre fecha, pagando no máximo n−1 min a mais
+      if(hd[i]>0) dias.push({ i, min:hd[i], n:sem.nUtFut, de:sem.uIniFut, ate:sem.uFimFut, porDia:Math.ceil(hd[i]/sem.nUtFut) });
     });
     ext.sort((a, b)=>a.i-b.i || a.o-b.o);
     const tot=hs.reduce((a, v)=>a+v, 0)+hd.reduce((a, v)=>a+v, 0);
@@ -11729,7 +11731,8 @@ function _taktSemanasHtml(C, o){
   // dia útil: semanas seguidas com o mesmo tanto por dia viram uma faixa só
   const faixas=L=>L.reduce((a, d)=>{ const u=a[a.length-1];
     if(u && u.porDia===d.porDia && u.i===d.i-1){ u.ate=d.ate; u.n+=d.n; u.i=d.i; } else a.push(Object.assign({}, d)); return a; }, []);
-  const diaTxt=f=>`<b>${hm(f.porDia)} por dia útil ${f.de===f.ate ? 'em '+dd(f.de) : `de ${dd(f.de)} a ${dd(f.ate)}`}</b> (${plural(f.n, 'dia', 'dias')}, ${madr(f.porDia)})`;
+  // "dia programado": o N conta só os dias úteis COM lote — entre as datas pode haver dia útil sem programação
+  const diaTxt=f=>`<b>${hm(f.porDia)} por dia programado ${f.de===f.ate ? 'em '+dd(f.de) : `de ${dd(f.de)} a ${dd(f.ate)}`}</b> (${plural(f.n, 'dia', 'dias')}, ${madr(f.porDia)})`;
   const planoTxt=(P, sabAntes)=>{ const sb=P.ext.map(x=>`<b>${quando(x)}</b>`), du=faixas(P.dias).map(diaTxt);
     return (sabAntes ? sb.concat(du) : du.concat(sb)).join(' · '); };
   const A=g && g.A, B=g && g.B, falta=g ? Math.max(A.falta, B.falta) : 0;
@@ -11748,7 +11751,7 @@ function _taktSemanasHtml(C, o){
       s.he.length ? s.he.map(h=>`${dd(h.data)} ${hm(h.min)} em hora extra, fora`).join(', ') : '',
       s.conta && s.cxSemUep>0 ? `${fmtN(s.cxSemUep)} cx sem UEP fora (a semana é mais pesada)` : '',
       C.sug ? C.sug.A.ext.filter(x=>x.i===s.i).map(x=>'sugestão: '+quando(x))
-        .concat(C.sug.A.dias.filter(x=>x.i===s.i).map(x=>`sugestão: ${hm(x.porDia)} por dia útil`)).join(' · ') : ''
+        .concat(C.sug.A.dias.filter(x=>x.i===s.i).map(x=>`sugestão: ${hm(x.porDia)} por dia programado`)).join(' · ') : ''
     ].filter(Boolean);
     const rot=`${s.est || pp || !temDias ? '' : ab ? '▾ ' : '▸ '}${s.est ? 'semana '+(s.i+1) : s.hoje ? 'esta semana' : dd(s.ini)+'–'+dd(s.fim)}`
       +(obs.length ? `<div class="mono tks4-o">${e(obs.join(' · '))}</div>` : '');
