@@ -1117,7 +1117,7 @@ ok('sem a esta semana montada: nada', _taktSemanasMontar([{ est:'lendo' }, { T:W
       _uepSubTakt(null, null, '4 semanas', null).txt, _uepSubTakt(null, null, '4 semanas', { atraso:735, completo:true }), _uepSubTakt(null, null, '4 semanas', { atraso:0, completo:true }).txt],
      [true, true, true, true, true, '…', { txt:'4 semanas: 12h15 de atraso', cls:'warn' }, '4 semanas: em dia']);
   ok('sem laço de leitura: a semana que vem e a faixa só são pedidas com a fila livre e depois da espera (5 min; 1 min depois de falha), uma por vez; a faixa entra na fila da aba',
-     [/if\(UEP_SUB==='takt' && !_uepLendo\(\) && !pausa\)\{\s*if\(!TKP_TS \|\| Date\.now\(\)-TKP_TS>\(tkpOk \|\| TKP_FALHA \? esp\(TKP_FALHA\) : 0\)\) _taktProxCarregar\(true\);\s*else if\(!TK4_TS \|\| Date\.now\(\)-TK4_TS>\(tk4Ok \|\| TK4_FALHA \? esp\(TK4_FALHA\) : 0\)\) _taktSemanas4Carregar\(true\);/.test(RR),
+     [/if\(UEP_SUB==='takt' && !_uepLendo\(\) && !pausa\)\{[\s\S]*?if\(vP && \(!v4 \|\| TKP_TS<=TK4_TS\)\) _taktProxCarregar\(true\);\s*else if\(v4\) _taktSemanas4Carregar\(true\);/.test(RR),
       /TK4_VOO=null; TK4_TS=Date\.now\(\);/.test(pega('function _taktSemanas4Carregar(')), /TK4_VOO/.test(pega('function _uepLendo(')),
       /\(TKS_SEM===1 \|\| TKS_SEM===3\)\) renderUep\(\); \}, 60500\)/.test(pega('function _taktProxCarregar('))],
      [true, true, true, true]); }
@@ -1138,7 +1138,7 @@ async function simLeituras(cenario){
     const de = decodeURIComponent((url.match(/[?&]de=([^&]*)/) || [])[1] || ''), tipo = de === '16/11/2026' ? 'prox' : 'faixa';
     conta[tipo]++; emVoo++; maxVoo = Math.max(maxVoo, emVoo); const t0 = VT;
     global.setTimeout(() => { emVoo--; noAr += VT - t0;
-      const falha = cenario === 'tudo-falha' || (cenario === 'faixa-falha' && tipo === 'faixa');
+      const falha = cenario === 'tudo-falha' || (cenario === 'faixa-falha' && tipo === 'faixa') || (cenario === 'prox-falha' && tipo === 'prox');
       if(falha) rej(new Error('Timeout')); else res({ ok:true, de, ate:tipo === 'prox' ? '22/11/2026' : '06/12/2026', hoje:'13/11/2026', linhas:[], feriados:[] });
     }, 25000);
   });
@@ -1159,10 +1159,10 @@ async function simLeituras(cenario){
   return { ocup:noAr / 3600000 * 100, maxVoo, conta, est:ult ? ult.semanas.map(x => x.est || 'ok').join(',') : '' };
 }
 (async () => {
-  const tf = await simLeituras('tudo-falha'), ff = await simLeituras('faixa-falha'), bom = await simLeituras('ok');
-  ok('as leituras de verdade, 60 min com o Apps Script de 25 s: uma por vez sempre; com tudo falhando, ocupado no máximo 25% do tempo (eram 94%); só a faixa falhando, no máximo 35% (eram 60%); tudo ok: as 4 semanas lidas',
-     [tf.maxVoo, ff.maxVoo, bom.maxVoo, tf.ocup <= 25, ff.ocup <= 35, bom.est, bom.conta.prox >= 1 && bom.conta.faixa >= 1],
-     [1, 1, 1, true, true, 'ok,ok,ok,ok', true]);
+  const tf = await simLeituras('tudo-falha'), ff = await simLeituras('faixa-falha'), pf = await simLeituras('prox-falha'), bom = await simLeituras('ok');
+  ok('as leituras de verdade, 60 min com o Apps Script de 25 s: uma por vez sempre; com tudo falhando, ocupado no máximo 25% do tempo (eram 94%) e as duas tentadas; só a faixa falhando, no máximo 35% (eram 60%); só a semana que vem falhando, a faixa é lida mesmo assim (revisão: ficava "lendo…" sem leitura); tudo ok: as 4 semanas lidas',
+     [tf.maxVoo, ff.maxVoo, pf.maxVoo, bom.maxVoo, tf.ocup <= 25, tf.conta.faixa >= 1, ff.ocup <= 35, pf.est, pf.ocup <= 35, bom.est, bom.conta.prox >= 1 && bom.conta.faixa >= 1],
+     [1, 1, 1, 1, true, true, true, 'ok,falha,ok,ok', true, 'ok,ok,ok,ok', true]);
   console.log(falhas ? '\n❌ ' + falhas + ' falha(s)' : '\n✅ takt da semana ok — o veredito em horas de linha, o porquê dia a dia, o agora em caixas');
   process.exit(falhas ? 1 : 0);
 })();

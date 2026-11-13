@@ -10411,8 +10411,11 @@ function renderUep(){
     // uma leitura falhando chamava a outra logo em seguida e o Apps Script ficava ocupado sem parar
     const pausa=TKS4_FAL>0 && Date.now()-Math.max(TKP_TS||0, TK4_TS||0)<(TKS4_FAL>=2 ? TKS_TTL : 60000);
     if(UEP_SUB==='takt' && !_uepLendo() && !pausa){
-      if(!TKP_TS || Date.now()-TKP_TS>(tkpOk || TKP_FALHA ? esp(TKP_FALHA) : 0)) _taktProxCarregar(true);
-      else if(!TK4_TS || Date.now()-TK4_TS>(tk4Ok || TK4_FALHA ? esp(TK4_FALHA) : 0)) _taktSemanas4Carregar(true);
+      // as duas vencidas: a que foi tentada há mais tempo (com a semana que vem falhando, a faixa também é lida)
+      const vP=!TKP_TS || Date.now()-TKP_TS>(tkpOk || TKP_FALHA ? esp(TKP_FALHA) : 0);
+      const v4=!TK4_TS || Date.now()-TK4_TS>(tk4Ok || TK4_FALHA ? esp(TK4_FALHA) : 0);
+      if(vP && (!v4 || TKP_TS<=TK4_TS)) _taktProxCarregar(true);
+      else if(v4) _taktSemanas4Carregar(true);
     }
     const hP={ num:hojeN, meta, ef:_efEmb() }, pts=_taktPtsMapa(_pdiaPcCat()), est=_taktEstMapa(_pdiaPcCat());
     const sem=(Sx, est4)=>Sx ? { T:_taktMontar(Sx, UEP_HIST||[], hP, pts, est) } : { est:est4 };

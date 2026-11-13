@@ -27,8 +27,8 @@ quadro de 4 semanas. Nada muda no `.gs` (sem re-deploy).
   AVALIAR): dia útil sem lote fica fora (não vira folga que apaga atraso);
   lote em sábado ou feriado é hora extra, fora da conta; o atraso passa para a
   semana seguinte e a sobra só abate o que já existe. Tudo o que fica fora é
-  dito na linha. Com todos os dias programados, cada semana dá o mesmo que a
-  tela dela (ESTA SEMANA, SEMANA QUE VEM).
+  dito na linha. Com todos os dias úteis programados e sem lote no fim de
+  semana, cada semana dá o mesmo que a tela dela (ESTA SEMANA, SEMANA QUE VEM).
 - Caixas sem UEP aparecem (*N cx sem UEP — sem conta* ou *a semana é mais
   pesada*), nunca como "sem programação". O vencido de antes desta segunda não
   soma (é o card ATRASO).

@@ -7541,8 +7541,9 @@ feito e dá ar de verdade ao que sobrou.
       fila livre (`_uepLendo` inclui o `TK4_VOO`). **Depois de uma falha as DUAS
       esperam** (`TKS4_FAL`, falhas seguidas: 1 min; 2+ seguidas, 5 min): sem
       isso uma falhando chamava a outra logo em seguida e o Apps Script ficava
-      ocupado 94% do tempo (medido com relógio virtual). Hoje: tudo falhando 15%,
-      só a faixa falhando 29%. O teste roda o bloco real do `renderUep` com o
+      ocupado 94% do tempo (medido com relógio virtual). Com as duas vencidas,
+      lê a tentada há mais tempo (com a semana que vem falhando, a faixa também
+      é lida — antes ficava *lendo…* sem leitura). O teste roda o bloco real do `renderUep` com o
       relógio virtual (não regex).
     - Medido no Chromium (retrato de 06/11): 1920 e 1366, nada passa da largura.
   - **AVALIAR PROGRAMAÇÃO (v7.213.0**, PPCP: *"como fazer para programar
