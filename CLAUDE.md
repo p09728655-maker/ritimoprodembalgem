@@ -7614,7 +7614,32 @@ feito e dá ar de verdade ao que sobrou.
         o *"não cabe num dia"*; com o turno do ⚙ começando antes das 07:00, o
         que não cabe na madrugada vai para depois do fim do turno (dentro das
         2h). `HE_SUG.noite` ficou só para validar o turno. O sábado e o feriado
-        continuam das 05:00 às 11:00 (6h, pedido do PPCP). A jornada vem do turno do ⚙ (`_heSugJornada`; sem ele,
+        continuam das 05:00 às 11:00 (6h, pedido do PPCP).
+        ⚠ **A taxa única da v7.240.0 estava ERRADA** (revisão depois do merge):
+        um `r` só para todos os dias reprovava o trecho inteiro quando uma
+        semana tinha menos atraso que 2h × os dias dela, e o trecho pulava a
+        semana — 5h · 15h · 25h · 35h dizia *"ainda faltam 5h00"*, e fechava.
+    - **SEMANA A SEMANA, OS DOIS TETOS (v7.241.0)**: `_taktHeSugestao` devolve
+      `{ total, A, B }`. `aloca(cap, base)` põe em cada semana i
+      `mín(cap_i, mín_{j≥i}(atraso_j − base_j) − o já posto)` — nenhuma semana j
+      recebe, somado até ela, mais que o atraso dela; é o máximo possível
+      (atrasar uma hora nunca abre espaço antes). Capacidade: sábado/feriado =
+      Σ `livre` (05:00–11:00 menos o lote); dia útil = 2h × `nUtFut`. A = sábado
+      primeiro, depois dia útil com o que faltar; B = dia útil primeiro, depois
+      sábado. Cada plano: `ext` (dia, horário), `dias` ({i, min, n, de, ate,
+      porDia}), `falta` (o que nem os dois cobrem; A e B dão a mesma — o sorteio
+      de 4.000 casos confere). A semana tem `uFimFut` (o último dia útil com
+      lote). Semana até a que fechou em dia: o menor atraso é 0, nada vai para
+      ela (substitui o `z`).
+      - Tela: 1ª linha = A (sábados, depois as faixas de dia útil); *"Ou, mais
+        em dia útil:"* = B, só quando difere de A; *"Nem assim fecha: faltam
+        Xh"* quando sobra. Faixa = semanas seguidas com o mesmo por dia
+        (*"2h00 por dia útil de 16/11 a 04/12 (15 dias, das 05:00 às 07:00)"*).
+        A linha da semana diz o sábado e o *"Xh por dia útil"* do plano A.
+      - Testes: os casos da revisão (35h fecham; 8h20 · 25h faltam 6h40), o
+        fixture real nas duas formas, o encadeamento fechando em zero sem hora
+        paga à toa, o sorteio de 4.000 casos (tetos, total + falta, A = B) e o
+        turno do ⚙; 10 de 10 mutações. A jornada vem do turno do ⚙ (`_heSugJornada`; sem ele,
         07:00–17:00). "Dia programado" porque o N conta só os dias úteis com
         lote. Saiu o *"≈ … por dia útil (N dias com lote…), mais que as 2h da
         madrugada (05–07)"*, que deixava dúvida. A linha da semana diz

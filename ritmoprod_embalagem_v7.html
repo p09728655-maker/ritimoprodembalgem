@@ -4123,7 +4123,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.240.0';
+const APP_VER = '7.241.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -11631,7 +11631,7 @@ function _taktSemanasMontar(L, rit){
     // com lote de amanhã em diante
     const ext=T.dias.filter(d=>!d.passado && !d.hoje && (d.dow===6 || (d.feriado && d.dow>=1 && d.dow<=5)) && !(d.feriado && !_feriadoParaHE(d.feriado)))
       .map((d, o)=>{ const ja=Math.round(d.saldoUep*k); return { data:d.data, dow:d.dow, fer:!!d.feriado, livre:Math.max(0, HE_SUG.min-ja), ini:HE_SUG.ini+ja, o }; });
-    const fut=T.dias.filter(d=>d.util && !d.passado && !d.hoje && d.uep>0), nUtFut=fut.length, uIniFut=fut.length ? fut[0].data : null;
+    const fut=T.dias.filter(d=>d.util && !d.passado && !d.hoje && d.uep>0), nUtFut=fut.length, uIniFut=fut.length ? fut[0].data : null, uFimFut=fut.length ? fut[fut.length-1].data : null;
     const vazia=T.dias.every(d=>!(d.cx>0)) && !(uVenc>0), semUep=!vazia && !T.dias.some(d=>d.uep>0);
     const conta=!vazia && !semUep;
     const precisa=conta ? Math.round(uep*k) : 0, tem=conta ? temSoma : 0, precR=conta && rf ? Math.round(uep*k*rf) : null;
@@ -11639,53 +11639,66 @@ function _taktSemanasMontar(L, rit){
     return { i, de:T.de, ate:T.ate, ini, fim:fimU, fimConta:ultConta, hoje:i===0, vazia, semUep, conta, precisa, tem, falta:precisa-tem,
              atraso:ok ? A : null, atrasoR:ok && AR!=null ? AR : null, antes:i===0 ? Math.round(uVenc*k) : 0,
              cxSemUep:T.cxSemUep, feriados:T.dias.filter(d=>d.feriado && d.dow>=1 && d.dow<=5).map(d=>d.data), fora, semUepD, he, dias:conta ? dias : [],   // semana sem conta: nada a abrir
-             ext, nUtFut, uIniFut };
+             ext, nUtFut, uIniFut, uFimFut };
   });
   // a frase vai até o último dia programado da última semana com conta
   const ult=semanas.filter(s=>s.atraso!=null && s.conta).pop();
   // A SUGESTÃO DE HORA EXTRA (PPCP: "já colocar a sugestão de trabalho extra se for o caso"). O que
   // falta programar é o atraso no fim. Ele nasce DEPOIS da última semana que fechou em dia (antes
-  // dela, a folga já pagou): os sábados (e feriados) vêm dali em diante, cada um com o que tem livre, e nenhum
-  // tira mais do que o atraso que existe no fim da semana dele (senão sobraria hora paga à toa) nem
-  // mais que o total. A outra forma: o total dividido pelos dias úteis com lote de amanhã em diante.
+  // dela, a folga já pagou): sábados e feriados (das 05:00 às 11:00) e dias úteis (no máximo 2h por
+  // dia), semana a semana, sem nunca passar do atraso que existe no fim de cada semana (senão sobraria
+  // hora paga à toa). Duas formas: sábado primeiro, ou dia útil primeiro.
   const sug=ok && ult && ult.atraso>0 ? _taktHeSugestao(semanas, semanas.indexOf(ult)) : null;
   return { semanas, completo:ok, fim:ult ? (ult.fimConta || ult.fim) : null, atraso:ult ? ult.atraso : null, atrasoR:ult ? ult.atrasoR : null,
            nFora:semanas.reduce((a, s)=>a+(s.conta ? s.fora.length+s.semUepD.length : 0), 0), ritPct:rf ? 100/rf : null,
            heProg:semanas.reduce((a, s)=>a.concat(s.he || []), []),   // a hora extra JÁ programada (lote em sábado ou feriado)
            sug };
 }
-// A SUGESTÃO (pura). semanas = as do _taktSemanasMontar (conta, atraso no fim, ext [{data, livre,
-// ini, fer}] = os sábados e feriados da semana, nUtFut); iU = a última semana com conta (o atraso
-// dela é o que falta programar).
-// Depois da última semana em dia o atraso não zera mais, então a hora extra posta na semana i
-// abate o atraso de i até o fim — mas uma semana do meio com sobra o faz DESCER: a hora posta
-// antes dela que passa do MENOR atraso de i até o fim é paga à toa (revisão: 10h · 2h · 7h
-// sugeria 7h no 1º sábado e sobravam 5h). Teto de cada dia: mín(livre, menor atraso de i
-// até o fim − o já sugerido). Por dia útil: a mesma hora espalhada do 1º trecho que respeita
-// esse teto em todas as semanas até o fim.
+// A SUGESTÃO (pura). semanas = as do _taktSemanasMontar (atraso no fim de cada semana, ext [{data,
+// livre, ini, fer}] = os sábados e feriados dela, nUtFut/uIniFut/uFimFut = os dias úteis com lote de
+// amanhã em diante); iU = a última semana com conta (o atraso dela é o que falta programar).
+// A hora extra posta na semana i abate o atraso de i até o fim. Em NENHUMA semana j o que já foi
+// posto até j pode passar do atraso de j — senão uma semana com sobra no meio deixaria hora paga sem
+// atraso para cobrir (revisão: 10h · 2h · 7h sugeria 7h no 1º sábado). Com isso, o que cabe em cada
+// semana é mín(a capacidade dela, menor atraso de i até o fim − o já posto), em ordem, semana a
+// semana (é o máximo possível: atrasar uma hora nunca abre espaço antes). Capacidade: sábado e
+// feriado o `livre` de cada um (05:00–11:00 menos o lote); dia útil 2h × os dias (PPCP: "deixa no
+// máximo 2 horas dia" — a v7.240.0 espalhava uma taxa só e largava semanas inteiras: o "ainda
+// faltam" saía inflado). A semana antes de uma em dia tem o menor atraso 0: nada vai para ela.
+// A = sábado e feriado primeiro, o que faltar em dia útil; B = dia útil primeiro, o que faltar em
+// sábado ou feriado. `falta` = o que nem os dois juntos cobrem (os dois dão o mesmo total).
 function _taktHeSugestao(semanas, iU){
   const ult=semanas[iU];
   if(!ult || !(ult.atraso>0)) return null;
-  let z=-1; semanas.forEach((s, i)=>{ if(i<iU && s.conta && s.atraso===0) z=i; });
-  const minDe=i=>{ let m=Infinity; for(let j=i; j<=iU; j++) if(semanas[j].atraso!=null) m=Math.min(m, semanas[j].atraso); return m; };
-  // dentro da semana o sábado vem antes do feriado (feriado trabalhado custa mais); na tela, a ordem da data (o)
-  let H=0; const ext=[];
-  for(let i=z+1; i<=iU; i++) (semanas[i].ext||[]).map((x, j)=>Object.assign({ o:j }, x)).sort((a, b)=>(a.fer?1:0)-(b.fer?1:0) || a.o-b.o).forEach(x=>{
-    const h=Math.min(x.livre, minDe(i)-H);
-    if(h>0){ ext.push({ data:x.data, dow:x.dow, fer:!!x.fer, ini:x.ini, min:h, i, o:x.o }); H+=h; }
-  });
-  ext.sort((a, b)=>a.i-b.i || a.o-b.o);
-  let porDia=null, dias=0, desde=null;
-  for(let k=z+1; k<=iU && porDia==null; k++){
-    const nk=semanas.slice(k, iU+1).reduce((a, s)=>a+(s.nUtFut||0), 0);
-    if(!nk) continue;
-    // no máximo 2h por dia útil (HE_SUG.clt): o que passa disso fica para sábado ou feriado (restoDia)
-    const r=Math.min(ult.atraso/nk, HE_SUG.clt); let acc=0, cabe=true;
-    for(let j=k; j<iU; j++){ acc+=r*(semanas[j].nUtFut||0); if(acc>semanas[j].atraso+0.5){ cabe=false; break; } }
-    if(cabe){ porDia=Math.round(r); dias=nk; desde=(semanas.slice(k, iU+1).find(s=>s.uIniFut) || {}).uIniFut || null; }
-  }
-  const restoDia=porDia!=null && porDia>=HE_SUG.clt ? Math.max(0, ult.atraso-HE_SUG.clt*dias) : 0;
-  return { total:ult.atraso, ext, resto:ult.atraso-H, dias, porDia, desde, restoDia };
+  const W=semanas.slice(0, iU+1), n=W.length;
+  const capS=W.map(s=>(s.ext||[]).reduce((a, x)=>a+Math.max(0, x.livre||0), 0));
+  const capD=W.map(s=>HE_SUG.clt*(s.nUtFut||0));
+  const aloca=(cap, base)=>{
+    const h=[]; let P=0;
+    for(let i=0; i<n; i++){
+      let m=Infinity; for(let j=i; j<n; j++) if(W[j].atraso!=null) m=Math.min(m, W[j].atraso-base[j]);
+      const v=Math.max(0, Math.min(cap[i], m-P)); h.push(v); P+=v;
+    }
+    return h;
+  };
+  const acum=h=>{ let t=0; return h.map(v=>t+=v); };
+  const plano=sabPrimeiro=>{
+    const p1=aloca(sabPrimeiro ? capS : capD, W.map(()=>0)), p2=aloca(sabPrimeiro ? capD : capS, acum(p1));
+    const hs=sabPrimeiro ? p1 : p2, hd=sabPrimeiro ? p2 : p1, ext=[], dias=[];
+    W.forEach((sem, i)=>{
+      // dentro da semana o sábado antes do feriado (feriado trabalhado custa mais); na tela, a ordem da data (o)
+      let resta=hs[i];
+      (sem.ext||[]).map((x, j)=>Object.assign({ o:j }, x)).sort((a, b)=>(a.fer?1:0)-(b.fer?1:0) || a.o-b.o).forEach(x=>{
+        const h=Math.min(Math.max(0, x.livre||0), resta);
+        if(h>0){ ext.push({ data:x.data, dow:x.dow, fer:!!x.fer, ini:x.ini, min:h, i, o:x.o }); resta-=h; }
+      });
+      if(hd[i]>0) dias.push({ i, min:hd[i], n:sem.nUtFut, de:sem.uIniFut, ate:sem.uFimFut, porDia:Math.round(hd[i]/sem.nUtFut) });
+    });
+    ext.sort((a, b)=>a.i-b.i || a.o-b.o);
+    const tot=hs.reduce((a, v)=>a+v, 0)+hd.reduce((a, v)=>a+v, 0);
+    return { ext, dias, sab:hs.reduce((a, v)=>a+v, 0), util:hd.reduce((a, v)=>a+v, 0), falta:Math.max(0, ult.atraso-tot) };
+  };
+  return { total:ult.atraso, A:plano(true), B:plano(false) };
 }
 // O DESENHO (sem conta): a frase, uma linha por semana (toque abre o dia a dia) e a regra.
 function _taktSemanasHtml(C, o){
@@ -11706,18 +11719,25 @@ function _taktSemanasHtml(C, o){
     +(rr && C.atrasoR!=null ? ` No ritmo atual (${fmtP(C.ritPct)} da média): ${C.atrasoR>0 ? `<b>${hm(C.atrasoR)}</b> a programar${_tkaDias(C.atrasoR)}` : '<b>nenhuma</b>'}.` : '')
     +(C.nFora ? ` <span class="mono">Dia útil sem programação fica fora (${plural(C.nFora, 'dia', 'dias')}).</span>` : '')
     +(C.completo ? '' : ' <span class="mono">(até onde foi lido)</span>')+'</div>';
-  // A SUGESTÃO, direta (PPCP: "essa frase deixa dúvida"): o dia e o horário; a outra forma, o horário em cada dia útil
+  // A SUGESTÃO, direta (PPCP: "essa frase deixa dúvida"): o dia e o horário. Sábado e feriado das 05:00
+  // às 11:00; dia útil no máximo 2h por dia (a conta já corta), na madrugada terminando no início do
+  // turno — com o turno começando antes das 07:00, o que não cabe nela vai para depois do fim do turno
   const g=C.sug, quando=x=>`${x.dow===6 ? 'sábado' : 'feriado'} ${dd(x.data)}${x.dow===6 && x.fer ? ' (feriado)' : ''} das ${fromMin(x.ini)} às ${fromMin(x.ini+x.min)}`;
-  // no máximo 2h por dia (a conta já corta): na madrugada, terminando no início do turno; com o turno
-  // começando antes das 07:00, o que não cabe nela vai para depois do fim do turno
-  const J=_heSugJornada(), mad=J.jIni-HE_SUG.ini, m2=Math.min(g ? g.porDia||0 : 0, HE_SUG.clt);
+  const J=_heSugJornada(), mad=J.jIni-HE_SUG.ini;
   const madr=m=>m<=mad ? `das ${fromMin(J.jIni-m)} às ${fromMin(J.jIni)}`
     : `das ${fromMin(HE_SUG.ini)} às ${fromMin(J.jIni)} e das ${fromMin(J.jFim)} às ${fromMin(J.jFim+m-mad)}`;
+  // dia útil: semanas seguidas com o mesmo tanto por dia viram uma faixa só
+  const faixas=L=>L.reduce((a, d)=>{ const u=a[a.length-1];
+    if(u && u.porDia===d.porDia && u.i===d.i-1){ u.ate=d.ate; u.n+=d.n; u.i=d.i; } else a.push(Object.assign({}, d)); return a; }, []);
+  const diaTxt=f=>`<b>${hm(f.porDia)} por dia útil ${f.de===f.ate ? 'em '+dd(f.de) : `de ${dd(f.de)} a ${dd(f.ate)}`}</b> (${plural(f.n, 'dia', 'dias')}, ${madr(f.porDia)})`;
+  const planoTxt=(P, sabAntes)=>{ const sb=P.ext.map(x=>`<b>${quando(x)}</b>`), du=faixas(P.dias).map(diaTxt);
+    return (sabAntes ? sb.concat(du) : du.concat(sb)).join(' · '); };
+  const A=g && g.A, B=g && g.B, falta=g ? Math.max(A.falta, B.falta) : 0;
+  const igual=g && planoTxt(A, true)===planoTxt(B, true);
   const sug=!g ? '' : `<div class="tks-ler warn tks4-sug"><b>Hora extra sugerida</b> (na média da linha): `
-    +(g.ext.length ? g.ext.map(x=>`<b>${quando(x)}</b>`).join(' · ')+(g.resto>0 ? ` · e ainda <b>${hm(g.resto)}</b> nos dias úteis` : '')
-      : 'nenhum sábado ou feriado livre até lá')+'.'
-    +(g.porDia ? `<br><b>Ou</b> ${hm(m2)} a mais${m2>=HE_SUG.clt ? ' (o máximo por dia)' : ''} em cada dia programado${g.desde ? ` de ${dd(g.desde)}` : ''} a ${dd(C.fim)} (${plural(g.dias, 'dia', 'dias')}): ${madr(m2)}`
-      +(g.restoDia>0 ? ` — ainda faltam <b>${hm(g.restoDia)}</b> (sábado ou feriado)` : '')+'.' : '')+'</div>';
+    +(A.ext.length || A.dias.length ? planoTxt(A, true) : 'nenhum sábado, feriado ou dia útil programado até lá')+'.'
+    +(!igual && B.dias.length ? `<br><b>Ou, mais em dia útil:</b> ${planoTxt(B, false)}.` : '')
+    +(falta>0 ? `<br><b>Nem assim fecha:</b> faltam <b>${hm(falta)}</b> — sábado e feriado só das 05:00 às 11:00 e dia útil no máximo 2h por dia.` : '')+'</div>';
   const vazio=`<td></td>${rr ? '<td></td>' : ''}`;
   const lin=S.map(s=>{
     const temDias=!!(s.dias && s.dias.length || s.antes>0), ab=temDias && (pp || !!TKS4_AB[s.i]);
@@ -11727,7 +11747,8 @@ function _taktSemanasHtml(C, o){
       s.conta && s.semUepD.length ? lista(s.semUepD)+' só caixas sem UEP — fora' : '',
       s.he.length ? s.he.map(h=>`${dd(h.data)} ${hm(h.min)} em hora extra, fora`).join(', ') : '',
       s.conta && s.cxSemUep>0 ? `${fmtN(s.cxSemUep)} cx sem UEP fora (a semana é mais pesada)` : '',
-      C.sug ? C.sug.ext.filter(x=>x.i===s.i).map(x=>'sugestão: '+quando(x)).join(' · ') : ''
+      C.sug ? C.sug.A.ext.filter(x=>x.i===s.i).map(x=>'sugestão: '+quando(x))
+        .concat(C.sug.A.dias.filter(x=>x.i===s.i).map(x=>`sugestão: ${hm(x.porDia)} por dia útil`)).join(' · ') : ''
     ].filter(Boolean);
     const rot=`${s.est || pp || !temDias ? '' : ab ? '▾ ' : '▸ '}${s.est ? 'semana '+(s.i+1) : s.hoje ? 'esta semana' : dd(s.ini)+'–'+dd(s.fim)}`
       +(obs.length ? `<div class="mono tks4-o">${e(obs.join(' · '))}</div>` : '');
@@ -11746,7 +11767,7 @@ function _taktSemanasHtml(C, o){
   }).join('');
   return tit+ver+sug
     +`<div class="uep-card" style="overflow-x:auto"><table class="tka-tab tks4"><thead><tr><th>SEMANA</th><th class="n">PRECISA</th><th class="n">TEM</th><th class="n">NA SEMANA</th><th class="n">ATRASO NO FIM</th>${rr ? '<th class="n">NO RITMO ATUAL</th>' : ''}</tr></thead><tbody>${lin}</tbody></table>`
-    +`<div class="uep-nota">Horas de linha. Precisa = o saldo dos lotes dos dias úteis (na esta semana, também o que já venceu); tem = 8h47 por dia útil com lote (hoje, o que resta). Dia útil sem lote e lote em fim de semana ou feriado (hora extra) ficam fora. O atraso passa para a semana seguinte; a sobra só abate atraso que já existe; o atraso no fim é a hora extra que ainda falta programar. Sugestão: os sábados e feriados de dia útil (o religioso e o de fábrica fechada ficam fora; na mesma semana, o sábado antes do feriado), depois da última semana que fechou em dia, das 05:00 às 11:00 (menos o lote que o dia já tem) e até o menor atraso daquela semana até o fim — mais que isso, uma semana com sobra adiante deixaria a hora paga sem atraso para cobrir. Ou: o total dividido pelos dias programados, no máximo 2h por dia (na madrugada; com turno começando antes das 07:00, o resto depois do fim do turno) — o que passar disso fica para sábado ou feriado. Não soma o vencido de antes desta segunda (o card ATRASO).${pp ? '' : ' Toque na semana para ver o dia a dia.'}</div></div>`;
+    +`<div class="uep-nota">Horas de linha. Precisa = o saldo dos lotes dos dias úteis (na esta semana, também o que já venceu); tem = 8h47 por dia útil com lote (hoje, o que resta). Dia útil sem lote e lote em fim de semana ou feriado (hora extra) ficam fora. O atraso passa para a semana seguinte; a sobra só abate atraso que já existe; o atraso no fim é a hora extra que ainda falta programar. Sugestão: sábados e feriados de dia útil das 05:00 às 11:00 (menos o lote que o dia já tem; o religioso e o de fábrica fechada ficam fora; na mesma semana, o sábado antes do feriado) e dia útil no máximo 2h por dia, semana a semana, nunca mais que o menor atraso daquela semana até o fim — mais que isso, uma semana com sobra adiante deixaria a hora paga sem atraso para cobrir. A 1ª forma usa o sábado primeiro; a 2ª, o dia útil primeiro. Não soma o vencido de antes desta segunda (o card ATRASO).${pp ? '' : ' Toque na semana para ver o dia a dia.'}</div></div>`;
 }
 function _taktEstadoHtml(est, erro, fn, botoes){
   const msg=est==='lendo' ? 'Lendo a programação da semana…'
