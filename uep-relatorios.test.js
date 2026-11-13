@@ -328,7 +328,7 @@ console.log('\n── ABA 📏 RÉGUAS: o mix contra a meta de pontos, produto a
       /if\(tab==='reguas'\)\{ UEP_SUB='reguas'; tab='uep'; \}/.test(ST), /function _regOn\(\)\{ return _abaOn\('uep'\) && UEP_SUB === 'reguas'; \}/.test(html),
       /if\(_regOn\(\)\) _regPintar\(\);/.test(html), /^function renderUep\(\)\{\n  if\(UEP_SUB==='reguas'\) return;/.test(RU),
       /UEP_HIST_TS && !UEP_HIST_VOO && !REG_RODANDO &&/.test(RU), /UEP_PAD_TS && !UEP_PAD_VOO && !REG_RODANDO &&/.test(RU), /!GPX_CARREGANDO && !REG_RODANDO &&/.test(RPX7),
-      /function _uepLendo\(\)\{ return !!\(UEP_CARREGANDO \|\| UEP_HIST_VOO \|\| UEP_PAD_VOO \|\| GPX_CARREGANDO \|\| PROG_DET_VOO \|\| TKS_VOO \|\| TKP_VOO \|\| _pontosVoo\); \}/.test(html),
+      /function _uepLendo\(\)\{ return !!\(UEP_CARREGANDO \|\| UEP_HIST_VOO \|\| UEP_PAD_VOO \|\| GPX_CARREGANDO \|\| PROG_DET_VOO \|\| TKS_VOO \|\| TKP_VOO \|\| TK4_VOO \|\| _pontosVoo\); \}/.test(html),
       /function _regSetPer\(v\)\{[^\n]*_regAbrir\(\); \}/.test(html), (html.match(/renderReguas\(/g) || []).length],
      [true, true, true, true, true, true, true, true, true, true, true, 3]);
   ok('v7.207.1 na RÉGUAS o #uep-bloco some inteiro (o aviso de estado dele não é da RÉGUAS)',

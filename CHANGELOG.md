@@ -17,15 +17,17 @@ PPCP, com a SEMANA QUE VEM na tela: *"tem como colocar mais semanas?"* → o
 quadro de 4 semanas. Nada muda no `.gs` (sem re-deploy).
 
 - **⚖ UEP › TAKT DA SEMANA › 4 SEMANAS** (entre SEMANA QUE VEM e AVALIAR):
-  esta semana e as 3 seguintes, uma linha por semana — PRECISA (a programação
-  datada em horas de linha; o vencido entra hoje) · TEM (a jornada sem hora
-  extra) · NA SEMANA (falta ou sobra) · ATRASO NO FIM e no ritmo atual. O
-  atraso passa para a semana seguinte; a sobra não vira crédito. Toque na
-  semana abre o dia a dia.
-- A conta é a do SALDO DE HORAS do AVALIAR PROGRAMAÇÃO, só com a programação do
-  painel (nenhuma conta nova; as mesmas leituras). Só aparece o que está datado
-  na PROGRAMACAO: semana sem lote sai *"sem programação datada"*, e dia útil sem
-  programação fica fora da conta.
+  esta semana e as 3 seguintes, uma linha por semana — PRECISA · TEM (jornada
+  sem hora extra) · NA SEMANA (falta ou sobra) · ATRASO NO FIM e no ritmo atual.
+  Toque na semana abre o dia a dia.
+- **Cada semana com a conta da tela dela**: esta semana = a ESTA SEMANA (o que
+  resta da jornada); as outras = a SEMANA QUE VEM (o mesmo do PRÓXIMOS DIAS).
+  O único número novo é o atraso que passa para a semana seguinte; a sobra só
+  abate atraso que já existe. Semana sem lote datado sai *"sem programação
+  datada"* e não entra; o vencido de antes desta segunda não soma (é o card
+  ATRASO).
+- Leituras: a semana que vem e uma faixa de 14 dias (semanas 3 e 4), na fila
+  da aba, renovadas a cada 5 min (1 min depois de falha). ↻ ATUALIZAR relê.
 - O botão da sub-aba diz *"4 semanas: Xh de atraso"* ou *"em dia"*.
 
 ---

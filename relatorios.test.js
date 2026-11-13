@@ -4736,7 +4736,7 @@ console.log('\n── estudo de UEP ──');
       const toA = global.setTimeout, fila = []; global.setTimeout = fn => { fila.push(fn); return 0; };
       const roda = () => { const f = fila.splice(0); f.forEach(fn => fn()); };
       const ch = [], G = global;
-      Object.assign(G, { UEP_SUB:'hoje', UEP_ABA_PEND:false, REG_ESPERA:false, REG_RODANDO:false, UEP_CARREGANDO:false, UEP_HIST_VOO:null, UEP_PAD_VOO:null, GPX_CARREGANDO:false, PROG_DET_VOO:null, TKS_VOO:null, TKP_VOO:null, _pontosVoo:null,
+      Object.assign(G, { UEP_SUB:'hoje', UEP_ABA_PEND:false, REG_ESPERA:false, REG_RODANDO:false, UEP_CARREGANDO:false, UEP_HIST_VOO:null, UEP_PAD_VOO:null, GPX_CARREGANDO:false, PROG_DET_VOO:null, TKS_VOO:null, TKP_VOO:null, TK4_VOO:null, _pontosVoo:null,
         renderReguas:f => ch.push('reguas' + (f ? '!' : '')), renderUep:() => ch.push('uep'), _uepAbaCarregar:() => ch.push('carga'), _regPintar:() => ch.push('pinta') });
       global._abaOn = t => t === 'uep';
       ['function _uepDepoisDe(', 'function _uepLendo(', 'function _regOn(', 'function _regAbrir('].forEach(f => eval.call(global, pega(f)));

@@ -7499,17 +7499,27 @@ feito e dá ar de verdade ao que sobrou.
     isso a média é a dos lotes DA SEMANA, e sem cadastro de pontos nada sai.
   - **4 SEMANAS (v7.237.0**, PPCP 13/11/2026: *"tem como colocar mais
     semanas?"* → o quadro, recomendado contra mais botões): `TKS_SEM` = 3,
-    botão entre SEMANA QUE VEM e AVALIAR. Esta semana + as 3 seguintes
-    (`TKS_N_SEM`, `_taktSemanasFim` = o domingo da 4ª) pela conta do SALDO DE
-    HORAS: `_tkaCorrente(painel, [], { …, fim })` — sem colagem e com `o.fim`, só
-    o painel de hoje até lá (o AVALIAR não muda; o teste confere). Leituras do
-    AVALIAR (`_tkaPainel` / `_tkaPainelCarregar`, que redesenha também a 3).
-    Desenho `_taktSemanasHtml` (sem conta): a frase do fim, uma linha por semana
-    (PRECISA · TEM · NA SEMANA · ATRASO NO FIM · NO RITMO ATUAL), toque abre o
-    dia a dia (`TKS4_AB`, só na sessão); semana sem lote = *sem programação
-    datada*. ↻ `_taktSemanasLer(true)` relê a semana que vem e as faixas. Botão
-    da sub-aba: `_uepSubTakt(…, '4 semanas', C4)`. Medido no Chromium (retrato
-    de 06/11): 1920 e 1366, nada passa da largura.
+    botão entre SEMANA QUE VEM e AVALIAR. Esta semana + as 3 seguintes, **cada
+    uma pela conta da tela dela**: esta semana = `V0` (a ESTA SEMANA); as outras
+    = `_taktMontar` + `_taktProxMontar` + `_taktVeredito` (a SEMANA QUE VEM, o
+    PRÓXIMOS DIAS). `_taktSemanasMontar(L, rit)` (pura) só soma o atraso que
+    passa adiante (a sobra só abate o que existe); semana sem UEP programada =
+    *sem programação datada* (não entra); semana não lida → atraso sem número
+    daí em diante. Desenho `_taktSemanasHtml` (sem conta), toque abre o dia a
+    dia (`TKS4_AB`). Não soma o vencido de antes desta segunda (o card ATRASO;
+    somar foi oferecido e não decidido).
+    - ⚠ A 1ª versão (não publicada) usava o `_tkaCorrente` do AVALIAR e o
+      revisor achou: veredito oposto ao da SEMANA QUE VEM para a mesma semana
+      (dia adiantado ou sem UEP perdia a jornada), vencido contado em dobro (o
+      `falta` do `getProgramacaoDetalhada` é POR CÓDIGO — e o `_tkaPainel` do
+      AVALIAR ainda soma ele por linha: defeito antigo, não mexido), laço de
+      leitura e semanas congeladas.
+    - Leituras: a semana que vem (`TKP`, `_taktProxCarregar`) e a faixa das
+      semanas 3–4 (`TK4`, `_taktSemanas4Carregar`, 14 dias pelo `_taktLer`;
+      `_taktSemanas4Faixa`, `_taktSemanaDe` parte em duas). Só com a fila livre
+      (`_uepLendo`, que inclui o `TK4_VOO`) e depois da espera (5 min; 1 min na
+      falha) — sem laço. ↻ `_taktSemanasLer()` relê as duas na fila.
+    - Medido no Chromium (retrato de 06/11): 1920 e 1366, nada passa da largura.
   - **AVALIAR PROGRAMAÇÃO (v7.213.0**, PPCP: *"como fazer para programar
     dentro do padrão?"* → *"a no painel"*): `TKS_SEM` = 2. O PCP cola o bloco
     da semana da PLANILHA DE PRODUÇÃO (Excel, ver abaixo) e vê CABE/NÃO CABE
