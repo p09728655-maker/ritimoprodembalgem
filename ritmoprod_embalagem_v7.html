@@ -11604,7 +11604,7 @@ function _taktSemanasMontar(L, rit){
     // e os dias úteis com lote de amanhã em diante
     const sd=T.dias.find(d=>d.dow===6 && !d.passado && !d.hoje && !d.feriado);
     const sab=sd ? { data:sd.data, livre:Math.max(0, UEP_MIN_DIA-Math.round(sd.saldoUep*k)) } : null;
-    const nUtFut=T.dias.filter(d=>d.util && !d.passado && !d.hoje && d.uep>0).length;
+    const fut=T.dias.filter(d=>d.util && !d.passado && !d.hoje && d.uep>0), nUtFut=fut.length, uIniFut=fut.length ? fut[0].data : null;
     const vazia=T.dias.every(d=>!(d.cx>0)) && !(uVenc>0), semUep=!vazia && !T.dias.some(d=>d.uep>0);
     const conta=!vazia && !semUep;
     const precisa=conta ? Math.round(uep*k) : 0, tem=conta ? temSoma : 0, precR=conta && rf ? Math.round(uep*k*rf) : null;
@@ -11612,7 +11612,7 @@ function _taktSemanasMontar(L, rit){
     return { i, de:T.de, ate:T.ate, ini, fim:fimU, fimConta:ultConta, hoje:i===0, vazia, semUep, conta, precisa, tem, falta:precisa-tem,
              atraso:ok ? A : null, atrasoR:ok && AR!=null ? AR : null, antes:i===0 ? Math.round(uVenc*k) : 0,
              cxSemUep:T.cxSemUep, feriados:T.dias.filter(d=>d.feriado && d.dow>=1 && d.dow<=5).map(d=>d.data), fora, semUepD, he, dias:conta ? dias : [],   // semana sem conta: nada a abrir
-             sab, nUtFut };
+             sab, nUtFut, uIniFut };
   });
   // a frase vai até o último dia programado da última semana com conta
   const ult=semanas.filter(s=>s.atraso!=null && s.conta).pop();
@@ -11629,18 +11629,32 @@ function _taktSemanasMontar(L, rit){
 }
 // A SUGESTÃO (pura). semanas = as do _taktSemanasMontar (conta, atraso no fim, sab {data, livre},
 // nUtFut); iU = a última semana com conta (o atraso dela é o que falta programar).
+// Depois da última semana em dia o atraso não zera mais, então a hora extra posta na semana i
+// abate o atraso de i até o fim — mas uma semana do meio com sobra o faz DESCER: a hora posta
+// antes dela que passa do MENOR atraso de i até o fim é paga à toa (revisão: 10h · 2h · 7h
+// sugeria 7h no 1º sábado e sobravam 5h). Teto de cada sábado: mín(livre, menor atraso de i
+// até o fim − o já sugerido). Por dia útil: a mesma hora espalhada do 1º trecho que respeita
+// esse teto em todas as semanas até o fim.
 function _taktHeSugestao(semanas, iU){
   const ult=semanas[iU];
   if(!ult || !(ult.atraso>0)) return null;
   let z=-1; semanas.forEach((s, i)=>{ if(i<iU && s.conta && s.atraso===0) z=i; });
+  const minDe=i=>{ let m=Infinity; for(let j=i; j<=iU; j++) if(semanas[j].atraso!=null) m=Math.min(m, semanas[j].atraso); return m; };
   let H=0; const sab=[];
   for(let i=z+1; i<=iU; i++){
-    const s=semanas[i]; if(!s.sab || !(s.atraso>H)) continue;
-    const h=Math.min(s.sab.livre, s.atraso-H, ult.atraso-H);
+    const s=semanas[i]; if(!s.sab) continue;
+    const h=Math.min(s.sab.livre, minDe(i)-H);
     if(h>0){ sab.push({ data:s.sab.data, min:h, i }); H+=h; }
   }
-  const nD=semanas.slice(z+1, iU+1).reduce((a, s)=>a+(s.nUtFut||0), 0);
-  return { total:ult.atraso, sab, resto:ult.atraso-H, dias:nD, porDia:nD ? Math.round(ult.atraso/nD) : null };
+  let porDia=null, dias=0, desde=null;
+  for(let k=z+1; k<=iU && porDia==null; k++){
+    const nk=semanas.slice(k, iU+1).reduce((a, s)=>a+(s.nUtFut||0), 0);
+    if(!nk) continue;
+    const r=ult.atraso/nk; let acc=0, cabe=true;
+    for(let j=k; j<iU; j++){ acc+=r*(semanas[j].nUtFut||0); if(acc>semanas[j].atraso+0.5){ cabe=false; break; } }
+    if(cabe){ porDia=Math.round(r); dias=nk; desde=(semanas.slice(k, iU+1).find(s=>s.uIniFut) || {}).uIniFut || null; }
+  }
+  return { total:ult.atraso, sab, resto:ult.atraso-H, dias, porDia, desde };
 }
 // O DESENHO (sem conta): a frase, uma linha por semana (toque abre o dia a dia) e a regra.
 function _taktSemanasHtml(C, o){
@@ -11662,10 +11676,10 @@ function _taktSemanasHtml(C, o){
     +(C.nFora ? ` <span class="mono">Dia útil sem programação fica fora (${plural(C.nFora, 'dia', 'dias')}).</span>` : '')
     +(C.completo ? '' : ' <span class="mono">(até onde foi lido)</span>')+'</div>';
   const g=C.sug, lst=a=>a.length>1 ? a.slice(0, -1).join(', ')+' e '+a[a.length-1] : a[0];
-  const sug=!g ? '' : `<div class="tks-ler warn tks4-sug"><b>Sugestão de hora extra:</b> `
+  const sug=!g ? '' : `<div class="tks-ler warn tks4-sug"><b>Sugestão de hora extra</b> (na média da linha)<b>:</b> `
     +(g.sab.length ? `${g.sab.length>1 ? 'sábados' : 'sábado'} ${lst(g.sab.map(x=>`${dd(x.data)} (${hm(x.min)})`))}`
       +(g.resto>0 ? ` e mais <b>${hm(g.resto)}</b> nos dias úteis` : '') : 'nenhum sábado livre até lá')
-    +(g.porDia ? ` — ou ≈ <b>${hm(g.porDia)}</b> por dia útil (${plural(g.dias, 'dia', 'dias')} com lote até ${dd(C.fim)})${g.porDia>120 ? ', mais que as 2h da madrugada (05–07)' : ''}` : '')+'.</div>';
+    +(g.porDia ? ` — ou ≈ <b>${hm(g.porDia)}</b> por dia útil (${plural(g.dias, 'dia', 'dias')} com lote${g.desde ? ` de ${dd(g.desde)}` : ''} até ${dd(C.fim)})${g.porDia>120 ? ', mais que as 2h da madrugada (05–07)' : ''}` : '')+'.</div>';
   const vazio=`<td></td>${rr ? '<td></td>' : ''}`;
   const lin=S.map(s=>{
     const temDias=!!(s.dias && s.dias.length || s.antes>0), ab=temDias && (pp || !!TKS4_AB[s.i]);
@@ -11694,7 +11708,7 @@ function _taktSemanasHtml(C, o){
   }).join('');
   return tit+ver+sug
     +`<div class="uep-card" style="overflow-x:auto"><table class="tka-tab tks4"><thead><tr><th>SEMANA</th><th class="n">PRECISA</th><th class="n">TEM</th><th class="n">NA SEMANA</th><th class="n">ATRASO NO FIM</th>${rr ? '<th class="n">NO RITMO ATUAL</th>' : ''}</tr></thead><tbody>${lin}</tbody></table>`
-    +`<div class="uep-nota">Horas de linha. Precisa = o saldo dos lotes dos dias úteis (na esta semana, também o que já venceu); tem = 8h47 por dia útil com lote (hoje, o que resta). Dia útil sem lote e lote em fim de semana ou feriado (hora extra) ficam fora. O atraso passa para a semana seguinte; a sobra só abate atraso que já existe; o atraso no fim é a hora extra que ainda falta programar. Sugestão: os sábados depois da última semana que fechou em dia, cada um até 8h47 (menos o lote que ele já tem) e até o atraso daquela semana — mais cedo, a hora paga ficaria sem atraso para cobrir. Não soma o vencido de antes desta segunda (o card ATRASO).${pp ? '' : ' Toque na semana para ver o dia a dia.'}</div></div>`;
+    +`<div class="uep-nota">Horas de linha. Precisa = o saldo dos lotes dos dias úteis (na esta semana, também o que já venceu); tem = 8h47 por dia útil com lote (hoje, o que resta). Dia útil sem lote e lote em fim de semana ou feriado (hora extra) ficam fora. O atraso passa para a semana seguinte; a sobra só abate atraso que já existe; o atraso no fim é a hora extra que ainda falta programar. Sugestão: os sábados depois da última semana que fechou em dia, cada um até 8h47 (menos o lote que ele já tem) e até o menor atraso daquela semana até o fim — mais que isso, uma semana com sobra adiante deixaria a hora paga sem atraso para cobrir. Não soma o vencido de antes desta segunda (o card ATRASO).${pp ? '' : ' Toque na semana para ver o dia a dia.'}</div></div>`;
 }
 function _taktEstadoHtml(est, erro, fn, botoes){
   const msg=est==='lendo' ? 'Lendo a programação da semana…'

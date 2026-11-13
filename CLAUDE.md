@@ -7555,12 +7555,15 @@ feito e dá ar de verdade ao que sobrou.
     - **SUGESTÃO DE HORA EXTRA (v7.238.0**, *"já colocar a sugestão de trabalho
       extra se for o caso"*): `_taktHeSugestao(semanas, iU)` (pura). Os sábados
       DEPOIS da última semana que fechou em dia (antes dela a folga já pagou o
-      atraso), cada um com `min(livre, atraso daquela semana − o já sugerido,
-      total − o já sugerido)` — livre = 8h47 − o lote que o sábado já tem; nenhum
-      sábado paga hora sem atraso para cobrir (o teste refaz o encadeamento com
-      as horas sugeridas e confere: fecha em zero, sobra zero). Ou o total ÷ os
-      dias úteis com lote de amanhã em diante, com o aviso acima das 2h da
-      madrugada (05–07). Linha `.tks4-sug` abaixo da frase; o sábado sugerido
+      atraso), cada um com `min(livre, MENOR atraso daquela semana até o fim −
+      o já sugerido)` — livre = 8h47 − o lote que o sábado já tem. ⚠ O menor até
+      o fim, não o da própria semana (revisão: 10h · 2h · 7h sugeria 7h no 1º
+      sábado; a semana com sobra no meio comia 5h). O teste refaz o encadeamento
+      com as horas sugeridas em 5 casos e confere: fecha em zero, nenhuma semana
+      negativa. Ou o total ÷ os dias úteis com lote, do 1º trecho que termina na
+      última semana e respeita o mesmo teto (`desde`), com o aviso acima das 2h
+      da madrugada (05–07). A frase diz *"na média da linha"*: no ritmo atual as
+      horas sugeridas não fecham. Linha `.tks4-sug` abaixo da frase; o sábado sugerido
       também na linha da semana. ⚠ Sábado = 8h47 de linha (uma jornada na
       média): o turno real de sábado pode ser menor.
     - **🖨 4 SEMANAS (v7.238.0**, PPCP: *"colocar impressão"*):

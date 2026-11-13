@@ -23,10 +23,11 @@ trabalho extra se for o caso"*. Nada muda no `.gs` (sem re-deploy).
   sábado (ou feriado) é a hora extra já programada; o atraso no fim é a que
   falta programar. O botão da sub-aba diz *"4 semanas: 14h52 de hora extra a
   programar"*.
-- **Sugestão de hora extra** logo abaixo: os sábados que fecham o atraso, cada
-  um até 8h47 (menos o lote que ele já tem), a partir da última semana que
-  fechou em dia (antes dela a folga já pagou), e nenhum sábado com mais hora que
-  atraso para cobrir. Ou a mesma hora dividida pelos dias úteis com lote, com o
+- **Sugestão de hora extra** logo abaixo (na média da linha): os sábados que
+  fecham o atraso, cada um até 8h47 (menos o lote que ele já tem), a partir da
+  última semana que fechou em dia (antes dela a folga já pagou), e nenhum sábado
+  com mais hora que o menor atraso dali até o fim (uma semana com sobra adiante
+  deixaria a hora paga sem atraso para cobrir). Ou a mesma hora dividida pelos dias úteis com lote, com o
   aviso quando passa das 2h da madrugada (05–07).
 - **Atenção — o AVALIAR PROGRAMAÇÃO conta igual ao 4 SEMANAS.** Lote em sábado
   ou feriado deixou de entrar no atraso (é hora extra já programada, dita na
