@@ -583,7 +583,7 @@ function pdiaMontar(phm, ph, cat, atual, agoraMin, o){
       cx:p.cx, uep: p.uep > 0 ? Math.round(p.uep) : null,
       uepMedia: p.uepCx > 0 ? p.uep / p.uepCx : null, semUepCx: p.cx - p.uepCx,
       he:p.he, heTxt: p.he > 0 ? (p.he === p.cx ? 'tudo em HE' : `${fmtN(p.he)} em HE`) : '',
-      uepHe: p.uepHe > 0 ? Math.round(p.uepHe) : 0,
+      uepHe: p.uepHe,   // sem arredondar (1.17.1): 0,4 UEP em hora extra não é "sem UEP"
       pct: p.uep > 0 && uepTot > 0 ? Math.round(p.uep / uepTot * 100) : null,
       tab, horas:hrs
     };
@@ -702,7 +702,7 @@ function paradaAInformar(tipo){
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.17.0',
+  versao: '1.17.1',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
         'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido',
