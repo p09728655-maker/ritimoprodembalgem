@@ -7604,7 +7604,17 @@ feito e dá ar de verdade ao que sobrou.
         a madrugada inteira (2h), só ela terminando no início do turno;
         passando, o resto depois do fim do turno; passando das 22:00
         (`HE_SUG.noite`), *"não cabe num dia (… dão 7h00)"* (revisão: saía
-        "às 26:40"); acima de 2h, *"(passa das 2h00 por dia da CLT)"* (art. 59). A jornada vem do turno do ⚙ (`_heSugJornada`; sem ele,
+        "às 26:40"); acima de 2h, *"(passa das 2h00 por dia da CLT)"* (art. 59).
+        ⚠ **Revogado na v7.240.0** (PPCP: *"deixa no máximo 2 horas dia"*): o
+        `_taktHeSugestao` corta o por dia em `HE_SUG.clt` = 2h (`r =
+        mín(total ÷ dias, 2h)`, o mesmo teto do menor atraso até o fim) e
+        devolve `restoDia` = o que 2h por dia não cobre. A linha diz *"Ou 2h00 a
+        mais (o máximo por dia) em cada dia programado de … (N dias): das 05:00
+        às 07:00 — ainda faltam Xh (sábado ou feriado)"*. Saíram o aviso da CLT e
+        o *"não cabe num dia"*; com o turno do ⚙ começando antes das 07:00, o
+        que não cabe na madrugada vai para depois do fim do turno (dentro das
+        2h). `HE_SUG.noite` ficou só para validar o turno. O sábado e o feriado
+        continuam das 05:00 às 11:00 (6h, pedido do PPCP). A jornada vem do turno do ⚙ (`_heSugJornada`; sem ele,
         07:00–17:00). "Dia programado" porque o N conta só os dias úteis com
         lote. Saiu o *"≈ … por dia útil (N dias com lote…), mais que as 2h da
         madrugada (05–07)"*, que deixava dúvida. A linha da semana diz
