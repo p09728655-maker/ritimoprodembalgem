@@ -600,9 +600,12 @@ function pdiaParMontar(lista, F, o){
   (lista || []).forEach(p => {
     const ini = String(p.ini || '').trim(), fim = String(p.fim || '').trim(), ab = !fim;
     if(!HR.test(ini) || (!ab && !HR.test(fim))) return;
-    // Encerrada: a duração da aba PARADAS. Aberta: até agora, com a mesma régua.
-    const d = R.durProdutiva(ini, ab ? o.agoraTxt : fim, cfg);
-    if(d == null || !(d > 0)) return;
+    // Encerrada: a duração da aba PARADAS. Aberta: até agora, com a mesma régua —
+    // e com o relógio deste aparelho atrás do INÍCIO gravado pelo celular, até o
+    // INÍCIO (zero): a parada aberta não some da linha.
+    const a = R.horaMin(ini), fimAb = ab && agora < a ? ini : o.agoraTxt;
+    const d = R.durProdutiva(ini, ab ? fimAb : fim, cfg);
+    if(d == null || (!ab && !(d > 0))) return;
     const plan = R.ehPlanejada(p.tipo, o.classeMap);
     if(!ab){ P.n++; P.min += d; if(!plan) P.minNP += d; }
     const nome = paradaAInformar(p.tipo) ? 'A INFORMAR (motivo pendente no app)' : String(p.tipo).trim();
@@ -612,7 +615,7 @@ function pdiaParMontar(lista, F, o){
     P.itens.push({ tit });
     if(ab) P.aberta = { nome, curto: paradaAInformar(p.tipo) ? 'A INFORMAR' : nome, ini: hm(ini), min: d, plan };   // curto: a linha do celular
     // O almoço sai da marca (como sai da soma); o que sobra é cortado na faixa.
-    const a = R.horaMin(ini), b = ab ? agora : R.horaMin(fim);
+    const b = ab ? Math.max(agora, a) : R.horaMin(fim);
     let pc = [[a, b]];
     if(temAlm) pc = [[a, Math.min(b, almI)], [Math.max(a, almF), b]];
     pc = pc.map(([x, y]) => [Math.max(x, F.ini), Math.min(y, F.fim)]).filter(([x, y]) => y > x);

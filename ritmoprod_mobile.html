@@ -2267,12 +2267,13 @@ function _aplicarFechadasLocais(lista){
 async function carregarParadas(){
   if(!CFG.sheetsUrl) return;
   if(_parEscrevendo) return;   // não mexer na tela no meio de uma gravação
+  let leu = false;             // a leitura desta chamada deu certo (o que quebrar depois é desenho)
   try{
     const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadas';
     const json = await jsonpFetch(url);
     if(json && json.ok){
       PARADAS_HOJE = _aplicarFechadasLocais(json.paradas||[]);
-      PARADAS_HOJE_TS = Date.now(); PARADAS_HOJE_DIA = hojeStr(); PARADAS_HOJE_FALHA = false;
+      PARADAS_HOJE_TS = Date.now(); PARADAS_HOJE_DIA = hojeStr(); PARADAS_HOJE_FALHA = false; leu = true;
       // Reconcilia com a parada local otimista.
       if(_paradaLocalAberta){
         const temEssa   = PARADAS_HOJE.some(p=>String(p.id)===String(_paradaLocalAberta.id));
@@ -2290,8 +2291,18 @@ async function carregarParadas(){
       renderGerParada();          // banner da gerencial (mobile)
       renderGerParadasResumo();   // resumo/análise de paradas (gerencial)
       renderGerProdutosDia();     // as paradas na faixa do PRODUTOS EMBALADOS HOJE (1.49.0)
-    } else { PARADAS_HOJE_FALHA = true; renderGerProdutosDia(); }
-  }catch(e){ console.warn('carregarParadas:', e.message); PARADAS_HOJE_FALHA = true; renderGerProdutosDia(); }
+    } else _parFalhouLeitura();
+  }catch(e){
+    console.warn('carregarParadas:', e.message);
+    // Só a LEITURA marca falha: erro de desenho depois de uma leitura boa não vira "não atualizou".
+    if(!leu) _parFalhouLeitura();
+  }
+}
+// A leitura das paradas falhou: a faixa diz isso. O redesenho não pode escapar —
+// o REGISTRAR/START espera o carregarParadas para soltar o botão.
+function _parFalhouLeitura(){
+  PARADAS_HOJE_FALHA = true;
+  try{ renderGerProdutosDia(); }catch(e){ console.warn('produtos do dia:', e.message); }
 }
 function atualizarBadgeParadas(){
   const btn = document.getElementById('btn-paradas');
@@ -3892,7 +3903,7 @@ function _pdiaParHtml(P, F, pos, larg){
   const fm = m => RP_PARADAS.fmtMin(m);
   const d = P.ts ? new Date(P.ts) : null;
   const tot = P.n
-    ? `<b>${plural(P.n, 'parada', 'paradas')} · ${fm(P.min)}</b>${P.minNP < P.min ? ` (${fm(P.minNP)} não prog.)` : ''}`
+    ? `<b>${plural(P.n, 'parada', 'paradas')} · ${fm(P.min)}</b>${P.minNP > 0 && P.minNP < P.min ? ` (${fm(P.minNP)} não prog.)` : ''}`
     : (P.aberta ? '' : '<b>nenhuma parada apontada hoje</b>');
   const ab = P.aberta ? `<span class="ab">● PARADA AGORA desde ${e(P.aberta.ini)} · ${e(P.aberta.curto)}</span>` : '';
   const leg = `<button type="button" class="pdia-pleg" onclick="_pdiaParVer()">
@@ -3988,6 +3999,7 @@ function renderGerProdutosDia(real){
   if(real != null) PDIA_REAL = Number(real) || 0;
   const el = document.getElementById('ger-pdia');
   if(!el) return;
+  _pontosDiaDeHoje();   // chamado também pelo carregarParadas (90 s): a leitura de ontem não vale (1.44.0)
   const phm = PONTOS_DIA && PONTOS_DIA.porHoraModelo;
   let M = null, P = null;
   if(Array.isArray(phm)){

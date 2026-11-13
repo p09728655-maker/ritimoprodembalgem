@@ -498,15 +498,25 @@ via Google Apps Script (JSONP).
       PARADAS inteira, barato só pelo cache de 20 s do `.gs`), 2 tentativas em
       sequência, voo compartilhado, `PDIA_PAR = {dia, ts, lista}`; falhou →
       `PDIA_PAR_FALHA`, mantém a lista de HOJE (*"não atualizou"*, também com a
-      lista de mais de 10 min). Só com `_pdiaParPrecisa()`: GERENCIAL ao vivo
+      lista de mais de dois ciclos — o ciclo é o intervalo de atualização do
+      painel, 1–60 min, nunca menos que 5). Só com `_pdiaParPrecisa()`: GERENCIAL ao vivo
       (`!GER_DATA`), fora da diretoria e da TV. No `_cicloLeitura` DEPOIS do
-      `renderGerencial` (`_cicloVoo` marca o ciclo no ar), na carga inicial
+      `renderGerencial` (`_cicloVoo` marca o ciclo no ar e só o dono a
+      desmarca — o ↻ com um ciclo no ar não a zera antes), na carga inicial
       depois da leitura do dia, e ao abrir a aba (`_pdiaParSeVelha`: lista com
       mais de 5 min → espera `_pdiaParOcupada` = o ciclo, a aba PARADAS
       `_parBusy` e o `_uepLendo`, reconfere e só então lê).
     - **Leitura do celular**: nenhuma nova — o `PARADAS_HOJE` do `carregarParadas`
       (90 s), que agora marca `PARADAS_HOJE_TS`/`_DIA`/`_FALHA` e redesenha o
-      quadro (também na falha).
+      quadro. Só a LEITURA marca falha (`leu`): erro de desenho depois de uma
+      leitura boa não vira *"não atualizou"*; e o redesenho na falha
+      (`_parFalhouLeitura`) não escapa — o REGISTRAR/START espera o
+      `carregarParadas` para soltar o botão. O `renderGerProdutosDia` chama o
+      `_pontosDiaDeHoje` (redesenhado a cada 90 s, na virada não mistura os
+      produtos de ontem com as paradas de hoje).
+    - Parada ABERTA com o relógio do aparelho atrás do INÍCIO gravado pelo
+      celular do operador: continua PARADA AGORA (zero, sem marca), nunca some.
+    - Todas programadas: sem o *"(0 s não programadas)"*.
     - Estados da faixa (`_pdiaParDoPainel`, um por painel): sem Apps Script →
       sem faixa; sem o `paradas-calc` ou rp-core antigo (sem `pdiaParMontar`) →
       diz; antes da 1ª leitura (ou lista de outro dia) → *lendo*; falhou →

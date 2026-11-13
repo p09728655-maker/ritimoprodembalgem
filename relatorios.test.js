@@ -5517,7 +5517,7 @@ console.log('\n── estudo de UEP ──');
 // ── v7.127.0: leituras do painel uma de cada vez, e a aba UEP diz se a leitura do dia falhou ─
 { const CIC = pega('function _cicloLeitura('), TICK = pega('function _tickCountdown('), FOR = pega('function forcarRefresh(');
   ok('refresh: getDados → aba PARADAS (se aberta) → leitura do dia, encadeados; nunca o getPontosDia junto do getDados',
-     [/const _ls=lerSheets\(\);\s*(?:\/\/[^\n]*\n\s*)*_cicloVoo=_parDepois\(_ls\)\.then\(\(\)=>lerPontosDia\(\)\)\.then\(\(\)=>renderGerencial\(\)\)\s*\.then\(\(\)=>lerParadasDoDia\(\)\)\.then\(/.test(CIC),
+     [/const _ls=lerSheets\(\);\s*(?:\/\/[^\n]*\n\s*)*const v=_cicloVoo=_parDepois\(_ls\)\.then\(\(\)=>lerPontosDia\(\)\)\.then\(\(\)=>renderGerencial\(\)\)\s*\.then\(\(\)=>lerParadasDoDia\(\)\)\.then\(/.test(CIC),
       /_cicloLeitura\(\)/.test(TICK), /_cicloLeitura\(\)/.test(FOR), /lerPontosDia\(/.test(TICK + FOR),
       /return Promise\.resolve\(prom\)/.test(pega('function _parDepois(')), /return renderAnaliseParadas\(/.test(pega('function _parDepois('))],
      [true, true, true, false, true, true]);

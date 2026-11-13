@@ -5406,9 +5406,9 @@ function _cicloLeitura(){
   const _ls=lerSheets();
   // As paradas na faixa do PRODUTOS EMBALADOS HOJE (v7.236.0): depois da leitura
   // do dia, uma de cada vez, só com o gerencial ao vivo na tela.
-  _cicloVoo=_parDepois(_ls).then(()=>lerPontosDia()).then(()=>renderGerencial())
+  const v=_cicloVoo=_parDepois(_ls).then(()=>lerPontosDia()).then(()=>renderGerencial())
     .then(()=>lerParadasDoDia()).then(r=>{ if(r!==null) renderGerProdutosDia(); }).catch(()=>{})
-    .then(()=>{ _cicloVoo=null; });
+    .then(()=>{ if(_cicloVoo===v) _cicloVoo=null; });
 }
 function _parDepois(prom){
   return Promise.resolve(prom).catch(()=>{}).then(()=>{
@@ -12185,8 +12185,10 @@ function _pdiaParDoPainel(F, larg, agoraTxt){
       ? { estado: 'falha', txt: 'paradas não lidas — o painel tenta de novo no próximo ciclo' }
       : { estado: 'lendo', txt: 'lendo as paradas de hoje…' };
   const P = pdiaParMontar(PDIA_PAR.lista, F, { R: RP_PARADAS, cfg: CFG, classeMap: PAR_CLASSE_MAP, agoraTxt, larg });
-  // falhou, ou a lista é de mais de dois ciclos (o gerencial ficou fechado): diz de quando é
-  P.ts = PDIA_PAR.ts; P.velho = !!PDIA_PAR_FALHA || Date.now() - PDIA_PAR.ts > 2 * PDIA_PAR_TTL;
+  // falhou, ou a lista é de mais de dois ciclos (o gerencial ficou fechado): diz de quando é.
+  // O ciclo é o intervalo de atualização do painel (1–60 min, ⚙ do relógio), nunca menos que o TTL.
+  const ciclo = Math.max(PDIA_PAR_TTL, (Number(window._intervaloMin) || 5) * 60000);
+  P.ts = PDIA_PAR.ts; P.velho = !!PDIA_PAR_FALHA || Date.now() - PDIA_PAR.ts > 2 * ciclo;
   return P;
 }
 // Só o gerencial AO VIVO mostra a faixa: fora dele, nenhuma leitura.
@@ -12243,7 +12245,7 @@ function _pdiaPcParHtml(P, F, pos, larg){
   if(!ok) return { faixa, leg: '' };
   const d = P.ts ? new Date(P.ts) : null;
   const tot = P.n
-    ? `<b>${fmtN(P.n)} ${P.n === 1 ? 'parada' : 'paradas'} · ${_fmtMinPar(P.min)}</b>${P.minNP < P.min ? ` (${_fmtMinPar(P.minNP)} não programadas)` : ''}`
+    ? `<b>${fmtN(P.n)} ${P.n === 1 ? 'parada' : 'paradas'} · ${_fmtMinPar(P.min)}</b>${P.minNP > 0 && P.minNP < P.min ? ` (${_fmtMinPar(P.minNP)} não programadas)` : ''}`
     : (P.aberta ? '' : '<b>nenhuma parada apontada hoje</b>');
   const ab = P.aberta ? `<span class="ab">● PARADA AGORA desde ${e(P.aberta.ini)} · ${e(P.aberta.nome)} · ${_fmtMinPar(P.aberta.min)}</span>` : '';
   const leg = `<div class="pdpc-pleg">
