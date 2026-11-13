@@ -7936,8 +7936,8 @@ feito e dá ar de verdade ao que sobrou.
     arquivo): a linha AB16 registra a troca do HOME ANGEL 1.8 feita em 04/11
     com data **03/11**, para o lote 202/26 (PREV EMB 03/11, embalado em 04/11)
     já usar a UEP nova — decisão do PPCP em 04/11. Com 05/11 nenhum lote muda.
-    **Decisão do PPCP em aberto**: com AC28 = 06/11 o lote 204/26 cai de 1.116
-    para 823,5 UEP.
+    **Mantido pelo PPCP em 13/11** (*"mantem"*): fica 05/11 (com AC28 = 06/11
+    o lote 204/26 cairia de 1.116 para 823,5 UEP).
   - Efeito, recalculando uma cópia antes e depois:
     - **Semanas**: só a PRINCESA de 17/11 em diante — 043-26 +240 UEP, 110% →
       112%, FALTAM 4h32 → 5h18, lote 212/26 CABE → PASSA 0h11; 044-26 +240,
@@ -7948,7 +7948,9 @@ feito e dá ar de verdade ao que sobrou.
       de 2026 com aquele nome, sem o registro de trocas; as 2.300 cx do nome
       antigo são lotes das semanas congeladas 014–032 (abr–ago), que a BASE
       PRODUTOS não muda. Ou seja: esse total reavalia o passado pela UEP de
-      hoje, como toda linha daquela aba.
+      hoje, como toda linha daquela aba. **Mantido pelo PPCP em 13/11**: a
+      linha 119 fica em 2,48 (voltar a 1,83 deixaria os mesmos códigos com
+      duas UEPs na planilha).
     - Os 25 `#N/A` da RESUMO M² (T224 em diante) já estavam no arquivo.
   - Abas novas desde 06/11 (do PCP): UEP ESTIMADAS (linhas 95–139 da aba UEP),
     LISTA PRODUTOS (a lista suspensa do PRODUTO das semanais, gerada da coluna
