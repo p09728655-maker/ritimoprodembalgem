@@ -11,6 +11,33 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.241.0 — 13/11/2026 · Hora extra sugerida: semana a semana, com os dois tetos
+
+Correção da v7.240.0, achada na revisão depois do merge. Nada muda no `.gs` (sem re-deploy).
+
+- A v7.240.0 espalhava **uma taxa só** por todos os dias úteis. Quando o atraso
+  cresce semana a semana, ela largava a 1ª semana inteira e o *"ainda faltam
+  Xh (sábado ou feriado)"* saía maior do que é. Exemplo: atraso de 5h, 15h, 25h
+  e 35h no fim das semanas. A tela dizia *"ainda faltam 5h00"*; o certo é que
+  1h00 por dia na 1ª semana e 2h00 nas outras fecham tudo.
+- Agora a conta vai **semana a semana**, com os dois tetos: **sábado e feriado
+  das 05:00 às 11:00** e **dia útil no máximo 2h por dia**. Ela nunca põe mais
+  hora do que o atraso que existe no fim de cada semana.
+- Duas formas na tela:
+  - a 1ª usa o **sábado primeiro**;
+  - *"Ou, mais em dia útil"* usa o **dia útil primeiro**, em faixas: *"2h00
+    por dia programado de 09/11 a 13/11 (5 dias, das 05:00 às 07:00) · 1h38
+    por dia programado de 16/11 a 18/11 (3 dias, das 05:22 às 07:00)"*. O por
+    dia é arredondado para cima: nunca sai 0h00 e sempre cobre o atraso.
+- Quando nem sábado, feriado e 2h por dia juntos cobrem o atraso, a tela diz:
+  *"Nem assim fecha: faltam Xh"*.
+- A 1ª forma também respeita as 2h por dia. Antes, *"e ainda 28h00 nos dias
+  úteis"* podia dar 2h48 por dia.
+
+**Atenção:** a 2ª linha da sugestão muda de forma e de número. Antes era uma
+taxa por dia igual para todo o período; agora é por semana, e o *"ainda faltam"*
+só aparece quando de fato falta.
+
 ## v7.240.0 — 13/11/2026 · Hora extra sugerida em dia útil: no máximo 2h por dia
 
 PPCP: *"deixa no máximo 2 horas dia"*. Nada muda no `.gs` (sem re-deploy).

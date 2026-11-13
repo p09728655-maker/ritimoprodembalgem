@@ -7602,32 +7602,66 @@ feito e dá ar de verdade ao que sobrou.
         07:52"* e, numa 2ª linha, *"Ou 2h13 a mais em cada dia programado de
         16/11 a 25/11 (7 dias): das 05:00 às 07:00 e das 17:00 às 17:13"* — até
         a madrugada inteira (2h), só ela terminando no início do turno;
-        passando, o resto depois do fim do turno; passando das 22:00
-        (`HE_SUG.noite`), *"não cabe num dia (… dão 7h00)"* (revisão: saía
-        "às 26:40"); acima de 2h, *"(passa das 2h00 por dia da CLT)"* (art. 59).
-        ⚠ **Revogado na v7.240.0** (PPCP: *"deixa no máximo 2 horas dia"*): o
-        `_taktHeSugestao` corta o por dia em `HE_SUG.clt` = 2h (`r =
-        mín(total ÷ dias, 2h)`, o mesmo teto do menor atraso até o fim) e
-        devolve `restoDia` = o que 2h por dia não cobre. A linha diz *"Ou 2h00 a
-        mais (o máximo por dia) em cada dia programado de … (N dias): das 05:00
-        às 07:00 — ainda faltam Xh (sábado ou feriado)"*. Saíram o aviso da CLT e
-        o *"não cabe num dia"*; com o turno do ⚙ começando antes das 07:00, o
-        que não cabe na madrugada vai para depois do fim do turno (dentro das
-        2h). `HE_SUG.noite` ficou só para validar o turno. O sábado e o feriado
-        continuam das 05:00 às 11:00 (6h, pedido do PPCP). A jornada vem do turno do ⚙ (`_heSugJornada`; sem ele,
-        07:00–17:00). "Dia programado" porque o N conta só os dias úteis com
-        lote. Saiu o *"≈ … por dia útil (N dias com lote…), mais que as 2h da
-        madrugada (05–07)"*, que deixava dúvida. A linha da semana diz
-        *"sugestão: sábado 21/11 das 05:00 às 07:52"*.
+        passando, o resto depois do fim do turno; ~~passando das 22:00
+        (`HE_SUG.noite`), *"não cabe num dia (… dão 7h00)"*; acima de 2h,
+        *"(passa das 2h00 por dia da CLT)"*~~ (saíram na v7.240.0).
+        A jornada vem do turno do ⚙ (`_heSugJornada`; sem ele, 07:00–17:00).
+        "Dia programado" porque o N conta só os dias úteis com lote. Saiu o
+        *"≈ … por dia útil (N dias com lote…), mais que as 2h da madrugada
+        (05–07)"*, que deixava dúvida. A linha da semana diz *"sugestão:
+        sábado 21/11 das 05:00 às 07:52"*. ~~A 2ª linha desta versão~~ — ver
+        v7.240.0 e v7.241.0 abaixo.
       - ⚠ Como antes (v7.238.0), o dia sugerido pode cair DEPOIS da última
         data programada (a frase diz "até 18/11" e sugere o sábado 21/11): a
         sugestão é por semana.
       - Testes: o fixture real (07/11 e 14/11 das 05:00 às 11:00, 21/11 até
         07:52; o 20/11 candidato mas o sábado vem antes), o 20/11 como
         Sexta-feira Santa, as listas de religiosos, civis e fábrica fechada, o
-        sábado com lote, o de hoje, os 2h00/2h13/7h/11h40, a jornada do ⚙ e
-        dois dias na mesma semana, FÉRIAS COLETIVAS no `_taktSemanasMontar` e o
-        sábado-feriado (2ª revisão). 🖨 4 SEMANAS: uma folha.
+        sábado com lote, o de hoje, a jornada do ⚙, dois dias na mesma semana,
+        FÉRIAS COLETIVAS no `_taktSemanasMontar` e o sábado-feriado (2ª
+        revisão). 🖨 4 SEMANAS: uma folha.
+    - ~~**NO MÁXIMO 2H POR DIA ÚTIL, TAXA ÚNICA (v7.240.0)**~~ — PPCP: *"deixa
+      no máximo 2 horas dia"*. Cortava o por dia em `HE_SUG.clt` = 2h com UMA
+      taxa para todos os dias (`r = mín(total ÷ dias, 2h)`) e um `restoDia`.
+      ⚠ **ESTAVA ERRADA** (revisão depois do merge): a taxa única reprovava o
+      trecho inteiro quando uma semana tinha menos atraso que 2h × os dias
+      dela, e o trecho pulava a semana — 5h · 15h · 25h · 35h dizia *"ainda
+      faltam 5h00"*, e fechava; e a 1ª linha (*"e ainda Xh nos dias úteis"*)
+      passava de 2h por dia. Substituída pela v7.241.0. Saíram o aviso da CLT
+      e o *"não cabe num dia"*; `HE_SUG.noite` ficou só para validar o turno.
+    - **SEMANA A SEMANA, OS DOIS TETOS (v7.241.0)**: `_taktHeSugestao` devolve
+      `{ total, A, B }`. `aloca(cap, base)` põe em cada semana i
+      `mín(cap_i, mín_{j≥i}(atraso_j − base_j) − o já posto)` — nenhuma semana j
+      recebe, somado até ela, mais que o atraso dela; é o máximo possível
+      (atrasar uma hora nunca abre espaço antes; a revisão comparou com o
+      guloso de capacidade somada em 168.793 casos: ótimo em todos).
+      Capacidade: sábado/feriado = Σ `livre` (05:00–11:00 menos o lote); dia
+      útil = 2h × `nUtFut`. A = sábado primeiro, depois dia útil com o que
+      faltar; B = dia útil primeiro, depois sábado. Cada plano: `ext` (dia,
+      horário), `dias` ({i, min, n, de, ate, porDia}), `falta` (o que nem os
+      dois cobrem; A e B dão a mesma). A semana tem `uFimFut` (o último dia
+      útil com lote). Semana até a que fechou em dia: o menor atraso é 0, nada
+      vai para ela (substitui o `z`).
+      - **O por dia é para CIMA** (`Math.ceil(min ÷ n)`, 2ª revisão): com o
+        round, 2 min em 5 dias viravam *"0h00 por dia (das 07:00 às 07:00)"*,
+        e o fixture dava 14h51 na 2ª forma contra *"14h52 a programar"*. Com o
+        ceil nunca dá 0, nunca passa de 2h (a semana recebe no máximo 2h × os
+        dias) e sempre cobre, pagando menos de 1 min a mais por dia.
+      - Tela: 1ª linha = A (sábados, depois as faixas de dia útil); *"Ou, mais
+        em dia útil:"* = B, só quando difere de A; *"Nem assim fecha: faltam
+        Xh"* quando sobra. Faixa = semanas seguidas com o mesmo por dia
+        (*"2h00 por dia programado de 16/11 a 04/12 (15 dias, das 05:00 às
+        07:00)"*). **"Dia programado", nunca "dia útil"**: o N conta só os dias
+        úteis COM lote, e entre as datas pode haver dia útil sem programação. A
+        linha da semana diz o sábado e o *"Xh por dia programado"* do plano A.
+      - ⚠ Semana sem programação no meio, antes da última com conta, ainda
+        oferece o sábado dela (os dias úteis dela, ociosos, ficam fora da
+        conta). Já era assim; não mexido.
+      - Testes: os casos da revisão (35h fecham; 8h20 · 25h faltam 6h40; 2 min
+        em 5 dias = 0h01 por dia), o fixture real nas duas formas, o
+        encadeamento fechando em zero sem hora paga à toa, o sorteio de 4.000
+        casos (tetos, por dia ≥ 1 e cobrindo a semana com menos de 1 min a
+        mais, total + falta, A = B) e o turno do ⚙; 11 de 11 mutações.
     - **🖨 4 SEMANAS (v7.238.0**, PPCP: *"colocar impressão"*):
       `gerarRelatorio4Semanas`, no menu 🖨 IMPRIMIR ▾. A montagem é UMA
       (`_taktSemanasDoPainel`, a tela e o papel) e o desenho o MESMO
