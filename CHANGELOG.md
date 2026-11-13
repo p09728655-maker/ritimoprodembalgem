@@ -19,7 +19,9 @@ quadro de 4 semanas. Nada muda no `.gs` (sem re-deploy).
 - **⚖ UEP › TAKT DA SEMANA › 4 SEMANAS** (entre SEMANA QUE VEM e AVALIAR):
   esta semana e as 3 seguintes, uma linha por semana — PRECISA · TEM (jornada
   sem hora extra) · NA SEMANA (falta ou sobra) · ATRASO NO FIM e no ritmo atual.
-  Toque na semana abre o dia a dia.
+  Toque na semana abre o dia a dia. A semana vai do 1º ao último dia útil
+  (*16/11–19/11*, com o feriado de 20/11 dito), e a frase fecha nesse dia —
+  nunca no domingo.
 - **Cada semana com a conta da tela dela**: esta semana = a ESTA SEMANA (o que
   resta da jornada); as outras = a SEMANA QUE VEM (o mesmo do PRÓXIMOS DIAS).
   O único número novo é o atraso que passa para a semana seguinte; a sobra só

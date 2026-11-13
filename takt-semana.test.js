@@ -1039,8 +1039,12 @@ ok('a 1ª semana É a ESTA SEMANA e a 2ª É a SEMANA QUE VEM (o mesmo precisa, 
 ok('as semanas 3 e 4 pela MESMA conta da SEMANA QUE VEM (_taktProxMontar + _taktVeredito); 16–22/11 com o feriado de 20/11 (4 dias = 35h08); 23–29/11 sem lote = sem programação',
    [C4.semanas[2].precisa, C4.semanas[2].tem, C4.semanas[3].vazia], [W3.V.precisaMin, 4 * 527, true]);
 { const s = C4.semanas, a1 = Math.max(0, s[0].precisa - s[0].tem), a2 = Math.max(0, a1 + s[1].precisa - s[1].tem), a3 = Math.max(0, a2 + s[2].precisa - s[2].tem);
-  ok('o atraso passa adiante e a sobra só abate o que já existe; semana sem lote não mexe no atraso; a frase vai até a última semana com programação (22/11)',
-     [s[0].atraso, s[1].atraso, s[2].atraso, s[3].atraso, C4.atraso, C4.fim], [a1, a2, a3, a3, a3, '22/11/2026']); }
+  ok('o atraso passa adiante e a sobra só abate o que já existe; semana sem lote não mexe no atraso; a frase vai até o último DIA ÚTIL da última semana com programação (19/11: 20/11 é feriado e 22/11 é domingo)',
+     [s[0].atraso, s[1].atraso, s[2].atraso, s[3].atraso, C4.atraso, C4.fim], [a1, a2, a3, a3, a3, '19/11/2026']);
+  const H = _taktSemanasHtml(C4, { botoes:'' });
+  ok('rótulo da semana do 1º ao último dia útil (PPCP: "16-22/11 é domingo"): 16/11–19/11 com o feriado dito, 09/11–13/11, 23/11–27/11; nenhum rótulo termina no domingo',
+     [s[1].ini, s[1].fim, s[2].ini, s[2].fim, s[3].fim, H.includes('16/11–19/11'), H.includes('20/11 feriado'), /–22\/11|–15\/11|–29\/11/.test(H), H.includes('a linha chega a <b>19/11</b>')],
+     ['09/11/2026', '13/11/2026', '16/11/2026', '19/11/2026', '27/11/2026', true, true, false, true]); }
 { const s = C4.semanas, r = x => x.V.ritmo.faltaMin + x.V.temMin;
   const b1 = Math.max(0, r({ V:V0 }) - V0.temMin), b2 = Math.max(0, b1 + r(W1) - W1.V.temMin), b3 = Math.max(0, b2 + r(W3) - W3.V.temMin);
   ok('no ritmo atual: a mesma passagem com o precisa do ritmo de cada semana (V.ritmo)', [s[0].atrasoR, s[1].atrasoR, s[2].atrasoR, s[3].atrasoR], [b1, b2, b3, b3]); }

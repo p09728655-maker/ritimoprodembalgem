@@ -11518,6 +11518,8 @@ function _taktSemanasMontar(L, rit){
     const T=x && x.T, V=x && x.V;
     const de=T ? T.de : null, ate=T ? T.ate : null;
     if(!T || !V){ ok=false; return { i, est:(x && x.est) || 'lendo', de, ate, atraso:null, atrasoR:null, dias:[] }; }
+    // o rótulo e a frase vão do 1º ao último DIA ÚTIL (PPCP: "16-22/11 é domingo")
+    const ut=T.dias.filter(d=>d.util), ini=ut.length ? ut[0].data : de, fim=ut.length ? ut[ut.length-1].data : ate;
     const vazia=!(V.uep>0);
     const precisa=V.precisaMin, tem=V.temMin, precR=V.ritmo ? V.ritmo.faltaMin+V.temMin : null;
     if(ok && !vazia){ A=Math.max(0, A+precisa-tem); if(AR!=null) AR=precR!=null ? Math.max(0, AR+precR-tem) : null; }
@@ -11526,11 +11528,11 @@ function _taktSemanasMontar(L, rit){
     const dias=T.dias.filter(d=>!d.passado && (d.util || d.saldoUep>0)).map(d=>({ data:d.data, dow:d.dow, feriado:d.feriado, util:d.util,
       precisa:Math.round(d.saldoUep*k), tem:!d.util ? 0 : d.hoje ? Math.max(0, tem-fut*UEP_MIN_DIA) : UEP_MIN_DIA }));
     const antes=i===0 ? Math.max(0, precisa-dias.reduce((a, d)=>a+d.precisa, 0)) : 0;   // lotes desta semana com data antes de hoje
-    return { i, de, ate, hoje:i===0, vazia, precisa, tem, falta:precisa-tem, atraso:ok ? A : null, atrasoR:ok && AR!=null ? AR : null,
+    return { i, de, ate, ini, fim, hoje:i===0, vazia, precisa, tem, falta:precisa-tem, atraso:ok ? A : null, atrasoR:ok && AR!=null ? AR : null,
              cxSemUep:T.falta ? T.falta.cxSemUep : 0, feriados:T.dias.filter(d=>d.feriado).map(d=>d.data), dias, antes };
   });
   const ult=semanas.filter(s=>s.atraso!=null && !s.vazia).pop();   // a frase vai até a última semana COM programação
-  return { semanas, completo:ok, fim:ult ? ult.ate : null, atraso:ult ? ult.atraso : null, atrasoR:ult ? ult.atrasoR : null,
+  return { semanas, completo:ok, fim:ult ? ult.fim : null, atraso:ult ? ult.atraso : null, atrasoR:ult ? ult.atrasoR : null,
            ritPct:r ? Number(rit)/L[0].T.meta*100 : null };
 }
 // O DESENHO (sem conta): a frase, uma linha por semana (toque abre o dia a dia) e a regra.
@@ -11539,14 +11541,14 @@ function _taktSemanasHtml(C, o){
   const sx=m=>m==null ? '—' : m>0 ? `<span class="tks-red">${hm(m)}</span>` : `<span class="tks-ok">em dia</span>`;
   const fs=(pr, tm)=>pr>tm ? `<span class="tks-red">falta ${hm(pr-tm)}</span>` : `<span class="tks-ok">sobra ${hm(tm-pr)}</span>`;
   const rr=C.ritPct!=null, S=C.semanas, s0=S[0];
-  const tit=`<div class="uep-sec" style="margin-top:0"><b>TAKT DA SEMANA</b> ${op.botoes||''} ${dd(s0.de)}–${dd(S[S.length-1].ate || s0.ate)} · programação datada`
+  const tit=`<div class="uep-sec" style="margin-top:0"><b>TAKT DA SEMANA</b> ${op.botoes||''} ${dd(s0.ini || s0.de)}–${dd(S[S.length-1].fim || S[S.length-1].ate || s0.fim)} · programação datada`
     +`<button class="btn btn-ghost" style="margin-left:auto;padding:3px 10px;font-size:10px" onclick="_taktSemanasLer()" title="Ler de novo a programação das semanas seguintes">↻ ATUALIZAR</button></div>`;
   const ver=C.atraso==null ? '' : `<div class="tks-ler${C.atraso>0 ? ' warn' : ''}">Na média da linha sem hora extra, a linha chega a <b>${dd(C.fim)}</b> `
     +(C.atraso>0 ? `com <b>${hm(C.atraso)}</b> de atraso${_tkaDias(C.atraso)}` : '<b>em dia</b>')+'.'
     +(rr && C.atrasoR!=null ? ` No ritmo atual (${fmtP(C.ritPct)} da média): ${C.atrasoR>0 ? `<b>${hm(C.atrasoR)}</b>${_tkaDias(C.atrasoR)}` : '<b>em dia</b>'}.` : '')
     +(C.completo ? '' : ' <span class="mono">(até onde foi lido)</span>')+'</div>';
   const lin=S.map(s=>{
-    const ab=!!TKS4_AB[s.i], rot=`${s.est ? '' : ab ? '▾ ' : '▸ '}${s.de ? (s.hoje ? 'esta semana' : dd(s.de)+'–'+dd(s.ate)) : 'semana '+(s.i+1)}`
+    const ab=!!TKS4_AB[s.i], rot=`${s.est ? '' : ab ? '▾ ' : '▸ '}${s.de ? (s.hoje ? 'esta semana' : dd(s.ini)+'–'+dd(s.fim)) : 'semana '+(s.i+1)}`
       +(s.feriados && s.feriados.length ? ` <span class="mono">(${s.feriados.map(f=>dd(f)+' feriado').join(', ')})</span>` : '');
     if(s.est) return `<tr><td>${rot}</td><td class="n mono" colspan="${rr ? 5 : 4}">${s.est==='falha' ? 'não consegui ler — ↻ ATUALIZAR' : 'lendo…'}</td></tr>`;
     const dias=ab ? s.dias.map(d=>`<tr class="tks4-d"><td>${dd(d.data)} ${TKS_DOW[d.dow]}${d.feriado ? ' · '+e(String(d.feriado).toLowerCase()) : !d.util ? ' · fim de semana' : ''}</td>`

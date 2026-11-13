@@ -7508,6 +7508,10 @@ feito e dá ar de verdade ao que sobrou.
     daí em diante. Desenho `_taktSemanasHtml` (sem conta), toque abre o dia a
     dia (`TKS4_AB`). Não soma o vencido de antes desta segunda (o card ATRASO;
     somar foi oferecido e não decidido).
+    - **Rótulo e frase pelo DIA ÚTIL** (PPCP: *"16-22/11 é domingo"*): cada
+      semana leva `ini`/`fim` = o 1º e o último dia útil (sem dia útil, seg–dom);
+      a linha diz *16/11–19/11 (20/11 feriado)* e a frase *"chega a 19/11"* —
+      nunca o domingo. A lição da v7.214.1 do AVALIAR, de novo.
     - ⚠ A 1ª versão (não publicada) usava o `_tkaCorrente` do AVALIAR e o
       revisor achou: veredito oposto ao da SEMANA QUE VEM para a mesma semana
       (dia adiantado ou sem UEP perdia a jornada), vencido contado em dobro (o
