@@ -5087,28 +5087,48 @@ console.log('\n── estudo de UEP ──');
           /sbA\(_uepSubAtr\(P, A, A \? null : !PONTOS_DIA_TS \? 'lendo' : lista\.length \? 'sem-lista' : 'vazia', _cartNum\(hojeStr\(\)\)\)\)/.test(RPXa),
           /_gpxMontar\(|_gpxDivida\(|uepCx|porMin/.test(pega('function _uepSubAtr('))], [true, true, true, false]);
       ok('o cartão mora na faixa, à vista em qualquer sub-aba, mas NÃO é sub-aba (sem data-sub e sem role=tab; o _uepSubMarca só acende as sub-abas); o toque abre o quadro',
-         [/<button type="button" class="ucv-sb uep-sb-atr" onclick="_uepAtrAbrir\(\)"[^>]*><b>ATRASO<\/b><span id="uep-sb-atr">…<\/span><small id="uep-sb-atr-s"><\/small><\/button>/.test(src),
+         [/<button type="button" class="ucv-sb uep-sb-atr" onclick="_uepAtrAbrir\(\)"[^>]*><b>ATRASO<\/b><span id="uep-sb-atr">…<\/span><small id="uep-sb-atr-s" style="display:none"><\/small><\/button>/.test(src),
           /class="ucv-sb uep-sb-atr"[^>]*(data-sub|role=)/.test(src), /querySelectorAll\('#uep-sub \.ucv-sb\[data-sub\]'\)/.test(pega('function _uepSubMarca(')),
           /GPX_ATR_ABERTO = true;\s*_uepSub\('prox'\);/.test(pega('function _uepAtrAbrir(')), /#sec-uep \.ucv-sb\.uep-sb-atr\.red\{border-color:/.test(src)],
          [true, false, true, true, true]); }
     // v7.242.0 (PPCP 13/11/2026, com a tela: o card dizia 1h55 e o TAKT "faltam 6h16" — "como falta 6?" → prévia → "pode subir"):
-    // a 2ª linha do card diz que o atraso JÁ CONTA no FALTAM da semana (não é um 2º problema para somar). O TAKT só conta os
-    // lotes desta semana (segunda em diante): atraso de antes da segunda fica fora, e o card diz isso.
-    ok('2ª linha do card ATRASO: desde esta semana (até a própria segunda) "já conta"; desde antes da segunda, diz a segunda e "não conta"',
-       [_uepAtrSub('10/11/2026', 20261113), _uepAtrSub('09/11/2026', 20261113), _uepAtrSub('06/11/2026', 20261113),
-        _uepAtrSub('13/11/2026', 20261116), _uepAtrSub('09/11/2026', 20261115), _uepAtrSub('24/12/2026', 20270101),
-        _uepAtrSub('', 20261113), _uepAtrSub('10/11/2026'), _uepAtrSub('10/11', 20261113)],
-       ['já conta no FALTAM da semana', 'já conta no FALTAM da semana', 'o de antes de 09/11 não conta no FALTAM da semana',
-        'o de antes de 16/11 não conta no FALTAM da semana', 'já conta no FALTAM da semana', 'o de antes de 28/12 não conta no FALTAM da semana',
-        '', '', '']);
+    // a 2ª linha do card diz se o atraso JÁ ESTÁ na barra PRECISA do TAKT DA SEMANA (não é um 2º problema para somar). O TAKT só
+    // soma os lotes desta semana (segunda em diante) e com UEP: o vencido de antes da segunda e o de código sem UEP ficam fora, e
+    // a linha diz. Curta (o card tem ~166 px a 1280; a revisão mediu "o de antes de 09/11 não conta no FALTAM…" cortada nas três
+    // larguras) e sem a palavra FALTAM (com a semana fechando, o veredito diz SOBRAM/FICARAM).
+    { const v = (d, u) => ({ desde:d, uep:u === undefined ? 10 : u });
+      const sub = (L, h) => { const r = _uepAtrSub(L, h); return r && r.sub; };
+      ok('2ª linha do card ATRASO: desta semana com UEP "já está no PRECISA do TAKT"; de antes da segunda, a segunda; sem UEP, fora; os dois, "parte"; hoje segunda, tudo fora',
+         [sub([v('10/11/2026'), v('12/11/2026')], 20261113), sub([v('09/11/2026')], 20261113), sub([v('06/11/2026'), v('10/11/2026')], 20261113),
+          sub([v('10/11/2026', null)], 20261113), sub([v('10/11/2026'), v('11/11/2026', null)], 20261113), sub([v('06/11/2026'), v('11/11/2026', null)], 20261113),
+          sub([v('13/11/2026')], 20261116), sub([v('09/11/2026')], 20261115), sub([v('24/12/2026')], 20270101), sub([v('30/12/2026')], 20270101)],
+         ['já está no PRECISA do TAKT', 'já está no PRECISA do TAKT', 'antes de 09/11: fora do TAKT', 'sem UEP: fora do TAKT', 'sem UEP (*): fora do TAKT',
+          'parte fora do TAKT', 'fora do TAKT desta semana', 'já está no PRECISA do TAKT', 'antes de 28/12: fora do TAKT', 'já está no PRECISA do TAKT']);
+      ok('sem o dia, sem lista ou sem data: nada (o card de antes); toda frase cabe no card (até 29 caracteres) e o title explica a regra',
+         [_uepAtrSub([v('10/11/2026')]), _uepAtrSub([], 20261113), _uepAtrSub([v('')], 20261113), _uepAtrSub(null, 20261113),
+          [['10/11/2026'], ['06/11/2026'], ['10/11/2026', null], ['06/11/2026', null]].every(([d, u]) => (sub([v(d, u)], 20261113) || '').length <= 29)
+            && ['parte fora do TAKT', 'fora do TAKT desta semana', 'sem UEP (*): fora do TAKT'].every(t => t.length <= 29),
+          /TAKT DA SEMANA só soma os lotes desta semana \(de 09\/11 em diante\) e com UEP/.test(_uepAtrSub([v('06/11/2026')], 20261113).t),
+          /FALTAM/.test(pega('function _uepAtrSub('))],
+         [null, null, null, null, true, true, false]); }
     { const AMh = _gpxAtrasoMontar([{ codigo:'501071004', desc:'VOL 1/3 HOME RIPADO SUPREMO 1.8', cor:'', desde:'10/11/2026', atr:200, hoje:0, u:2.94 }], 2761 / 527);
-      ok('o card com o dia: a 2ª linha vem junto (sub), o resto igual; sem o dia, sem sub (o objeto de antes); sem vencido, sem sub',
-         [_uepSubAtr(PA, AMh, null, 20261113).sub, _uepSubAtr(PA, AMh, null, 20261113).txt === _uepSubAtr(PA, AMh).txt, 'sub' in _uepSubAtr(PA, AMh),
-          'sub' in _uepSubAtr(PA, AM0, null, 20261113), 'sub' in _uepSubAtr(null, null, 'lendo', 20261113)],
-         ['já conta no FALTAM da semana', true, false, false, false]); }
-    { const RPXb = pega('function renderProxDias(');
-      ok('o renderProxDias pinta a 2ª linha (texto e title) e a esconde quando não há; a pele dela no card',
-         [/const s = document\.getElementById\('uep-sb-atr-s'\); if\(s && o\)\{ s\.textContent = o\.sub \|\| ''; s\.title = o\.sub \|\| ''; s\.style\.display = o\.sub \? '' : 'none'; \}/.test(RPXb),
+      const Rh = _uepSubAtr(PA, AMh, null, 20261113);
+      ok('o card com o dia: a 2ª linha (sub) e o title (subT) vêm juntos, o resto igual; o * de código sem UEP vira "sem UEP (*)"; sem o dia, sem vencido ou sem leitura, sem sub',
+         [Rh.sub, /barra PRECISA/.test(Rh.subT), Rh.txt === _uepSubAtr(PA, AMh).txt, _uepSubAtr(PA, AM, null, 20261113).sub,
+          'sub' in _uepSubAtr(PA, AMh), 'sub' in _uepSubAtr(PA, AM0, null, 20261113), 'sub' in _uepSubAtr(null, null, 'lendo', 20261113)],
+         ['já está no PRECISA do TAKT', true, true, 'parte fora do TAKT', false, false, false]); }
+    { // o efeito no DOM: o sbA real do renderProxDias pintando um <small> de mentira, nos estados que se seguem
+      const RPXb = pega('function renderProxDias('), m = RPXb.match(/const sbA = o => \{[\s\S]*?\};/);
+      const el = {}, sm = { style:{} }, docOrig = global.document;
+      global.document = { getElementById: id => id === 'uep-sb-atr' ? el : id === 'uep-sb-atr-s' ? sm : null };
+      const sbA = new Function('_sbPinta', m[0].replace(/^const sbA = /, 'return ') )(() => {});
+      sbA({ txt:'1h55', cls:'red', sub:'já está no PRECISA do TAKT', subT:'explica' }); const a1 = [sm.textContent, sm.title, sm.style.display];
+      sbA({ txt:'…', cls:'' }); const a2 = [sm.textContent, sm.title, sm.style.display];
+      global.document = docOrig;
+      ok('o sbA pinta a 2ª linha (texto, title com a explicação) e a esconde no estado seguinte sem sub (não fica a linha antiga)', [a1, a2],
+         [['já está no PRECISA do TAKT', 'explica', ''], ['', '', 'none']]);
+      ok('a 2ª linha nasce escondida (não mexe na altura da faixa antes do 1º desenho); a pele no card corta com "…" se precisar',
+         [/<small id="uep-sb-atr-s" style="display:none"><\/small><\/button>/.test(src),
           /#sec-uep \.ucv-sb\.uep-sb-atr small\{[^}]*white-space:nowrap;overflow:hidden;text-overflow:ellipsis/.test(src)],
          [true, true]); }
     ok('o quadro do atraso nasce RECOLHIDO, com o total (cx · UEP · horas) e os códigos no título; aberto, continua aberto no refresh',
