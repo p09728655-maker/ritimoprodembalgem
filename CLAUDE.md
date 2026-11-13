@@ -7919,29 +7919,45 @@ feito e dá ar de verdade ao que sobrou.
   (colunas A e K, 429 códigos; o `/exec` do Apps Script é recusado pelo proxy
   da sessão) contra os códigos da coluna Z de cada linha da aba UEP (UEP/CX =
   média das cores de cada volume, soma ÷ nº de volumes). **4 diferenças, todas
-  trocas do cadastro depois de 06/11** (a `UEP_VERSOES` e a `UEP_TRAVAS`
-  confirmam): PAINEL MOON 2.2 1,82 → 2,80 e DIAMANTE 1,83 → 2,48 (cronoanálise
+  trocas do cadastro depois da conferência de 06/11** (a `UEP_VERSOES` e a
+  `UEP_TRAVAS` confirmam): PAINEL MOON 2.2 1,82 → 2,80 e DIAMANTE 1,83 → 2,48 (cronoanálise
   de 06/11), SAPATEIRA VIVARE 1,89 → 2,16 e PENTEADEIRA PRINCESA 1,90 → 2,14
   (TRAVA DA UEP, 12/11). RACK SIRIUS 0.9 trocado e desfeito em 12/11: 1,85.
   MULTIUSO CAUE (501.092) está no cadastro sem linha na aba UEP (já era assim).
-  - Linhas 21, 26, 36, 42 e 119 (F, o cache da V, H, X, Y), trocas em
-    AB28:AF31, nota A3 refeita, `fullCalcOnLoad="1"` de novo (o Excel tira ao
-    salvar).
+  - Linhas 21, 36, 42 e 119: F, o cache da V, H, X e Y; linha 26: só H, X e
+    Y (a F e a V já estavam 2,48). A **linha 119** (*PENTEADEIRA CAMARIM 1PT
+    2GAV*) é a própria DIAMANTE com o nome antigo — os mesmos códigos
+    501.135.001/002 na coluna Z. Trocas em AB28:AF31, nota A3 refeita,
+    `fullCalcOnLoad="1"` de novo (o Excel tira ao salvar).
   - **DIAMANTE**: a F26 já estava 2,48, mas sem a troca e com a vigência
     digitada na coluna H (ORIGEM). Troca registrada com data **05/11**: o lote
     204/26 (PREV EMB 05/11) foi embalado em 06/11 das 12:12 às 16:00 e a troca
-    no cadastro foi às 15:32 — o critério do HOME ANGEL de 04/11, nenhum número
-    muda. **Decisão do PPCP em aberto**: com AC28 = 06/11 o lote cai de 1.116
+    no cadastro foi às 15:32. O critério já estava na planilha (não neste
+    arquivo): a linha AB16 registra a troca do HOME ANGEL 1.8 feita em 04/11
+    com data **03/11**, para o lote 202/26 (PREV EMB 03/11, embalado em 04/11)
+    já usar a UEP nova — decisão do PPCP em 04/11. Com 05/11 nenhum lote muda.
+    **Decisão do PPCP em aberto**: com AC28 = 06/11 o lote 204/26 cai de 1.116
     para 823,5 UEP.
-  - Efeito, recalculando uma cópia antes e depois: só a PRINCESA de 17/11 em
-    diante — 043-26 +240 UEP, 110% → 112%, FALTAM 4h32 → 5h18, lote 212/26
-    CABE → PASSA 0h11; 044-26 (e a B e a C) +240, FALTAM 6h59 → 7h45. Os 25
-    `#N/A` da RESUMO M² (T224 em diante) já estavam no arquivo.
+  - Efeito, recalculando uma cópia antes e depois:
+    - **Semanas**: só a PRINCESA de 17/11 em diante — 043-26 +240 UEP, 110% →
+      112%, FALTAM 4h32 → 5h18, lote 212/26 CABE → PASSA 0h11; 044-26 +240,
+      FALTAM 6h59 → 7h45; 044-26 B +240, 3h59 → 4h44; 044-26 C +240, 2h29 →
+      3h14.
+    - **UEP ESTIMADAS**: G29 (a linha 119) 4.209 → 5.704 e o total G50
+      34.001,97 → 35.496,97 (+1.495 UEP, +4,4%). A coluna G é UEP!V × as caixas
+      de 2026 com aquele nome, sem o registro de trocas; as 2.300 cx do nome
+      antigo são lotes das semanas congeladas 014–032 (abr–ago), que a BASE
+      PRODUTOS não muda. Ou seja: esse total reavalia o passado pela UEP de
+      hoje, como toda linha daquela aba.
+    - Os 25 `#N/A` da RESUMO M² (T224 em diante) já estavam no arquivo.
   - Abas novas desde 06/11 (do PCP): UEP ESTIMADAS (linhas 95–139 da aba UEP),
     LISTA PRODUTOS (a lista suspensa do PRODUTO das semanais, gerada da coluna
-    C da aba UEP) e 044-26 B / C (cenários). A 044-26 e as B/C pegam a UEP
-    direto da aba UEP (`INDEX`/`MATCH` na coluna V), sem o registro de trocas:
-    vale a UEP de hoje para todo lote delas.
+    C da aba UEP) e 044-26 B / C (cenários). Os lotes da 044-26 (Y5…, U8…)
+    passam pela BASE PRODUTOS, como as outras semanas: valem as trocas pela
+    PREV EMB. Leem a coluna V direto (`INDEX`/`MATCH`, **sem o registro de
+    trocas**, a UEP de hoje) só as **044-26 B e C** (Y5…) e o bloco **H46:H49
+    da 044-26**: uma troca datada entre dois lotes dessas semanas muda as
+    B/C e não a 044-26.
   - ⚠ **O EXCEL REPAROU A 1ª ENTREGA** (*"Registros Removidos: Fórmula de
     parte de /xl/worksheets/sheet55.xml"* e do `calcChain.xml`). Causa: ao
     trocar o valor da V42 eu reescrevi o `<f t="shared" si="1"/>` — ela é do
@@ -7959,8 +7975,10 @@ feito e dá ar de verdade ao que sobrou.
       calcChain só com células que têm fórmula (o `i` do calcChain é o
       **sheetId** da aba — UEP = 328 —, não a posição). Re-zipar com as mesmas
       partes na mesma ordem e conferir quais mudaram (aqui só `workbook.xml`,
-      `sheet55.xml` e `sharedStrings.xml`).
-    - Com a correção, abriu sem aviso no Excel do PPCP (13/11/2026).
+      `sheet55.xml` e `sharedStrings.xml`). Se o resultado da fórmula mudar
+      de tipo (número ↔ texto), o atributo `t` da célula muda junto.
+    - Com a correção, abriu sem aviso no Excel do PPCP (13/11/2026, PPCP:
+      *"abriu sem erro"*).
 
 ## ONDE O TEMPO VAI — estudo × produção × meta (v7.194.0)
 - ⚠ **Desde a v7.207.0 é a 5ª sub-aba da ⏱ CRONOANÁLISE** (a *aba própria* da
