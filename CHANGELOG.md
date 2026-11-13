@@ -11,6 +11,24 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.238.0 — 13/11/2026 · AVALIAR sem o vencido em dobro · 🖨 4 SEMANAS
+
+PPCP: *"sim corrigir e avaliar, colocar impressão"*. Nada muda no `.gs` (sem
+re-deploy).
+
+- **Atenção — o SALDO DE HORAS do AVALIAR PROGRAMAÇÃO pode baixar.** O vencido de
+  antes desta segunda era somado lote a lote com o `falta` do CÓDIGO (o mesmo
+  número em toda linha do código): dois lotes vencidos do mesmo produto contavam
+  o atraso duas vezes, e o vencido desta semana entrava de novo. Agora o vencido
+  entra UMA vez por código, menos o que esta semana já traz. Defeito desde a
+  v7.214.0; a chegada e o fim do saldo de horas saíam maiores que o real.
+- **🖨 4 SEMANAS** no menu 🖨 IMPRIMIR ▾ da ⚖ UEP: o quadro da tela numa folha A4
+  deitada, com o dia a dia de todas as semanas. As mesmas contas da tela.
+- No quadro 4 SEMANAS, semana sem programação não abre mais os dias (eram cinco
+  linhas "sem programação").
+
+---
+
 ## v7.237.0 — 13/11/2026 · TAKT DA SEMANA: 4 SEMANAS
 
 PPCP, com a SEMANA QUE VEM na tela: *"tem como colocar mais semanas?"* → o

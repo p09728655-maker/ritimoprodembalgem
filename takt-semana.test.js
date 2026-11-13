@@ -1112,7 +1112,7 @@ ok('sem a esta semana montada: nada', _taktSemanasMontar([{ est:'lendo' }, { T:W
   ok('a ligação: 4 SEMANAS entre SEMANA QUE VEM e AVALIAR; o setter aceita 3 e pede as leituras na fila; cada semana pelo _taktMontar; o AVALIAR não muda; o botão da sub-aba',
      [/b\(1, 'SEMANA QUE VEM'\)\}\$\{b\(3, '4 SEMANAS'\)\}\$\{b\(2, 'AVALIAR PROGRAMAÇÃO'\)/.test(pega('function _taktSemBotoes(')), /k===3 \? k : 0/.test(pega('function _taktSemSet(')),
       /TKS_SEM===3\) _uepDepoisDe\(_uepLendo/.test(pega('function _taktSemSet(')),
-      /_taktSemanasMontar\(\[\{ T \}, sem\(tkpOk \? TKP : null, e1\)/.test(RR) && /\{ T:_taktMontar\(Sx, UEP_HIST\|\|\[\], hP, pts, est\) \}/.test(RR),
+      /C4=_taktSemanasDoPainel\(T, hojeN, meta, rit\)/.test(RR) && /_taktSemanasMontar\(\[\{ T \}, sem\(tkpOk \? TKP : null, e1\)/.test(pega('function _taktSemanasDoPainel(')) && /\{ T:_taktMontar\(Sx, UEP_HIST\|\|\[\], hP, pts, est\) \}/.test(pega('function _taktSemanasDoPainel(')),
       !/soPainel|o\.fim/.test(pega('function _tkaCorrente(')) && /TKS_SEM===2\) renderUep\(\)/.test(pega('function _tkaPainelCarregar(')),
       _uepSubTakt(null, null, '4 semanas', null).txt, _uepSubTakt(null, null, '4 semanas', { atraso:735, completo:true }), _uepSubTakt(null, null, '4 semanas', { atraso:0, completo:true }).txt],
      [true, true, true, true, true, '…', { txt:'4 semanas: 12h15 de atraso', cls:'warn' }, '4 semanas: em dia']);
@@ -1122,12 +1122,39 @@ ok('sem a esta semana montada: nada', _taktSemanasMontar([{ est:'lendo' }, { T:W
       /\(TKS_SEM===1 \|\| TKS_SEM===3\)\) renderUep\(\); \}, 60500\)/.test(pega('function _taktProxCarregar('))],
      [true, true, true, true]); }
 
+console.log('\n── v7.238.0: o vencido do AVALIAR uma vez por código; a 🖨 4 SEMANAS ──');
+eval.call(global, pega('function _tkaVencidoAntes('));
+{ const P = [
+    { dataNum:20261028, data:'28/10/2026', lote:'25300', codigo:'501.000.001', falta:100, uepCx:2 },   // dois lotes vencidos do mesmo código:
+    { dataNum:20261030, data:'30/10/2026', lote:'25310', codigo:'501.000.001', falta:100, uepCx:2 },   // o falta é do CÓDIGO (100), nas duas linhas
+    { dataNum:20261029, data:'29/10/2026', lote:'25320', codigo:'501000002', falta:80, uepCx:1 },      // esta semana já tem 30 dele até hoje
+    { dataNum:20261029, data:'29/10/2026', lote:'25330', codigo:'501000003', falta:40, uepCx:1 },      // esta semana tem mais que o falta
+    { dataNum:20261029, data:'29/10/2026', lote:'25340', codigo:'501000004', falta:50, uepCx:1, foraEsteira:true },
+    { dataNum:20261103, data:'03/11/2026', lote:'25350', codigo:'501000005', falta:70, uepCx:1 } ];   // desta semana: fica com o TKS
+  const W = [ { dataNum:20261103, codigo:'501000002', saldo:30 }, { dataNum:20261109, codigo:'501000002', saldo:999 },   // futura: não desconta
+              { dataNum:20261104, codigo:'501000003', saldo:60 } ];
+  const V = _tkaVencidoAntes(P, W, 20261102, 20261106), por = c => V.filter(l => String(l.codigo).replace(/\D/g, '') === c).reduce((a, l) => a + l.saldo, 0);
+  ok('o vencido de antes desta segunda UMA vez por código (revisão: o falta do código somava em cada linha), menos o que esta semana já traz até hoje; as outras linhas vão com saldo 0 só para a colagem não duplicar o lote',
+     [por('501000001'), V.find(l => l.lote === '25300').saldo, V.find(l => l.lote === '25310').saldo, por('501000002'), por('501000003'), por('501000004'), V.some(l => l.lote === '25350'), V.map(l => l.lote).sort()],
+     [100, 100, 0, 50, 0, 0, false, ['25300', '25310', '25320', '25330', '25340']]);
+  ok('o _tkaPainel usa a conta nova (nunca o falta do código em cada linha)',
+     [/_tkaVencidoAntes\(PROG_DETALHADA, /.test(pega('function _tkaPainel(')), /saldo:Number\(it\.falta\)/.test(pega('function _tkaPainel('))], [true, false]); }
+{ global.TKS4_AB = {};
+  const HP = _taktSemanasHtml(C4, { papel:true }), HT2 = _taktSemanasHtml(C4, { botoes:'' }), G4 = pega('async function gerarRelatorio4Semanas(');
+  ok('🖨 4 SEMANAS no papel: o mesmo desenho, sem botão nem toque, o dia a dia de TODAS as semanas aberto',
+     [HP.includes('onclick='), HP.includes('↻'), HP.includes('Toque'), HP.includes('▸'), (HP.match(/class="tks4-d"/g) || []).length, (HT2.match(/class="tks4-d"/g) || []).length, HP.includes('a linha chega a <b>18/11</b>')],
+     [false, false, false, false, C4.semanas.reduce((a, x) => a + x.dias.length + (x.antes > 0 ? 1 : 0), 0), 0, true]);
+  ok('🖨 a janela abre no clique, lê o que faltar (histórico, esta semana, a que vem, a faixa) e monta pela MESMA montagem da tela; no menu 🖨 IMPRIMIR ▾',
+     [G4.indexOf('window.open(') < G4.indexOf('await '), /await _taktProxCarregar\(true\)/.test(G4) && /await _taktSemanas4Carregar\(true\)/.test(G4),
+      /_taktSemanasDoPainel\(T0, hojeN, D\.meta, /.test(G4), /_taktSemanasHtml\(C, \{ papel:true \}\)/.test(G4), /_TKS4_DOC_SKIN/.test(G4),
+      /onclick="_uepImpFecha\(\);gerarRelatorio4Semanas\(\)"/.test(html)],
+     [true, true, true, true, true, true]); }
 // AS LEITURAS DE VERDADE (revisão: o regex acima passava com a retentativa sem fim).
 // O bloco 4 SEMANAS do renderUep REAL, com relógio virtual, leituras de mentira de
 // 25 s e o refresh do gerencial (renderUep a cada 5 min), por 60 min.
 async function simLeituras(cenario){
   const RU = pega('function renderUep('), BLOCO = RU.slice(RU.indexOf('  let C4=null;'), RU.indexOf('  // v7.198.0'));
-  ['function _taktSemanas4Carregar(', 'function _taktProxCarregar(', 'async function _taktLer(', 'function _uepLendo(', 'function _uepDepoisDe(', 'function _taktSemSet('].forEach(f => eval.call(global, pega(f)));
+  ['function _taktSemanas4Carregar(', 'function _taktProxCarregar(', 'async function _taktLer(', 'function _uepLendo(', 'function _uepDepoisDe(', 'function _taktSemSet(', 'function _taktSemanasDoPainel('].forEach(f => eval.call(global, pega(f)));
   let VT = Date.UTC(2026, 10, 13, 12, 0, 0), fila = [], seq = 0, noAr = 0, emVoo = 0, maxVoo = 0;
   const conta = { prox:0, faixa:0 }, nowOrig = Date.now, stOrig = global.setTimeout;
   Date.now = () => VT;

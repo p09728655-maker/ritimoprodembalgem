@@ -7546,6 +7546,15 @@ feito e dá ar de verdade ao que sobrou.
       é lida — antes ficava *lendo…* sem leitura). O teste roda o bloco real do `renderUep` com o
       relógio virtual (não regex).
     - Medido no Chromium (retrato de 06/11): 1920 e 1366, nada passa da largura.
+    - **🖨 4 SEMANAS (v7.238.0**, PPCP: *"colocar impressão"*):
+      `gerarRelatorio4Semanas`, no menu 🖨 IMPRIMIR ▾. A montagem é UMA
+      (`_taktSemanasDoPainel`, a tela e o papel) e o desenho o MESMO
+      (`_taktSemanasHtml(C, { papel:true })`: sem botão nem toque, todas as
+      semanas abertas). Pele `_TKS4_DOC_SKIN` sobre a `_TKS_DOC_SKIN` +
+      `_TKA_DOC_SKIN`. A janela abre no clique e lê o que faltar (histórico, esta
+      semana, a que vem, a faixa), uma leitura por vez. Medido (Chromium, fontes,
+      mídia de impressão a 1.032 px): uma folha A4 deitada, 493 de 718 px.
+      Semana sem conta não tem dia a dia (`dias:[]`).
   - **AVALIAR PROGRAMAÇÃO (v7.213.0**, PPCP: *"como fazer para programar
     dentro do padrão?"* → *"a no painel"*): `TKS_SEM` = 2. O PCP cola o bloco
     da semana da PLANILHA DE PRODUÇÃO (Excel, ver abaixo) e vê CABE/NÃO CABE
@@ -7791,7 +7800,13 @@ feito e dá ar de verdade ao que sobrou.
     - **De onde vem o painel** (`_tkaPainel(fimN)`): TKS (esta semana), TKP (a
       que vem), `TKF` (faixas da 3ª segunda ao último dia colado, de 14 em 14
       dias — `_tkaFaixas`, `_taktLer` com de/ate) e o vencido de antes desta
-      segunda (`PROG_DETALHADA`, o `falta`). `_tkaPainelCarregar` lê o que
+      segunda (`_tkaVencidoAntes`, v7.238.0). ⚠ O `falta` do
+      `getProgramacaoDetalhada` é POR CÓDIGO (atraso + o que falta de hoje) e
+      vem igual em toda linha do código: até a v7.237.0 ele entrava em CADA linha
+      vencida (dois lotes do mesmo código = o atraso duas vezes) e o vencido desta
+      semana, que já vem do TKS linha a linha, entrava de novo. Hoje: por código,
+      UMA vez, o falta menos o saldo das linhas do TKS até hoje, na linha vencida
+      mais antiga; as outras com saldo 0 (só para a colagem não duplicar o lote). `_tkaPainelCarregar` lê o que
       faltar NA FILA (`_uepDepoisDe(_uepLendo, …)`; `TKA_VOO` fica fora do
       `_uepLendo`, senão esperaria a si mesmo).
     - **🖨 AVALIAÇÃO DA PROGRAMAÇÃO** (`gerarRelatorioAvaliacao`, menu): a
