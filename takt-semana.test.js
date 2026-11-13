@@ -1171,14 +1171,16 @@ eval.call(global, pega('function _tkaVencidoAntes('));
      [true, true, true, true, false, false]);
   const Hd = m => _taktSemanasHtml(Object.assign({}, C4, { sug:Object.assign({}, g, { porDia:m }) }), {});
   ok('acima das 2h da madrugada, o resto depois das 17:00 (2h13 → das 05:00 às 07:00 e das 17:00 às 17:13); 2h00 exatas é só a madrugada; passando das 22:00, "não cabe num dia" (revisão: saía "às 26:40")',
-     [Hd(133).includes('2h13 a mais em cada dia programado de 09/11 a 18/11 (8 dias): das 05:00 às 07:00 e das 17:00 às 17:13.'),
-      Hd(120).includes('2h00 a mais em cada dia programado de 09/11 a 18/11 (8 dias): das 05:00 às 07:00.'), Hd(420).includes('das 05:00 às 07:00 e das 17:00 às 22:00.'),
-      Hd(700).includes('11h40 a mais em cada dia programado de 09/11 a 18/11 (8 dias): não cabe num dia (das 05:00 às 07:00 e das 17:00 às 22:00 dão 7h00).'), /2[3-9]:\d\d|[3-9]\d:\d\d|22:[0-5][1-9]/.test((Hd(700).match(/tks4-sug[^]*?<\/div>/) || [''])[0])],
-     [true, true, true, true, false]);
+     [Hd(133).includes('2h13 a mais em cada dia programado de 09/11 a 18/11 (8 dias): das 05:00 às 07:00 e das 17:00 às 17:13 (passa das 2h00 por dia da CLT).'),
+      Hd(120).includes('2h00 a mais em cada dia programado de 09/11 a 18/11 (8 dias): das 05:00 às 07:00.'), Hd(420).includes('das 05:00 às 07:00 e das 17:00 às 22:00 (passa das 2h00 por dia da CLT).'),
+      Hd(700).includes('11h40 a mais em cada dia programado de 09/11 a 18/11 (8 dias): não cabe num dia (das 05:00 às 07:00 e das 17:00 às 22:00 dão 7h00).'), /2[3-9]:\d\d|[3-9]\d:\d\d|22:[0-5][1-9]/.test((Hd(700).match(/tks4-sug[^]*?<\/div>/) || [''])[0]),
+      Hd(133).includes('às 17:13 (passa das 2h00 por dia da CLT).'), Hd(120).includes('CLT')],
+     [true, true, true, true, false, true, false]);
   global.CFG = { turnoInicio:'06:00', turnoFim:'16:00' };
-  const Hj = Hd(133); delete global.CFG;
-  ok('a jornada vem do turno do ⚙ (06:00–16:00 → das 05:00 às 06:00 e das 16:00 às 17:13); sem ⚙, 07:00–17:00',
-     [Hj.includes('das 05:00 às 06:00 e das 16:00 às 17:13.'), _heSugJornada()], [true, { jIni:420, jFim:1020 }]);
+  const Hj = Hd(133), Hj1 = Hd(50); delete global.CFG;
+  ok('a jornada vem do turno do ⚙ (06:00–16:00 → 50 min das 05:10 às 06:00; 2h13 das 05:00 às 06:00 e das 16:00 às 17:13); sem ⚙, 07:00–17:00',
+     [Hj1.includes('0h50 a mais em cada dia programado de 09/11 a 18/11 (8 dias): das 05:10 às 06:00.'), Hj.includes('das 05:00 às 06:00 e das 16:00 às 17:13 (passa das 2h00 por dia da CLT).'), _heSugJornada()],
+     [true, true, { jIni:420, jFim:1020 }]);
   // feriado religioso fica fora: o 20/11 como SEXTA-FEIRA SANTA → o sábado 21/11 cobre
   const W3s = sem4(Object.assign({}, S3, { feriados:[{ data:'20/11/2026', desc:'Sexta-feira Santa' }] }));
   const C4s = _taktSemanasMontar([{ T }, { T:W1.T }, { T:W3s.T }, { T:W4.T }], RIT);
@@ -1190,8 +1192,18 @@ eval.call(global, pega('function _tkaVencidoAntes('));
       'CONSCIÊNCIA NEGRA', 'TIRADENTES', 'Dia do Trabalho', 'PROCLAMAÇÃO DA REPÚBLICA', 'CONFRATERNIZAÇÃO UNIVERSAL', 'DATA MAGNA DE SÃO PAULO', 'NATALÍCIO', 'ANIVERSÁRIO DA CIDADE'].map(_feriadoSanto),
      [true, true, true, true, true, true, true, true, true, true, true, true, false, false, false, false, false, false, false, false]);
   ok('revisão: a aba FERIADOS também guarda o que não é feriado trabalhável — férias coletivas, parada de fábrica, recesso, ponte e a linha sem descrição ("FERIADO") ficam fora da sugestão, na dúvida',
-     ['FÉRIAS COLETIVAS', 'PARADA DE FÁBRICA', 'RECESSO', 'PONTE', '', 'FERIADO', 'Fábrica fechada', 'CONSCIÊNCIA NEGRA', 'TIRADENTES', 'DATA MAGNA DE SÃO PAULO', 'SEXTA-FEIRA SANTA'].map(_feriadoParaHE),
-     [false, false, false, false, false, false, false, true, true, true, false]);
+     ['FÉRIAS COLETIVAS', 'PARADA DE FÁBRICA', 'RECESSO', 'PONTE', '', 'FERIADO', 'Fábrica fechada', 'INVENTÁRIO', 'BALANÇO', 'MANUTENÇÃO GERAL', 'FERIADO MUNICIPAL', 'Feriado Nacional', 'NOSSA SRA.', 'DIA DE N. SENHORA',
+      'CONSCIÊNCIA NEGRA', 'TIRADENTES', 'DATA MAGNA DE SÃO PAULO', 'SEXTA-FEIRA SANTA'].map(_feriadoParaHE),
+     [false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true, true, false]);
+  // revisão: o filtro do _taktSemanasMontar usa essa regra (não só o _feriadoSanto) — o 20/11 como FÉRIAS COLETIVAS sai da semana
+  const W3f = sem4(Object.assign({}, S3, { feriados:[{ data:'20/11/2026', desc:'FÉRIAS COLETIVAS' }] }));
+  ok('revisão: FÉRIAS COLETIVAS num dia útil não vira candidato no _taktSemanasMontar (só o sábado 21/11 fica)',
+     _taktSemanasMontar([{ T }, { T:W1.T }, { T:W3f.T }, { T:W4.T }], RIT).semanas[2].ext.map(x => x.data), ['21/11/2026']);
+  // revisão: sábado que é feriado civil (01/05/2027, 20/11/2027 caem no sábado) é feriado: entra depois do sábado comum e diz "(feriado)"
+  const T3sf = JSON.parse(JSON.stringify(W3.T)); T3sf.dias.find(d => d.data === '21/11/2026').feriado = 'CONSCIÊNCIA NEGRA';
+  const x21 = _taktSemanasMontar([{ T }, { T:W1.T }, { T:T3sf }, { T:W4.T }], RIT).semanas[2].ext.find(x => x.data === '21/11/2026');
+  ok('revisão: sábado que é feriado conta como feriado (fer) e a tela diz "sábado 21/11 (feriado)"',
+     [x21.fer, _taktSemanasHtml(Object.assign({}, C4, { sug:Object.assign({}, g, { ext:[Object.assign({}, x21, { i:2, min:60 })] }) }), {}).includes('<b>sábado 21/11 (feriado) das 05:00 às 06:00</b>')], [true, true]);
   // revisão: o sábado ou feriado de HOJE não entra (a jornada de hoje já é o "tem")
   const T1h = JSON.parse(JSON.stringify(W1.T)); T1h.dias.find(d => d.data === '14/11/2026').hoje = true;
   ok('revisão: o sábado de hoje não é candidato', _taktSemanasMontar([{ T }, { T:T1h }, { T:W3.T }, { T:W4.T }], RIT).semanas[1].ext.length, 0);

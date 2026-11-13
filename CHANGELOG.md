@@ -32,8 +32,10 @@ re-deploy).
   turno do ⚙; acima das 22:00, *"não cabe num dia"*).
 
 **Atenção:** a sugestão muda de número — com o mesmo atraso, cada sábado cobre
-6h em vez de 8h47, então entram mais dias (e o feriado). O atraso, o "a
-programar" e a tabela não mudam.
+6h em vez de 8h47, então entram mais sábados. O feriado só aparece quando o
+sábado da mesma semana não basta (por isso, com a programação de hoje, o
+20/11 pode não aparecer). A 2ª linha avisa quando passa das 2h por dia da
+CLT. O atraso, o "a programar" e a tabela não mudam.
 
 ## v7.238.0 — 13/11/2026 · 4 SEMANAS responde "vamos precisar de hora extra?" · AVALIAR alinhado · 🖨 4 SEMANAS
 

@@ -11508,17 +11508,17 @@ let TKS4_AB={};   // semanas abertas (dia a dia): índice → true; só na sess�
 // pode incluir na sugestão, só feriado santo que não pode"): sábado e feriado de dia útil das
 // 05:00 às 11:00 (6h, menos o lote que o dia já tem) — o sábado antes do feriado da mesma semana
 // (feriado trabalhado custa mais); a madrugada de dia útil (05:00 até o início do turno) e,
-// passando dela, depois do fim do turno, até as 22:00 (`noite`). jIni/jFim são a rede: a jornada
-// vem do turno do ⚙ (_heSugJornada).
-const HE_SUG={ ini:300, min:360, jIni:420, jFim:1020, noite:1320 };
+// passando dela, depois do fim do turno, até as 22:00 (`noite`), com o aviso acima das 2h por dia
+// da CLT (art. 59; `clt`). jIni/jFim são a rede: a jornada vem do turno do ⚙ (_heSugJornada).
+const HE_SUG={ ini:300, min:360, jIni:420, jFim:1020, noite:1320, clt:120 };
 // feriado religioso ("santo") não entra na sugestão — pela DESCRICAO da aba FERIADOS. Na dúvida
 // o nome fica fora (sugerir hora extra num dia santo é pior que deixar de sugerir num civil).
-const FERIADO_SANTO_RE=/\bSANT[AO]S?\b|\bST[AO]\b|\bSAO\b|PAIXAO|CORPUS|PASCOA|\bNATAL\b|APARECIDA|FINADOS|PADROEIR|IMACULADA|ASSUNCAO|NOSSA SENHORA|\bN\.? ?SRA\b|\bN\. ?S\.|CONCEICAO|BOM JESUS|CRISTO|SAGRADO|CINZAS|ASCENSAO|PENTECOSTES|\bREIS\b/;
+const FERIADO_SANTO_RE=/\bSANT[AO]S?\b|\bST[AO]\b|\bSAO\b|PAIXAO|CORPUS|PASCOA|\bNATAL\b|APARECIDA|FINADOS|PADROEIR|IMACULADA|ASSUNCAO|SENHORA|NOSSA SRA|\bN\.? ?SRA\b|\bN\. ?S\.|CONCEICAO|BOM JESUS|CRISTO|SAGRADO|CINZAS|ASCENSAO|PENTECOSTES|\bREIS\b/;
 // civil com nome de santo (09/07 DATA MAGNA DE SÃO PAULO, a Revolução Constitucionalista — feriado em SP)
 const FERIADO_CIVIL_RE=/DATA MAGNA|REVOLUCAO|CONSTITUCIONALISTA/;
-// e a aba também guarda o que NÃO é feriado trabalhável (férias coletivas, parada, recesso, ponte)
-// e a linha sem descrição (vira "FERIADO"): fora, na dúvida
-const FERIADO_FECHADO_RE=/FERIAS|COLETIVA|PARADA|RECESSO|FECHAD|PONTE|EMENDA|^FERIADO$|^$/;
+// e a aba também guarda o que NÃO é feriado trabalhável (férias coletivas, parada, recesso, ponte,
+// inventário, manutenção) e a linha sem nome (vira "FERIADO", ou só "FERIADO MUNICIPAL"): fora, na dúvida
+const FERIADO_FECHADO_RE=/FERIAS|COLETIVA|PARADA|RECESSO|FECHAD|PONTE|EMENDA|INVENTARIO|BALANCO|MANUTENCAO|^FERIADO( (NACIONAL|ESTADUAL|MUNICIPAL))?$|^$/;
 function _feriadoNorm(desc){ return String(desc||'').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim(); }
 function _feriadoSanto(desc){ const t=_feriadoNorm(desc); return FERIADO_SANTO_RE.test(t) && !FERIADO_CIVIL_RE.test(t); }
 // o feriado de dia útil pode receber hora extra sugerida? (PPCP: "só feriado santo que não pode")
@@ -11629,7 +11629,7 @@ function _taktSemanasMontar(L, rit){
     // das 05:00 às 11:00 — o lote que o dia já tem ocupa o começo (livre = 6h − ele) — e os dias úteis
     // com lote de amanhã em diante
     const ext=T.dias.filter(d=>!d.passado && !d.hoje && (d.dow===6 || (d.feriado && d.dow>=1 && d.dow<=5)) && !(d.feriado && !_feriadoParaHE(d.feriado)))
-      .map((d, o)=>{ const ja=Math.round(d.saldoUep*k); return { data:d.data, dow:d.dow, fer:d.dow!==6, livre:Math.max(0, HE_SUG.min-ja), ini:HE_SUG.ini+ja, o }; });
+      .map((d, o)=>{ const ja=Math.round(d.saldoUep*k); return { data:d.data, dow:d.dow, fer:!!d.feriado, livre:Math.max(0, HE_SUG.min-ja), ini:HE_SUG.ini+ja, o }; });
     const fut=T.dias.filter(d=>d.util && !d.passado && !d.hoje && d.uep>0), nUtFut=fut.length, uIniFut=fut.length ? fut[0].data : null;
     const vazia=T.dias.every(d=>!(d.cx>0)) && !(uVenc>0), semUep=!vazia && !T.dias.some(d=>d.uep>0);
     const conta=!vazia && !semUep;
@@ -11704,12 +11704,12 @@ function _taktSemanasHtml(C, o){
     +(C.nFora ? ` <span class="mono">Dia útil sem programação fica fora (${plural(C.nFora, 'dia', 'dias')}).</span>` : '')
     +(C.completo ? '' : ' <span class="mono">(até onde foi lido)</span>')+'</div>';
   // A SUGESTÃO, direta (PPCP: "essa frase deixa dúvida"): o dia e o horário; a outra forma, o horário em cada dia útil
-  const g=C.sug, quando=x=>`${x.fer ? 'feriado' : 'sábado'} ${dd(x.data)} das ${fromMin(x.ini)} às ${fromMin(x.ini+x.min)}`;
+  const g=C.sug, quando=x=>`${x.dow===6 ? 'sábado' : 'feriado'} ${dd(x.data)}${x.dow===6 && x.fer ? ' (feriado)' : ''} das ${fromMin(x.ini)} às ${fromMin(x.ini+x.min)}`;
   // até a madrugada inteira, terminando no início do turno; passando, o resto depois do fim do turno;
   // passando das 22:00 (HE_SUG.noite), não cabe num dia — diz isso, nunca um horário que não existe
   const J=_heSugJornada(), mad=J.jIni-HE_SUG.ini, cabeDia=mad+HE_SUG.noite-J.jFim;
   const madr=m=>m<=mad ? `das ${fromMin(J.jIni-m)} às ${fromMin(J.jIni)}`
-    : m<=cabeDia ? `das ${fromMin(HE_SUG.ini)} às ${fromMin(J.jIni)} e das ${fromMin(J.jFim)} às ${fromMin(J.jFim+m-mad)}`
+    : m<=cabeDia ? `das ${fromMin(HE_SUG.ini)} às ${fromMin(J.jIni)} e das ${fromMin(J.jFim)} às ${fromMin(J.jFim+m-mad)}${m>HE_SUG.clt ? ` (passa das ${hm(HE_SUG.clt)} por dia da CLT)` : ''}`
     : `não cabe num dia (das ${fromMin(HE_SUG.ini)} às ${fromMin(J.jIni)} e das ${fromMin(J.jFim)} às ${fromMin(HE_SUG.noite)} dão ${hm(cabeDia)})`;
   const sug=!g ? '' : `<div class="tks-ler warn tks4-sug"><b>Hora extra sugerida</b> (na média da linha): `
     +(g.ext.length ? g.ext.map(x=>`<b>${quando(x)}</b>`).join(' · ')+(g.resto>0 ? ` · e ainda <b>${hm(g.resto)}</b> nos dias úteis` : '')
@@ -11743,7 +11743,7 @@ function _taktSemanasHtml(C, o){
   }).join('');
   return tit+ver+sug
     +`<div class="uep-card" style="overflow-x:auto"><table class="tka-tab tks4"><thead><tr><th>SEMANA</th><th class="n">PRECISA</th><th class="n">TEM</th><th class="n">NA SEMANA</th><th class="n">ATRASO NO FIM</th>${rr ? '<th class="n">NO RITMO ATUAL</th>' : ''}</tr></thead><tbody>${lin}</tbody></table>`
-    +`<div class="uep-nota">Horas de linha. Precisa = o saldo dos lotes dos dias úteis (na esta semana, também o que já venceu); tem = 8h47 por dia útil com lote (hoje, o que resta). Dia útil sem lote e lote em fim de semana ou feriado (hora extra) ficam fora. O atraso passa para a semana seguinte; a sobra só abate atraso que já existe; o atraso no fim é a hora extra que ainda falta programar. Sugestão: os sábados e depois os feriados de dia útil (o religioso e o de fábrica fechada ficam fora), depois da última semana que fechou em dia, das 05:00 às 11:00 (menos o lote que o dia já tem) e até o menor atraso daquela semana até o fim — mais que isso, uma semana com sobra adiante deixaria a hora paga sem atraso para cobrir. Ou: o mesmo total em cada dia programado, primeiro a madrugada, depois do fim do turno (até as 22:00). Não soma o vencido de antes desta segunda (o card ATRASO).${pp ? '' : ' Toque na semana para ver o dia a dia.'}</div></div>`;
+    +`<div class="uep-nota">Horas de linha. Precisa = o saldo dos lotes dos dias úteis (na esta semana, também o que já venceu); tem = 8h47 por dia útil com lote (hoje, o que resta). Dia útil sem lote e lote em fim de semana ou feriado (hora extra) ficam fora. O atraso passa para a semana seguinte; a sobra só abate atraso que já existe; o atraso no fim é a hora extra que ainda falta programar. Sugestão: os sábados e feriados de dia útil (o religioso e o de fábrica fechada ficam fora; na mesma semana, o sábado antes do feriado), depois da última semana que fechou em dia, das 05:00 às 11:00 (menos o lote que o dia já tem) e até o menor atraso daquela semana até o fim — mais que isso, uma semana com sobra adiante deixaria a hora paga sem atraso para cobrir. Ou: o total dividido pelos dias programados, primeiro a madrugada, depois do fim do turno (até as 22:00). Não soma o vencido de antes desta segunda (o card ATRASO).${pp ? '' : ' Toque na semana para ver o dia a dia.'}</div></div>`;
 }
 function _taktEstadoHtml(est, erro, fn, botoes){
   const msg=est==='lendo' ? 'Lendo a programação da semana…'
