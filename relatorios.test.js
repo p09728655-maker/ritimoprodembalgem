@@ -1920,8 +1920,8 @@ ok('não repete o relatório de controle', /swotHtml|linhasTipo|<div class="rp-s
 // o próximo ajuste consertasse um e esquecesse o outro (#204/#205).
 ok('o CSS do documento é declarado uma vez só',
    (JS.match(/function _rpDocParadas\(/g) || []).length, 1);
-ok('e os dezenove relatórios usam ele (paradas, perdas, min/1000, proposta de investimento, qualidade do plano, carteira, estudo de UEP, capacidade em UEP — dia montado e por produto —, a UEP executiva, o padrão × realizado por produto, a fila de cronoanálise, caixas × UEP, a cronoanálise → UEP, a programação × capacidade, os estudos do dia, o onde o tempo vai, o takt da semana e a avaliação da programação)',
-   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 19);
+ok('e os vinte relatórios usam ele (paradas, perdas, min/1000, proposta de investimento, qualidade do plano, carteira, estudo de UEP, capacidade em UEP — dia montado e por produto —, a UEP executiva, o padrão × realizado por produto, a fila de cronoanálise, caixas × UEP, a cronoanálise → UEP, a programação × capacidade, os estudos do dia, o onde o tempo vai, o takt da semana, as 4 semanas e a avaliação da programação)',
+   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 20);
 // A camada abre o documento no relatório dela: sem "o relatório acima" e sem
 // a quebra de página que imprimiria uma folha em branco.
 ok('o relatório da tela marca a camada como sozinha', /ctx\.soZinho=true/.test(_relPg), true);
@@ -2908,7 +2908,7 @@ ok('e a versão em caixa alta deriva dela, não é digitada de novo',
 ok('os rodapés de relatório leem a constante',
    (_v7.match(/<span>\$\{APP_NOME\} · \$\{CFG\.empresa\}/g) || []).length, 5);
 ok('os rodapés de PDF de paradas leem a constante',
-   (_v7.match(/<span>\$\{APP_NOME_CX\} · Embalagem/g) || []).length, 17);   // + estudo de UEP + capacidade em UEP (2) + UEP executiva + padrão × realizado + fila de cronoanálise + caixas × UEP + cronoanálise → UEP + programação × capacidade + estudos do dia + onde o tempo vai + takt da semana
+   (_v7.match(/<span>\$\{APP_NOME_CX\} · Embalagem/g) || []).length, 18);   // + estudo de UEP + capacidade em UEP (2) + UEP executiva + padrão × realizado + fila de cronoanálise + caixas × UEP + cronoanálise → UEP + programação × capacidade + estudos do dia + onde o tempo vai + takt da semana + 4 semanas
 ok('o resumo do WhatsApp assina com a constante',
    /L\.push\(APP_NOME\+' · PPCP'\);/.test(_v7), true);
 ok('e o resumo continua sem emoji depois da troca',
@@ -2919,8 +2919,8 @@ console.log('\n── o slogan vai em TODA impressão ──');
 // ponto de destaque é o FINAL, e o "·" do meio é texto normal.
 ok('o cabeçalho comum dos relatórios leva o slogan',
    /rp-slogan[^>]*>Medimos o pulso da·linha<span[^>]*>\.<\/span>/.test(_v7), true);
-ok('e é UMA implementação — os 23 relatórios passam pelo _rpCabecalho',
-   (_v7.match(/_rpCabecalho\(/g) || []).length, 24);   // 22 chamadas (+ UEP executiva + padrão × realizado + fila de cronoanálise + caixas × UEP + cronoanálise → UEP + programação × capacidade + estudos do dia + onde o tempo vai + takt da semana) + a declaração
+ok('e é UMA implementação — os 24 relatórios passam pelo _rpCabecalho',
+   (_v7.match(/_rpCabecalho\(/g) || []).length, 25);   // 23 chamadas (+ 4 semanas, + UEP executiva + padrão × realizado + fila de cronoanálise + caixas × UEP + cronoanálise → UEP + programação × capacidade + estudos do dia + onde o tempo vai + takt da semana) + a declaração
 ok('os dois cabeçalhos de impressão do painel também levam',
    (_v7.match(/class="print-header-slogan">Medimos o pulso da·linha<span>\.<\/span>/g) || []).length, 2);
 // O slogan aparece em SEIS lugares no desktop, e a forma é a MESMA nos seis —
@@ -4655,8 +4655,8 @@ console.log('\n── estudo de UEP ──');
       /PONTOS_DIA\.uep===null/.test(CARR), /tab==='uep'\)\{ _uepSubMarca\(UEP_SUB\); renderUep\(\); if\(UEP_SUB==='reguas'\)\{[^\n]*\} else \{ UEP_ABA_PEND=false; _uepDepoisDe\(\(\)=>REG_RODANDO, \(\)=>\{ if\(_abaOn\('uep'\)\) _uepAbaCarregar\(\); \}\); \} \}/.test(JS)], [true, true, true]);
   const R = pega('function renderUep('), DAD = pega('function _uepAbaDados(');
   ok('a aba usa a régua do card (uepCard) e não reescreve conta', [/uepCard\(/.test(DAD), /\/\s*UEP_MIN_DIA\s*\*\s*60/.test(DAD.replace(/meta\/UEP_MIN_DIA\*60/,''))], [true, false]);
-  ok('tela, impressão, diretoria, Telas F/G da TV, o 🖨 TAKT DA SEMANA e o 🖨 AVALIAÇÃO leem a MESMA montagem (_uepAbaDados), e a tela não monta por conta própria',
-     [(JS.match(/(?<!function )_uepAbaDados\(/g) || []).length, /uepCard\(|_uepAbaHoras\(|_uepAbaMix\(|_uepAbaConf\(/.test(R)], [6, false]);   // tela, papel, diretoria (v7.116.0), TV F/G (v7.138.0) e o 🖨 TAKT (v7.210.0)
+  ok('tela, impressão, diretoria, Telas F/G da TV, o 🖨 TAKT DA SEMANA, o 🖨 4 SEMANAS e o 🖨 AVALIAÇÃO leem a MESMA montagem (_uepAbaDados), e a tela não monta por conta própria',
+     [(JS.match(/(?<!function )_uepAbaDados\(/g) || []).length, /uepCard\(|_uepAbaHoras\(|_uepAbaMix\(|_uepAbaConf\(/.test(R)], [7, false]);   // tela, papel, diretoria (v7.116.0), TV F/G (v7.138.0), o 🖨 TAKT (v7.210.0) e o 🖨 4 SEMANAS (v7.238.0)
   ok('sem buraco no meio: a confiabilidade divide a coluna do mix, as colunas esticam e o hora a hora cresce até o fim',
      [/<div class="uep-2">\$\{b2\}<div>\$\{b3\}<div class="uep-sec" title="\$\{_rpEsc\(UEP_ORIGEM_T\)\}"><b>ORIGEM DA UEP/.test(R),
       /#sec-uep \.uep-2 \.uep-grow\{flex:1\}/.test(src), /function _uepAbaSvg\(horas, largura, altura, pbMin\)/.test(JS),
@@ -4672,11 +4672,11 @@ console.log('\n── estudo de UEP ──');
         ['hoje', 'periodo', 'prox', 'prod', 'takt'].map(k => R.indexOf("pn('" + k + "'")).every((x, i, a) => x > 0 && (!i || x > a[i - 1])), /UEP_SUB===k\?' on':''/.test(R),
         R.includes("pn('reguas'"), /<div class="ucv-pn" data-sub="reguas" id="uep-reguas">/.test(SU)],
        [['hoje', 'periodo', 'prox', 'prod', 'reguas', 'takt'], true, true, true, true, false, true]);
-    ok('o cabeçalho: as seis impressões no menu 🖨 IMPRIMIR ▾ (cada uma fecha o menu antes); CRONOANÁLISE na ponta da faixa (a RÉGUAS é sub-aba); o título não diz mais "— HOJE"',
-       [(MENU.match(/onclick="_uepImpFecha\(\);/g) || []).length, ['gerarRelatorioUepAba()', 'gerarRelatorioUepPadrao()', 'gerarRelatorioFilaCrono()', 'gerarRelatorioCxUep(_regN())', 'gerarRelatorioTakt()', 'gerarRelatorioAvaliacao()'].every(f => MENU.includes(f)),
+    ok('o cabeçalho: as sete impressões no menu 🖨 IMPRIMIR ▾ (cada uma fecha o menu antes); CRONOANÁLISE na ponta da faixa (a RÉGUAS é sub-aba); o título não diz mais "— HOJE"',
+       [(MENU.match(/onclick="_uepImpFecha\(\);/g) || []).length, ['gerarRelatorioUepAba()', 'gerarRelatorioUepPadrao()', 'gerarRelatorioFilaCrono()', 'gerarRelatorioCxUep(_regN())', 'gerarRelatorioTakt()', 'gerarRelatorio4Semanas()', 'gerarRelatorioAvaliacao()'].every(f => MENU.includes(f)),
         /class="btn btn-ghost ucv-sb-ir" onclick="setTab\('crono'\)"/.test(SU), /setTab\('reguas'\)/.test(SU),
         SU.includes('⚖ UEP — HOJE'), /gerarRelatorioUepPadrao\(\)/.test(R)],
-       [6, true, true, false, false, false]);
+       [7, true, true, false, false, false]);
     ok('os títulos dos blocos sem número (cada sub-aba é o seu contexto) e o renderUep pinta os botões, também sem os dados do dia',
        [/\d · (HOJE|HORA A HORA|O MIX|ORIGEM|PERÍODO|PRÓXIMOS|PADRÃO)/.test(R), /_uepSubPintar\(_uepSubMontar\(\{ D, H:Hpad, padEst:/.test(R),
         /el\.innerHTML=`<div class="empty-msg">\$\{D\.msg\}\$\{tentar\}<\/div>`;\s*_uepSubPintar\(_uepSubMontar\(\{ D \}\)\); return;/.test(R)],

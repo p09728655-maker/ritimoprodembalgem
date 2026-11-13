@@ -1019,7 +1019,7 @@ console.log('\n── v7.224.0: a FAIXA DO TAKT — os volumes para o app de cro
      [true, true, true]); }
 
 console.log('\n── v7.237.0: 4 SEMANAS (uma regra de saldo para as quatro, sempre em dias úteis; só o atraso passa adiante) ──');
-['function _taktSemanas4Faixa(', 'function _taktSemanaDe(', 'function _taktSemanasMontar(', 'function _taktSemanasHtml('].forEach(f => eval.call(global, pega(f)));
+['function _taktSemanas4Faixa(', 'function _taktSemanaDe(', 'function _taktSemanasMontar(', 'function _taktHeSugestao(', 'function _taktSemanasHtml('].forEach(f => eval.call(global, pega(f)));
 global.TKS4_AB = {};
 global.p2 = global.p2 || (n => String(n).padStart(2, '0'));
 ok('a faixa das semanas 3 e 4: da 3ª segunda (esta inclusa) ao domingo seguinte; 06/11 (sex) → 16–29/11; numa segunda, 09/11 → 23/11–06/12',
@@ -1045,7 +1045,7 @@ ok('com todo dia útil programado, a 1ª semana dá o mesmo que a ESTA SEMANA e 
      [s[0].atraso, s[1].atraso, s[2].atraso, s[3].atraso, C4.atraso, C4.fim, _fmtHM(C4.atraso)], [a1, a2, a3, a3, a3, '18/11/2026', '14h52']);
   const H = _taktSemanasHtml(C4, { botoes:'' });
   ok('rótulo da semana do 1º ao último dia útil (PPCP: "16-22/11 é domingo"), com o feriado e o dia sem lote ditos; nenhum rótulo termina no domingo',
-     [s[1].ini, s[1].fim, s[2].ini, s[2].fim, s[3].fim, H.includes('16/11–19/11'), H.includes('20/11 feriado'), H.includes('19/11 sem programação — fora'), /–22\/11|–15\/11|–29\/11/.test(H), H.includes('a linha chega a <b>18/11</b>'), H.includes('Dia útil sem programação fica fora (1 dia)'), H.includes('23/11, 24/11')],
+     [s[1].ini, s[1].fim, s[2].ini, s[2].fim, s[3].fim, H.includes('16/11–19/11'), H.includes('20/11 feriado'), H.includes('19/11 sem programação — fora'), /–22\/11|–15\/11|–29\/11/.test(H), H.includes('<b>Hora extra até 18/11:</b> <b>14h52</b> ainda a programar'), H.includes('Dia útil sem programação fica fora (1 dia)'), H.includes('23/11, 24/11')],
      ['09/11/2026', '13/11/2026', '16/11/2026', '19/11/2026', '27/11/2026', true, true, true, false, true, true, false]); }
 { // o caso da revisão: a semana 4 só com o 23/11 programado — os outros 4 dias não viram folga
   const l = Object.assign({}, FX.F1629[0], { data:'23/11/2026', dataNum:20261123 });
@@ -1058,8 +1058,8 @@ ok('com todo dia útil programado, a 1ª semana dá o mesmo que a ESTA SEMANA e 
   const Ts = _taktMontar(Object.assign({}, SP, { linhas:SP.linhas.concat([sab]) }), [], hP);
   const Cs = _taktSemanasMontar([{ T }, { T:Ts }], RIT), s1 = Cs.semanas[1], dS = s1.dias.find(d => d.data === '14/11/2026');
   const Hs = (global.TKS4_AB = { 1:true }, _taktSemanasHtml(Cs, { botoes:'' })); global.TKS4_AB = {};
-  ok('lote no sábado 14/11: fora do PRECISA (46h08, o mesmo da SEMANA QUE VEM), dito na linha e no dia ("hora extra, fora da conta"), sem "falta" vermelha no dia',
-     [s1.precisa, s1.he.length, s1.he[0].min, dS && dS.he, Hs.includes('14/11 1h03 em hora extra, fora'), /14\/11 sáb · fim de semana · hora extra, fora da conta<\/td><td class="n mono">1h03<\/td><td class="n">—<\/td><td class="n">—<\/td>/.test(Hs)],
+  ok('lote no sábado 14/11 = hora extra JÁ programada (PPCP: "quando for para trabalhar aos sábados vai ter programação com a data de sábado"): fora do PRECISA (46h08, o mesmo da SEMANA QUE VEM), dito na frase, na linha e no dia, sem "falta" vermelha no dia',
+     [s1.precisa, s1.he.length, s1.he[0].min, dS && dS.he, Hs.includes('14/11 1h03 em hora extra, fora') && Hs.includes('<b>1h03</b> já programada (14/11) · '), /14\/11 sáb · fim de semana · hora extra, fora da conta<\/td><td class="n mono">1h03<\/td><td class="n">—<\/td><td class="n">—<\/td>/.test(Hs)],
      [V1.precisaMin, 1, Math.round(332 * K), true, true, true]); }
 { // caixas sem UEP: ditas, nunca "sem programação"
   const su = SP.linhas.map(l => Object.assign({}, l, { uepCx:null, uep:null }));
@@ -1112,22 +1112,104 @@ ok('sem a esta semana montada: nada', _taktSemanasMontar([{ est:'lendo' }, { T:W
   ok('a ligação: 4 SEMANAS entre SEMANA QUE VEM e AVALIAR; o setter aceita 3 e pede as leituras na fila; cada semana pelo _taktMontar; o AVALIAR não muda; o botão da sub-aba',
      [/b\(1, 'SEMANA QUE VEM'\)\}\$\{b\(3, '4 SEMANAS'\)\}\$\{b\(2, 'AVALIAR PROGRAMAÇÃO'\)/.test(pega('function _taktSemBotoes(')), /k===3 \? k : 0/.test(pega('function _taktSemSet(')),
       /TKS_SEM===3\) _uepDepoisDe\(_uepLendo/.test(pega('function _taktSemSet(')),
-      /_taktSemanasMontar\(\[\{ T \}, sem\(tkpOk \? TKP : null, e1\)/.test(RR) && /\{ T:_taktMontar\(Sx, UEP_HIST\|\|\[\], hP, pts, est\) \}/.test(RR),
+      /C4=_taktSemanasDoPainel\(T, hojeN, meta, rit\)/.test(RR) && /_taktSemanasMontar\(\[\{ T \}, sem\(tkpOk \? TKP : null, e1\)/.test(pega('function _taktSemanasDoPainel(')) && /\{ T:_taktMontar\(Sx, UEP_HIST\|\|\[\], hP, pts, est\) \}/.test(pega('function _taktSemanasDoPainel(')),
       !/soPainel|o\.fim/.test(pega('function _tkaCorrente(')) && /TKS_SEM===2\) renderUep\(\)/.test(pega('function _tkaPainelCarregar(')),
       _uepSubTakt(null, null, '4 semanas', null).txt, _uepSubTakt(null, null, '4 semanas', { atraso:735, completo:true }), _uepSubTakt(null, null, '4 semanas', { atraso:0, completo:true }).txt],
-     [true, true, true, true, true, '…', { txt:'4 semanas: 12h15 de atraso', cls:'warn' }, '4 semanas: em dia']);
+     [true, true, true, true, true, '…', { txt:'4 semanas: 12h15 de hora extra a programar', cls:'warn' }, '4 semanas: sem hora extra a programar']);
   ok('sem laço de leitura: a semana que vem e a faixa só são pedidas com a fila livre e depois da espera (5 min; 1 min depois de falha), uma por vez; a faixa entra na fila da aba',
      [/if\(UEP_SUB==='takt' && !_uepLendo\(\) && !pausa\)\{[\s\S]*?if\(vP && \(!v4 \|\| TKP_TS<=TK4_TS\)\) _taktProxCarregar\(true\);\s*else if\(v4\) _taktSemanas4Carregar\(true\);/.test(RR),
       /TK4_VOO=null; TK4_TS=Date\.now\(\);/.test(pega('function _taktSemanas4Carregar(')), /TK4_VOO/.test(pega('function _uepLendo(')),
       /\(TKS_SEM===1 \|\| TKS_SEM===3\)\) renderUep\(\); \}, 60500\)/.test(pega('function _taktProxCarregar('))],
      [true, true, true, true]); }
 
+console.log('\n── v7.238.0: o vencido do AVALIAR uma vez por código; a 🖨 4 SEMANAS ──');
+eval.call(global, pega('function _tkaVencidoAntes('));
+{ const P = [
+    { dataNum:20261028, data:'28/10/2026', lote:'25300', codigo:'501.000.001', falta:100, uepCx:2 },   // dois lotes vencidos do mesmo código:
+    { dataNum:20261030, data:'30/10/2026', lote:'25310', codigo:'501.000.001', falta:100, uepCx:2 },   // o falta é do CÓDIGO (100), nas duas linhas
+    { dataNum:20261029, data:'29/10/2026', lote:'25320', codigo:'501000002', falta:80, uepCx:1 },      // esta semana já tem 30 dele até hoje
+    { dataNum:20261029, data:'29/10/2026', lote:'25330', codigo:'501000003', falta:40, uepCx:1 },      // esta semana tem mais que o falta
+    { dataNum:20261029, data:'29/10/2026', lote:'25340', codigo:'501000004', falta:50, uepCx:1, foraEsteira:true },
+    { dataNum:20261103, data:'03/11/2026', lote:'25350', codigo:'501000005', falta:70, uepCx:1 } ];   // desta semana: fica com o TKS
+  const W = [ { dataNum:20261103, codigo:'501000002', saldo:30 }, { dataNum:20261109, codigo:'501000002', saldo:999 },   // futura: não desconta
+              { dataNum:20261104, codigo:'501000003', saldo:60 } ];
+  const V = _tkaVencidoAntes(P, W, 20261102, 20261106), por = c => V.filter(l => String(l.codigo).replace(/\D/g, '') === c).reduce((a, l) => a + l.saldo, 0);
+  ok('o vencido de antes desta segunda UMA vez por código (revisão: o falta do código somava em cada linha), menos o que esta semana já traz até hoje; as outras linhas vão com saldo 0 só para a colagem não duplicar o lote',
+     [por('501000001'), V.find(l => l.lote === '25300').saldo, V.find(l => l.lote === '25310').saldo, por('501000002'), por('501000003'), por('501000004'), V.some(l => l.lote === '25350'), V.map(l => l.lote).sort()],
+     [100, 100, 0, 50, 0, 0, false, ['25300', '25310', '25320', '25330', '25340']]);
+  ok('o _tkaPainel usa a conta nova (nunca o falta do código em cada linha)',
+     [/_tkaVencidoAntes\(PROG_DETALHADA, /.test(pega('function _tkaPainel(')), /saldo:Number\(it\.falta\)/.test(pega('function _tkaPainel('))], [true, false]); }
+{ // o AVALIAR conta igual ao 4 SEMANAS (PPCP: "o intuito dessa tela é saber se vamos precisar de horas extras")
+  const sab = Object.assign({}, SP.linhas[0], { data:'14/11/2026', dataNum:20261114, lote:'25999', qtde:400, saldo:400, uepCx:0.83, uep:332 });
+  const Cs = _tkaCorrente(PAI.concat([sab]), L43.itens, OC), w1 = Cs.semanas.find(w => w.de === 20261109);
+  ok('AVALIAR: lote no sábado = hora extra JÁ programada — fora do atraso (o mesmo de sem ele), dito na semana e na frase',
+     [Cs.atraso, Cs.chegada, Cs.heMin, w1.heDias, /hora extra já programada: 14\/11 1h03 — fora do atraso/.test(_tkaSaldoHtml(Cs)), /Hora extra já programada \(sábado ou feriado\): <b>1h03<\/b>/.test(_tkaSaldoHtml(Cs))],
+     [C43.atraso, C43.chegada, Math.round(332 * K), [{ n:20261114, min:Math.round(332 * K) }], true, true]);
+  const adi = PAI.map(l => l.dataNum === 20261112 ? Object.assign({}, l, { saldo:0 }) : l);
+  const Ca = _tkaCorrente(adi, L43.itens, OC), wa = Ca.semanas.find(w => w.de === 20261109);
+  ok('AVALIAR: dia útil com lote já adiantado tem a jornada (a linha está livre; antes ficava fora como "sem programação")',
+     [Ca.lacunas.includes(20261112), wa.tem, wa.precisa < sem[1].precisa], [false, 5 * 527, true]);
+  const venc = Object.assign({}, SP.linhas[0], { data:'05/11/2026', dataNum:20261105, lote:'25998', saldo:100, uepCx:2, uep:200 });
+  const Cv = _tkaCorrente([venc].concat(SP.linhas), L43.itens, Object.assign({}, OC, { hojeN:20261107, restMin:0 }));
+  ok('AVALIAR: hoje sábado, o vencido continua atraso (nunca hora extra já programada)',
+     [Cv.heMin, Cv.semanas[0].precisa, Cv.semanas[0].atraso > 0], [0, Math.round(200 * K), true]); }
+{ // a SUGESTÃO de hora extra (PPCP: "já colocar a sugestão de trabalho extra se for o caso")
+  const g = C4.sug, s = C4.semanas, sab = g.sab;
+  // com as horas sugeridas nos sábados, o atraso fecha em zero, e nenhum sábado paga hora sem atraso para cobrir
+  let A = 0, sobra = 0; s.forEach(w => { if(!w.conta) return; const h = (sab.find(x => x.i === w.i) || {}).min || 0; const a = A + w.precisa - w.tem; sobra += Math.max(0, h - Math.max(0, a)); A = Math.max(0, a - h); });
+  ok('a sugestão: os sábados de 07/11 (8h47 livres), 14/11 e 21/11 até fechar as 14h52 — o atraso com eles fecha em zero, sem hora paga à toa; ou ≈ 1h52 por dia útil (8 dias com lote)',
+     [sab.map(x => [x.data, _fmtHM(x.min)]), sab.reduce((a, x) => a + x.min, 0), g.resto, A, sobra, g.dias, _fmtHM(g.porDia)],
+     [[['07/11/2026', '8h47'], ['14/11/2026', '4h52'], ['21/11/2026', '1h13']], C4.atraso, 0, 0, 0, 8, '1h52']);
+  const H = _taktSemanasHtml(C4, { botoes:'' });
+  ok('a sugestão vai logo abaixo da frase e o sábado sugerido na linha da semana',
+     [H.includes('<b>Sugestão de hora extra</b> (na média da linha)<b>:</b> sábados 07/11 (8h47), 14/11 (4h52) e 21/11 (1h13) — ou ≈ <b>1h52</b> por dia útil (8 dias com lote de 09/11 até 18/11).'),
+      H.indexOf('tks4-sug') > H.indexOf('Hora extra até') && H.indexOf('tks4-sug') < H.indexOf('<table'), H.includes('sugestão: sábado 14/11 4h52 de hora extra')],
+     [true, true, true]);
+  // a folga do meio já paga o atraso de antes: os sábados só DEPOIS da última semana que fechou em dia
+  const F = [{ i:0, conta:true, atraso:300, sab:{ data:'07/11', livre:527 }, nUtFut:4 }, { i:1, conta:true, atraso:0, sab:{ data:'14/11', livre:527 }, nUtFut:5 },
+             { i:2, conta:true, atraso:200, sab:{ data:'21/11', livre:100 }, nUtFut:4 }, { i:3, conta:true, atraso:260, sab:{ data:'28/11', livre:527 }, nUtFut:5 }];
+  const gF = _taktHeSugestao(F, 3);
+  ok('com uma semana em dia no meio, a sugestão começa depois dela (o sábado de antes pagaria hora sem atraso no fim); sábado com lote só oferece o que tem livre; sem atraso, nada',
+     [gF.sab.map(x => [x.data, x.min]), gF.resto, gF.dias, gF.porDia, _taktHeSugestao(F.map(x => Object.assign({}, x, { atraso:0 })), 3)],
+     [[['21/11', 100], ['28/11', 160]], 0, 9, 29, null]);
+  // revisão: o atraso que DESCE sem zerar (uma semana com sobra no meio) — a hora posta antes dela não pode passar do menor atraso até o fim
+  const cad = (A, livre) => A.map((a, i) => ({ i, conta:true, atraso:a, sab:{ data:'s' + i, livre:livre || 527 }, nUtFut:5, uIniFut:'d' + i }));
+  const fecha = (F2, g2) => { let H2 = 0, neg = false; F2.forEach(w => { H2 += (g2.sab.find(x => x.i === w.i) || {}).min || 0; if(w.atraso - H2 < 0) neg = true; }); return [F2[F2.length - 1].atraso - H2, neg]; };
+  const fechaDia = (F2, g2) => { let acc = 0, neg = false, k = F2.findIndex(w => w.uIniFut === g2.desde); F2.forEach((w, j) => { if(j >= k) acc += g2.porDia * w.nUtFut; if(w.atraso - acc < -2) neg = true; }); return [Math.abs(F2[F2.length - 1].atraso - acc) <= F2.length, neg]; };
+  const casos = [[600, 120, 420], [540, 100, 300, 400], [400, 300, 600], [300, 500, 200, 450]].map(A => { const F2 = cad(A), g2 = _taktHeSugestao(F2, A.length - 1); return [g2.sab.map(x => [x.i, x.min]), fecha(F2, g2), fechaDia(F2, g2), g2.resto]; });
+  ok('revisão: com uma semana que desce no meio (10h · 2h · 7h; 9h · 1h40 · 5h · 6h40; 6h40 · 5h · 10h; 5h · 8h20 · 3h20 · 7h30), os sábados fecham o atraso em zero sem nenhuma semana negativa (nada pago à toa), e a divisão por dia útil também',
+     casos.map(c => [c[1], c[2][0], c[2][1], c[3]]),
+     [[[0, false], true, false, 0], [[0, false], true, false, 0], [[0, false], true, false, 0], [[0, false], true, false, 0]]);
+  ok('revisão: 10h · 2h · 7h → 2h no 1º sábado e 5h no 3º (era 7h no 1º, sobravam 5h)', casos[0][0], [[0, 120], [2, 300]]);
+  const sem = F.map(x => Object.assign({}, x, { sab:null }));
+  ok('sem sábado livre: a sugestão diz "nenhum sábado livre" e fica só a divisão pelos dias úteis',
+     [_taktHeSugestao(sem, 3).resto, _taktHeSugestao(sem, 3).sab.length, _taktSemanasHtml(Object.assign({}, C4, { sug:Object.assign({}, g, { sab:[], resto:g.total }) }), {}).includes('nenhum sábado livre até lá — ou ≈')],
+     [260, 0, true]); }
+{ global.TKS4_AB = {};
+  const HP = _taktSemanasHtml(C4, { papel:true }), HT2 = _taktSemanasHtml(C4, { botoes:'' }), G4 = pega('async function gerarRelatorio4Semanas(');
+  ok('🖨 4 SEMANAS no papel: o mesmo desenho, sem botão nem toque, o dia a dia de TODAS as semanas aberto',
+     [HP.includes('onclick='), HP.includes('↻'), HP.includes('Toque'), HP.includes('▸'), (HP.match(/class="tks4-d"/g) || []).length, (HT2.match(/class="tks4-d"/g) || []).length, HP.includes('<b>Hora extra até 18/11:</b> <b>14h52</b> ainda a programar')],
+     [false, false, false, false, C4.semanas.reduce((a, x) => a + x.dias.length + (x.antes > 0 ? 1 : 0), 0), 0, true]);
+  const HPL = _taktSemanasHtml(CL, { papel:true }), HV = _taktSemanasHtml(C4, { botoes:'' });
+  const rowV = (HV.match(/<tr[^>]*><td>[^<]*23\/11–27\/11/) || [''])[0];
+  ok('revisão: no papel a semana não lida diz "não lida", sem ↻; semana sem programação não tem ▸ nem toque (não há o que abrir)',
+     [HPL.includes('↻'), HPL.includes('não lida (a leitura da programação falhou)'), rowV.includes('onclick'), rowV.includes('▸'), C4.semanas[3].dias.length],
+     [false, true, false, false, 0]);
+  ok('revisão: a 🖨 espera a fila da aba antes de ler; o AVALIAR só usa o vencido da programação detalhada DE HOJE (e lê de novo se for de outro dia)',
+     [/if\(_uepLendo\(\)\)\{ msg\('Esperando a outra leitura terminar…'\); await new Promise\(ok=>_uepDepoisDe\(_uepLendo, ok\)\); \}/.test(G4),
+      /if\(_progDetHoje\(\)\) lin\.push\(\.\.\._tkaVencidoAntes\(/.test(pega('function _tkaPainel(')), /if\(!_progDetHoje\(\)\) await carregarProgramacaoDetalhada\(\);/.test(pega('function _tkaPainelCarregar('))],
+     [true, true, true]);
+  ok('🖨 a janela abre no clique, lê o que faltar (histórico, esta semana, a que vem, a faixa) e monta pela MESMA montagem da tela; no menu 🖨 IMPRIMIR ▾',
+     [G4.indexOf('window.open(') < G4.indexOf('await '), /await _taktProxCarregar\(true\)/.test(G4) && /await _taktSemanas4Carregar\(true\)/.test(G4),
+      /_taktSemanasDoPainel\(T0, hojeN, D\.meta, /.test(G4), /_taktSemanasHtml\(C, \{ papel:true \}\)/.test(G4), /_TKS4_DOC_SKIN/.test(G4),
+      /onclick="_uepImpFecha\(\);gerarRelatorio4Semanas\(\)"/.test(html)],
+     [true, true, true, true, true, true]); }
 // AS LEITURAS DE VERDADE (revisão: o regex acima passava com a retentativa sem fim).
 // O bloco 4 SEMANAS do renderUep REAL, com relógio virtual, leituras de mentira de
 // 25 s e o refresh do gerencial (renderUep a cada 5 min), por 60 min.
 async function simLeituras(cenario){
   const RU = pega('function renderUep('), BLOCO = RU.slice(RU.indexOf('  let C4=null;'), RU.indexOf('  // v7.198.0'));
-  ['function _taktSemanas4Carregar(', 'function _taktProxCarregar(', 'async function _taktLer(', 'function _uepLendo(', 'function _uepDepoisDe(', 'function _taktSemSet('].forEach(f => eval.call(global, pega(f)));
+  ['function _taktSemanas4Carregar(', 'function _taktProxCarregar(', 'async function _taktLer(', 'function _uepLendo(', 'function _uepDepoisDe(', 'function _taktSemSet(', 'function _taktSemanasDoPainel('].forEach(f => eval.call(global, pega(f)));
   let VT = Date.UTC(2026, 10, 13, 12, 0, 0), fila = [], seq = 0, noAr = 0, emVoo = 0, maxVoo = 0;
   const conta = { prox:0, faixa:0 }, nowOrig = Date.now, stOrig = global.setTimeout;
   Date.now = () => VT;

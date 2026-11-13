@@ -7546,6 +7546,35 @@ feito e dá ar de verdade ao que sobrou.
       é lida — antes ficava *lendo…* sem leitura). O teste roda o bloco real do `renderUep` com o
       relógio virtual (não regex).
     - Medido no Chromium (retrato de 06/11): 1920 e 1366, nada passa da largura.
+    - **A PERGUNTA DA TELA (v7.238.0**, PPCP: *"o intuito dessa tela é saber se
+      vamos precisar de horas extras, quando for para trabalhar aos sábados vai
+      ter programação com a data de sábado"*): a frase é *"Hora extra até DD/MM:
+      Xh já programada (sábados/feriados com lote, `C.heProg`) · Yh ainda a
+      programar"* (Y = o atraso no fim). O botão da sub-aba, *"4 semanas: Yh de
+      hora extra a programar"*.
+    - **SUGESTÃO DE HORA EXTRA (v7.238.0**, *"já colocar a sugestão de trabalho
+      extra se for o caso"*): `_taktHeSugestao(semanas, iU)` (pura). Os sábados
+      DEPOIS da última semana que fechou em dia (antes dela a folga já pagou o
+      atraso), cada um com `min(livre, MENOR atraso daquela semana até o fim −
+      o já sugerido)` — livre = 8h47 − o lote que o sábado já tem. ⚠ O menor até
+      o fim, não o da própria semana (revisão: 10h · 2h · 7h sugeria 7h no 1º
+      sábado; a semana com sobra no meio comia 5h). O teste refaz o encadeamento
+      com as horas sugeridas em 5 casos e confere: fecha em zero, nenhuma semana
+      negativa. Ou o total ÷ os dias úteis com lote, do 1º trecho que termina na
+      última semana e respeita o mesmo teto (`desde`), com o aviso acima das 2h
+      da madrugada (05–07). A frase diz *"na média da linha"*: no ritmo atual as
+      horas sugeridas não fecham. Linha `.tks4-sug` abaixo da frase; o sábado sugerido
+      também na linha da semana. ⚠ Sábado = 8h47 de linha (uma jornada na
+      média): o turno real de sábado pode ser menor.
+    - **🖨 4 SEMANAS (v7.238.0**, PPCP: *"colocar impressão"*):
+      `gerarRelatorio4Semanas`, no menu 🖨 IMPRIMIR ▾. A montagem é UMA
+      (`_taktSemanasDoPainel`, a tela e o papel) e o desenho o MESMO
+      (`_taktSemanasHtml(C, { papel:true })`: sem botão nem toque, todas as
+      semanas abertas). Pele `_TKS4_DOC_SKIN` sobre a `_TKS_DOC_SKIN` +
+      `_TKA_DOC_SKIN`. A janela abre no clique e lê o que faltar (histórico, esta
+      semana, a que vem, a faixa), uma leitura por vez. Medido (Chromium, fontes,
+      mídia de impressão a 1.032 px): uma folha A4 deitada, 493 de 718 px.
+      Semana sem conta não tem dia a dia (`dias:[]`).
   - **AVALIAR PROGRAMAÇÃO (v7.213.0**, PPCP: *"como fazer para programar
     dentro do padrão?"* → *"a no painel"*): `TKS_SEM` = 2. O PCP cola o bloco
     da semana da PLANILHA DE PRODUÇÃO (Excel, ver abaixo) e vê CABE/NÃO CABE
@@ -7791,7 +7820,22 @@ feito e dá ar de verdade ao que sobrou.
     - **De onde vem o painel** (`_tkaPainel(fimN)`): TKS (esta semana), TKP (a
       que vem), `TKF` (faixas da 3ª segunda ao último dia colado, de 14 em 14
       dias — `_tkaFaixas`, `_taktLer` com de/ate) e o vencido de antes desta
-      segunda (`PROG_DETALHADA`, o `falta`). `_tkaPainelCarregar` lê o que
+      segunda (`_tkaVencidoAntes`, v7.238.0). ⚠ O `falta` do
+      `getProgramacaoDetalhada` é POR CÓDIGO (atraso + o que falta de hoje) e
+      vem igual em toda linha do código: até a v7.237.0 ele entrava em CADA linha
+      vencida (dois lotes do mesmo código = o atraso duas vezes) e o vencido desta
+      semana, que já vem do TKS linha a linha, entrava de novo. Hoje: por código,
+      UMA vez, o falta menos o saldo das linhas do TKS até hoje, na linha vencida
+      mais antiga; as outras com saldo 0 (só para a colagem não duplicar o lote).
+      Só com a programação detalhada DE HOJE (`_progDetHoje`): o falta de ontem
+      menos o saldo de hoje erraria; o `_tkaPainelCarregar` relê se for de outro
+      dia (`TKA_VENC_FALHA` segura a releitura sozinha depois de uma falha).
+    - **A regra do 4 SEMANAS (v7.238.0)**: lote em sábado, domingo ou feriado é
+      HORA EXTRA JÁ PROGRAMADA — fora do atraso, dita na semana (*"hora extra já
+      programada: 14/11 1h03"*) e na frase (`C.heMin`); o vencido que cai num
+      hoje fora da jornada continua atraso (`d.venc`). Dia útil com lote com UEP
+      já adiantado tem a jornada (antes: lacuna). O rótulo da semana só pelos
+      dias úteis. `_tkaPainelCarregar` lê o que
       faltar NA FILA (`_uepDepoisDe(_uepLendo, …)`; `TKA_VOO` fica fora do
       `_uepLendo`, senão esperaria a si mesmo).
     - **🖨 AVALIAÇÃO DA PROGRAMAÇÃO** (`gerarRelatorioAvaliacao`, menu): a
