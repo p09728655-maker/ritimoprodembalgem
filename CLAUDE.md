@@ -13,7 +13,9 @@ via Google Apps Script (JSONP).
   (`hojeStr`/`dtToStr`), `mergeMedias`, `calcAtrasoHoras`, `sc`,
   `atrasoVencido` (o card ATRASO do celular, 1.14.0), `pdiaParMontar` (as
   paradas na faixa do PRODUTOS EMBALADOS HOJE, 1.16.0), `histDiaFds` /
-  `uepDiaHe` (sábado e domingo todo hora extra, 1.18.0). Só função
+  `uepDiaHe` (sábado e domingo todo hora extra, 1.18.0), `metaDiasParadas` /
+  `metaMedianaUteis` (a parada de fim de semana pela mediana dos dias úteis,
+  1.18.0). Só função
   **pura** entra aqui — nada que leia `DADOS`/`CFG` ou toque no DOM.
   `node rp-core.test.js` cobre a regra e falha se algum HTML voltar a declarar
   a própria cópia.
@@ -3740,6 +3742,10 @@ feito e dá ar de verdade ao que sobrou.
     contá-lo como hora cheia cobraria meta de 12 minutos que não existem.
   - **Só entra hora COM LANÇAMENTO** — hora que ninguém apontou ainda não é hora
     atrasada (mesma regra do `calcAtrasoHoras`).
+  - **Só a JORNADA** (v7.247.0 / mobile 1.50.0): as caixas e os minutos da hora
+    extra ficam fora (`realNormal`, minutos de jornada) — a hora extra não tem
+    meta. Sem minuto de jornada lançado não há o que julgar: AGUARDANDO, sem cor
+    (nunca ABAIXO DO RITMO).
   - Turno sem hora lançada devolve 0, como os painéis já faziam antes.
 - **O NÚMERO GRANDE é o % da META DO DIA; o veredito é o selo** (pedido do
   usuário, 01/09/2026: *"essa eficiência está confundindo as pessoas"*). A TV
@@ -3823,11 +3829,14 @@ feito e dá ar de verdade ao que sobrou.
   01/09/2026)~~ — **revogado na v7.247.0** (PPCP, 16/11/2026: *"no meio da semana
   meta 0 em horas extra"*): a hora extra não tem meta em DIA NENHUM, também na
   TV. Tabela `tv-tbl-body`: HE com meta '—', status *HE*, linha `r-he` (âmbar),
-  sem atraso; Tela A (`tva-meta`/`tva-pct`/`tva-status`): *HORA EXTRA · SEM META*,
-  `tva-band he`. Celular: a lista do operador diz *HORA EXTRA · SEM META*, sem cor
-  de veredito, e o lançamento abre sem meta. A META da linha HE do modal ⚙ HORA
-  EXTRA não soma mais na meta do dia (`meta=metaBase`; o `.gs` nunca somou), e o
-  `metaH`/`metaReal` dos dois `calcKPIs` são só da jornada.
+  sem atraso; Tela A (`tva-meta`/`tva-pct`/`tva-status`): *HORA EXTRA*,
+  `tva-band he` (fundo neutro, texto âmbar). Celular: a lista do operador diz
+  *HORA EXTRA · SEM META*, sem cor de veredito, e o lançamento abre sem meta. A
+  META da linha HE do modal ⚙ HORA EXTRA não soma mais na meta do dia
+  (`meta=metaBase`; o `.gs` nunca somou), e o `metaH`/`metaReal` dos dois
+  `calcKPIs` são só da jornada. **O selo de ritmo em caixas também é só da
+  jornada** (minutos e caixas; AGUARDANDO sem minuto de jornada lançado) — ver
+  *SÁBADO E DOMINGO…*, *Da 2ª revisão*.
   - ⚠ **A PLANILHA ainda dá meta à madrugada**: a coluna META da HORA_A_HORA
     (B5) reparte a meta do dia pelas horas a partir do C3 — com C3=5 as horas
     de 05:00 e 06:00 recebem meta e as de jornada ficam com o dia ÷ 11. O
@@ -4075,18 +4084,19 @@ feito e dá ar de verdade ao que sobrou.
     extra*; diretoria: barra âmbar sem meta; seção UEP do semanal: *sem meta*.
   - A aba PLANO tira o sábado sozinha: `_qpDiasBase` exige caixas de jornada
     (antes o 07/11 entrava com 465 cx — a pendência da v7.222.0 se resolveu).
-  - Paradas num sábado: dia sem meta → `metaPadrao` (a regra de sempre do
-    RP_PARADAS), contado no `diag` como dia sem meta.
+  - Paradas num sábado: valoradas pela **mediana das metas dos dias úteis**
+    (`metaDiasParadas` no histórico, `metaMedianaUteis` no `metaHoje` ao vivo,
+    rp-core), em TODA tela — ver *Da 2ª revisão* abaixo.
   - **Ao vivo em caixas, também sem meta** (PPCP, na mesma conversa: *"sábado
     todas horas são extras"*): TV (`renderTV`, `fds`): `s`='warn', selo *TODO
     HORA EXTRA*, % DA META '—' com *SÁBADO · TODO HORA EXTRA · SEM META*,
     NECESSÁRIO '—', o *FALTAM* vira *SÁBADO — TODO HORA EXTRA, SEM META*
-    (`.tv-falta.he`), a barra é o feito × o PROGRAMADO (`k.meta` = a programação
-    do dia; 0 → '—'). Celular: % DA META '—' sem selo, META DO DIA vira
-    PROGRAMADO HOJE. PC: `_gerCxCards` sem cor no fim de semana (mesmo sem UEP).
-    ⚠ A TABELA hora a hora da TV continua julgando a hora pela meta da hora (o
-    ritmo do operador — a regra da HE na TV desde 01/09/2026). O `k.meta`/
-    `CFG.metaDia` do sábado não foi zerado: é o programado, mostrado como fato.
+    (`.tv-falta.he`), a barra é o feito × o PROGRAMADO (`_progHojeCx()` = o
+    `programadoHoje`, sem o atraso; 0 → '—'). Celular: % DA META '—' sem selo,
+    META DO DIA vira PROGRAMADO HOJE. PC: `_gerCxCards` sem cor no fim de semana
+    (mesmo sem UEP). A tabela hora a hora da TV também não julga (todo slot é
+    `he` — ver *Dia de HOJE no gerencial*). O `k.meta`/`CFG.metaDia` do sábado
+    não foi zerado: é o programado, mostrado como fato.
 - **Da revisão (mesma versão)**: o resumo do WhatsApp diz *"todo hora extra,
   sem meta · X UEP em hora extra"* (era *"(0,0%) · 0 UEP"*); o celular tira o
   NEC. P/ META no fim de semana e a análise em caixas do PC diz *sem meta*; a
@@ -4099,10 +4109,57 @@ feito e dá ar de verdade ao que sobrou.
   **mediana das metas dos dias úteis** do histórico (`metaDiasParadas`,
   rp-core) — antes caíam na meta do dia em que se abria a tela; e rede para o
   rp-core antigo em cache (`histDiaFds`/`uepDiaHe` no guarda do núcleo).
+- **Da 2ª revisão (mesma versão)**:
+  - **O selo de ritmo em caixas julga SÓ A JORNADA** (os dois `calcKPIs`:
+    `efNoRitmo(realNormal, meta, minutos de jornada lançados, minutos de
+    jornada do turno)`), como o selo da UEP e o `_relMetaHE`. Com a hora extra
+    sem meta, contar os minutos dela no esperado e as caixas dela no feito fazia
+    a TV dizer ABAIXO DO RITMO às 06:45 (só a madrugada lançada) ao lado das
+    linhas "sem meta", e o modal ⚙ HORA EXTRA mudar o selo do dia (103,4% →
+    112,0%). Sem minuto de jornada lançado, `metaAteAgora` 0 → **AGUARDANDO**
+    neutro (TV: `.tv-status-badge.neu`, barra `var(--txt2)`, a linha diz as
+    caixas de hora extra e a hora em que a jornada começa; celular: sem cor; PC
+    sem UEP: *AGUARDANDO A JORNADA*) — vale também antes do 1º lançamento de um
+    dia comum (antes piscava ABAIXO DO RITMO). Com hora extra, o *"X DE Y CX
+    ESPERADAS"* da TV conta só as normais (o NORMAL da linha das caixas da Tela
+    B), sem a palavra NORMAIS: medido no Chromium, ela alargava a coluna da
+    direita da Tela B em até 65 px a 1366 (e *"A JORNADA COMEÇA ÀS"*, 100 px —
+    ficou *"JORNADA ÀS 07:00"*, a mesma largura de antes). O celular diz
+    *"normais"*. O % DA META DO DIA (`efDia`) continua com
+    todas as caixas: a hora extra conta para a meta do dia como sempre contou.
+    ⚠ O RITMO ATUAL (`k.ritmo`) e a projeção ainda são de todas as horas
+    lançadas — a cascata do 🖨 do dia compara esse ritmo com o necessário só da
+    jornada num dia com madrugada (não mexido).
+  - **A parada de sábado vale o mesmo em toda tela**: `_metaByDayPar(dias)`
+    (PC) é a meta por dia ÚNICA dos que valoram paradas (aba PARADAS,
+    `_pgBuscarDados` → GESTÃO DE PERDAS, SIMULADOR e relatórios, cascata do
+    período); ao vivo num sábado o `metaHoje` é a mesma mediana
+    (`_paradasStats`, `_metaHojeMob`). Medido: 30 min no sábado com 1.500/1.700/
+    1.600 nos úteis = 91 cx em todas (a aba PARADAS dava 136 com o ⚙ em 2.400).
+    O gráfico POR HORA da aba PARADAS usa a meta que o `RP_PARADAS` usou
+    (`st.diag.metaHoje`/`metaPadrao`).
+  - **Cascata do período**: `_phTotaisPeriodo` devolve `comMeta` (os dias que
+    entram; hoje no fim de semana não soma) e a cascata passa ao
+    `_paradasStats` só as paradas desses dias.
+  - Celular: EFICIÊNCIA MÉDIA do histórico = Σ real dos dias com meta ÷ Σ meta
+    (sem meta no período: '—'); o `abrirLanc` decide o *SEM META* pelo flag `he`
+    (6º parâmetro); a linha da madrugada não repete "hora extra"; o `metaH` sem
+    hora lançada divide pelas horas de jornada.
+  - Diretoria no fim de semana: UEP, caixas e pontos grandes = o dia inteiro
+    (`todo hora extra`), sem o hora a hora contra a meta.
+  - Tela A: `.tva-band.he` é fundo neutro com borda e texto âmbar, status
+    *HORA EXTRA* (o âmbar cheio é o ATENÇÃO).
+  - Zap: fim de semana por `d.fds`/`uepFimDeSemana`; dia útil sem meta sai
+    *sem meta gravada*. Impressão do gerencial num sábado sem UEP: sem meta.
+  - Testes que RODAM a conta (`relatorios.test.js`, *a CONTA de verdade*): os
+    `calcKPIs` do PC e do celular e o `renderTV` reais num contexto isolado com
+    o relógio fixo (o dia sem hora extra, a madrugada, o modal ⚙, 06:45), e o
+    `_paradasStats` e o `_phTotaisPeriodo` reais — 6 de 6 mutações pegas.
 - **Testes**: a data de "hoje" ficou FIXA nos testes que dependem dela
   (`hora-extra.test.js`: `HOJE_TESTE`; `relatorios.test.js`: a aba UEP, a
   diretoria e o gerencial). Conferido rodando a suíte inteira com o relógio
-  falso em 14/11 e 15/11 (`node -r fake-date.js`, fora do repositório).
+  falso em 14/11, 15/11 e 17/11 (`FAKE_HOJE=aaaa-mm-dd node -r fake-date2.js`,
+  fora do repositório; o 2 põe a data falsa também nos contextos `vm`).
 - **Registro — a regra revogada (v5.60 / v7.222.0, 11/11/2026)**: PPCP: *"07/11
   foi sábado, a meta tem que ser sobre as horas trabalhadas"* → *"sábado não
   pode ser dia todo, a meta fica errada, porque não tem programação para

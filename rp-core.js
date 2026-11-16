@@ -376,17 +376,27 @@ function histDiaFds(d){
 // se olha. No fim de semana vale a MEDIANA das metas dos dias úteis do próprio
 // histórico — a linha roda no mesmo ritmo, e o número fica reproduzível.
 function metaDiasParadas(dias){
-  const m = {}, uteis = [];
+  const m = {};
   (dias || []).forEach(d => {
     const v = parseFloat(d && d.meta) || 0;
-    if (d && d.data && v > 0) { m[d.data] = v; if (!uepFimDeSemana(d.data)) uteis.push(v); }
+    if (d && d.data && v > 0) m[d.data] = v;
   });
-  if (uteis.length) {
-    uteis.sort((a, b) => a - b);
-    const k = uteis.length >> 1, med = uteis.length % 2 ? uteis[k] : (uteis[k - 1] + uteis[k]) / 2;
+  const med = metaMedianaUteis(m);
+  if (med != null)
     (dias || []).forEach(d => { if (d && d.data && !(m[d.data] > 0) && uepFimDeSemana(d.data)) m[d.data] = med; });
-  }
   return m;
+}
+// A mediana das metas dos DIAS ÚTEIS de um mapa {data: meta} (null sem nenhum).
+// É a meta com que se valora a parada do fim de semana — no histórico
+// (metaDiasParadas) e AO VIVO (o metaHoje das paradas de um sábado): sem a
+// mesma régua nos dois, a parada de sábado mudaria de valor na segunda.
+function metaMedianaUteis(m){
+  const uteis = [];
+  Object.keys(m || {}).forEach(k => { const v = parseFloat(m[k]) || 0; if (v > 0 && !uepFimDeSemana(k)) uteis.push(v); });
+  if (!uteis.length) return null;
+  uteis.sort((a, b) => a - b);
+  const k = uteis.length >> 1;
+  return uteis.length % 2 ? uteis[k] : (uteis[k - 1] + uteis[k]) / 2;
 }
 function uepHistResumo(dias){
   const comUep = (dias || []).filter(d => d && d.uep != null && isFinite(Number(d.uep)));
@@ -754,6 +764,6 @@ window.RP_CORE = {
   versao: '1.18.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
-        'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepDiaHe', 'histDiaFds', 'metaDiasParadas', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido',
+        'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepDiaHe', 'histDiaFds', 'metaDiasParadas', 'metaMedianaUteis', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido',
         'pdiaVol', 'pdiaBase', 'pdiaCurto', 'pdiaMontar', 'pdiaParMontar', 'atrasoVencido', 'paradaAInformar']
 };

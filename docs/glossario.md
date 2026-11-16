@@ -11,10 +11,10 @@ Unidade padrão: **caixa (cx)**. Não existe "peça" no vocabulário do produto.
 | Termo | Fórmula | Unidade | Onde está |
 |---|---|---|---|
 | **PRODUÇÃO REAL** | soma do realizado das horas já lançadas | cx | `v7:3609` |
-| **META DO DIA** | meta da PROGRAMAÇÃO (ou ajuste manual) + meta das horas extras cadastradas | cx | `v7:3629` |
+| **META DO DIA** | meta da PROGRAMAÇÃO (ou ajuste manual). A hora extra não tem meta: a do ⚙ HORA EXTRA não soma (v7.247.0) | cx | `v7:calcKPIs` (`meta=metaBase`) |
 | **RITMO ATUAL** | realizado ÷ nº de horas já lançadas | cx/h | `v7:3644` |
 | **RITMO NECESSÁRIO** | (meta − realizado) ÷ horas restantes, nunca negativo | cx/h | `v7:3652` |
-| **META/HORA** | média da meta das horas já lançadas | cx/h | `v7:3646` |
+| **META/HORA** | média da meta das horas **de jornada** já lançadas (a hora extra não tem meta) | cx/h | `v7:calcKPIs` |
 | **PROJEÇÃO** | realizado + ritmo atual × horas restantes | cx | `v7:3647` |
 | **HORAS PRODUTIVAS** | soma dos minutos reais das horas lançadas ÷ 60 | h | `v7:3673` |
 | **MELHOR / PIOR HORA** | maior e menor hora do dia, **só entre as horas de jornada** | cx | `v7:3663` |
@@ -54,8 +54,8 @@ julgado em caixas.
 | Termo | Fórmula | Unidade | Onde está |
 |---|---|---|---|
 | **% DA META DO DIA** (o número grande) | realizado ÷ meta do **dia inteiro** × 100 | % | `v7:3637` |
-| **META ATÉ AGORA** (a linha de apoio) | meta do dia × (minutos de turno já rodados ÷ minutos do turno) | cx | `rp-core.js:148` |
-| **RITMO** (o selo e a cor) | realizado ÷ meta até agora × 100 → `NO RITMO` · `ATENÇÃO` · `ABAIXO DO RITMO` | % | `rp-core.js:163` |
+| **META ATÉ AGORA** (a linha de apoio) | meta do dia × (minutos **de jornada** já lançados ÷ minutos de jornada do turno). A hora extra fica fora (v7.247.0) | cx | `rp-core.js:efNoRitmo` |
+| **RITMO** (o selo e a cor) | caixas **da jornada** ÷ meta até agora × 100 → `NO RITMO` · `ATENÇÃO` · `ABAIXO DO RITMO`. Sem minuto de jornada lançado: `AGUARDANDO`, sem cor | % | `rp-core.js:slRitmo` |
 
 **Como ler:** o número diz **quanto do dia já saiu** — 780 de 2.700 é 28,9%, e
 qualquer um confere de cabeça. O selo diz se esse ritmo **dá para bater a meta**:
@@ -110,9 +110,10 @@ porque o de identidade governa a limpeza diária, que **apaga** a linha marcada.
 | **ATRASO acumulado** | fora, nos dois sentidos |
 | **PRODUÇÃO REAL, META DO DIA, CAIXAS EM HORA EXTRA** | as caixas contam normalmente |
 
-⚠ Vale no **gerencial** (desktop e celular). A **TV OPERACIONAL** continua
-mostrando a meta da hora durante a HE — lá o número é o ritmo que o operador
-acompanha, não um veredito de gestão.
+⚠ Vale no **gerencial** (desktop e celular) e, desde a v7.247.0, também na
+**TV OPERACIONAL** e na lista do operador: a hora extra não tem meta em dia
+nenhum (PPCP, 16/11/2026: *"no meio da semana meta 0 em horas extra"*).
+Revoga a regra de 01/09/2026, em que a TV mostrava a meta da hora na HE.
 
 ⚠ A jornada é declarada **duas vezes**: na configuração do painel (TURNO) e nas
 constantes do `.gs`. Mudou o turno na tela, mudar as constantes também.
@@ -206,7 +207,7 @@ O combinado está em constantes no topo do bloco (`QP_ALVO_MIN` 50, `QP_ALVO_MAX
 |---|---|---|---|
 | **DURAÇÃO** | `FIM − INICIO`, em minutos **com fração** (`HH:mm:ss`, 45 s = 0,75); hora sem segundos lê como `:00` | min | `paradas-calc.js:durMin`, `.gs:calcDurMin` |
 | **DURAÇÃO PRODUTIVA** | minutos da parada **fora** do almoço | min | `paradas-calc.js:durProdutiva` |
-| **CAIXAS PERDIDAS** | duração produtiva × (meta do dia ÷ horas produtivas), só paradas **não** planejadas | cx | `paradas-calc.js:143` |
+| **CAIXAS PERDIDAS** | duração produtiva × (meta do dia ÷ horas produtivas), só paradas **não** planejadas. Sábado e domingo (sem meta): a **mediana das metas dos dias úteis** do histórico, ao vivo e depois | cx | `paradas-calc.js:143` · `rp-core.js:metaDiasParadas` / `metaMedianaUteis` |
 | **DISPONIBILIDADE** | (tempo disponível − tempo parado não programado) ÷ tempo disponível × 100 | % | `paradas-calc.js:261` |
 | **RITMO DE REFERÊNCIA** | caixas perdidas ÷ (tempo parado não programado ÷ 60) | cx/h | `paradas-calc.js:270` |
 | **MIN / 1.000 CX** | minutos parados ÷ caixas × 1.000, só nos **dias trabalhados** | min | `v7:_pgPorJanela` |
@@ -484,6 +485,7 @@ sábados é horas extra total"*).
 | **HE CX / UEP HE do sábado e do domingo** (HISTORICO) | HE CX = REALIZADO; UEP 0 e UEP HE = toda a UEP do dia; EF, MELHOR/PIOR e MEDIA CX/H 0 | cx / UEP | `gs:_resumoHoraAHora` + `gs:_uepPorDiaDoLog` |
 | **A linha gravada antes** (v5.60–v5.67, 07–17 como jornada) | os painéis leem como a da v5.68 (`histDiaFds`): sem meta, HE CX = REALIZADO, a UEP em UEP HE | — | `rp-core:histDiaFds` |
 | **EFICIÊNCIA MÉDIA, DIAS COM META, MELHOR/PIOR DIA** (HISTÓRICO, relatório do histórico, semanal, resumo do WhatsApp) | só dos dias **com meta** (`_diaComMeta`); o fim de semana entra no realizado e na hora extra | % / dias | `v7:_relSemanalKPIs` · `v7:_relDiaExtremo` · `v7:renderHist` |
+| **EFICIÊNCIA MÉDIA** (histórico do celular) | Σ realizado **dos dias com meta** ÷ Σ meta; sem meta no período, `—` | % | `mobile:_renderHistoricoComDados` |
 
 ## TAKT DA SEMANA — o veredito para a diretoria (v7.222.0)
 

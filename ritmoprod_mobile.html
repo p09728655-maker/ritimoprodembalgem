@@ -1823,7 +1823,7 @@ function abrirLancSlotAtivo(){
     const fim = s.slotFim ? toMin(s.slotFim) : ini+60;
     if(nm>=ini && nm<fim){                        // hora corrente, aceita lançamento
       const prod = s.producaoHora;
-      abrirLanc(s.horario, s.slotFim||'', s.slotLabel||s.horario, s.he?0:(s.metaHora||metaH), prod!==null?prod:null);
+      abrirLanc(s.horario, s.slotFim||'', s.slotLabel||s.horario, s.he?0:(s.metaHora||metaH), prod!==null?prod:null, !!s.he);
       return true;
     }
   }
@@ -2099,6 +2099,11 @@ function _metaByDayMob(){
 // mesmo valor que o operador vê nos slots) — igual ao desktop.
 function _metaHojeMob(){
   const hj=hojeStr();
+  // sábado e domingo (sem meta): a MESMA mediana dos dias úteis que a parada terá
+  // no histórico (metaMedianaUteis, rp-core) — o número não muda na segunda
+  if(typeof uepFimDeSemana==='function'&&uepFimDeSemana(hj)&&typeof metaMedianaUteis==='function'){
+    const med=metaMedianaUteis(_metaByDayMob()); if(med) return med;
+  }
   return DADOS.filter(d=>d.data===hj).reduce((s,d)=>s+(d.metaHora||0),0) || CFG.metaDia || 0;
 }
 // realByDay para a base de dias trabalhados, no formato que o RP_PARADAS espera.
@@ -2705,8 +2710,10 @@ function calcKPIs(){
   // Hoje nenhuma tela do celular lê este campo — mas quem ler amanhã herdaria
   // a divergência, e divergência entre painéis é o defeito que este projeto
   // mais pagou caro. Sem hora lançada ainda, cai no rateio pelo turno.
+  // sem hora lançada: a meta pelas horas de JORNADA (a hora extra não tem meta)
+  const nJorn = allHoje.length>0 ? allHoje.filter(r=>!r.he).length : slots.length;
   const metaH = dhJ.length>0 ? Math.round(metaReal/dhJ.length)
-                    : (totalSlots>0 ? Math.round(meta/totalSlots) : 0);
+                    : (nJorn>0 ? Math.round(meta/nJorn) : 0);
 
   /* ── A RÉGUA DO VERDE/VERMELHO: a META DO DIA repartida pelo turno já rodado ─
      Mesma conta do v7 (calcKPIs de lá), pelo mesmo motivo: o card EFICIÊNCIA
@@ -2717,11 +2724,15 @@ function calcKPIs(){
      este projeto mais pagou caro.
      O rateio é por MINUTOS (o slot pós-almoço vale 48), e só entra hora COM
      LANÇAMENTO — hora que ninguém apontou ainda não é hora atrasada. */
+  // O SELO JULGA SÓ A JORNADA (1.50.0, a mesma régua do v7): a hora extra não
+  // tem meta, então nem os minutos nem as caixas dela entram no ritmo. Contando
+  // a madrugada, às 06:45 o card dizia ABAIXO DO RITMO antes de a jornada
+  // começar. Sem minuto de jornada lançado: metaAteAgora 0 → AGUARDANDO.
   const minDoSlot = h => { const s0 = slots.find(x => x.inicio === h); return s0 ? s0.min : 60; };
-  const minTurno = (allHoje.length ? allHoje.map(r => r.horario) : slots.map(x => x.inicio))
+  const minTurno = (allHoje.length ? allHoje.filter(r => !r.he).map(r => r.horario) : slots.map(x => x.inicio))
                      .reduce((soma, h) => soma + minDoSlot(h), 0);
-  const minRodado = dh.reduce((soma, r) => soma + minDoSlot(r.horario), 0);
-  const {metaAteAgora, ef:efRitmo} = efNoRitmo(real, meta, minRodado, minTurno);
+  const minRodado = dhJ.reduce((soma, r) => soma + minDoSlot(r.horario), 0);
+  const {metaAteAgora, ef:efRitmo} = efNoRitmo(realNormal, meta, minRodado, minTurno);
   // Minutos de JORNADA NORMAL com lançamento — a régua do card UEP DO DIA (a
   // meta de UEP é de 8 h de jornada; a hora extra fica fora dela).
   // A hora EM ANDAMENTO conta só os minutos que já passaram (minSlotDecorrido,
@@ -3028,10 +3039,10 @@ function renderLancamentos(){
     const disabled = bloqueado ? 'disabled'+(corrigivel?' corr':'') : '';
     const onclick = bloqueado
       ? (corrigivel ? `onclick="abrirCorrecao('${slot.inicio}','${slot.label}')"` : '')
-      : `onclick="abrirLanc('${slot.inicio}','${slot.fim||''}','${slot.label}',${slot.he?0:(slot.metaHora||metaH)},${temValor?prod:'null'})"`;
+      : `onclick="abrirLanc('${slot.inicio}','${slot.fim||''}','${slot.label}',${slot.he?0:(slot.metaHora||metaH)},${temValor?prod:'null'},${slot.he?'true':'false'})"`;
     const lotesTxt = (slot.lotes&&slot.lotes.length) ? fmtLotes(slot.lotes) : '';
     const tolTxt = lc.tolerancia ? ` · aceita lançamento até ${fromMin(fim+LANC_TOLERANCIA_MIN)}`
-                 : lc.madrugada  ? ' · hora extra · aceita lançamento hoje' : '';
+                 : lc.madrugada  ? ' · aceita lançamento hoje' : '';   // o "HORA EXTRA" já vem antes
     return `<div class="slot-item ${cls} ${disabled}" ${onclick}>
       <div class="slot-hora">${slot.label}</div>
       <div class="slot-info">
@@ -3138,7 +3149,9 @@ async function toggleInicioTurno(){
 // ════════════════════════════════════════════════
 // MODAL LANÇAMENTO
 // ════════════════════════════════════════════════
-function abrirLanc(inicio, fim, label, meta, prodAtual){
+// he: a hora é hora extra (o flag da HORA_A_HORA) — é ele que diz SEM META, não
+// a meta 0 (com o CFG.metaDia ainda 0, uma hora de jornada sairia como hora extra)
+function abrirLanc(inicio, fim, label, meta, prodAtual, he){
   const acumAtual = (prodAtual!==null && prodAtual!==undefined) ? Number(prodAtual) : 0;
   // Hora da madrugada já fechada: o produto do app é o de AGORA — o salvarLanc
   // confere antes, e o prodAntes diz para onde voltar depois.
@@ -3146,7 +3159,7 @@ function abrirLanc(inicio, fim, label, meta, prodAtual){
   _slotAtivo = {inicio, fim, label, meta, prodAtual: acumAtual, mad, prodAntes: PROD_ATUAL};
   document.getElementById('ml-hora').textContent = label;
   document.getElementById('ml-nome').textContent = mad ? 'LANÇAR · HORA EXTRA DA MADRUGADA' : 'LANÇAR PRODUÇÃO';
-  document.getElementById('ml-meta').textContent = Number(meta)>0 ? `META: ${fmtN(meta)} CX/HORA` : 'HORA EXTRA · SEM META';
+  document.getElementById('ml-meta').textContent = he ? 'HORA EXTRA · SEM META' : Number(meta)>0 ? `META: ${fmtN(meta)} CX/HORA` : 'META: —';
   document.getElementById('ml-acum').innerHTML = `ACUMULADO NA HORA: ${fmtN(acumAtual)} <span class="un">CX</span>`;
   _mlProdPintar();
   // Lotes já lançados nesta hora (busca em DADOS pelo horário de início)
@@ -3770,7 +3783,10 @@ function renderGerencial(){
   // gerencial do desktop.
   // sábado e domingo (1.50.0, PPCP: "sábado todas horas são extras"): sem meta e sem veredito
   const fds = uepFimDeSemana(hojeStr());
-  const s = fds ? 'acc' : sc(k.efRitmo);
+  // o selo julga só a jornada; sem minuto dela lançado (antes das 07:00, só a
+  // madrugada): AGUARDANDO, sem cor — nunca ABAIXO DO RITMO
+  const julga = k.metaAteAgora > 0;
+  const s = fds ? 'acc' : julga ? sc(k.efRitmo) : '';
   // NEC. P/ META: nas horas restantes mostra o ritmo (cx/h) necessário.
   // Na última hora (sem horas futuras) não repete o GAP — mostra que o
   // turno encerrou (ou META OK se já atingida).
@@ -3839,7 +3855,9 @@ function renderGerencial(){
     // do sub + a cor, que falam de RITMO. Mesma troca do desktop e da TV
     // (01/09/2026): dois "%" na mesma célula confundiam quem lia.
     fds ? {l:'% DA META DO DIA', v:'—', sub:(new Date().getDay()===0 ? 'domingo' : 'sábado')+': todo hora extra, sem meta', c:'acc'}
-        : {l:'% DA META DO DIA', v:fmtP(k.efDia), sub:slRitmo(k.efRitmo)+' · '+fmtN(k.real)+' de '+fmtN(Math.round(k.metaAteAgora))+' até agora', c:s},
+        : {l:'% DA META DO DIA', v:fmtP(k.efDia), sub:julga
+            ? slRitmo(k.efRitmo)+' · '+fmtN(k.realNormal)+(k.nHE?' normais':'')+' de '+fmtN(Math.round(k.metaAteAgora))+' até agora'
+            : 'AGUARDANDO A JORNADA'+(k.realHE>0?' · '+fmtN(k.realHE)+' cx em hora extra':''), c:s},
     // UEP DO DIA: a MESMA conta e o MESMO texto do gerencial do desktop
     // (uepCard, rp-core). A UEP por caixa é parâmetro do cadastro.
     uepCard(PONTOS_DIA.uep, PONTOS_DIA.metaUep, k.minNorm, hojeStr()),   // sábado/domingo: todo hora extra, sem meta
@@ -4203,16 +4221,20 @@ function _renderHistoricoComDados(dias){
   // ── Resumo do período ──
   const totReal=lista.reduce((s,d)=>s+(parseFloat(d.real)||0),0);
   const totMeta=lista.reduce((s,d)=>s+(parseFloat(d.meta)||0),0);
-  // total ÷ meta, a hora extra dentro — a régua do PC (_relMetaHE.efTotal); o
-  // sábado e o domingo entram nas caixas (hora extra) e não somam meta
-  const efMed=totMeta>0?(totReal/totMeta)*100:0;
+  // total ÷ meta, a hora extra dos dias úteis dentro — a régua do PC
+  // (_relMetaHE.efTotal). SÓ DIAS COM META: o sábado e o domingo (todo hora
+  // extra, sem meta) somavam caixas no numerador sem meta no denominador — uma
+  // semana de 7.000 de 7.500 com 690 no sábado saía 102,5% verde (1.50.0).
+  const comMeta=lista.filter(d=>(parseFloat(d.meta)||0)>0);
+  const totRealM=comMeta.reduce((s,d)=>s+(parseFloat(d.real)||0),0);
+  const efMed=totMeta>0?(totRealM/totMeta)*100:0;
   const mediaDia=lista.length?Math.round(totReal/lista.length):0;
   if(elRes){
     elRes.innerHTML=`
       <div class="hist-rz"><div class="hist-rz-lbl">Produzido (${lista.length}d)</div><div class="hist-rz-val">${fmtN(totReal)}</div></div>
       <div class="hist-rz"><div class="hist-rz-lbl">Média / dia</div><div class="hist-rz-val">${fmtN(mediaDia)}</div></div>
       <div class="hist-rz"><div class="hist-rz-lbl">Meta período</div><div class="hist-rz-val">${fmtN(totMeta)}</div></div>
-      <div class="hist-rz"><div class="hist-rz-lbl">Eficiência média</div><div class="hist-rz-val ${sc(efMed)}">${fmtP(efMed)}</div></div>
+      <div class="hist-rz"><div class="hist-rz-lbl">Eficiência média</div><div class="hist-rz-val ${totMeta>0?sc(efMed):''}">${totMeta>0?fmtP(efMed):'—'}</div></div>
       <div class="hist-rz" id="hist-rz-perd" style="grid-column:1/-1"><div class="hist-rz-lbl">Caixas perdidas em paradas</div><div class="hist-rz-val" id="hist-rz-perd-val" style="font-size:15px;color:var(--txt2)">calculando…</div></div>`;
     // as caixas perdidas vêm da aba PARADAS (chamada à parte, com cache)
     carregarPerdasHistorico(periodo, lista.map(d=>d.data));

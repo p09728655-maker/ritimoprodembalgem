@@ -301,7 +301,12 @@ ok('sem meta do dia também não',
   ok('paradas: o fim de semana sem meta pela MEDIANA dos dias úteis (1.600), nunca a meta do dia em que se olha; dia útil sem meta continua sem (cai no padrão)',
      [m['09/11/2026'], m['14/11/2026'], m['15/11/2026'], m['12/11/2026']], [1500, 1600, 1600, undefined]);
   ok('sem dia útil com meta, o fim de semana fica sem (o RP_PARADAS usa o padrão e conta como "sem meta")',
-     metaDiasParadas([{ data: '14/11/2026', meta: 0 }])['14/11/2026'], undefined);
+     metaDiasParadas([{ data: '14/11/2026', meta: 0 }])['14/11/2026'], undefined);  // a MESMA mediana ao vivo (o metaHoje das paradas de um sábado): sem ela a
+  // parada valia pela meta da HORA_A_HORA no sábado e pela mediana na segunda
+  ok('metaMedianaUteis: a mediana só dos dias úteis com meta (o sábado com meta não entra); par = média dos dois do meio; vazio = null',
+     [metaMedianaUteis(m), metaMedianaUteis({ '09/11/2026': 1500, '10/11/2026': 1700, '14/11/2026': 9000 }),
+      metaMedianaUteis({ '14/11/2026': 1500 }), metaMedianaUteis({}), metaMedianaUteis(null)],
+     [1600, 1600, null, null, null]);
 }
 
 // ── R$ por UEP no período (uepCustoPeriodo) ────────────────────────────────

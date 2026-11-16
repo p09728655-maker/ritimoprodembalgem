@@ -41,8 +41,8 @@ foi: *"aos sábados é horas extra total"*.
     meta vira *PROGRAMADO HOJE*.
   - **Gerencial do PC:** a linha das caixas fica sem cor, também quando não há
     UEP.
-  - A tabela hora a hora da TV continua com a meta da hora (o ritmo do
-    operador), como já valia para a hora extra desde 01/09.
+  - A tabela hora a hora da TV também não dá meta à hora extra (ver o item
+    seguinte).
 - **Dia passado, HISTÓRICO, relatórios do histórico e da semana, Tela D,
   diretoria, resumo do WhatsApp e histórico do celular:** o fim de semana
   aparece como **HORA EXTRA**, sem eficiência, sem selo ABAIXO e sem
@@ -52,12 +52,21 @@ foi: *"aos sábados é horas extra total"*.
 - **Hora extra não tem meta em dia nenhum, nem no meio da semana** (PPCP:
   *"no meio da semana meta 0 em horas extra"*). Isso revoga a regra de
   01/09/2026, em que a TV mostrava a meta da hora também na hora extra.
-  - **TV:** a hora extra aparece com meta *—*, sem ✓/✗ e em âmbar. O card da
-    hora diz *HORA EXTRA · SEM META*.
+  - **TV:** na tabela, a hora extra aparece com meta *—*, sem ✓/✗ e em âmbar.
+    O card da hora (Tela A) diz *HORA EXTRA* em âmbar sobre fundo neutro: o
+    âmbar cheio é o ATENÇÃO, um veredito que a hora extra não tem.
   - **Celular:** a lista do operador e o lançamento dizem *HORA EXTRA · SEM
     META*, sem cor de veredito.
   - **PC:** a meta da linha de hora extra do ⚙ HORA EXTRA não soma mais na META
     DO DIA. O `.gs` nunca somou essa meta.
+  - **O selo de ritmo em caixas julga só a jornada** (TV, card % DA META DO DIA
+    do celular e o card das caixas do PC quando não há UEP). Nem os minutos nem
+    as caixas da hora extra entram no *esperado até agora*, como já acontecia no
+    selo da UEP. Na TV, o *"X DE Y CX ESPERADAS ATÉ AGORA"* conta só as caixas
+    normais (o NORMAL da linha das caixas); no celular, *"X normais de Y"*. Sem
+    nenhuma hora da jornada lançada, o selo diz **AGUARDANDO**, sem cor, e a
+    linha diz as caixas de hora extra (*"250 CX EM HORA EXTRA · JORNADA ÀS
+    07:00"*).
 - **Correções da revisão:**
   - No WhatsApp, o sábado sai *"todo hora extra, sem meta · 1.440 UEP em hora
     extra"*. Antes saía *"(0,0%) · 0 UEP"*.
@@ -68,15 +77,38 @@ foi: *"aos sábados é horas extra total"*.
   - A Tela D divide o que faltou pelos dias com meta.
   - A diretoria diz *TODO HORA EXTRA* no fim de semana, e não *AGUARDANDO A
     JORNADA*.
-  - A parada de sábado é valorada pela **mediana das metas dos dias úteis**.
-    Antes era pela meta do dia em que a tela é aberta, e o número mudava
-    conforme o dia.
+  - A parada de sábado é valorada pela **mediana das metas dos dias úteis**,
+    em toda tela: aba PARADAS, GESTÃO DE PERDAS, relatórios, celular e ao vivo
+    no próprio sábado. Antes era pela meta do dia em que a tela é aberta, e o
+    número mudava conforme o dia.
+  - A cascata do 🖨 PRODUÇÃO/HORA do período tira o sábado da meta e também as
+    paradas dele.
+  - A EFICIÊNCIA MÉDIA do histórico do celular conta só os dias com meta.
+  - A diretoria, no fim de semana, mostra o dia inteiro nos números grandes
+    (UEP, caixas e pontos), e não *0 sem HE*.
+  - O cabeçalho da impressão do gerencial, num sábado sem a UEP lida, não diz
+    mais meta nem eficiência.
 - **As linhas já gravadas também mudam na tela.** O `rp-core` (`histDiaFds`)
   lê o sábado gravado pelo `.gs` anterior (07/11 e 14/11) da mesma forma que o
   `.gs` v5.68 grava.
 - **Atenção — números que mudam:**
   - PERÍODO de 09–14/11: DIAS QUE BATERAM *1 de 6* → **1 de 5**; % da meta
     92,7% → **94,7%**; OSCILAÇÃO 30,9% → **6,6%**.
+  - **Selo de ritmo num dia com madrugada** (exemplo da revisão, C3=5 com 140
+    e 110 cx de madrugada): às 06:45 era *ABAIXO DO RITMO* (81,8%) antes de a
+    jornada começar → **AGUARDANDO**; às 12:30, 110,8% → **101,6%** (a
+    madrugada inflava o selo). Antes do 1º lançamento de um dia comum, o selo
+    também diz AGUARDANDO (piscava ABAIXO DO RITMO em vermelho).
+  - **Dia com a hora extra do modal ⚙ HORA EXTRA (PC):** a META DO DIA cai a
+    meta da hora extra (1.950 → 1.800 no exemplo da revisão), e o FECHAR DIA
+    grava no HISTORICO a META sem ela. O selo às 12:30: 103,4% → 101,6%.
+  - **RITMO NECESSÁRIO da cascata do 🖨 do dia** num dia com madrugada: a meta
+    por hora passa a ser só a da jornada (186 → 200 cx/h no exemplo).
+  - **CAIXAS PERDIDAS das paradas de sábado:** valoradas pela mediana das
+    metas dos dias úteis (uma parada de 30 min no sábado 14/11: 136 → **91
+    cx** na aba PARADAS, com a meta do dia aberto em 2.400).
+  - **EFICIÊNCIA MÉDIA do histórico do celular:** sem o sábado no numerador.
+    Uma semana de 7.000 de 7.500 cx com 690 no sábado: 102,5% → **93,3%**.
   - Aba PLANO: o sábado sai da régua de capacidade (antes, 07/11 entrava com
     465 cx de jornada).
   - HISTÓRICO: a EFICIÊNCIA MÉDIA e os DIAS COM META deixam de contar o
