@@ -42,6 +42,7 @@ const GLOBAIS = [
   'uepCard','UEP_META_PADRAO','UEP_MIN_DIA','uepPorHora','_uepHHMM','uepCelula','uepDiaMeta','uepDiaHe','histDiaFds','metaDiasParadas','metaMedianaUteis','uepHistResumo','uepFimDeSemana','uepCusto','uepCustoPeriodo','minSlotDecorrido',
   'nomeComCor','_rpOk','PDIA_LARG','pdiaVol','pdiaBase','pdiaCurto','pdiaMontar','pdiaParMontar','PDIA_PAR_ROT_PX','atrasoVencido',
   'PARADA_A_INFORMAR','paradaAInformar',
+  'UEP_HORA_TOL_MIN','uepHorasDia','uepHoraJulga','uepCxComHora','uepMinTxt','uepProj','uepDoProduto','uepGerMontar',
 ];
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rp-lint-'));
