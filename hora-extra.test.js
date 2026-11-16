@@ -40,9 +40,13 @@ const PROP_PROD_ATUAL = 'prodAtual';
 function verificarNovoDia() {}
 const Logger = { log() {} };
 const PropertiesService = { getScriptProperties: () => ({ getProperty: () => '' }) };
+// O "hoje" do getDados é FIXO (segunda 10/08/2026): desde a v5.68 o fim de
+// semana é todo hora extra, e o teste não pode mudar com o dia em que roda.
+let HOJE_TESTE = '10/08/2026';
 const Utilities = {
   formatDate(d, tz, f) {
     const p = n => String(n).padStart(2, '0');
+    if (f === 'dd/MM/yyyy' && HOJE_TESTE && Math.abs(d - Date.now()) < 60000) return HOJE_TESTE;
     if (f === 'dd/MM/yyyy') return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
     if (f === 'H') return String(d.getHours());
     if (f === 'm') return String(d.getMinutes());
@@ -85,6 +89,7 @@ eval(pega('function _ehHoraExtra('));
 src.match(/const HE_JORNADA_(?:INI|FIM)_MIN\s*=\s*[^;]+;/g)
    .forEach(l => eval(l.replace('const ', 'global.')));
 eval(pega('function _ehHoraExtraCaixas('));
+eval(pega('function _heFimDeSemana('));   // v5.68: o fim de semana inteiro é hora extra
 eval(pega('function _semPrefixoHE('));
 eval(pega('function _heCxDoDia('));
 // O getDados soma as colunas de LOTE por este critério — que saiu de dentro
@@ -136,6 +141,18 @@ LINHAS = planilha(7); LINHAS.splice(8, 0, ['HE 04:00-05:00', 100, '', 90]); r = 
 ok('HE antes do turno não é filtrada pelo C3',
    r.slots.filter(s => s.he).map(s => s.label), ['HE 04:00-05:00', 'HE 17:00-18:00']);
 
+// v5.68 (PPCP, 16/11/2026: "aos sábados é horas extra total"): no sábado e no
+// domingo TODO slot é hora extra — também 07:00 e 16:00 — e o C3 continua
+// decidindo só o que aparece.
+LINHAS = planilha(5); HOJE_TESTE = '14/11/2026'; r = getDados();
+ok('sábado (14/11): todo slot vem com he — 05:00 a 17:00', r.slots.map(s => s.he), [true, true, true, true, true]);
+HOJE_TESTE = '15/11/2026'; LINHAS = planilha(7); r = getDados();
+ok('domingo (15/11): idem, e o C3=7 ainda esconde 05:00/06:00', [r.slots.map(s => s.label), r.slots.every(s => s.he)],
+   [['07:00-08:00', '16:00-17:00', 'HE 17:00-18:00'], true]);
+HOJE_TESTE = '13/11/2026'; r = getDados();
+ok('sexta (13/11): a régua do horário, como sempre', r.slots.map(s => s.he), [false, false, true]);
+HOJE_TESTE = '10/08/2026'; LINHAS = planilha(7);
+
 console.log('\n── identidade da linha × contagem das caixas ──');
 // Os dois critérios NÃO são o mesmo, e trocá-los quebra duas coisas:
 //   _ehHoraExtra       = o rótulo. Governa a LIMPEZA DIÁRIA (que APAGA a linha)
@@ -154,6 +171,10 @@ ok('17:00 em diante é hora extra', _ehHoraExtraCaixas('17:00-18:00'), true);
 ok('e com o rótulo também', _ehHoraExtraCaixas('HE 17:00-18:00'), true);
 ok('HE de madrugada conta pelos dois caminhos', _ehHoraExtraCaixas('HE 04:00-05:00'), true);
 ok('rótulo ilegível não vira hora extra por acidente', _ehHoraExtraCaixas('TOTAL'), false);
+ok('v5.68: com a data, sábado e domingo são hora extra o dia inteiro; dia útil e sem data, pelo horário',
+   [_ehHoraExtraCaixas('07:00-08:00', '14/11/2026'), _ehHoraExtraCaixas('12:12-13:00', '15/11/2026'),
+    _ehHoraExtraCaixas('07:00-08:00', '13/11/2026'), _ehHoraExtraCaixas('07:00-08:00'), _ehHoraExtraCaixas('07:00-08:00', '')],
+   [true, true, false, false, false]);
 
 console.log('\n── caixas em hora extra no histórico (_heCxDoDia) ──');
 SOMAS = { '20/07/2026': 1500 };

@@ -1038,8 +1038,9 @@ console.log('\n── v5.67: o embalado antes (ADIANTADO_CX) na programação da
   const m2 = montar(prog.slice(0, 1), [], { hoje: '16/11/2026' });
   const r2 = vm.runInContext('(function(){ _invalidarValores(); return getProgramacaoSemana({}); })()', m2.ctx);
   ok('aba sem a coluna ADIANTADO_CX: o campo vai null (o painel não marca nada)', r2.linhas.map(x => x.adiantadoCx), [null]);
-  ok('a versão: cabeçalho, GS_VERSAO e o _lerProgDaAba lendo a coluna pelo nome',
-     [/^\/\/ Versão: 5\.67 /m.test(GS), /const GS_VERSAO = '5\.67';/.test(GS), /const iAdi  = hdr\.indexOf\('ADIANTADO_CX'\);/.test(GS),
+  // (a versão de agora é conferida no apps-script.test.js: cabeçalho = GS_VERSAO = GS_REPO)
+  ok('a versão: a 5.67 no cabeçalho e o _lerProgDaAba lendo a coluna pelo nome',
+     [/^\/\/ Versão: 5\.67 /m.test(GS), /const GS_VERSAO = '5\.\d+';/.test(GS), /const iAdi  = hdr\.indexOf\('ADIANTADO_CX'\);/.test(GS),
       /adiantadoCx: pr\.saldo != null && pr\.adiCx != null \? pr\.adiCx : null,/.test(GS)], [true, true, true, true]);
 }
 

@@ -12,7 +12,8 @@ via Google Apps Script (JSONP).
   formatação (`p2`/`fmtN`/`fmtP`), horário (`toMin`/`fromMin`/`normHora`), data
   (`hojeStr`/`dtToStr`), `mergeMedias`, `calcAtrasoHoras`, `sc`,
   `atrasoVencido` (o card ATRASO do celular, 1.14.0), `pdiaParMontar` (as
-  paradas na faixa do PRODUTOS EMBALADOS HOJE, 1.16.0). Só função
+  paradas na faixa do PRODUTOS EMBALADOS HOJE, 1.16.0), `histDiaFds` /
+  `uepDiaHe` (sábado e domingo todo hora extra, 1.18.0). Só função
   **pura** entra aqui — nada que leia `DADOS`/`CFG` ou toque no DOM.
   `node rp-core.test.js` cobre a regra e falha se algum HTML voltar a declarar
   a própria cópia.
@@ -22,7 +23,8 @@ via Google Apps Script (JSONP).
 - `relatorios.test.js` — contas dos relatórios (janela da semana, KPIs, hora
   extra) + guarda-corpo das peças comuns: `node relatorios.test.js`.
 - `hora-extra.test.js` — teste da separação hora normal × hora extra, rodando
-  contra o código real do `.gs`: `node hora-extra.test.js`.
+  contra o código real do `.gs` (e o fim de semana inteiro, `.gs` v5.68, com o
+  "hoje" do `getDados` fixo): `node hora-extra.test.js`.
 - `apps-script.test.js` — memo de leitura do backend, com planilha de mentira
   que conta leituras, **e o carimbo `ATUALIZADO_EM` da `PROGRAMACAO`** (roda a
   função real): `node apps-script.test.js`.
@@ -101,10 +103,12 @@ via Google Apps Script (JSONP).
   real de 19/10 (painel 1.491 × planilha 1.509) e a mesma conta do
   `arquivarDiaAtual`, rodando o `.gs` inteiro; e a opção A (`.gs` v5.55): a
   META do painel com META DIA e ATRASO META nas colunas 15–16, e a paridade do
-  `_metaPartes` do painel com o `saveDay`; e o fim de semana (`.gs` v5.60): o
-  sábado real de 07/11 (240 min de jornada → META 524, META UEP pelas horas)
-  nos três fechamentos, o domingo, o dia útil igual, o sábado só de madrugada,
-  os 527 min dos slots e o `preencherUepPassada`; e o SETUP DO TAKT na
+  `_metaPartes` do painel com o `saveDay`; e o fim de semana (`.gs` v5.68,
+  revoga a v5.60): o sábado real de 07/11 TODO hora extra (META, EF, META DIA,
+  ATRASO e META UEP 0, HE CX = REALIZADO, a UEP em UEP HE) nos três
+  fechamentos, a linha gravada pela v5.60 zerada no lançamento seguinte, o
+  domingo, o dia útil igual, o sábado só de madrugada, a HISTORICO_HORA com as
+  horas de 07–17 e o `preencherUepPassada`; e o SETUP DO TAKT na
   CONFIG_PAINEL (`.gs` v5.61: os dois juntos, no domínio do app — trocas
   inteiras, minutos com uma casa, o dia abaixo de 527 —, zero vale, vírgula à
   mão na planilha, "8 min" nunca vira 0, e a MESMA régua no ⚙ e no `.gs` em 17
@@ -685,10 +689,12 @@ via Google Apps Script (JSONP).
     marcada não é filtrada). ⚠ Alargar este critério faria a limpeza **deletar
     as linhas de 05:00 e 06:00** — que existem sempre — e faria elas aparecerem
     no app mesmo com `C3=7`.
-  - **`_ehHoraExtraCaixas(rótulo)` = QUE CAIXAS CONTAM.** Prefixo **ou** horário
-    fora de 07:00–17:00. É este que alimenta o `he` do payload do `getDados` (e
-    daí o `realHE`/`realNormal` e o card CAIXAS EM HORA EXTRA) e o `he`/`heCx`
-    do `arquivarDiaAtual`.
+  - **`_ehHoraExtraCaixas(rótulo, data)` = QUE CAIXAS CONTAM.** Prefixo **ou**
+    horário fora de 07:00–17:00 **ou**, com a data, **sábado e domingo o dia
+    inteiro** (`.gs` v5.68 — ver *SÁBADO E DOMINGO SÃO HORA EXTRA O DIA
+    INTEIRO*). É este que alimenta o `he` do payload do `getDados` (e daí o
+    `realHE`/`realNormal` e o card CAIXAS EM HORA EXTRA) e o `he`/`heCx` do
+    `arquivarDiaAtual`. Sem a data, só o horário.
   - **Por que existem os dois:** o fechamento contava só pelo rótulo, e a
     madrugada **nunca é rotulada** — ela é liberada pela `C3`. Resultado medido
     em 31/08/2026 na planilha real: **69 dias seguidos com a coluna HE do
@@ -3701,10 +3707,9 @@ feito e dá ar de verdade ao que sobrou.
     o `LANC_TOLERANCIA_MIN` do celular; o teste confere): com 0 caixas e até 15
     min depois do fim, `h.tol` → AINDA ACEITA, sem veredito e fora do vale. Sem
     isso o vale do dia era sempre a última hora fechada (2ª revisão).
-  - **Dia passado: `_gerHorasHist(horas, metaDia, uepHH, data)`** — em sábado e
-    domingo a meta da hora é a META UEP gravada ÷ os minutos de jornada com
-    produção (a gravada já é a das horas trabalhadas desde o `.gs` v5.60: 07/11 =
-    1.257 em 240 min → 314/h, não 143); dia útil ÷ 527; o 16:00-16:59 vale 59. A
+  - **Dia passado: `_gerHorasHist(horas, metaDia, uepHH, data)`** — dia útil: a
+    meta da hora = META UEP gravada × minutos ÷ 527 (o 16:00-16:59 vale 59); em
+    sábado e domingo toda hora é hora extra, sem meta (v7.247.0). A
     célula de UEP diz *pelo cadastro de hoje* (o total do card é o gravado).
     Só horas com produção chegam aqui (o `arquivarHorasDoDia` grava `real > 0`).
   - **`GER_CAT_FALHA`**: a leitura do cadastro que falhou faz o ATRASO dizer
@@ -3998,42 +4003,83 @@ feito e dá ar de verdade ao que sobrou.
 - Dias fechados com a v5.48–v5.54 publicada ficaram com a META da aba (e a EF
   por ela); não foram regravados.
 
-## SÁBADO E DOMINGO: A META É A DAS HORAS TRABALHADAS (`.gs` v5.60 / v7.222.0)
-- PPCP, 11/11/2026: *"07/11 foi sábado, a meta tem que ser sobre as horas
-  trabalhadas"* → *"sábado não pode ser dia todo, a meta fica errada, porque não
-  tem programação para sábado"*. Na planilha: 07/11 com 690 cx (225 de 05–07,
-  hora extra; 465 de 07–11, 4 horas de jornada), gravado com META 1.150 (a da
-  sexta, que ficou na aba) e META UEP 2.761 — 60% e 34%.
-- **`.gs` v5.60**: `_resumoHoraAHora` devolve `minJorn` (minutos dos slots de
-  JORNADA com produção, `_minDoSlot`: 12:12 = 48, 16:00-16:59 = 59, os nove = 527
-  = `UEP_MIN_DIA_GS` = `UEP_MIN_DIA` do rp-core, o teste confere).
-  `_fracSemJornada(data, res)` = minJorn ÷ 527 no sábado e no domingo
-  (`_heFimDeSemana`), `null` em dia útil (tudo como antes) ou sem o resumo da aba
-  (meta cheia, com log). Os TRÊS fechamentos usam: `arquivarDiaAtual`, `saveDay`
-  (base = a meta da ABA — o atraso do painel não entra no fim de semana; META DIA
-  = META, ATRASO 0) e `_atualizarHistoricoPosLancamento` (a hora a mais refaz
-  META, META DIA, META UEP e EF). `_uepColsDoDia(data, frac)` corta a META UEP. O
-  `preencherUepPassada` (editor) faz a mesma conta nos fins de semana pela
-  HISTORICO_HORA (`_minJornHistHora`).
-  - Fim de semana só de madrugada: META e META UEP **0** = sem meta. No rp-core,
-    `uepDiaMeta` devolve 0 (não a padrão) e o `uepHistResumo` não julga o dia.
-  - A HE continua pelo horário (antes das 07:00 e depois das 17:00). A regra
-    "sábado é todo hora extra" (`HE_SABADO_INTEIRO`) é só do backfill antigo.
-  - ⚠ A EF continua somando a hora extra, como em todo dia: 07/11 = 690 ÷ 524
-    = **131,7%**; na jornada são 465 de 524 (88,8%).
-  - ⚠ **re-deploy manual**. Antes dele, o fim de semana segue com a meta cheia.
-  - ⚠ Feriado trabalhado NÃO entra na regra (só sábado e domingo).
-- **A linha de 07/11/2026 foi corrigida pela API em 11/11** (só ela): META 524,
-  EF 131,7, META UEP 1.257, META DIA 524, ATRASO 0 (240 min). O sábado 04/07/2026
-  (backfill, HE CX = REALIZADO) não foi mexido.
-- **Média por dia (v7.222.0, rp-core)**: `uepHistResumo.media` é dos **dias
-  úteis** (`uepFimDeSemana`), com `nMedia`, `nFds` e `metaMedia` (a cor do card
-  compara média com `metaMedia`). O fim de semana entra no total, na meta somada
-  e no bateu. Quem lê a média: PERÍODO (card e botão), HISTÓRICO (card), a semana
-  (`gsem-uep-sub`), a faixa dos relatórios, `_gpxCapDem` e o cenário do período
-  na simulação do TAKT. Com o print de 11/11: 2.587 → ≈ 2.670.
-  - ⚠ A régua de capacidade da aba PLANO (`_qpDiasBase`, em caixas) **ainda conta
-    o sábado** de 07/11 como um dia (465 cx de jornada): não mexido.
+## SÁBADO E DOMINGO SÃO HORA EXTRA O DIA INTEIRO (`.gs` v5.68 / v7.247.0 / mobile 1.50.0 / rp-core 1.18.0)
+- PPCP, 16/11/2026, com o PERÍODO da aba ⚖ UEP na tela (7 dias, 08:41): o
+  sábado 14/11 em vermelho (*894 UEP · meta 1.257 (71,1%) · +546 em HE*) e
+  *"1 de 6"* → *"aos sábados é horas extra total"*. **Revoga a v5.60 / v7.222.0**
+  (meta do fim de semana pelas horas de jornada trabalhadas, abaixo). Volta a
+  valer, agora nos fechamentos, a regra do backfill confirmada em 04/07/2026
+  (`HE_SABADO_INTEIRO`) e a que o TAKT e o PRÓXIMOS DIAS já usavam (lote de
+  sábado = hora extra).
+- **`.gs` v5.68**: `_ehHoraExtraCaixas(rótulo, data)` — com a data, sábado e
+  domingo (`_heFimDeSemana`) são hora extra o dia inteiro. Passam a data: o
+  `getDados` (todo slot `he` no fim de semana), o `getPontosDia` (a UEP em `he`),
+  o `_uepPorDiaDoLog` (o log por dia: fechamentos e editor), o
+  `getProducaoModeloPeriodo` (`pontosHe`) e o `_resumoHoraAHora(aba, data)` —
+  no fim de semana: HE CX = REALIZADO, `he` = toda hora com produção, sem horas
+  de jornada (melhor/pior/média 0). `_fracSemJornada(data)` = **0** no fim de
+  semana (null em dia útil) → os três fechamentos gravam META, META DIA, ATRASO
+  META, EF e META UEP **0 = sem meta**; o `saveDay` ignora a meta do painel e,
+  sem a aba do dia, grava HE CX = REALIZADO. O `_atualizarHistoricoPosLancamento`
+  zera a meta da linha do fim de semana (também a gravada pela v5.60). Saíram o
+  `minJorn`, o `_minDoSlot` e o `_minJornHistHora` (o teste confere).
+  - **A HISTORICO_HORA continua com as horas de 07–17** do fim de semana (o
+    `horasArr` vai pelo horário): é delas que sai o hora a hora do dia passado.
+  - ⚠ Feriado trabalhado NÃO entra (só sábado e domingo).
+  - ⚠ **re-deploy manual**. Antes dele, o sábado ainda é gravado com a meta
+    pelas horas (v5.67) — o painel relê como hora extra (abaixo), a planilha não.
+- **Painel — UMA regra no rp-core 1.18.0**: `uepDiaMeta(d)` = 0 no fim de semana
+  (pela data, mesmo com META UEP gravada); `uepDiaHe(d)` = UEP HE + (no fim de
+  semana) a UEP de "jornada"; `uepHistResumo` não julga o fim de semana (fora do
+  n, bateu, média, meta somada) e soma a UEP dele na `he`; `uepCustoPeriodo` o
+  tira (não paga jornada); `uepCard(…, data)` no fim de semana = `fds:true`, a
+  UEP toda em `he`, sem selo; `pdiaMontar(…, {todoHE})` põe tudo em HE.
+  - **`histDiaFds(d)`**: a linha do HISTORICO de sábado/domingo como a v5.68
+    grava (meta, META DIA, ATRASO, META UEP 0; EF 0, ok false, melhor/pior 0;
+    HE CX = REALIZADO; UEP 0 e a soma em UEP HE; `fds:true`). Os painéis passam
+    TODO dia do histórico por ela ao ler (`_mergeDias` no PC, `lerHistorico` no
+    celular) — as linhas de 07/11 e 14/11 (gravadas pela v5.60–v5.67) aparecem
+    como hora extra sem ninguém mexer na planilha.
+  - **`_diaComMeta(d)`** (PC): EFICIÊNCIA MÉDIA, DIAS COM META e MELHOR/PIOR DIA
+    só com dias com meta — HISTÓRICO, relatório do histórico, `_relSemanalKPIs`
+    (`nComMeta`), `_relDiaExtremo`, resumo do WhatsApp; nas tabelas o fim de
+    semana sai *HORA EXTRA*, sem EF nem selo; o `_svgBarChart` escreve *HE*.
+  - **`_horaEhHE(rótulo, data)`** (PC): com a data, o fim de semana inteiro. Os
+    slots do `getDados` entram com `he: s.he===true || uepFimDeSemana(hoje)` (PC e
+    celular) — redundante com o `.gs` v5.68, mas cobre o anterior.
+  - **PERÍODO da ⚖ UEP**: `_uepAbaPeriodo` → `fds` (as datas), `abaixo` e
+    oscilação só dos dias com meta; cards *1 de 5* e *sábado 14/11 todo hora
+    extra* (`_uepPerFdsTxt`); gráfico com a barra listrada âmbar (`uepPerLis`)
+    da UEP do dia inteira, sem linha de meta; botão da sub-aba e a impressão
+    pelo `res.n`. Com o print de 16/11: 1 de 6 → **1 de 5**, 92,7% → **94,7%**,
+    oscilação 30,9% → **6,6%** (medido no render).
+  - **Gerencial ao vivo no fim de semana** (`_gerUepCards`): o 1º card é
+    *UEP DO DIA · SÁBADO* com a UEP toda em HE, sem selo; saem RITMO, PROJEÇÃO e
+    PARA A META (contra a meta); a análise diz *sem meta*; a impressão e a aba
+    ⚖ UEP (card e botão HOJE) idem. Celular: o `uepCard` com a data.
+  - **Dia passado** (`renderGerencialHist`): `fdsDia` → META '—', EF '—', a UEP
+    toda em HE no 1º card, sem FALTOU, sem melhor/pior hora.
+  - Tela D / bloco da semana: o dia de fim de semana com tarja âmbar *todo hora
+    extra*; diretoria: barra âmbar sem meta; seção UEP do semanal: *sem meta*.
+  - A aba PLANO tira o sábado sozinha: `_qpDiasBase` exige caixas de jornada
+    (antes o 07/11 entrava com 465 cx — a pendência da v7.222.0 se resolveu).
+  - Paradas num sábado: dia sem meta → `metaPadrao` (a regra de sempre do
+    RP_PARADAS), contado no `diag` como dia sem meta.
+  - ⚠ **Ainda em caixas e não mexido**: a META DO DIA ao vivo no sábado (TV,
+    celular) é a da programação + atraso (`CFG.metaDia`); o selo de ritmo em
+    caixas da TV e do % DA META do celular continua — decisão do PPCP.
+- **Testes**: a data de "hoje" ficou FIXA nos testes que dependem dela
+  (`hora-extra.test.js`: `HOJE_TESTE`; `relatorios.test.js`: a aba UEP, a
+  diretoria e o gerencial). Conferido rodando a suíte inteira com o relógio
+  falso em 14/11 e 15/11 (`node -r fake-date.js`, fora do repositório).
+- **Registro — a regra revogada (v5.60 / v7.222.0, 11/11/2026)**: PPCP: *"07/11
+  foi sábado, a meta tem que ser sobre as horas trabalhadas"* → *"sábado não
+  pode ser dia todo, a meta fica errada, porque não tem programação para
+  sábado"*. A meta do fim de semana era a da aba × minutos de jornada com
+  produção ÷ 527 (07/11: META 524, META UEP 1.257, EF 131,7% — a linha foi
+  corrigida pela API em 11/11) e a média por dia excluía o fim de semana, que
+  entrava no bateu. Cinco dias depois o sábado 14/11 apareceu em vermelho com
+  essa meta, e o PPCP disse que o sábado é todo hora extra.
 
 ## `.gs` v5.46 a v5.54 — o que mudou de regra (05/11/2026)
 - Feitos na conversa do Apps Script e subidos à `main` pelo upload de 05/11
@@ -4986,10 +5032,10 @@ feito e dá ar de verdade ao que sobrou.
   - Cards: desvio escrito no UEP ATÉ AGORA (do mesmo `esperado`), projeção "na
     média da jornada até agora · só jornada normal", HE "fora do UEP até agora,
     da projeção e da meta". Barras do mix neutras.
-  - ~~**Sábado na UEP fica como está**~~ — mexido no `.gs` v5.60 (PPCP, ver
-    *SÁBADO E DOMINGO: A META É A DAS HORAS TRABALHADAS*): a HE continua só pelo
-    horário (07–17 é jornada também no sábado), mas a META do fim de semana é a
-    das horas de jornada trabalhadas.
+  - ~~**Sábado na UEP fica como está**~~ — desde o `.gs` v5.68 / v7.247.0 o
+    sábado e o domingo são hora extra o dia inteiro, sem meta (ver *SÁBADO E
+    DOMINGO SÃO HORA EXTRA O DIA INTEIRO*; a v5.60 tinha dado a eles a meta das
+    horas de jornada).
   - **Maquete do ChatGPT recusada em conteúdo**: projeção somando HE, "meta do
     período", "vs período anterior" e "% do total do dia" não existem aqui.
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e

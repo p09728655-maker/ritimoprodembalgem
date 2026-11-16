@@ -202,6 +202,8 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .hc-track{position:relative;width:100%;flex:1;display:flex;align-items:flex-end;min-height:0}
 .hc-fill{width:100%;border-radius:3px 3px 0 0;min-height:3px;transition:height .2s}
 .hc-fill.ok{background:var(--ok)}.hc-fill.warn{background:var(--warn)}.hc-fill.red{background:var(--red)}
+/* sábado e domingo: todo hora extra, sem meta (1.50.0) — âmbar listrado, sem veredito */
+.hc-fill.acc{background:repeating-linear-gradient(45deg,var(--warn) 0 3px,rgba(255,152,0,.4) 3px 6px)}
 .hc-meta{position:absolute;left:0;right:0;height:0;border-top:1px dashed rgba(255,255,255,.35)}
 .hc-day{font-family:var(--font-d);font-size:8px;color:var(--txt2);letter-spacing:.3px;white-space:nowrap}
 .md-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:0.5px solid var(--border);font-family:var(--font-d);font-size:12px}
@@ -215,6 +217,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .hist-ef.ok{background:rgba(76,175,80,.15);color:var(--ok)}
 .hist-ef.warn{background:rgba(255,152,0,.15);color:var(--warn)}
 .hist-ef.red{background:rgba(244,67,54,.15);color:var(--red)}
+.hist-ef.acc{background:rgba(255,152,0,.12);color:var(--warn)}
 
 /* ═══ CARD CONTAINER ═══ */
 .card{background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:14px}
@@ -1099,7 +1102,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.49.0';
+const APP_VER   = '1.50.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -1369,8 +1372,9 @@ function processarResposta(json){
       // he: quem marca é o backend, pelo `_ehHoraExtraCaixas` do .gs — rótulo
       // com prefixo "HE " OU horário fora da jornada 07:00–17:00 (as 05:00 e
       // 06:00 de um dia com C3=5 entram por aqui). É o que separa caixa de hora
-      // normal de caixa de hora extra nos KPIs do dia.
-      he: s.he===true,
+      // normal de caixa de hora extra nos KPIs do dia. Sábado e domingo: TODO
+      // slot (1.50.0 / .gs v5.68 — a mesma regra; aqui também para o .gs anterior).
+      he: s.he===true || uepFimDeSemana(hoje),
       producaoHora: s.producaoHora!=null ? Number(s.producaoHora) : null,
       lotes: Array.isArray(s.lotes) ? s.lotes.map(Number) : [],
       acumulado: s.producaoHora!=null ? acum : null,
@@ -2620,8 +2624,10 @@ async function lerHistorico(){
     try{
       const json = await jsonpFetch(url);
       if(json.erro) throw new Error(json.erro);
-      HIST_DIAS_ALL = json.dias||[];   // usado p/ contar dias trabalhados
-      return json.dias||[];
+      // sábado e domingo saem como o .gs v5.68 grava: sem meta, todo hora extra
+      // (também a linha gravada antes — histDiaFds, rp-core; 1.50.0)
+      HIST_DIAS_ALL = (json.dias||[]).map(histDiaFds);   // usado p/ contar dias trabalhados
+      return HIST_DIAS_ALL;
     }catch(e){
       if(i===3) return [];
       await new Promise(r=>setTimeout(r, 1500*i));
@@ -3813,7 +3819,7 @@ function renderGerencial(){
     {l:'% DA META DO DIA', v:fmtP(k.efDia), sub:slRitmo(k.efRitmo)+' · '+fmtN(k.real)+' de '+fmtN(Math.round(k.metaAteAgora))+' até agora', c:s},
     // UEP DO DIA: a MESMA conta e o MESMO texto do gerencial do desktop
     // (uepCard, rp-core). A UEP por caixa é parâmetro do cadastro.
-    uepCard(PONTOS_DIA.uep, PONTOS_DIA.metaUep, k.minNorm),
+    uepCard(PONTOS_DIA.uep, PONTOS_DIA.metaUep, k.minNorm, hojeStr()),   // sábado/domingo: todo hora extra, sem meta
     {l:'RITMO ATUAL',    v:fmtN(k.ritmo), sub:'cx/hora', c:'acc'},
     // ⚠ A PROJEÇÃO NÃO DÁ VEREDITO — o selo do % DA META DO DIA dá (15/09/2026).
     // Os dois respondiam a MESMA pergunta ("vamos bater hoje?") por duas contas:
@@ -4007,7 +4013,7 @@ function renderGerProdutosDia(real){
       const a = new Date();
       M = pdiaMontar(phm, PONTOS_DIA.porHora || [], PRODUTOS, PROD_ATUAL, a.getHours()*60 + a.getMinutes(), {
         turnoIni: toMin(CFG.turnoInicio), turnoFim: toMin(CFG.turnoFim),
-        almIni: toMin(CFG.almocoInicio), almFim: toMin(CFG.almocoFim), real: PDIA_REAL });
+        almIni: toMin(CFG.almocoInicio), almFim: toMin(CFG.almocoFim), real: PDIA_REAL, todoHE: uepFimDeSemana(hojeStr()) });   // sábado/domingo: todo hora extra (1.50.0)
       // As paradas na faixa (1.49.0). Falhar aqui não derruba o quadro: sai sem a faixa.
       try{
         const w = (Number(el.clientWidth) || 0) - 24;   // a faixa = o quadro − o recuo de 12 px de cada lado
@@ -4174,7 +4180,10 @@ function _renderHistoricoComDados(dias){
   // ── Resumo do período ──
   const totReal=lista.reduce((s,d)=>s+(parseFloat(d.real)||0),0);
   const totMeta=lista.reduce((s,d)=>s+(parseFloat(d.meta)||0),0);
-  const efMed=totMeta>0?(totReal/totMeta)*100:0;
+  // a eficiência é dos dias COM META: o sábado e o domingo (todo hora extra,
+  // sem meta) não podem somar caixas contra meta nenhuma
+  const realComMeta=lista.filter(d=>(parseFloat(d.meta)||0)>0).reduce((s,d)=>s+(parseFloat(d.real)||0),0);
+  const efMed=totMeta>0?(realComMeta/totMeta)*100:0;
   const mediaDia=lista.length?Math.round(totReal/lista.length):0;
   if(elRes){
     elRes.innerHTML=`
@@ -4192,8 +4201,8 @@ function _renderHistoricoComDados(dias){
     const maxReal=Math.max(1, ...cron.map(d=>parseFloat(d.real)||0));
     elChart.innerHTML=cron.map(d=>{
       const real=parseFloat(d.real)||0;
-      const ef=d.ef!=null?parseFloat(d.ef):null;
-      const cls=ef!=null?sc(ef):'';
+      const ef=d.ef!=null&&(parseFloat(d.meta)||0)>0?parseFloat(d.ef):null;   // sem meta (fim de semana): sem cor de veredito
+      const cls=ef!=null?sc(ef):(d.fds?'acc':'');
       const h=Math.max(3, Math.round((real/maxReal)*100));
       const meta=parseFloat(d.meta)||0;
       const metaPct=meta>0?Math.min(100, Math.round((meta/maxReal)*100)):0;
@@ -4207,13 +4216,13 @@ function _renderHistoricoComDados(dias){
   }
   // ── Lista de dias (toque para detalhe) ──
   el.innerHTML=lista.map(d=>{
-    const ef=d.ef!=null?parseFloat(d.ef):null;
+    const ef=d.ef!=null&&(parseFloat(d.meta)||0)>0?parseFloat(d.ef):null;
     const cls=ef!=null?sc(ef):'';
     return `<div class="hist-item" onclick="abrirDia('${d.data}')">
       <div class="hist-data">${d.data}</div>
       <div class="hist-real">${fmtN(d.real)}<span style="font-size:12px;color:var(--txt2)"> CX</span></div>
       <div class="hist-mh">${fmtN(mediaCxH(d))}<span class="u"> cx/h</span></div>
-      ${ef!=null?`<div class="hist-ef ${cls}">${fmtP(ef)}</div>`:'<div></div>'}
+      ${ef!=null?`<div class="hist-ef ${cls}">${fmtP(ef)}</div>`:d.fds?'<div class="hist-ef acc">HE</div>':'<div></div>'}
     </div>`;
   }).join('');
 }
@@ -4222,11 +4231,17 @@ function _renderHistoricoComDados(dias){
 function abrirDia(data){
   const d=_histDias.find(x=>x.data===data);
   if(!d) return;
-  const ef=d.ef!=null?parseFloat(d.ef):null;
-  const cls=ef!=null?sc(ef):'';
   const real=parseFloat(d.real)||0, meta=parseFloat(d.meta)||0;
+  const ef=d.ef!=null&&meta>0?parseFloat(d.ef):null;
+  const cls=ef!=null?sc(ef):'';
   const gap=meta-real;
-  const linhas=[
+  // sábado e domingo (1.50.0 / .gs v5.68): todo hora extra, sem meta — sem
+  // eficiência, sem gap, sem melhor/pior hora de jornada
+  const linhas=d.fds?[
+    ['REALIZADO', fmtN(real)+' CX', ''],
+    ['META', '— sem meta', ''],
+    ['STATUS', 'TODO HORA EXTRA', 'acc'],
+  ]:[
     ['REALIZADO', fmtN(real)+' CX', ''],
     ['MÉDIA CX/H', fmtN(mediaCxH(d))+' cx/h', ''],
     ['META', fmtN(meta)+' CX', ''],
@@ -4243,7 +4258,9 @@ function abrirDia(data){
   }
   if(d.heCount) linhas.push(['HORAS EXTRAS', d.heCount+'', '']);
   // UEP do dia fechado (.gs v5.14): gravada no fechamento, com a meta daquele dia.
-  if(d.uep!=null){
+  if(d.uep!=null && !(uepDiaMeta(d)>0)){
+    linhas.push(['UEP EM HORA EXTRA', fmtN(Math.round(uepDiaHe(d)))+(d.fds?' · todo o dia':''), 'acc']);
+  } else if(d.uep!=null){
     const _pu=Number(d.uep)/uepDiaMeta(d)*100;
     linhas.push(['UEP (JORNADA)', fmtN(Math.round(d.uep))+' de '+fmtN(uepDiaMeta(d))+' · '+fmtP(_pu), sc(_pu)]);
     if(Number(d.uepHe)>0) linhas.push(['UEP EM HORA EXTRA', fmtN(Math.round(d.uepHe)), 'acc']);

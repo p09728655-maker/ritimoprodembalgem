@@ -4157,14 +4157,14 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.246.1';
+const APP_VER = '7.247.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
 // .gs v5.57) e o rodapé compara: o GitHub e o editor do Apps Script não se
 // falam, e sem isso ninguém via qual .gs estava rodando. Mudou o .gs? Suba este
 // número junto com o GS_VERSAO de lá (o apps-script.test.js confere).
-const GS_REPO   = '5.67';
+const GS_REPO   = '5.68';
 let GS_IMPL;   // undefined = ainda não leu · null = o .gs implantado não informa (antes da v5.57)
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5018,7 +5018,9 @@ function processarRespostaSheets(json){
       horario: s.inicio, slotFim: s.fim, slotLabel: s.label,
       // he vem do backend (rótulo "HE 17:00-18:00" na HORA_A_HORA). É o que
       // separa caixa de hora normal de caixa de hora extra em todas as telas.
-      he: s.he===true,
+      // Sábado e domingo: TODO slot (v7.247.0 / .gs v5.68 — a mesma regra; aqui
+      // também para o .gs anterior, que ainda manda 07–17 como jornada).
+      he: s.he===true || uepFimDeSemana(hoje),
       producaoHora: s.producaoHora!=null ? Number(s.producaoHora) : null,
       acumulado: s.producaoHora!=null ? acum : null,
       metaHora: s.metaHora, metaDia: json.metaDia||CFG.metaDia,
@@ -5758,9 +5760,15 @@ async function verGerDia(){
    Dia arquivado por um `.gs` antigo (que classificava HE só pelo rótulo) trouxe
    as horas da madrugada para dentro da tabela; é por isso que esta regra
    precisa existir também aqui. */
-function _horaEhHE(rotulo){
+// v7.247.0 / .gs v5.68 (PPCP, 16/11/2026: "aos sábados é horas extra total"):
+// com a DATA do dia, sábado e domingo são hora extra o dia inteiro — a mesma
+// regra do _ehHoraExtraCaixas do .gs. Sem a data, só o horário (como sempre).
+// 'SÁBADO' ou 'DOMINGO' de uma data dd/MM/aaaa (fim de semana; o resto, 'SÁBADO' não importa).
+function _fdsNome(data){ const d=parseBR(data); return d&&d.getDay()===0?'DOMINGO':'SÁBADO'; }
+function _horaEhHE(rotulo, data){
   const str=String(rotulo||'').trim();
   if(/^HE\b/i.test(str)) return true;
+  if(data && uepFimDeSemana(data)) return true;
   const m=str.match(/(\d{1,2}:\d{2})/);
   if(!m) return false;
   const ini=toMin(m[1]);
@@ -5814,9 +5822,9 @@ function _uepAbaHoras(slots, allHoje, uepH, metaUep, agoraMin){
 // o produto que só rodou de madrugada parecia não existir. `dia` = jornada +
 // hora extra, que é o que fecha com as caixas da confiabilidade.
 function _uepAbaMix(porHoraModelo){
-  const G={}, HE={};
+  const G={}, HE={}, hoje=hojeStr();
   (porHoraModelo||[]).forEach(it=>{
-    const alvo=_horaEhHE(it.hora)?HE:G;
+    const alvo=_horaEhHE(it.hora, hoje)?HE:G;
     const k=(it.modelo||'')+'|'+(it.nome||'');
     const g=alvo[k]=alvo[k]||{modelo:it.modelo||'', nome:it.nome||'', cx:0, cxCom:0, uep:0};
     const c=Number(it.caixas)||0, u=Number(it.uep)||0;
@@ -5896,11 +5904,14 @@ function _uepAbaPeriodo(dias, n, hoje){
   const sel=(dias||[]).filter(d=>{ const dt=parseBR(d&&d.data); return dt && dt>=ini && dt<fim && d.uep!=null && isFinite(Number(d.uep)); })
     .sort((a,b)=>parseBR(a.data)-parseBR(b.data));
   const res=uepHistResumo(sel);
-  return { dias:sel, n:sel.length, res,
+  // Os dias JULGADOS (com meta): sábado e domingo são todo hora extra (v7.247.0)
+  // e ficam fora do bateu, da média e da oscilação — no gráfico, barra de HE.
+  const jul=sel.filter(d=>uepDiaMeta(d)>0);
+  return { dias:sel, n:sel.length, res, fds:sel.filter(d=>uepFimDeSemana(d.data)).map(d=>d.data),
            pctMeta: res.metaTot>0 ? res.total/res.metaTot*100 : null,
-           abaixo: sel.filter(d=>Number(d.uep)<uepDiaMeta(d)).map(d=>d.data),
-           oscUep: _qpOscilacao(sel.map(d=>Number(d.uep))),
-           oscCx:  _qpOscilacao(sel.map(d=>_qpRealDia(d))) };
+           abaixo: jul.filter(d=>Number(d.uep)<uepDiaMeta(d)).map(d=>d.data),
+           oscUep: _qpOscilacao(jul.map(d=>Number(d.uep))),
+           oscCx:  _qpOscilacao(jul.map(d=>_qpRealDia(d))) };
 }
 function _uepPerN(){
   let v=15; try{ const x=Number(localStorage.getItem(UEP_PER_LS)); if(UEP_PER_OPC.includes(x)) v=x; }catch(e){}
@@ -5940,13 +5951,25 @@ function _uepAbaHistCarregar(){
 function _uepAbaPerSvg(dias, largura, altura, pbMin){
   const FS=12, W=largura||760, H=altura||230, pl=46, pb=Math.max(28, Number(pbMin)||0), pt=24;
   const n=Math.max(dias.length,1), bw=(W-pl-10)/n;
-  const mx=Math.max(1, ...dias.map(d=>Math.max(Number(d.uep)||0, uepDiaMeta(d))))*1.12;
+  // sábado e domingo (v7.247.0): sem meta — a barra é a UEP do dia inteira em
+  // hora extra (listrada âmbar), sem a linha da meta e sem veredito
+  const ehF=d=>!(uepDiaMeta(d)>0) && uepFimDeSemana(d.data);
+  const mx=Math.max(1, ...dias.map(d=>ehF(d)?uepDiaHe(d):Math.max(Number(d.uep)||0, uepDiaMeta(d))))*1.12;
   const y=v=>pt+(H-pt-pb)*(1-v/mx);
-  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block" role="img" aria-label="UEP por dia contra a meta">`;
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block" role="img" aria-label="UEP por dia contra a meta">`
+    +(dias.some(ehF)?'<defs><pattern id="uepPerLis" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="var(--warn)" opacity=".35"/><rect width="3" height="6" fill="var(--warn)"/></pattern></defs>':'');
   [0,1000,2000,3000,4000].filter(g=>g<mx).forEach(g=>{ s+=`<line x1="${pl}" x2="${W-10}" y1="${y(g).toFixed(1)}" y2="${y(g).toFixed(1)}" stroke="var(--border)"/><text x="${pl-6}" y="${(y(g)+4).toFixed(1)}" text-anchor="end" font-size="${FS-2}" fill="var(--txt2)" font-family="IBM Plex Mono">${fmtN(g)}</text>`; });
   const mostraNum=bw>=34, passoLbl=Math.max(1, Math.ceil(34/bw));
   dias.forEach((d,i)=>{
-    const u=Number(d.uep)||0, m=uepDiaMeta(d), x=pl+i*bw+bw*.18, w=bw*.64, cx=pl+i*bw+bw/2;
+    const x=pl+i*bw+bw*.18, w=bw*.64, cx=pl+i*bw+bw/2;
+    if(ehF(d)){
+      const u=uepDiaHe(d), tip=_rpEsc(`${d.data} (${_fdsNome(d.data).toLowerCase()}) · ${fmtN(Math.round(u))} UEP · todo hora extra, sem meta`);
+      s+=`<rect x="${x.toFixed(1)}" y="${y(u).toFixed(1)}" width="${w.toFixed(1)}" height="${(y(0)-y(u)).toFixed(1)}" rx="2" fill="url(#uepPerLis)" stroke="var(--warn)" stroke-width="1"><title>${tip}</title></rect>`;
+      if(mostraNum) s+=`<text x="${cx.toFixed(1)}" y="${(y(u)-6).toFixed(1)}" text-anchor="middle" font-size="${FS-2}" fill="var(--warn)" font-family="IBM Plex Mono">${fmtN(Math.round(u))}</text>`;
+      if((dias.length-1-i)%passoLbl===0) s+=`<text x="${cx.toFixed(1)}" y="${H-pb+19}" text-anchor="middle" font-size="${FS-2}" fill="var(--txt2)" font-family="IBM Plex Mono">${_rpEsc(String(d.data).slice(0,5))}</text>`;
+      return;
+    }
+    const u=Number(d.uep)||0, m=uepDiaMeta(d);
     const cor=u>=m?'var(--txt2)':'var(--red)';
     const tip=_rpEsc(`${d.data} · ${fmtN(Math.round(u))} UEP · meta ${fmtN(m)} (${fmtP(u/m*100)})`+(d.uepHe>0?` · +${fmtN(Math.round(d.uepHe))} em HE`:''));
     s+=`<rect x="${x.toFixed(1)}" y="${y(u).toFixed(1)}" width="${w.toFixed(1)}" height="${(y(0)-y(u)).toFixed(1)}" rx="2" fill="${cor}" opacity=".85"><title>${tip}</title></rect>`
@@ -6063,8 +6086,9 @@ function _uepAbaDados(){
   if(U===false) return { estado:'sem-backend', msg:'O backend ainda não manda a UEP (.gs v5.11 re-deployado).' };
   if(!(U.codigos>0)) return { estado:'sem-cadastro', msg:'Sem UEP no cadastro — coluna UEP da PRODUTO_CODIGO (💾 GRAVAR UEP na aba PRODUÇÃO/HORA).' };
   const k=calcKPIs(getDadosHoje());
-  const card=uepCard(U, PONTOS_DIA.metaUep, k.minNorm);
-  const meta=card.meta, feito=Number(U.normal)||0, he=Number(U.he)||0;
+  const card=uepCard(U, PONTOS_DIA.metaUep, k.minNorm, hojeStr());
+  // sábado e domingo (v7.247.0): a UEP do dia toda em hora extra (card.he), sem meta
+  const meta=card.meta, feito=card.fds?0:Number(U.normal)||0, he=card.fds?card.he:Number(U.he)||0;
   const difEsp=feito-(Number(card.esperado)||0);
   const proj=_uepAbaProj(feito, k.minNorm);
   const agora=new Date(), agoraMin=agora.getHours()*60+agora.getMinutes();
@@ -6079,7 +6103,9 @@ function _uepAbaDados(){
   if(conf&&conf.pEst>=UEP_ALERTA_EST) avisos.push(`${fmtP(conf.pEst)} das caixas de hoje têm UEP <b>ESTIMADA</b> pela esteira (EST), não medida`);
   const pSem=conf?conf.pSem:pSemGs;
   if(pSem>=UEP_ALERTA_SEM) avisos.push(`${fmtN(conf?conf.sem:U.cxSem)} cx (${fmtP(pSem)}) estão <b>sem UEP</b> e não entram na conta`);
-  const cards=[
+  const cards=card.fds?[
+    {l:'UEP DO DIA · '+_fdsNome(hojeStr()), v:fmtN(Math.round(he)), c:'acc', sub:'todo hora extra · sem meta', t:card.t}
+  ]:[
     // A diferença para o esperado sai do MESMO esperado do uepCard — nenhuma
     // régua nova, só o desvio escrito (v7.114.0).
     {l:'UEP ATÉ AGORA', v:fmtN(Math.round(feito)), c:card.c,
@@ -6105,14 +6131,19 @@ function _uepAbaDados(){
   return { estado:'ok', k, card, meta, feito, he, proj, horas, mix, conf, avisos, cards, fimTxt, semHoje, semFut, prox, base,
            nPer, P, perCards:P&&P.n?_uepAbaPerCards(P):null };
 }
+// "sábado 14/11" · "sábado 14/11 e domingo 15/11" · "3 dias de fim de semana"
+function _uepPerFdsTxt(fds){
+  const L=(fds||[]).map(d=>_fdsNome(d).toLowerCase()+' '+String(d).slice(0,5));
+  return L.length>2?`${L.length} dias de fim de semana`:L.join(' e ');
+}
 function _uepAbaPerCards(P){
   return [
-    {l:'MÉDIA POR DIA', v:fmtN(Math.round(P.res.media))+' <small>UEP</small>', c:P.res.media>=P.res.metaMedia?'ok':'red',
-     sub:`${P.pctMeta!=null?fmtP(P.pctMeta):'—'} da meta · ${plural(P.n,'dia fechado','dias fechados')}${P.res.nFds?` · média sem o fim de semana`:''}`,
-     t:'Média dos dias úteis fechados. Sábado e domingo entram no total e na meta (a meta deles é a das horas trabalhadas), mas não na média por dia: um sábado de 4 horas não é um dia.'},
-    {l:'DIAS QUE BATERAM', v:`${P.res.bateu} <small>de ${P.n}</small>`, c:P.res.bateu===P.n?'ok':(P.res.bateu*2>=P.n?'warn':'red'),
-     sub:P.abaixo.length?'abaixo: '+P.abaixo.map(x=>x.slice(0,5)).join(', '):'todos na meta',
-     t:'Verde: todos os dias bateram a meta daquele dia. Âmbar: metade ou mais bateu. Vermelho: menos da metade.'},
+    {l:'MÉDIA POR DIA', v:P.res.media!=null?fmtN(Math.round(P.res.media))+' <small>UEP</small>':'—', c:P.res.media==null?'':P.res.media>=P.res.metaMedia?'ok':'red',
+     sub:`${P.pctMeta!=null?fmtP(P.pctMeta):'—'} da meta · ${plural(P.res.n,'dia útil','dias úteis')}${P.fds.length?` · ${_uepPerFdsTxt(P.fds)} todo hora extra`:''}`,
+     t:'Média dos dias úteis fechados, contra a meta de cada dia. Sábado e domingo são hora extra o dia inteiro (PPCP, 16/11/2026): ficam fora da média, da meta e do bateu, e a UEP deles entra na hora extra do período.'},
+    {l:'DIAS QUE BATERAM', v:`${P.res.bateu} <small>de ${P.res.n}</small>`, c:!P.res.n?'':P.res.bateu===P.res.n?'ok':(P.res.bateu*2>=P.res.n?'warn':'red'),
+     sub:P.abaixo.length?'abaixo: '+P.abaixo.map(x=>x.slice(0,5)).join(', '):(P.res.n?'todos na meta':'só fim de semana no período'),
+     t:'Dias úteis. Verde: todos os dias bateram a meta daquele dia. Âmbar: metade ou mais bateu. Vermelho: menos da metade. Sábado e domingo não são julgados (todo hora extra).'},
     {l:'OSCILAÇÃO DIA A DIA', v:P.oscUep!=null?fmtP(P.oscUep)+' <small>UEP</small>':'—', c:'acc',
      sub:P.oscUep!=null&&P.oscCx!=null?`${fmtP(P.oscCx)} em caixas`:'precisa de 2 dias ou mais',
      t:'Desvio ÷ média dos dias (a mesma conta da oscilação da aba PLANO). Em caixas a produção pula com o mix; em UEP o mix já está descontado.'}
@@ -10200,12 +10231,14 @@ function _uepSub(k){
 function _uepSubMontar(o){
   const D = o && o.D, ok = D && D.estado === 'ok', P = ok ? D.P : null, H = o && o.H;
   const hoje = !ok ? { txt: D && D.estado === 'aguardando' ? '…' : '—', cls:'' }
+    : D.card && D.card.fds ? { txt:`${fmtN(Math.round(D.he))} UEP · todo hora extra`, cls:'' }
     : !(D.k && D.k.minNorm > 0) ? { txt:`${fmtN(Math.round(D.feito))} UEP · nenhuma hora lançada`, cls:'' }
     : { txt:`${fmtN(Math.round(D.feito))} UEP · ${slRitmo(D.card.ef)}`, cls:['ok', 'warn', 'red'].indexOf(D.card.c) >= 0 ? D.card.c : '' };
   const periodo = !ok ? { txt:'…', cls:'' }
     : !P ? { txt: o.histFalha ? 'histórico não lido' : '…', cls:'' }
     : !P.n ? { txt:'nenhum dia fechado', cls:'' }
-    : { txt:`${fmtN(Math.round(P.res.media))} UEP/dia · ${P.res.bateu} de ${P.n} na meta`, cls:'' };
+    : !P.res.n ? { txt:'só fim de semana (hora extra)', cls:'' }
+    : { txt:`${fmtN(Math.round(P.res.media))} UEP/dia · ${P.res.bateu} de ${P.res.n} na meta`, cls:'' };
   const conta = st => H.julgados.filter(g => g.st === st).length;
   const prod = !ok ? { txt:'…', cls:'' }
     : o.padEst === 'falha' ? { txt:'não foi lido', cls:'' }
@@ -10356,8 +10389,8 @@ function renderUep(){
       const box=document.getElementById('uep-p-box');
       b4=`<div class="kpi-grid c3">${pc.map(c=>`<div class="kpi-card ${c.c}"${c.t?` title="${_rpEsc(c.t)}"`:''}><div class="kpi-lbl">${c.l}</div><div class="kpi-val">${c.v}</div><div class="kpi-sub">${c.sub}</div></div>`).join('')}</div>`
         +`<div class="uep-card" id="uep-p-box">${_uepAbaPerSvg(P.dias, box?_svgLargura(box):760)}
-          <div class="uep-leg"><span style="--c:var(--txt2)">bateu a meta</span><span style="--c:var(--red)">abaixo da meta</span><span class="tr" style="--c:var(--acc)">meta do dia</span></div>
-          ${P.res.he>0?`<div class="uep-nota" title="A UEP de cada dia é a gravada no fechamento, com o cadastro daquela data; a de hoje usa o cadastro atual. A base pode diferir um pouco.">+ ${fmtN(Math.round(P.res.he))} UEP em hora extra, fora da conta</div>`:''}
+          <div class="uep-leg"><span style="--c:var(--txt2)">bateu a meta</span><span style="--c:var(--red)">abaixo da meta</span><span class="tr" style="--c:var(--acc)">meta do dia</span>${P.fds.length?'<span style="--c:var(--warn)">sábado/domingo: todo hora extra</span>':''}</div>
+          ${P.res.he>0?`<div class="uep-nota" title="A UEP de cada dia é a gravada no fechamento, com o cadastro daquela data; a de hoje usa o cadastro atual. A base pode diferir um pouco.">+ ${fmtN(Math.round(P.res.he))} UEP em hora extra, fora da conta${P.fds.length?` (com ${_uepPerFdsTxt(P.fds)})`:''}</div>`:''}
           ${(esc=>esc?`<div class="uep-nota" style="color:var(--warn)">${esc}</div>`:'')(_uepEscalaNota(P.dias.map(d=>d.data)))}</div>`;
     }
   }
@@ -10426,7 +10459,7 @@ function renderUep(){
       try{
         T1=_taktMontar(TKP, UEP_HIST||[], { num:hojeN, meta, ef:_efEmb() }, _taktPtsMapa(_pdiaPcCat()), _taktEstMapa(_pdiaPcCat()));
         const P1=T1 && _taktProxMontar(T1), tb=document.getElementById('tks-g-box');
-        const sim=P1 ? _taktSimular(P1, T1.nUteis, _taktCenarios(meta, T, D.P && D.P.n ? { n:D.P.n, media:D.P.res.media } : null)) : [];
+        const sim=P1 ? _taktSimular(P1, T1.nUteis, _taktCenarios(meta, T, D.P && D.P.res.n ? { n:D.P.res.n, media:D.P.res.media } : null)) : [];
         b1=T1 ? _taktProxHtml(T1, P1, { largura:tb ? _svgLargura(tb) : 760, botoes:tksBt, sim, V:P1 && _taktVeredito(T1, P1, rit), sobra:V0 }) : null;
       }catch(e){ console.warn('[UEP] takt da semana que vem:', e.message); T1=null; }
       bT=b1 || `<div class="uep-sec" style="margin-top:0"><b>TAKT DA SEMANA</b> ${tksBt}</div><div class="uep-card"><div class="uep-nota" style="margin-top:0">Não consegui montar o takt da semana que vem.</div></div>`;
@@ -12630,14 +12663,15 @@ function _uepDocHtml(D, ctx){
   // impressão tem muita informação"). A frase que vinha embaixo do selo
   // repetia os números dos cards logo abaixo; quem explica estado (histórico
   // não lido, sem dia fechado) é a seção do período.
-  const hojeTem=k.minNorm>0;
+  const hojeTem=k.minNorm>0&&!card.fds;
   const resHoje=`<div class="ud-res-b ${hojeTem?card.c:''}"><div class="ud-k">HOJE · ${_rpEsc(ctx.data)}</div>
-    <div class="ud-selo">${hojeTem?slRitmo(card.ef):'SEM HORA DE JORNADA LANÇADA'}</div></div>`;
+    <div class="ud-selo">${card.fds?'TODO HORA EXTRA — SEM META':hojeTem?slRitmo(card.ef):'SEM HORA DE JORNADA LANÇADA'}</div></div>`;
   let resPer;
   if(!P) resPer=`<div class="ud-res-b"><div class="ud-k">ÚLTIMOS ${nPer} DIAS</div><div class="ud-selo">${ctx.hist==='falha'?'HISTÓRICO NÃO LIDO':'HISTÓRICO AINDA LENDO'}</div></div>`;
   else if(!P.n) resPer=`<div class="ud-res-b"><div class="ud-k">ÚLTIMOS ${nPer} DIAS</div><div class="ud-selo">SEM DIA FECHADO COM UEP</div></div>`;
-  else resPer=`<div class="ud-res-b ${perCards[1].c}"><div class="ud-k">ÚLTIMOS ${nPer} DIAS · ${plural(P.n,'dia fechado','dias fechados')}</div>
-    <div class="ud-selo">${P.res.bateu} DE ${P.n} ${P.n===1?'DIA':'DIAS'} NA META</div></div>`;
+  else if(!P.res.n) resPer=`<div class="ud-res-b"><div class="ud-k">ÚLTIMOS ${nPer} DIAS</div><div class="ud-selo">SÓ FIM DE SEMANA — TODO HORA EXTRA</div></div>`;
+  else resPer=`<div class="ud-res-b ${perCards[1].c}"><div class="ud-k">ÚLTIMOS ${nPer} DIAS · ${plural(P.res.n,'dia útil','dias úteis')}${P.fds.length?' · '+_uepPerFdsTxt(P.fds)+' em hora extra':''}</div>
+    <div class="ud-selo">${P.res.bateu} DE ${P.res.n} ${P.res.n===1?'DIA':'DIAS'} NA META</div></div>`;
 
   // FOLHA 1 EM LINHAS ALINHADAS (v7.192.0, PPCP 03/11/2026, com o print na
   // mão: "alinhar os gráficos, está desalinhado"). Eram duas colunas soltas —
@@ -12662,7 +12696,7 @@ function _uepDocHtml(D, ctx){
   else cPer=`<div class="kpi-grid">${perCards.map(kpi).join('')}</div>`;
   const cDiaT=temP?sec('DIA A DIA EM UEP — CONTRA A META DE CADA DIA'):nada;
   const cDia=temP?`<div class="ud-g">${_uepAbaPerSvg(P.dias, W, H, pb)}
-      ${P.res.he>0?`<div class="ud-nota">+ ${fmtN(Math.round(P.res.he))} UEP em hora extra no período, fora da conta</div>`:''}
+      ${P.res.he>0?`<div class="ud-nota">+ ${fmtN(Math.round(P.res.he))} UEP em hora extra no período, fora da conta${P.fds.length?` (com ${_uepPerFdsTxt(P.fds)}, listrado)`:''}</div>`:''}
       ${(esc=>esc?`<div class="ud-nota" style="color:var(--warn)">${esc}</div>`:'')(_uepEscalaNota(P.dias.map(d=>d.data)))}</div>`:nada;
   const folha1=`<div class="ud-p1">${cHojeT}${cPerT}${cHoje}${cPer}${cAlerta}${cHoraT}${cDiaT}${cHora}${cDia}</div>`;
 
@@ -12964,7 +12998,7 @@ function renderGerProdutosDia(real){
       M = pdiaMontar(phm, PONTOS_DIA.porHora || [], _pdiaPcCat() || [], PONTOS_DIA.produtoAtual, a.getHours()*60 + a.getMinutes(), {
         turnoIni: toMin(CFG.turnoInicio), turnoFim: toMin(CFG.turnoFim),
         almIni: toMin(CFG.almocoInicio), almFim: toMin(CFG.almocoFim), real: PDIA_PC_REAL,
-        larg, linhas: PDIA_PC_LINHAS, passo: 60, atualDesc: PONTOS_DIA.produtoAtualDesc, porUep: true });
+        larg, linhas: PDIA_PC_LINHAS, passo: 60, atualDesc: PONTOS_DIA.produtoAtualDesc, porUep: true, todoHE: uepFimDeSemana(hojeStr()) });   // sábado/domingo: todo hora extra (v7.247.0)
       // As paradas na faixa (v7.236.0). Falhar aqui não derruba o quadro: sai sem a faixa.
       try{ P = _pdiaParDoPainel(M.faixa, larg, `${p2(a.getHours())}:${p2(a.getMinutes())}:${p2(a.getSeconds())}`); }
       catch(errP){ console.warn('paradas na faixa:', errP.message); P = null; }
@@ -13012,7 +13046,9 @@ function renderGerencialHist(){
   const prods=horas.map(h=>Number(h.real)||0);
   const realSum=prods.reduce((s,v)=>s+v,0);
   const real=dia.real||realSum;
-  const meta=dia.meta||0;
+  // sábado e domingo: sem meta e todo hora extra (v7.247.0) — também na linha
+  // gravada pelo .gs v5.60–v5.67, que pôs uma meta pelas horas de 07–17
+  const meta=uepFimDeSemana(H.data||dia.data||'')?0:(dia.meta||0);
   /* ── A meta do dia é repartida só entre as horas NORMAIS ───────────────────
      Aqui era `meta / nSlots`, com TODAS as horas arquivadas no divisor. Num dia
      que começou às 05:00 isso fazia duas coisas erradas ao mesmo tempo: dava
@@ -13021,7 +13057,9 @@ function renderGerencialHist(){
      horas, quando as 9 horas de jornada pediam 209 — e a madrugada, com 96 cx,
      aparecia como ABAIXO e virava o VALE DE PRODUÇÃO do dia.
      Hora extra não é julgada: sem meta, não há eficiência nem status. */
-  const horasNorm=horas.filter(h=>!_horaEhHE(h.hora));
+  const dataDia=H.data||dia.data||'';
+  const fdsDia=uepFimDeSemana(dataDia);   // v7.247.0: sábado e domingo — todo hora extra, sem meta
+  const horasNorm=horas.filter(h=>!_horaEhHE(h.hora, dataDia));
   const prodsNorm=horasNorm.map(h=>Number(h.real)||0);
   const nNorm=horasNorm.length;
   const temHEnaTabela=nNorm<nSlots;
@@ -13035,50 +13073,67 @@ function renderGerencialHist(){
   // arquivarDiaAtual grava na coluna MEDIA CX/H.
   const ritmo=nNorm>0?Math.round(real/nNorm):0;
   const gap=meta-real;
-  // Hora extra do dia: vem do HISTORICO (coluna HE CX ou derivada).
-  const heCx=(dia.heCx===null||dia.heCx===undefined)?null:Number(dia.heCx);
+  // Hora extra do dia: vem do HISTORICO (coluna HE CX ou derivada); no fim de semana, tudo.
+  const heCx=fdsDia?real:(dia.heCx===null||dia.heCx===undefined)?null:Number(dia.heCx);
+  const diaU=Object.assign({}, dia, {data:dataDia});   // a UEP do dia com a data (uepDiaMeta, uepDiaHe)
 
   // ── KPIs (subconjunto que faz sentido para um dia já encerrado) ──
   // A UEP NA FRENTE também no dia passado (v7.243.0): com a UEP gravada no
   // fechamento, ela dá o veredito e as caixas viram fato. Dia antigo, sem UEP
   // gravada, continua julgado em caixas — um veredito só, o que existe.
   const comUep=dia.uep!=null;
-  const pctUep=comUep&&uepDiaMeta(dia)>0?dia.uep/uepDiaMeta(dia)*100:null;
+  const pctUep=comUep&&uepDiaMeta(diaU)>0?dia.uep/uepDiaMeta(diaU)*100:null;
+  const semMetaTxt=fdsDia?'sem meta — sábado e domingo são todo hora extra':'sem meta gravada';
   const kpis=[
-    {l:'PRODUÇÃO REAL',    v:fmtN(real),  sub:heCx>0?`${fmtN(real-heCx)} normal + ${fmtN(heCx)} extra`:`meta ${fmtN(meta)} cx`, c:sc(ef)},
+    {l:'PRODUÇÃO REAL',    v:fmtN(real),  sub:heCx>0?`${fmtN(real-heCx)} normal + ${fmtN(heCx)} extra`:`meta ${fmtN(meta)} cx`, c:meta>0?sc(ef):'acc'},
     ...(heCx>0?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(heCx), sub:temHEnaTabela?'HE na tabela, sem meta':'fora da tabela abaixo', t:`${fmtN(real-heCx)} cx em hora normal`, c:'acc'}]:[]),
     // .gs v5.55: META DIA e ATRASO META gravados no fechamento. Dia fechado antes
     // (ou pelo das 23:59, que grava atraso 0) sai como sempre saiu.
-    {l:'META DO DIA',      v:fmtN(meta),  sub:_metaPartesTxt(dia.metaDia!=null?{metaDia:Number(dia.metaDia), atraso:Number(dia.atrasoMeta)||0}:null, gap, true),
-     t:dia.metaDia!=null?`META gravada no fechamento. META DIA (soma por hora): ${fmtN(Number(dia.metaDia))} cx · ATRASO META: ${fmtN(Number(dia.atrasoMeta)||0)} cx.`:'', c:'acc'},
-    {l:'EFICIÊNCIA %',     v:fmtP(ef),    sub:sl(ef),                            c:sc(ef)},
+    {l:'META DO DIA',      v:meta>0||!fdsDia?fmtN(meta):'—',  sub:fdsDia?semMetaTxt:_metaPartesTxt(dia.metaDia!=null?{metaDia:Number(dia.metaDia), atraso:Number(dia.atrasoMeta)||0}:null, gap, true),
+     t:!fdsDia&&dia.metaDia!=null?`META gravada no fechamento. META DIA (soma por hora): ${fmtN(Number(dia.metaDia))} cx · ATRASO META: ${fmtN(Number(dia.atrasoMeta)||0)} cx.`:'', c:'acc'},
+    // sem meta (fim de semana), não há eficiência: "0%" ABAIXO julgaria o que não tem régua
+    meta>0 ? {l:'EFICIÊNCIA %',     v:fmtP(ef),    sub:sl(ef),                            c:sc(ef)}
+           : {l:'EFICIÊNCIA %',     v:'—',         sub:semMetaTxt,                        c:''},
     // UEP do dia fechado (.gs v5.14): gravada no fechamento, com a meta daquele
     // dia. Sem ela (dia antigo ou backend anterior), o card diz isso.
     ...(dia.uep!=null
-      ? [{l:'UEP DO DIA', v:fmtN(Math.round(dia.uep)),
-          sub:`${fmtP(dia.uep/uepDiaMeta(dia)*100)} da meta do dia (${fmtN(uepDiaMeta(dia))} UEP)${dia.uepHe>0?' · +'+fmtN(Math.round(dia.uepHe))+' em HE':''}`,
-          c:sc(dia.uep/uepDiaMeta(dia)*100)}]
+      ? [fdsDia||!(uepDiaMeta(diaU)>0)
+          ? {l:'UEP DO DIA', v:fmtN(Math.round(fdsDia?uepDiaHe(diaU):dia.uep)), sub:fdsDia?'todo hora extra · sem meta':semMetaTxt, c:'acc'}
+          : {l:'UEP DO DIA', v:fmtN(Math.round(dia.uep)),
+             sub:`${fmtP(dia.uep/uepDiaMeta(diaU)*100)} da meta do dia (${fmtN(uepDiaMeta(diaU))} UEP)${dia.uepHe>0?' · +'+fmtN(Math.round(dia.uepHe))+' em HE':''}`,
+             c:sc(dia.uep/uepDiaMeta(diaU)*100)}]
       : (('uep' in dia)?[{l:'UEP DO DIA', v:'—', sub:'dia sem UEP gravada no fechamento', c:''}]:[])),
-        {l:'RITMO MÉDIO',      v:fmtN(dia.mediaH||ritmo), sub:'média cx/hora no turno', c:'acc'},
-    {l:'SLOTS PRODUZIDOS', v:fmtN(nSlots), sub:temHEnaTabela?`${plural(nNorm,'hora','horas')} de jornada + ${plural(nSlots-nNorm,'de hora extra','de hora extra')}`:'horas com produção', c:''},
-    {l:'MELHOR HORA',      v:fmtN(melhor), sub:'cx — pico do turno',            c:'ok'},
-    {l:'PIOR HORA',        v:fmtN(pior),   sub:'cx — mínimo do turno',          c:metaHora>0&&pior<metaHora*0.7?'red':''},
+        {l:'RITMO MÉDIO',      v:fdsDia?'—':fmtN(dia.mediaH||ritmo), sub:fdsDia?'sem hora de jornada':'média cx/hora no turno', c:'acc'},
+    {l:'SLOTS PRODUZIDOS', v:fmtN(nSlots), sub:fdsDia?'todas em hora extra':temHEnaTabela?`${plural(nNorm,'hora','horas')} de jornada + ${plural(nSlots-nNorm,'de hora extra','de hora extra')}`:'horas com produção', c:''},
+    {l:'MELHOR HORA',      v:fdsDia?'—':fmtN(melhor), sub:fdsDia?'sem hora de jornada':'cx — pico do turno',            c:fdsDia?'':'ok'},
+    {l:'PIOR HORA',        v:fdsDia?'—':fmtN(pior),   sub:fdsDia?'sem hora de jornada':'cx — mínimo do turno',          c:!fdsDia&&metaHora>0&&pior<metaHora*0.7?'red':''},
   ];
   // A versão em UEP: 1ª linha o veredito (UEP gravada × META UEP daquele dia),
   // 2ª linha as caixas — os mesmos números, sem cor.
-  const kUep=comUep?[
-    {l:'UEP DO DIA · META '+fmtN(uepDiaMeta(dia)), v:fmtN(Math.round(dia.uep))+' <small>UEP</small>',
+  const kUep=comUep&&fdsDia?[
+    // sábado e domingo (v7.247.0): todo hora extra — sem meta, sem selo
+    {l:'UEP DO DIA · '+_fdsNome(dataDia), v:fmtN(Math.round(uepDiaHe(diaU)))+' <small>UEP</small>',
+     sub:'<b>TODO HORA EXTRA</b> · sem meta — sábado e domingo não têm jornada normal',
+     t:'Sábado e domingo são hora extra o dia inteiro (PPCP, 16/11/2026): a UEP do dia é toda de hora extra e não é julgada contra meta nenhuma.', c:'acc ger-hero'},
+    ...(real>0?[{l:'UEP POR CAIXA', v:(uepDiaHe(diaU)/real).toFixed(2).replace('.',','), c:'',
+      sub:'o peso médio da caixa do dia', t:'UEP do dia ÷ caixas do dia (tudo hora extra).'}]:[]),
+  ]:comUep?[
+    {l:'UEP DO DIA · META '+fmtN(uepDiaMeta(diaU)), v:fmtN(Math.round(dia.uep))+' <small>UEP</small>',
      sub:pctUep!=null?`<b>${sl(pctUep)}</b> · ${fmtP(pctUep)} da meta do dia${dia.uepHe>0?' · +'+fmtN(Math.round(dia.uepHe))+' em hora extra':''}`:'dia sem META UEP gravada',
      t:'UEP de jornada gravada no fechamento, contra a META UEP gravada naquele dia. A hora extra fica fora da meta.', c:(pctUep!=null?sc(pctUep):'acc')+' ger-hero'},
     // Fatos do dia em UEP, sem cor (o selo é o do 1º card).
-    ...(uepDiaMeta(dia)>0?[(()=>{ const d=Math.round(uepDiaMeta(dia)-dia.uep);
+    ...(uepDiaMeta(diaU)>0?[(()=>{ const d=Math.round(uepDiaMeta(diaU)-dia.uep);
       return d>0?{l:'FALTOU PARA A META', v:fmtN(d)+' <small>UEP</small>', c:'', sub:'meta − UEP de jornada'}
                 :{l:'META BATIDA', v:'+'+fmtN(-d)+' <small>UEP</small>', c:'', sub:'acima da meta, só jornada'}; })()]:[]),
     {l:'UEP EM HORA EXTRA', v:fmtN(Math.round(dia.uepHe||0)), c:'', sub:dia.uepHe>0?'fora da meta':'sem hora extra'},
     ...((real-(heCx||0))>0?[{l:'UEP POR CAIXA', v:(dia.uep/(real-(heCx||0))).toFixed(2).replace('.',','), c:'',
       sub:'o peso médio da caixa do dia', t:'UEP de jornada ÷ caixas de jornada: quanto pesou, em média, cada caixa do dia. É ele que explica o dia em que as caixas e a UEP contam histórias diferentes.'}]:[]),
   ]:null;
-  const kCx=comUep?[
+  const kCx=comUep&&fdsDia?[
+    {l:'CAIXAS', v:fmtN(real), c:'', sub:'todas em hora extra'},
+    {l:'CAIXAS PROGRAMADAS', v:'—', c:'', sub:semMetaTxt},
+    {l:'SLOTS PRODUZIDOS', v:fmtN(nSlots), c:'', sub:'todas em hora extra'},
+  ]:comUep?[
     {l:'CAIXAS', v:fmtN(real), c:'', sub:heCx>0?`${fmtN(real-heCx)} normal + ${fmtN(heCx)} em hora extra`:'no turno'},
     {l:'CAIXAS PROGRAMADAS', v:fmtN(meta), c:'', sub:`${fmtP(ef)} feito · `+_metaPartesTxt(dia.metaDia!=null?{metaDia:Number(dia.metaDia), atraso:Number(dia.atrasoMeta)||0}:null, gap, true),
      t:'A META em caixas gravada no fechamento. Sem cor: o veredito do dia é o da UEP (1º card).'},
@@ -13096,9 +13151,9 @@ function renderGerencialHist(){
   // Backend antigo ou sem UEP no cadastro → a tabela em caixas, nunca zero.
   const uepHH=H.uepHora&&typeof H.uepHora==='object'?H.uepHora:null;
   // A forma da hora do _uepAbaHoras, para o MESMO desenho do dia de hoje.
-  const horasU=(comUep&&uepHH)?_gerHorasHist(horas, uepDiaMeta(dia), uepHH, H.data||dia.data):null;
+  const horasU=(comUep&&uepHH)?_gerHorasHist(horas, uepDiaMeta(diaU), uepHH, dataDia):null;
   if(horasU){
-    document.getElementById('analise-row').innerHTML=_gerAnaliseUepHistHtml(horasU, pctUep, dia);
+    document.getElementById('analise-row').innerHTML=_gerAnaliseUepHistHtml(horasU, pctUep, dia, fdsDia?uepDiaHe(diaU):null);
   } else {
   // Pico e vale saem das horas de JORNADA: a hora extra não tem meta e não
   // disputa o título de melhor nem de pior hora do turno.
@@ -13106,11 +13161,11 @@ function renderGerencialHist(){
   const tendStr=prods.length>=2?(prods[prods.length-1]>=prods[prods.length-2]?'↑ CRESCENDO':'↓ QUEDA'):'—';
   const tendClr=prods.length>=2?(prods[prods.length-1]>=prods[prods.length-2]?'var(--ok)':'var(--red)'):'var(--txt2)';
   // Com a UEP no card (dia sem a UEP hora a hora), a eficiência em caixas não julga.
-  const efClr=comUep?'var(--txt)':(ef>=96?'var(--ok)':ef>=90?'var(--warn)':'var(--red)');
+  const efClr=comUep||!(meta>0)?'var(--txt)':(ef>=96?'var(--ok)':ef>=90?'var(--warn)':'var(--red)');
   document.getElementById('analise-row').innerHTML=`
     <div class="a-card"><div class="a-lbl">${comUep?'CAIXAS × PROGRAMADO':'EFICIÊNCIA DO DIA'}</div>
-      <div class="a-val" style="color:${efClr}">${fmtP(ef)}</div>
-      <div class="a-desc">${dia.fechado?'dia fechado':'registrado'}</div></div>
+      <div class="a-val" style="color:${efClr}">${meta>0?fmtP(ef):'—'}</div>
+      <div class="a-desc">${meta>0?(dia.fechado?'dia fechado':'registrado'):semMetaTxt}</div></div>
     <div class="a-card"><div class="a-lbl">TENDÊNCIA DO TURNO</div>
       <div class="a-val" style="color:${tendClr}">${tendStr}</div>
       <div class="a-desc">últimas 2 horas do dia</div></div>
@@ -13141,7 +13196,7 @@ function renderGerencialHist(){
     // Hora extra não tem meta: não ganha meta/h, nem eficiência, nem veredito —
     // ganha a etiqueta que diz o que ela é. Com a UEP no card (e sem a UEP
     // hora a hora), a hora em caixas não julga: um veredito só na tela.
-    const ehHE=_horaEhHE(h.hora);
+    const ehHE=_horaEhHE(h.hora, dataDia);
     const ef2=(!ehHE&&metaHora>0)?prod/metaHora*100:null;
     const s2=ef2===null||comUep?'mute':ef2>=96?'ok':ef2>=90?'warn':'red';
     const bdg=ehHE
@@ -13176,24 +13231,21 @@ function renderGerencialHist(){
 // A análise do dia passado em UEP: o % da meta do dia, a tendência das duas
 // últimas horas de jornada e o pico e o vale pelo % da meta DA HORA.
 // As horas do dia passado na forma do _uepAbaHoras (v7.244.0). A meta da hora é
-// a do dia repartida pelos minutos de JORNADA: em dia útil, 527 (a META UEP
-// gravada é a do dia inteiro); em sábado e domingo, os minutos das horas de
-// jornada com produção — desde o .gs v5.60 a META UEP gravada deles já é a das
-// horas trabalhadas (07/11/2026: 1.257 em 240 min → 314 por hora, não 143). O
-// 16:00-16:59 vale 59 min, como ao vivo e no .gs (_minDoSlot).
+// a do dia repartida pelos 527 minutos da jornada. Sábado e domingo (v7.247.0 /
+// .gs v5.68) são hora extra o dia inteiro: toda hora sai sem meta e sem
+// veredito. O 16:00-16:59 vale 59 min, como ao vivo.
 function _gerHorasHist(horas, metaDia, uepHH, data){
   const minH=lbl=>{ const m=String(lbl||'').match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
     if(!m) return 60; const d=toMin(m[2])-toMin(m[1]); return d>0&&d<=120?d:60; };
-  const jorn=(horas||[]).filter(h=>!_horaEhHE(h.hora)&&(Number(h.real)||0)>0);
-  const minJ=uepFimDeSemana(data)?jorn.reduce((t,h)=>t+minH(h.hora),0):UEP_MIN_DIA;
   return (horas||[]).map(h=>{
-    const ehHE=_horaEhHE(h.hora), u=(uepHH||{})[_uepHHMM(h.hora)]||null;
+    const ehHE=_horaEhHE(h.hora, data), u=(uepHH||{})[_uepHHMM(h.hora)]||null;
     return { label:h.hora, inicio:_uepHHMM(h.hora), he:ehHE, lancada:true, andamento:false, cx:Number(h.real)||0,
              uep:u&&u.uep>0?u.uep:null, cxSem:u?u.cxSem:0,
-             metaH:ehHE||!(minJ>0)?null:Number(metaDia)*minH(h.hora)/minJ };
+             metaH:ehHE||!(Number(metaDia)>0)?null:Number(metaDia)*minH(h.hora)/UEP_MIN_DIA };
   });
 }
-function _gerAnaliseUepHistHtml(horasU, pctUep, dia){
+// `heFds` (v7.247.0): a UEP do dia no fim de semana — todo hora extra, sem meta.
+function _gerAnaliseUepHistHtml(horasU, pctUep, dia, heFds){
   const fech=horasU.map(h=>({ h, J:_gerHoraJulga(h, h.cx, Math.max(0, h.cx-(h.cxSem||0))) }))
     .filter(x=>x.J&&!x.J.parte).map(x=>({ h:x.h, p:x.J.pct, uep:x.J.uep }));
   let pico=null, vale=null;
@@ -13202,8 +13254,8 @@ function _gerAnaliseUepHistHtml(horasU, pctUep, dia){
   const ph=x=>x?`${fmtP(x.p)} da meta da hora · ${fmtN(Math.round(x.uep))} UEP`:'nenhuma hora de jornada com UEP';
   return `
     <div class="a-card"><div class="a-lbl">UEP DO DIA</div>
-      <div class="a-val" style="color:${pctUep!=null?'var(--'+sc(pctUep)+')':'var(--txt2)'}">${pctUep!=null?fmtP(pctUep):'—'}</div>
-      <div class="a-desc">da meta de UEP · ${dia.fechado?'dia fechado':'registrado'}</div></div>
+      <div class="a-val" style="color:${pctUep!=null?'var(--'+sc(pctUep)+')':'var(--txt2)'}">${heFds!=null?fmtN(Math.round(heFds))+' UEP':pctUep!=null?fmtP(pctUep):'—'}</div>
+      <div class="a-desc">${heFds!=null?'todo hora extra · sem meta':'da meta de UEP · '+(dia.fechado?'dia fechado':'registrado')}</div></div>
     <div class="a-card"><div class="a-lbl">TENDÊNCIA DO TURNO</div>
       <div class="a-val" style="color:${tend>0?'var(--ok)':tend<0?'var(--red)':'var(--txt2)'}">${tend>0?'↑ CRESCENDO':tend<0?'↓ QUEDA':'—'}</div>
       <div class="a-desc">últimas 2 horas de jornada, % da meta da hora</div></div>
@@ -13285,10 +13337,11 @@ function renderGerencial(){
 // caixas do produto de agora e quando a meta sai. Nenhuma régua nova.
 function _gerUepModelo(k, agoraMin){
   const U=PONTOS_DIA.uep;
-  const card=_uepCardLeitura(uepCard(U, PONTOS_DIA.metaUep, k.minNorm));
+  const card=_uepCardLeitura(uepCard(U, PONTOS_DIA.metaUep, k.minNorm, hojeStr()));
   if(agoraMin==null){ const a=new Date(); agoraMin=a.getHours()*60+a.getMinutes(); }
   if(!U||!(U.codigos>0)) return { ok:false, lendo:U===null, card, agoraMin };
-  const meta=card.meta, feito=Number(U.normal)||0, he=Number(U.he)||0;
+  // sábado e domingo (v7.247.0): tudo hora extra — o card traz a soma em `he`
+  const meta=card.meta, feito=card.fds?0:Number(U.normal)||0, he=card.fds?card.he:Number(U.he)||0;
   const horas=_uepAbaHoras(k.slots, k.allHoje, uepPorHora(PONTOS_DIA.porHoraModelo), meta, agoraMin);
   // As caixas e os minutos de cada hora (v7.244.0): a hora que fechou em ZERO é
   // cobrada (a régua de sempre), e o que resta de jornada não depende do
@@ -13349,6 +13402,15 @@ function _gerUepCards(G, k){
   const c=G.card, L=[];
   if(!G.ok){
     L.push({ l:c.l, v:c.v, sub:c.sub, t:c.t, c:(c.c||'')+' ger-hero' });
+  } else if(c.fds){
+    // sábado e domingo (v7.247.0): sem meta e sem selo — a UEP do dia é toda hora extra.
+    // Saem também o ritmo, a projeção e o PARA A META: os três são contra a meta.
+    L.push({ l:'UEP DO DIA · '+_fdsNome(hojeStr()), v:fmtN(Math.round(G.he))+' <small>UEP</small>',
+             sub:'<b>TODO HORA EXTRA</b> · sem meta — sábado e domingo não têm jornada normal'+(G.cxSem>0?` · ${fmtN(G.cxSem)} cx sem UEP`:''),
+             t:c.t, c:'acc ger-hero' });
+    const atr=_gerAtrasoKpi();
+    if(atr) L.push(atr);
+    return L;
   } else {
     const m=G.m, temJ=k.minNorm>0&&c.ef!=null;
     const sub=temJ
@@ -13444,11 +13506,15 @@ function _gerCatSeFalta(){
 function _gerInfoImpressao(k, G, H, agora){
   const fim=`Impresso em: ${agora}`;
   if(H&&H.dia){
-    const d=H.dia, mu=uepDiaMeta(d);
+    const d=Object.assign({}, H.dia, {data:H.data}), mu=uepDiaMeta(d), fds=uepFimDeSemana(H.data);
+    if(fds) return `Dia ${H.data} (${_fdsNome(H.data).toLowerCase()}) — todo hora extra, sem meta`
+      +(d.uep!=null?`  |  UEP: ${fmtN(Math.round(uepDiaHe(d)))}`:'')+`\nCaixas: ${fmtN(d.real||0)}\n`+fim;
     return `Dia ${H.data}`+(d.uep!=null&&mu>0?`  |  UEP: ${fmtN(Math.round(d.uep))} de ${fmtN(mu)} (${fmtP(d.uep/mu*100)})`:'')
       +`\nCaixas: ${fmtN(d.real||0)} de ${fmtN(d.meta||0)} programadas\n`+fim;
   }
   if(!k) return fim;
+  if(G&&G.ok&&G.card&&G.card.fds)
+    return `UEP do dia: ${fmtN(Math.round(G.he))} — ${_fdsNome(hojeStr()).toLowerCase()}, todo hora extra, sem meta\nCaixas: ${fmtN(k.real)}  |  Slots: ${k.n}/${k.slots.length}\n`+fim;
   if(G&&G.ok&&k.minNorm>0)
     return `UEP do dia: ${fmtN(Math.round(G.feito))} de ${fmtN(Math.round(G.card.esperado))} esperadas · ${slRitmo(G.card.ef)} · meta ${fmtN(G.meta)}`
       +(G.proj?`  |  Projeção: ${fmtN(Math.round(G.proj.fim))} UEP`:'')
@@ -13557,10 +13623,10 @@ function _gerAnaliseUep(G){
   return { nec, porH, pico, vale, tend, uepCx:m&&m.prod?m.prod.uepCx:null, prod:m&&m.prod?m.prod.nome:'' };
 }
 function _gerAnaliseUepHtml(G){
-  const A=_gerAnaliseUep(G), n=A.nec;
-  const necV=!n?'— Turno enc.':n.ok?'META OK':fmtN(Math.round(n.uepH))+' UEP/h';
-  const necC=!n?'var(--txt2)':n.ok||n.uepH<=A.porH?'var(--ok)':'var(--warn)';
-  const necD=!n?'jornada encerrada':n.ok?'meta de UEP do dia batida'
+  const A=_gerAnaliseUep(G), n=A.nec, fds=!!(G.card&&G.card.fds);
+  const necV=fds?'—':!n?'— Turno enc.':n.ok?'META OK':fmtN(Math.round(n.uepH))+' UEP/h';
+  const necC=fds||!n?'var(--txt2)':n.ok||n.uepH<=A.porH?'var(--ok)':'var(--warn)';
+  const necD=fds?'sem meta — '+_fdsNome(hojeStr()).toLowerCase()+' é todo hora extra':!n?'jornada encerrada':n.ok?'meta de UEP do dia batida'
     :`para a meta em ${_fmtHM(n.rest)} de jornada${A.uepCx>0?` · ≈ ${fmtN(Math.round(n.uepH/A.uepCx))} cx/h de ${_rpEsc(A.prod)}`:''}`;
   const ph=x=>x?`${fmtP(x.p)} da meta da hora · ${fmtN(Math.round(x.uep))} UEP`:'nenhuma hora de jornada fechada com UEP';
   return `
@@ -15192,7 +15258,8 @@ function _uepEstudo(itens, modo, realByDay, faixa, histDias){
   (histDias||[]).forEach(h=>{ if(h&&h.data&&h.uep!=null&&isFinite(Number(h.uep))) gMap[h.data]=h; });
   dd.forEach(d=>{
     const h=gMap[d.data];
-    d.gravada=h ? { uep:Number(h.uep), meta:uepDiaMeta(h), pct:Number(h.uep)/uepDiaMeta(h)*100,
+    // sábado e domingo (sem meta, todo hora extra): a gravada não é julgada
+    d.gravada=h && uepDiaMeta(h)>0 ? { uep:Number(h.uep), meta:uepDiaMeta(h), pct:Number(h.uep)/uepDiaMeta(h)*100,
                     bateu:Number(h.uep)>=uepDiaMeta(h) } : null;
   });
   const oficial=uepHistResumo(dd.filter(d=>gMap[d.data]).map(d=>gMap[d.data]));
@@ -15569,7 +15636,7 @@ function _uepImpacto(itens, lista, uepProd, meta, hojeS){
   (itens||[]).forEach(it=>{
     if(!it || it.data===hojeS) return;
     let cx=0;
-    if(it.cxHora && typeof it.cxHora==='object') Object.keys(it.cxHora).forEach(h=>{ if(!_horaEhHE(h)) cx+=Number(it.cxHora[h])||0; });
+    if(it.cxHora && typeof it.cxHora==='object') Object.keys(it.cxHora).forEach(h=>{ if(!_horaEhHE(h, it.data)) cx+=Number(it.cxHora[h])||0; });
     else { cx=Number(it.caixas)||0; semHora=true; }
     if(!(cx>0)) return;
     const k=_uepChave(it), a=Number(uepProd[k])||0, d=dep[k]!=null?dep[k]:a;
@@ -16202,7 +16269,7 @@ async function gerarRelatorioProducaoModelo(){
   const kH=calcKPIs(getDadosHoje());
   // UEP do dia em DESTAQUE (1º card do resumo, v7.87.0): a mesma conta do card
   // do gerencial (uepCard). Sem UEP no cadastro ou backend antigo → sem card.
-  const uepDoc=(PONTOS_DIA.uep&&PONTOS_DIA.uep.codigos>0)?uepCard(PONTOS_DIA.uep, PONTOS_DIA.metaUep, kH.minNorm):null;
+  const uepDoc=(PONTOS_DIA.uep&&PONTOS_DIA.uep.codigos>0)?uepCard(PONTOS_DIA.uep, PONTOS_DIA.metaUep, kH.minNorm, hojeStr()):null;
   // COBERTURA DO APONTAMENTO: a tabela por modelo só vê caixa lançada COM
   // produto (opcional no app). Quanto do realizado do dia ela cobre decide se
   // a análise é o dia inteiro ou uma amostra — e isso precisa estar escrito.
@@ -16278,7 +16345,7 @@ ${_rpCabecalho('PRODUÇÃO POR MODELO',
 <div class="rp-sec-ttl">RESUMO DO DIA</div>
 <div class="kpi-grid"${uepDoc?' style="grid-template-columns:repeat(5,1fr)"':''}>
   ${uepDoc?`<div class="kpi-card" style="border-left-color:#FF5C1F;background:#fffaf6;-webkit-print-color-adjust:exact;print-color-adjust:exact">
-    <div class="kpi-lbl">UEP DO DIA · JORNADA</div>
+    <div class="kpi-lbl">UEP DO DIA · ${uepDoc.fds?'TODO HORA EXTRA':'JORNADA'}</div>
     <div class="kpi-val">${uepDoc.v}</div>
     <div class="kpi-sub">${uepDoc.sub}</div>
   </div>`:''}
@@ -16326,7 +16393,7 @@ ${_rpCabecalho('PRODUÇÃO POR MODELO',
 
 ${temTeto?_phNotaTrocaHtml(_phPrepHoje(), trocaObs(), true):''}
 ${_rpCascataHtml('CASCATA DO DIA — ONDE FICARAM AS CAIXAS', cascDia)}
-${uepDoc?`<div class="rp-note"><b>UEP DO DIA (jornada normal):</b> ${uepDoc.v} ${uepDoc.sub}. A UEP é caixas × UEP por caixa do cadastro (PRODUTO_CODIGO); a meta é da jornada normal inteira e a hora extra fica fora dela.</div>`:''}
+${uepDoc?`<div class="rp-note"><b>UEP DO DIA (${uepDoc.fds?'sábado/domingo: todo hora extra':'jornada normal'}):</b> ${uepDoc.v} ${uepDoc.sub}. A UEP é caixas × UEP por caixa do cadastro (PRODUTO_CODIGO); a meta é da jornada normal inteira e a hora extra fica fora dela.</div>`:''}
 ${cobDia!=null?`<div class="rp-note">${cobDia<80?'⚠ ':''}APONTAMENTO POR PRODUTO: <b>${fmtP(cobDia)}</b> do realizado de hoje (${fmtN(totCx)} de ${fmtN(kH.real)} cx)${cobDia<80?' — a tabela acima é uma AMOSTRA do dia, não o dia inteiro':''}.</div>`:''}
 
 <div class="rp-footer">
@@ -17761,9 +17828,15 @@ function _mergeDias(diasSheets){
     });
   }
 
-  // Oculta dias sem produção (sábados/feriados não trabalhados, realizado = 0)
-  return Object.values(porDia).filter(d=>d.real>0);
+  // Oculta dias sem produção (sábados/feriados não trabalhados, realizado = 0).
+  // Sábado e domingo saem como o .gs v5.68 grava: sem meta e todo hora extra —
+  // também a linha gravada antes (histDiaFds, rp-core; v7.247.0).
+  return Object.values(porDia).filter(d=>d.real>0).map(histDiaFds);
 }
+// Dia do histórico SEM META (sábado, domingo — todo hora extra): não tem
+// eficiência, não entra na média da eficiência, no "dias com meta" nem no
+// melhor/pior dia. O total e a hora extra o contam.
+function _diaComMeta(d){ return !!d && Number(d.meta)>0; }
 
 // Dia em que NÃO dá para separar hora normal × hora extra: heCx nulo. Acontece
 // com dia fechado antes de a coluna HE CX existir (ou backend ainda na 4.9) e
@@ -17852,9 +17925,11 @@ async function renderHist(){
 
   // KPIs sumário
   const totReal=dias.reduce((s,d)=>s+d.real,0);
-  const efM=dias.length?dias.reduce((s,d)=>s+d.ef,0)/dias.length:0;
-  const comMeta=dias.filter(d=>d.ok).length;
-  const melhorDia=dias.length?dias.reduce((a,b)=>a.ef>b.ef?a:b):null;
+  const diasM=dias.filter(_diaComMeta);   // sem o fim de semana (sem meta)
+  const efM=diasM.length?diasM.reduce((s,d)=>s+d.ef,0)/diasM.length:0;
+  const comMeta=diasM.filter(d=>d.ok).length;
+  const melhorDia=diasM.length?diasM.reduce((a,b)=>a.ef>b.ef?a:b):null;
+  const nFdsH=dias.length-diasM.length;
   const fechados=dias.filter(d=>d.fechado).length;
   const totHE=dias.reduce((s2,d)=>s2+(_heIndef(d)?0:d.heCx),0);
   const semHE=dias.filter(_heIndef).length;   // dias sem como separar
@@ -17877,9 +17952,9 @@ async function renderHist(){
     <div class="kpi-card acc"><div class="kpi-lbl">TOTAL REALIZADO</div><div class="kpi-val">${fmtN(totReal)}</div><div class="kpi-sub">${totHE>0?`${fmtN(totReal-totHE)} normal + ${fmtN(totHE)} extra`:`${dias.length} dias no período`}</div></div>
     <div class="kpi-card ${semBackend?'red':totHE>0?'acc':''}"><div class="kpi-lbl">CAIXAS EM HORA EXTRA</div><div class="kpi-val">${semBackend?'—':fmtN(totHE)}</div><div class="kpi-sub">${heSub}</div></div>
     <div class="kpi-card ${sc(efM)}"><div class="kpi-lbl">EFICIÊNCIA MÉDIA</div><div class="kpi-val">${fmtP(efM)}</div><div class="kpi-sub">${sl(efM)}</div></div>
-    <div class="kpi-card ok"><div class="kpi-lbl">DIAS COM META</div><div class="kpi-val">${comMeta}</div><div class="kpi-sub">de ${dias.length} (${dias.length?((comMeta/dias.length)*100).toFixed(0):0}%)</div></div>
+    <div class="kpi-card ok"><div class="kpi-lbl">DIAS COM META</div><div class="kpi-val">${comMeta}</div><div class="kpi-sub">de ${diasM.length} (${diasM.length?((comMeta/diasM.length)*100).toFixed(0):0}%)${nFdsH?` · ${plural(nFdsH,'dia','dias')} de fim de semana, todo hora extra`:''}</div></div>
     <div class="kpi-card"><div class="kpi-lbl">MELHOR DIA</div><div class="kpi-val">${melhorDia?fmtP(melhorDia.ef):'—'}</div><div class="kpi-sub">${melhorDia?melhorDia.data:'—'}</div></div>
-    ${temUepHist?`<div class="kpi-card ${uR.media>=uR.metaMedia?'ok':'acc'}" title="UEP em jornada normal, gravada no fechamento de cada dia. A meta é a de cada dia (META UEP do HISTORICO). A média é dos dias úteis: sábado e domingo (meta pelas horas trabalhadas) entram no bateu, não na média.${_rpEsc(_uepEscalaNota(uEsc)?' '+_uepEscalaNota(uEsc):'')}"><div class="kpi-lbl">UEP / DIA (JORNADA)</div><div class="kpi-val">${fmtN(Math.round(uR.media))}</div><div class="kpi-sub">meta ${fmtN(Math.round(uR.metaMedia||uR.meta))} · bateu em ${uR.bateu} de ${uR.n} dia(s)${uR.nFds?` · média sem o fim de semana`:''}${uR.semUep?` · ${uR.semUep} sem UEP`:''}${_uepEscalaSelo(uEsc)?`<br><span style="color:var(--warn)">${_uepEscalaSelo(uEsc)}</span>`:''}</div></div>`:''}`;
+    ${temUepHist?`<div class="kpi-card ${uR.media>=uR.metaMedia?'ok':'acc'}" title="UEP em jornada normal, gravada no fechamento de cada dia. A meta é a de cada dia (META UEP do HISTORICO). Sábado e domingo são todo hora extra: fora da média e do bateu.${_rpEsc(_uepEscalaNota(uEsc)?' '+_uepEscalaNota(uEsc):'')}"><div class="kpi-lbl">UEP / DIA (JORNADA)</div><div class="kpi-val">${fmtN(Math.round(uR.media))}</div><div class="kpi-sub">meta ${fmtN(Math.round(uR.metaMedia||uR.meta))} · bateu em ${uR.bateu} de ${uR.n} dia(s)${uR.nFds?` · fim de semana em hora extra`:''}${uR.semUep?` · ${uR.semUep} sem UEP`:''}${_uepEscalaSelo(uEsc)?`<br><span style="color:var(--warn)">${_uepEscalaSelo(uEsc)}</span>`:''}</div></div>`:''}`;
 
   renderChartHist(dias,periodo);
 
@@ -17891,17 +17966,19 @@ async function renderHist(){
     <td class="mono">${fmtN(d.real)}</td>
     <td class="mono" style="color:var(--txt2)">${_heIndef(d)?'—':fmtN(d.real-d.heCx)}</td>
     <td class="mono" style="color:${!_heIndef(d)&&d.heCx>0?'var(--acc)':'var(--txt2)'}"${_heIndef(d)?' title="Dia fechado antes da coluna HE CX existir — sem como separar"':''}>${_heIndef(d)?'—':fmtN(d.heCx)}</td>
-    <td class="mono" style="color:var(--txt2)">${fmtN(d.meta)}</td>
+    <td class="mono" style="color:var(--txt2)">${_diaComMeta(d)||!d.fds?fmtN(d.meta):'—'}</td>
     ${temMetaComp?(d.metaDia==null
       ? '<td class="mono" style="color:var(--txt3)" title="dia fechado antes da v5.55 do Apps Script">—</td><td class="mono" style="color:var(--txt3)">—</td>'
       : `<td class="mono" style="color:var(--txt2)">${fmtN(d.metaDia)}</td><td class="mono" style="color:${d.atrasoMeta>0?'var(--warn)':'var(--txt2)'}">${fmtN(d.atrasoMeta||0)}</td>`):''}
-    <td class="mono" style="color:${d.ef>=96?'var(--ok)':d.ef>=90?'var(--warn)':'var(--red)'}">${fmtP(d.ef)}</td>
+    ${_diaComMeta(d)?`<td class="mono" style="color:${d.ef>=96?'var(--ok)':d.ef>=90?'var(--warn)':'var(--red)'}">${fmtP(d.ef)}</td>`
+      :`<td class="mono" style="color:var(--txt3)" title="${d.fds?'sábado e domingo: todo hora extra, sem meta':'dia sem meta gravada'}">—</td>`}
     ${temUepHist?(()=>{ if(d.uep==null) return '<td class="mono" style="color:var(--txt3)" title="dia sem UEP gravada">—</td>';
+      if(!(uepDiaMeta(d)>0)) return `<td class="mono" style="color:var(--acc)" title="${d.fds?'todo hora extra, sem meta':'dia sem meta'}">${fmtN(Math.round(uepDiaHe(d)))} HE</td>`;
       const pu=d.uep/uepDiaMeta(d)*100;
       return `<td class="mono" style="color:var(--${sc(pu)})" title="${fmtN(Math.round(d.uep))} UEP de ${fmtN(uepDiaMeta(d))} (${fmtP(pu)})${d.uepHe>0?' · +'+fmtN(Math.round(d.uepHe))+' em HE':''}">${fmtN(Math.round(d.uep))}</td>`; })():''}
     <td class="mono" style="color:var(--ok)">${fmtN(d.melhor)}</td>
     <td class="mono" style="color:var(--red)">${fmtN(d.pior)}</td>
-    <td><span class="badge b-${d.ef>=96?'ok':d.ef>=90?'warn':'red'}">${d.ef>=96?'✓ META':d.ef>=90?'ATENÇÃO':'ABAIXO'}</span>${d.heCount?` <span class="badge b-he">${d.heCount}HE</span>`:''}</td>
+    <td>${_diaComMeta(d)?`<span class="badge b-${d.ef>=96?'ok':d.ef>=90?'warn':'red'}">${d.ef>=96?'✓ META':d.ef>=90?'ATENÇÃO':'ABAIXO'}</span>`:`<span class="badge b-acc">${d.fds?'HORA EXTRA':'SEM META'}</span>`}${d.heCount?` <span class="badge b-he">${d.heCount}HE</span>`:''}</td>
     <td>${d.fechado?(()=>{const f=fmtFechadoEm(d.fechadoEm,d.data);return `<span class="badge b-ok" title="${f}">${f==='SIM'?'✓':'✓ '+f.substring(0,5)}</span>`;})():'<span class="badge b-mute">—</span>'}</td>
     <td><span class="badge b-mute" style="font-size:8px">${d.fonte==='sheets'?'☁ SHEETS':d.fonte==='local'?'💾 LOCAL':'📊 MEM'}</span></td>
   </tr>`).join('');
@@ -17913,7 +17990,7 @@ function renderChartHist(dias,periodo){
   if(periodo==='diario'){
     labels=dias.map(d=>d.data.substring(0,5));
     realD=dias.map(d=>d.real); metaD=dias.map(d=>d.meta);
-    efD=dias.map(d=>parseFloat(d.ef.toFixed(1)));
+    efD=dias.map(d=>_diaComMeta(d)?parseFloat(d.ef.toFixed(1)):null);   // sem meta (fim de semana): buraco na linha
   } else if(periodo==='semanal'){
     const sem={};
     dias.forEach(d=>{
@@ -20732,7 +20809,7 @@ function _dirHoje(D, k, porHoraModelo){
   (porHoraModelo || []).forEach(it => {
     if(!it || it.pontos === undefined || it.pontos === null) return;
     temPts = true;
-    if(_horaEhHE(it.hora)) ptsH += Number(it.pontos) || 0; else ptsJ += Number(it.pontos) || 0;
+    if(_horaEhHE(it.hora, hojeStr())) ptsH += Number(it.pontos) || 0; else ptsJ += Number(it.pontos) || 0;
   });
   const cxJ = Number(k && k.realNormal) || 0, cxH = Number(k && k.realHE) || 0;
   // os pontos saem das caixas lançadas COM produto (opcional no app): a
@@ -20801,13 +20878,15 @@ function _dirSemSvg(U, W){
   // com viewBox fixo, o 'meet' encolheria o gráfico numa caixa larga e baixa
   W = Math.max(700, Math.min(3200, Math.round(W || 1600)));
   const H = 260, base = 226, topo = 48;
-  const mx = Math.max(1, ...U.map(d => Math.max(Number(d.uep) || 0, uepDiaMeta(d)))) * 1.08;
+  // sábado e domingo (v7.247.0): sem meta — a barra é a UEP toda em hora extra, âmbar, sem a linha da meta
+  const semM = d => !(uepDiaMeta(d) > 0), uD = d => semM(d) ? uepDiaHe(d) : (Number(d.uep) || 0);
+  const mx = Math.max(1, ...U.map(d => Math.max(uD(d), uepDiaMeta(d)))) * 1.08;
   const y = v => base - (base - topo) * v / mx, passo = (W - 40) / U.length, bw = Math.min(90, passo * .6);
   let s = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="UEP dos últimos dias contra a meta"><line x1="20" x2="${W-10}" y1="${base}" y2="${base}" stroke="var(--border)"/>`;
   U.forEach((d,i) => {
-    const u = Number(d.uep) || 0, m = uepDiaMeta(d), x = 20 + i * passo + (passo - bw) / 2, cx = x + bw / 2;
-    s += `<rect x="${x.toFixed(1)}" y="${y(u).toFixed(1)}" width="${bw.toFixed(1)}" height="${(base - y(u)).toFixed(1)}" rx="3" fill="${u >= m ? '#5d6b7e' : 'var(--red)'}"/>`
-      + `<line x1="${(x-4).toFixed(1)}" x2="${(x+bw+4).toFixed(1)}" y1="${y(m).toFixed(1)}" y2="${y(m).toFixed(1)}" stroke="var(--txt)" stroke-width="2.5" stroke-dasharray="9 6"/>`
+    const u = uD(d), m = uepDiaMeta(d), x = 20 + i * passo + (passo - bw) / 2, cx = x + bw / 2;
+    s += `<rect x="${x.toFixed(1)}" y="${y(u).toFixed(1)}" width="${bw.toFixed(1)}" height="${(base - y(u)).toFixed(1)}" rx="3" fill="${semM(d) ? 'var(--warn)' : u >= m ? '#5d6b7e' : 'var(--red)'}"${semM(d) ? ' opacity=".55"' : ''}><title>${_rpEsc(d.data + (semM(d) ? ' · todo hora extra, sem meta' : ''))}</title></rect>`
+      + (semM(d) ? '' : `<line x1="${(x-4).toFixed(1)}" x2="${(x+bw+4).toFixed(1)}" y1="${y(m).toFixed(1)}" y2="${y(m).toFixed(1)}" stroke="var(--txt)" stroke-width="2.5" stroke-dasharray="9 6"/>`)
       + `<text x="${cx.toFixed(1)}" y="${(Math.min(y(u), y(m)) - 10).toFixed(1)}" font-size="34" font-weight="600" fill="var(--txt)" text-anchor="middle" style="font-family:var(--font-d)">${fmtN(Math.round(u))}</text>`
       + `<text x="${cx.toFixed(1)}" y="254" font-size="24" fill="var(--txt2)" text-anchor="middle" style="font-family:var(--font-d)">${_rpEsc(String(d.data).slice(0,5))}</text>`;
   });
@@ -21162,23 +21241,26 @@ async function _imprimirHistoricoFormatado(){
   const agora=new Date().toLocaleString('pt-BR');
   const totReal=dias.reduce((s,d)=>s+d.real,0);
   const totMeta=dias.reduce((s,d)=>s+d.meta,0);
-  const efMedia=dias.reduce((s,d)=>s+d.ef,0)/dias.length;
+  // a eficiência e a meta por dia são dos dias COM META (sábado e domingo são
+  // todo hora extra, v7.247.0); o realizado e a hora extra, de todos
+  const diasM=dias.filter(_diaComMeta), baseM=diasM.length?diasM:dias;
+  const efMedia=baseM.reduce((s,d)=>s+d.ef,0)/baseM.length;
   const mediaReal=totReal/dias.length;   // média diária realizada (base: dias com produção no período)
-  const mediaMeta=totMeta/dias.length;
+  const mediaMeta=totMeta/baseM.length;
   // Hora normal × hora extra (coluna condicional, como no relatório semanal)
   const totHEp=dias.reduce((s2,d)=>s2+(_heIndef(d)?0:d.heCx),0);
   const temHEp=dias.some(d=>!_heIndef(d)&&d.heCx>0);
   const temUepP=uepHistResumo(dias).n>0;   // coluna UEP só quando algum dia tem UEP gravada
   const totHorasP=dias.reduce((s2,d)=>s2+(Number(d.heCount)||0),0);
-  const efSemHEp=dias.reduce((s2,d)=>s2+(d.meta>0?(d.real-(_heIndef(d)?0:d.heCx))/d.meta*100:0),0)/dias.length;
+  const efSemHEp=baseM.reduce((s2,d)=>s2+(d.meta>0?(d.real-(_heIndef(d)?0:d.heCx))/d.meta*100:0),0)/baseM.length;
   const _heCelP=d=>{
     if(_heIndef(d)) return '—';
     const h=Number(d.heCount)||0;
     return d.heCx.toLocaleString('pt-BR')+(h>0?` <span style="color:#a0aec0;font-size:8px">· ${h}h</span>`:'');
   };
-  const comMeta=dias.filter(d=>d.ok).length;
-  const melhorDia=dias.reduce((a,b)=>a.ef>b.ef?a:b);
-  const piorDia=dias.reduce((a,b)=>a.ef<b.ef?a:b);
+  const comMeta=diasM.filter(d=>d.ok).length;
+  const melhorDia=baseM.reduce((a,b)=>a.ef>b.ef?a:b);
+  const piorDia=baseM.reduce((a,b)=>a.ef<b.ef?a:b);
   const cor=ef=>ef>=96?'#4CAF50':ef>=90?'#FF9800':'#F44336';
   const bdgCls=ef=>ef>=96?'s-ok':ef>=90?'s-warn':'s-red';
   const bdgLbl=ef=>ef>=96?'DENTRO DA META':ef>=90?'ATENÇÃO':'ABAIXO';
@@ -21271,7 +21353,7 @@ ${_rpCabecalho('HISTÓRICO',
   <div class="kpi-card" style="border-left-color:${comMeta>0?'#4CAF50':'#F44336'}">
     <div class="kpi-lbl">DIAS COM META</div>
     <div class="kpi-val">${comMeta}</div>
-    <div class="kpi-sub">de ${dias.length} (${Math.round(comMeta/dias.length*100)}%)</div>
+    <div class="kpi-sub">de ${diasM.length} (${diasM.length?Math.round(comMeta/diasM.length*100):0}%)${dias.length>diasM.length?` · ${plural(dias.length-diasM.length,'dia','dias')} sem meta (fim de semana)`:''}</div>
   </div>
   <div class="kpi-card" style="border-left-color:${mhe.soComHE?'#FF9800':'#888'}">
     <div class="kpi-lbl">TOTAL META</div>
@@ -21311,12 +21393,12 @@ ${_rpUepFaixaHtml(dias)}
       <td class="td-bold">${d.real.toLocaleString('pt-BR')}</td>
       ${temHEp?`<td class="td-mono">${_heIndef(d)?'—':(d.real-d.heCx).toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:${!_heIndef(d)&&d.heCx>0?'#FF5C1F':'#888'}">${_heCelP(d)}</td>`:''}
-      <td class="td-mono" style="color:#888">${d.meta.toLocaleString('pt-BR')}</td>
-      <td class="td-bold" style="color:${cor(d.ef)}">${fmtP(d.ef)}</td>
-      ${temUepP?`<td class="td-bold" title="${d.uep!=null?'meta '+fmtN(uepDiaMeta(d))+' UEP':'dia sem UEP gravada'}">${d.uep!=null?fmtN(Math.round(d.uep)):'—'}</td>`:''}
-      <td class="td-mono" style="color:#4CAF50">${d.melhor.toLocaleString('pt-BR')}</td>
-      <td class="td-mono" style="color:#F44336">${d.pior.toLocaleString('pt-BR')}</td>
-      <td><span class="sbadge ${bdgCls(d.ef)}">${d.ef>=96?'NA META':d.ef>=90?'ATENÇÃO':'ABAIXO'}</span></td>
+      <td class="td-mono" style="color:#888">${_diaComMeta(d)||!d.fds?d.meta.toLocaleString('pt-BR'):'—'}</td>
+      <td class="td-bold" style="color:${_diaComMeta(d)?cor(d.ef):'#888'}">${_diaComMeta(d)?fmtP(d.ef):'—'}</td>
+      ${temUepP?`<td class="td-bold" title="${d.uep==null?'dia sem UEP gravada':uepDiaMeta(d)>0?'meta '+fmtN(uepDiaMeta(d))+' UEP':'todo hora extra, sem meta'}">${d.uep==null?'—':uepDiaMeta(d)>0?fmtN(Math.round(d.uep)):fmtN(Math.round(uepDiaHe(d)))+' HE'}</td>`:''}
+      <td class="td-mono" style="color:#4CAF50">${d.fds?'—':d.melhor.toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:#F44336">${d.fds?'—':d.pior.toLocaleString('pt-BR')}</td>
+      <td>${_diaComMeta(d)?`<span class="sbadge ${bdgCls(d.ef)}">${d.ef>=96?'NA META':d.ef>=90?'ATENÇÃO':'ABAIXO'}</span>`:`<span class="sbadge">${d.fds?'HORA EXTRA':'SEM META'}</span>`}</td>
       <td class="td-mono" style="color:#888">${d.fechado?(()=>{const f=fmtFechadoEm(d.fechadoEm,d.data);return f==='SIM'?'✓':'✓ '+f.substring(0,10);})():'—'}</td>
     </tr>`).join('')}
   </tbody>
@@ -21687,6 +21769,9 @@ function _relDiasFechados(dias){
 /* Sem nenhum dia fechado, cai na lista toda: melhor ficar impreciso do que
    deixar o relatório sem os dois cartões. */
 function _relDiaExtremo(dias, maior){
+  // dia sem meta (sábado, domingo: todo hora extra) não disputa melhor nem pior
+  const comM = (dias||[]).filter(_diaComMeta);
+  if(comM.length) dias = comM;
   const fechados = _relDiasFechados(dias);
   const lista = fechados.length ? fechados : dias;
   return lista.reduce((a, b) => ((maior ? a.ef > b.ef : a.ef < b.ef) ? a : b));
@@ -21694,6 +21779,9 @@ function _relDiaExtremo(dias, maior){
 
 function _relSemanalKPIs(dias){
   const n = dias.length;
+  // eficiência, meta por dia e "dias na meta" são dos dias COM META: sábado e
+  // domingo são todo hora extra (v7.247.0) — entram no realizado e na HE, não aqui
+  const diasM = dias.filter(_diaComMeta), m = diasM.length || n, baseM = diasM.length ? diasM : dias;
   const totReal = dias.reduce((s,d)=>s+d.real,0);
   const totMeta = dias.reduce((s,d)=>s+d.meta,0);
   // Hora extra: dia indeterminado (heCx null) conta como normal para a soma
@@ -21701,9 +21789,10 @@ function _relSemanalKPIs(dias){
   const totHE = dias.reduce((s,d)=>s+(_heIndef(d)?0:d.heCx),0);
   return {
     totReal, totMeta,
-    efMedia:   dias.reduce((s,d)=>s+d.ef,0)/n,
+    efMedia:   baseM.reduce((s,d)=>s+d.ef,0)/m,
     mediaReal: totReal/n,
-    mediaMeta: totMeta/n,
+    mediaMeta: totMeta/m,
+    nComMeta:  diasM.length,
     totHE,
     // Horas extras (coluna HE do HISTORICO): quantidade de HORAS, não de caixas.
     totHoras:  dias.reduce((s,d)=>s+(Number(d.heCount)||0),0),
@@ -21711,10 +21800,10 @@ function _relSemanalKPIs(dias){
     // infla o número. Esta é a leitura "limpa" — o que o turno entregou dentro
     // da própria jornada. Dia indeterminado (heCx null) entra como se não
     // tivesse HE, que é o mesmo critério usado no resto do relatório.
-    efMediaSemHE: dias.reduce((s,d)=>s+(d.meta>0?(d.real-(_heIndef(d)?0:d.heCx))/d.meta*100:0),0)/n,
+    efMediaSemHE: baseM.reduce((s,d)=>s+(d.meta>0?(d.real-(_heIndef(d)?0:d.heCx))/d.meta*100:0),0)/m,
     temHE:     dias.some(d=>!_heIndef(d)&&d.heCx>0),
     semHE:     dias.filter(_heIndef).length,
-    comMeta:   dias.filter(d=>d.ok).length,
+    comMeta:   diasM.filter(d=>d.ok).length,
     melhorDia: _relDiaExtremo(dias, true),
     piorDia:   _relDiaExtremo(dias, false),
     // Quantos já fecharam: o cabeçalho usa para se declarar parcial.
@@ -21869,7 +21958,8 @@ const RP_SEMANA = (function() {
       cx.innerHTML = d.dias.map(x => {
         const he  = _heIndef(x) ? 0 : (x.heCx || 0);
         const nor = x.real - he;
-        const cls = x.meta && nor >= x.meta ? 'ok' : (x.meta && x.real >= x.meta ? 'he' : 'ruim');
+        // dia sem meta (sábado, domingo — v7.247.0): todo hora extra, tarja âmbar, sem veredito
+        const cls = !x.meta ? 'he' : nor >= x.meta ? 'ok' : (x.real >= x.meta ? 'he' : 'ruim');
         const cor = cls === 'ok' ? 'var(--ok)' : cls === 'he' ? 'var(--warn)' : 'var(--red)';
         const dt  = parseBR(x.data);
         return `<div class="tvd-dia ${cls}">
@@ -21877,10 +21967,12 @@ const RP_SEMANA = (function() {
           <div class="tvd-dia-sem">${dt ? _DIA_SEM[dt.getDay()] : ''}</div>
           <div class="tvd-dia-meio">
           <div class="tvd-dia-num">${fmtN(x.real)}</div>
-          <div class="tvd-dia-pct" style="color:${cor}">${x.meta ? fmtP(x.real / x.meta * 100) + ' da meta' : '—'}</div>
+          <div class="tvd-dia-pct" style="color:${cor}">${x.meta ? fmtP(x.real / x.meta * 100) + ' da meta' : (x.fds ? 'todo hora extra' : 'sem meta')}</div>
           </div>
           <div class="tvd-dia-he${he > 0 ? '' : ' vazio'}">${_heIndef(x) ? 'HE não separada' : (he > 0 ? `${fmtN(he)} cx em hora extra` : 'sem hora extra')}</div>
-          ${comUep && x.uep != null ? `<div class="tvd-dia-uep" title="UEP de jornada normal, gravada no fechamento">${fmtN(Math.round(x.uep))} UEP · ${fmtP(x.uep / uepDiaMeta(x) * 100)}</div>` : ''}
+          ${comUep && x.uep != null ? (uepDiaMeta(x) > 0
+            ? `<div class="tvd-dia-uep" title="UEP de jornada normal, gravada no fechamento">${fmtN(Math.round(x.uep))} UEP · ${fmtP(x.uep / uepDiaMeta(x) * 100)}</div>`
+            : `<div class="tvd-dia-uep" title="sábado e domingo: todo hora extra, sem meta">${fmtN(Math.round(uepDiaHe(x)))} UEP em HE</div>`) : ''}
         </div>`;
       }).join('');
     }
@@ -21958,7 +22050,7 @@ function _zapResumoSemana(diasSem, semStr, numSem){
 
   L.push('');
   L.push(`Melhor dia: ${rotulo(k.melhorDia)} — ${fmtN(k.melhorDia.real)} cx (${fmtP(k.melhorDia.ef)})`);
-  L.push(`Dias na meta: ${k.comMeta} de ${diasSem.length}`);
+  L.push(`Dias na meta: ${k.comMeta} de ${k.nComMeta}`+(diasSem.length>k.nComMeta?` (${plural(diasSem.length-k.nComMeta,'dia','dias')} de fim de semana, todo hora extra)`:''));
   L.push('');
   L.push(APP_NOME+' · PPCP');
   return L.join('\n');
@@ -21988,7 +22080,12 @@ function _relUepSemanaHtml(dias){
   const INK2='#5B6470';
   const linhas=(dias||[]).map(d=>{
     if(d.uep==null) return `<tr><td class="td-mono">${d.data}</td><td class="td-mono" style="color:${INK2}" colspan="4">sem UEP gravada</td></tr>`;
-    const m=uepDiaMeta(d), pu=Number(d.uep)/m*100;
+    const m=uepDiaMeta(d);
+    // sábado e domingo: todo hora extra, sem meta (v7.247.0)
+    if(!(m>0)) return `<tr><td class="td-mono">${d.data}</td><td class="td-mono" style="color:${INK2}">—</td>
+      <td class="td-mono" style="color:${INK2}">sem meta</td><td class="td-mono" style="color:${INK2}">${d.fds||uepFimDeSemana(d.data)?'todo hora extra':'—'}</td>
+      <td class="td-bold">${fmtN(Math.round(uepDiaHe(d)))}</td></tr>`;
+    const pu=Number(d.uep)/m*100;
     return `<tr><td class="td-mono">${d.data}</td><td class="td-bold">${fmtN(Math.round(d.uep))}</td>
       <td class="td-mono" style="color:${INK2}">${fmtN(m)}</td><td class="td-bold">${fmtP(pu)}</td>
       <td class="td-mono" style="color:${INK2}">${Number(d.uepHe)>0?fmtN(Math.round(d.uepHe)):'—'}</td></tr>`;
@@ -22064,7 +22161,7 @@ async function gerarRelatorioSemanal(ateArg){
 
   // KPIs da semana (conta pura, testável — ver _relSemanalKPIs)
   const {totReal, totMeta, efMedia, efMediaSemHE, mediaReal, mediaMeta,
-         totHE, totHoras, temHE, semHE, comMeta, melhorDia, piorDia,
+         totHE, totHoras, temHE, semHE, comMeta, nComMeta, melhorDia, piorDia,
          fechados, abertos,
          efTotal, efTotalSemHE, soComHE, faltouSemHE} = _relSemanalKPIs(diasSem);
 
@@ -22256,7 +22353,7 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
   <div class="kpi-card">
     <div class="kpi-lbl">DIAS COM META</div>
     <div class="kpi-val">${comMeta}</div>
-    <div class="kpi-sub">de ${diasSem.length} dias (${((comMeta/diasSem.length)*100).toFixed(0)}%)</div>
+    <div class="kpi-sub">de ${nComMeta} dias (${nComMeta?((comMeta/nComMeta)*100).toFixed(0):0}%)${diasSem.length>nComMeta?` · ${plural(diasSem.length-nComMeta,'dia','dias')} de fim de semana em HE`:''}</div>
   </div>
   <div class="kpi-card"${soComHE?' style="border-left-color:#B4650A"':''}>
     <div class="kpi-lbl">TOTAL META</div>
@@ -22311,13 +22408,13 @@ ${_rpUepFaixaHtml(diasSem)}
       <td class="td-bold">${d.real.toLocaleString('pt-BR')}</td>
       ${temHE?`<td class="td-mono">${_heIndef(d)?'—':(d.real-d.heCx).toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:${INK2}">${_heCel(d)}</td>`:''}
-      <td class="td-mono" style="color:${INK2}">${d.meta.toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:${INK2}">${_diaComMeta(d)||!d.fds?d.meta.toLocaleString('pt-BR'):'—'}</td>
       <td class="td-mono" style="color:${INK2}">${metaHoraDia(d)?fmtN(metaHoraDia(d)):'—'}</td>
-      <td class="td-bold">${fmtP(d.ef)}</td>
-      ${temHE?`<td class="td-bold" style="color:${_heIndef(d)?INK2:''}">${_heIndef(d)?'—':fmtP(_efSemHE(d))}</td>`:''}
-      <td class="td-mono" style="color:${INK2}">${d.melhor.toLocaleString('pt-BR')}</td>
-      <td class="td-mono" style="color:${INK2}">${d.pior.toLocaleString('pt-BR')}</td>
-      <td><span class="sbadge ${d.ef>=96?'s-ok':d.ef>=90?'s-warn':'s-red'}">${d.ef>=96?'NA META':d.ef>=90?'ATENÇÃO':'ABAIXO'}</span></td>
+      <td class="td-bold">${_diaComMeta(d)?fmtP(d.ef):'—'}</td>
+      ${temHE?`<td class="td-bold" style="color:${_heIndef(d)||!_diaComMeta(d)?INK2:''}">${_heIndef(d)||!_diaComMeta(d)?'—':fmtP(_efSemHE(d))}</td>`:''}
+      <td class="td-mono" style="color:${INK2}">${d.fds?'—':d.melhor.toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:${INK2}">${d.fds?'—':d.pior.toLocaleString('pt-BR')}</td>
+      <td>${_diaComMeta(d)?`<span class="sbadge ${d.ef>=96?'s-ok':d.ef>=90?'s-warn':'s-red'}">${d.ef>=96?'NA META':d.ef>=90?'ATENÇÃO':'ABAIXO'}</span>`:`<span class="sbadge">${d.fds?'HORA EXTRA':'SEM META'}</span>`}</td>
       <td class="td-mono" style="color:${INK2}">${d.fechado?(()=>{const f=fmtFechadoEm(d.fechadoEm,d.data);return f==='SIM'?'✓':'✓ '+f.substring(0,5);})():'—'}</td>
     </tr>`).join('')}
   </tbody>
@@ -26266,8 +26363,8 @@ function _svgBarChart(dias){
     // senão o tracejado corta o número do dia que estiver perto da média)
     outTxt+=`<text x="${x}" y="${yR-7}" text-anchor="middle" font-size="9" font-weight="bold" fill="#1F2328" font-family="'IBM Plex Mono',monospace" stroke="#fff" stroke-width="2.5" paint-order="stroke">${d.real.toLocaleString('pt-BR')}</text>`;
 
-    // Eficiência % acima
-    outTxt+=`<text x="${x}" y="${yR-18}" text-anchor="middle" font-size="8" fill="${pctClr}" font-family="'IBM Plex Mono',monospace" stroke="#fff" stroke-width="2.5" paint-order="stroke">${fmtP(d.ef)}</text>`;
+    // Eficiência % acima (dia sem meta — sábado, domingo: todo hora extra — diz HE)
+    outTxt+=`<text x="${x}" y="${yR-18}" text-anchor="middle" font-size="8" fill="${_diaComMeta(d)?pctClr:'#8A5A0B'}" font-family="'IBM Plex Mono',monospace" stroke="#fff" stroke-width="2.5" paint-order="stroke">${_diaComMeta(d)?fmtP(d.ef):'HE'}</text>`;
 
     // Label data embaixo
     const dd=d.data.substring(0,5);

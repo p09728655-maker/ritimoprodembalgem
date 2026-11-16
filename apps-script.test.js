@@ -719,27 +719,32 @@ console.log('\n── UEP no cadastro (setUepCatalogo / catálogo / meta) ──
   ok('o catálogo lê UEP pelo título EXATO (prefixo casaria UEP_VIGENCIA)', /iUep\s*=\s*hdr\.indexOf\('UEP'\)/.test(src), true);
   const gp = pega('function getPontosDia(');
   ok('a UEP do dia separa a hora extra pela MESMA régua das caixas',
-     /uep\[_ehHoraExtraCaixas\(it\.hora\) \? 'he' : 'normal'\]/.test(gp), true);
+     /uep\[_ehHoraExtraCaixas\(it\.hora, hoje\) \? 'he' : 'normal'\]/.test(gp), true);
   ok('o getPontosDia devolve a uep nos dois caminhos (com e sem log)', (gp.match(/painelConfig, uep \}|\n    uep,/g) || []).length, 2);
   ok('a programação detalhada manda a UEP da linha (null sem UEP, nunca 0)',
      /uep:\s*cat && cat\.uep > 0 \? Math\.round\(qtde \* cat\.uep/.test(pega('function getProgramacaoDetalhada(')), true);
   // ── v5.14: UEP do dia no HISTORICO ──
   global.HE_JORNADA_INI_MIN = 7 * 60; global.HE_JORNADA_FIM_MIN = 17 * 60;
   eval(pega('function _ehHoraExtra(')); eval(pega('function _semPrefixoHE('));
-  eval(pega('function _ehHoraExtraCaixas(')); eval(pega('function _uepPorDiaDoLog('));
+  eval(pega('function _ehHoraExtraCaixas(')); eval(pega('function _heFimDeSemana(')); eval(pega('function _uepPorDiaDoLog('));
   eval(pega('function _celNumOuNull('));
   const dl = _uepPorDiaDoLog([
     { data: '24/09/2026', hora: '05:00', codigo: 'A', cx: 100 }, { data: '24/09/2026', hora: '07:00', codigo: 'A', cx: 200 },
     { data: '24/09/2026', hora: '13:00-14:00', codigo: 'B', cx: 50 }, { data: '24/09/2026', hora: '08:00', codigo: 'X', cx: 30 },
-    { data: '23/09/2026', hora: '17:00', codigo: 'B', cx: 10 }], { A: 1, B: 1.94 });
+    { data: '23/09/2026', hora: '17:00', codigo: 'B', cx: 10 },
+    // v5.68: sábado 14/11 — 07:00 e 10:00 são HORA EXTRA também (o fim de semana inteiro)
+    { data: '14/11/2026', hora: '05:00', codigo: 'A', cx: 100 }, { data: '14/11/2026', hora: '07:00', codigo: 'A', cx: 200 },
+    { data: '14/11/2026', hora: '10:00', codigo: 'B', cx: 50 }, { data: '15/11/2026', hora: '08:00', codigo: 'A', cx: 40 }], { A: 1, B: 1.94 });
   ok('UEP do dia: jornada normal e HE pela mesma régua das caixas; código sem UEP à parte',
      [dl['24/09/2026'].normal, dl['24/09/2026'].he, dl['24/09/2026'].cxSem, dl['23/09/2026'].he], [297, 100, 30, 19.4]);
+  ok('v5.68: sábado e domingo — a UEP toda em HE, nenhuma de jornada (07:00 e 10:00 também)',
+     [dl['14/11/2026'].normal, dl['14/11/2026'].he, dl['15/11/2026'].normal, dl['15/11/2026'].he], [0, 397, 0, 40]);
   ok('célula vazia do HISTORICO é null (dia sem UEP), número é número',
      [_celNumOuNull(''), _celNumOuNull(0), _celNumOuNull('2.300'), _celNumOuNull('1,5')], [null, 0, 2300, 1.5]);
   // v5.55: depois das três da UEP vêm META DIA e ATRASO META (opção A). O das
   // 23:59 não sabe a meta do painel: a META é a da aba e o atraso, 0.
   ok('fechamento automático e FECHAR DIA gravam as três colunas calculadas no backend (+ META DIA e ATRASO META)',
-     // v5.60: com a fração do fim de semana (null em dia útil: a meta cheia de sempre)
+     // com a fração do fim de semana (v5.68: 0 no sábado/domingo = sem meta; null em dia útil: a meta cheia de sempre)
      [/\]\.concat\(_uepColsDoDia\(p\.data, frac\), \[metaDia, atrasoMeta\]\)/.test(pega('function saveDay(')),
       /\]\.concat\(_uepColsDoDia\(dataRef, frac\), \[meta, 0\]\)/.test(pega('function arquivarDiaAtual('))], [true, true]);
   eval(pega('function _uepPorHoraDoLog('));

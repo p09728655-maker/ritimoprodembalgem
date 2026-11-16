@@ -217,7 +217,10 @@ function minSlotDecorrido(inicio, minSlot, agoraMin){
 // desfeita: a cronoanálise de 20/10 deu MADERO = SLEEP (7,9 s rodando).
 const UEP_META_PADRAO = 2530;
 const UEP_MIN_DIA     = 527;   // minutos da jornada normal (9 slots: 4×60 + 48 + 3×60 + 59)
-function uepCard(uep, metaCfg, minJornada){
+// `data` (dd/MM/aaaa, opcional — v7.247.0): no SÁBADO e no DOMINGO o card não
+// tem meta nem selo — a UEP do dia é toda hora extra (`fds: true`). Vale também
+// com o .gs antes da v5.68, que ainda manda as horas de 07–17 em `normal`.
+function uepCard(uep, metaCfg, minJornada, data){
   const l = 'UEP DO DIA';
   // null = a leitura do dia ainda não chegou; false/undefined = o backend
   // respondeu SEM o campo (.gs anterior à v5.11). São coisas diferentes.
@@ -226,6 +229,12 @@ function uepCard(uep, metaCfg, minJornada){
   if (!(uep.codigos > 0)) return { l, v:'—', sub:'sem UEP no cadastro — coluna UEP da PRODUTO_CODIGO', c:'' };
   const meta = Number(metaCfg) > 0 ? Number(metaCfg) : UEP_META_PADRAO;
   const feito = Number(uep.normal) || 0, he = Number(uep.he) || 0, cxSem = Number(uep.cxSem) || 0;
+  if (data && uepFimDeSemana(data)) {
+    const tot = feito + he;
+    return { l, v: fmtN(Math.round(tot)), fds: true, meta, ef: null, esperado: 0, he: tot, c: 'acc',
+             sub: 'TODO HORA EXTRA · sem meta' + (cxSem > 0 ? ' · ' + fmtN(cxSem) + ' cx sem UEP' : ''),
+             t: 'Sábado e domingo são hora extra o dia inteiro (PPCP, 16/11/2026): a UEP do dia é toda de hora extra e não é julgada contra meta nenhuma.' };
+  }
   const min = Math.min(Math.max(0, Number(minJornada) || 0), UEP_MIN_DIA);
   const { metaAteAgora, ef } = efNoRitmo(feito, meta, min, UEP_MIN_DIA);
   // Mesmo desenho do card % DA META DO DIA ("ATENÇÃO · 951 de 1.650 cx
@@ -273,7 +282,8 @@ function uepCusto(custoHora, uepFeito, minJornada, metaUep){
 // `excesso` = R$ pagos sem virar UEP (negativo = abaixo do custo da meta).
 function uepCustoPeriodo(custoHora, dias){
   const ch = Number(custoHora) || 0;
-  const com = (dias || []).filter(d => d && Number(d.uep) > 0);
+  // fim de semana fora (v7.247.0): é todo hora extra, não paga a jornada
+  const com = (dias || []).filter(d => d && Number(d.uep) > 0 && !uepFimDeSemana(d.data));
   if (!(ch > 0) || !com.length) return null;
   const custo = ch * UEP_MIN_DIA / 60 * com.length;
   const uep = com.reduce((s, d) => s + Number(d.uep), 0);
@@ -322,10 +332,12 @@ function uepCelula(h, metaCfg, minSlot, ehHE){
 // fechamento (.gs v5.14) — congeladas: mudar a UEP do cadastro hoje não reescreve
 // o dia de ontem. Dia sem UEP (null) fica FORA da média e da contagem, e é
 // contado à parte; nunca vira zero.
-// Sábado e domingo não são dia de jornada (v7.222.0, PPCP 11/11/2026: "sábado
-// não pode ser dia todo, a meta fica errada, porque não tem programação para
-// sábado"). Desde o .gs v5.60 a META UEP gravada deles é a das HORAS de jornada
-// trabalhadas; fim de semana só com hora extra grava 0 = sem meta.
+// SÁBADO E DOMINGO SÃO HORA EXTRA O DIA INTEIRO (v7.247.0 / .gs v5.68, PPCP
+// 16/11/2026, com o sábado 14/11 em vermelho no PERÍODO: "aos sábados é horas
+// extra total"). Não há jornada normal no fim de semana: o dia não tem meta
+// (uepDiaMeta 0 = não é julgado) e a UEP dele é toda hora extra (uepDiaHe) —
+// também na linha gravada pelo .gs v5.60–v5.67, que pôs as horas de 07–17 do
+// sábado em UEP de jornada com uma META UEP pelas horas. Revoga a v7.222.0.
 function uepFimDeSemana(data){
   const m = String(data || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   if (!m) return false;
@@ -333,25 +345,43 @@ function uepFimDeSemana(data){
   return dw === 0 || dw === 6;
 }
 function uepDiaMeta(d){
+  if (d && uepFimDeSemana(d.data)) return 0;   // v7.247.0: fim de semana não tem meta
   if (d && d.metaUep !== null && d.metaUep !== undefined && d.metaUep !== '' && Number(d.metaUep) === 0) return 0;
   return d && Number(d.metaUep) > 0 ? Number(d.metaUep) : UEP_META_PADRAO;
 }
+// A UEP EM HORA EXTRA de um dia fechado: a gravada em UEP HE e, no fim de
+// semana, também a que a linha gravou como jornada (o .gs antes da v5.68).
+function uepDiaHe(d){
+  return (Number(d && d.uepHe) || 0) + (d && uepFimDeSemana(d.data) ? (Number(d.uep) || 0) : 0);
+}
+// A linha do HISTORICO de sábado/domingo como o .gs v5.68 grava: sem meta (meta,
+// META DIA, ATRASO, META UEP 0, sem eficiência nem melhor/pior) e TODA a produção
+// em hora extra (HE CX = REALIZADO, a UEP em UEP HE). Vale também para a linha
+// gravada antes (v5.60–v5.67: meta pelas horas, 07–17 como jornada) — os painéis
+// passam todo dia do histórico por aqui ao ler. Dia útil volta o mesmo objeto.
+function histDiaFds(d){
+  if (!d || !uepFimDeSemana(d.data)) return d;
+  const real = Number(d.real) || 0;
+  const o = Object.assign({}, d, { meta: 0, ef: 0, melhor: 0, pior: 0, heCx: real, realNormal: 0, fds: true });
+  if ('ok' in d) o.ok = false;
+  if ('mediaH' in d) o.mediaH = 0;
+  if (d.metaDia != null) o.metaDia = 0;
+  if (d.atrasoMeta != null) o.atrasoMeta = 0;
+  if (d.uep != null && isFinite(Number(d.uep))) { o.uepHe = (Number(d.uepHe) || 0) + Number(d.uep); o.uep = 0; o.metaUep = 0; }
+  return o;
+}
 function uepHistResumo(dias){
   const comUep = (dias || []).filter(d => d && d.uep != null && isFinite(Number(d.uep)));
-  // dia sem meta (fim de semana só de hora extra) não é julgado: sai do n, do bateu e da meta somada
+  // dia sem meta (sábado, domingo) não é julgado: sai do n, do bateu, da média e da meta somada
   const com = comUep.filter(d => uepDiaMeta(d) > 0);
   const tot = com.reduce((s, d) => s + Number(d.uep), 0);
   const bateu = com.filter(d => Number(d.uep) >= uepDiaMeta(d)).length;
-  // A MÉDIA POR DIA é de dia de jornada: o fim de semana (horas a menos) fica fora
-  // dela — um sábado de 4 horas puxava a média de um dia inteiro para baixo. No
-  // total, na meta somada e no bateu ele entra, com a meta das horas dele.
-  const util = com.filter(d => !uepFimDeSemana(d.data));
-  const base = util.length ? util : com;
-  return { n: com.length, semUep: (dias || []).length - com.length,
-           total: tot, media: base.length ? base.reduce((s, d) => s + Number(d.uep), 0) / base.length : null,
-           nMedia: base.length, nFds: com.length - util.length,
-           metaMedia: base.length ? base.reduce((s, d) => s + uepDiaMeta(d), 0) / base.length : null,
-           bateu, he: comUep.reduce((s, d) => s + (Number(d.uepHe) || 0), 0),
+  return { n: com.length, semUep: (dias || []).length - comUep.length,
+           total: tot, media: com.length ? tot / com.length : null,
+           nMedia: com.length, nFds: comUep.filter(d => uepFimDeSemana(d.data)).length,
+           metaMedia: com.length ? com.reduce((s, d) => s + uepDiaMeta(d), 0) / com.length : null,
+           // a hora extra do período: a dos dias úteis e o fim de semana inteiro
+           bateu, he: comUep.reduce((s, d) => s + uepDiaHe(d), 0),
            // Soma das metas DOS DIAS COM UEP (cada um com a sua): é contra ela
            // que o total do período se compara, nunca meta × nº de dias do filtro.
            metaTot: com.reduce((s, d) => s + uepDiaMeta(d), 0),
@@ -409,11 +439,12 @@ function pdiaCurto(nome, larg, linhas){
 // (minutos; real = caixas da HORA_A_HORA, para a cobertura; larg = largura da
 // faixa em px, só decide se o nome cabe no bloco — PDIA_LARG sem ela; passo =
 // minutos entre as marcas do eixo — 120 sem ele; atualDesc = descrição do
-// produto de agora, quando o painel a tem).
+// produto de agora, quando o painel a tem; todoHE = sábado/domingo, o dia
+// inteiro é hora extra — v7.247.0).
 function pdiaMontar(phm, ph, cat, atual, agoraMin, o){
   const dig = c => String(c==null?'':c).replace(/\D/g, '');
   const fimSlot = ini => Math.floor(ini/60)*60 + 60;   // a hora acaba na próxima hora cheia (12:12 → 13:00)
-  const ehHE = m => m < o.turnoIni || m >= o.turnoFim;  // a janela do _ehHoraExtraCaixas do .gs
+  const ehHE = m => !!o.todoHE || m < o.turnoIni || m >= o.turnoFim;  // a janela do _ehHoraExtraCaixas do .gs (fim de semana: tudo)
   const catPor = {};
   (cat||[]).forEach(c => { if(c) catPor[dig(c.codigo)] = c; });
 
@@ -545,10 +576,10 @@ function pdiaMontar(phm, ph, cat, atual, agoraMin, o){
   });
   F.ticks = [];
   for(let m = Math.ceil(F.ini/60)*60, i = 0; m <= F.fim; m += (Number(o.passo) || 120), i++){
-    const he = m < o.turnoIni || m > o.turnoFim;
-    F.ticks.push({ m, he, txt: p2(Math.floor(m/60)) + (i === 0 && m < o.turnoIni ? ' HE' : '') });
+    const he = !!o.todoHE || m < o.turnoIni || m > o.turnoFim;
+    F.ticks.push({ m, he, txt: p2(Math.floor(m/60)) + (i === 0 && (o.todoHE || m < o.turnoIni) ? ' HE' : '') });
   }
-  F.he = [[F.ini, o.turnoIni], [o.turnoFim, F.fim]].filter(r => r[1] > r[0]);
+  F.he = o.todoHE ? [[F.ini, F.fim]] : [[F.ini, o.turnoIni], [o.turnoFim, F.fim]].filter(r => r[1] > r[0]);
   F.alm = (o.almFim > o.almIni && o.almIni >= F.ini && o.almFim <= F.fim) ? [o.almIni, o.almFim] : null;
   F.agora = (agoraMin > F.ini && agoraMin < F.fim) ? agoraMin : null;
 
@@ -702,9 +733,9 @@ function paradaAInformar(tipo){
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.17.1',
+  versao: '1.18.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
-        'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido',
+        'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepDiaHe', 'histDiaFds', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido',
         'pdiaVol', 'pdiaBase', 'pdiaCurto', 'pdiaMontar', 'pdiaParMontar', 'atrasoVencido', 'paradaAInformar']
 };

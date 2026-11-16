@@ -11,6 +11,53 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.247.0 · mobile 1.50.0 · rp-core 1.18.0 · `.gs` v5.68 — 16/11/2026 · sábado e domingo são hora extra o dia inteiro
+
+O PPCP olhou o PERÍODO da aba ⚖ UEP: o sábado 14/11 aparecia em vermelho
+(*894 UEP · meta 1.257 · 71,1%*) e o card dizia *"1 de 6"*. A orientação dele
+foi: *"aos sábados é horas extra total"*.
+
+- **Sábado e domingo não têm jornada normal.** Tudo o que se embala nesses
+  dias é hora extra, e o dia não tem meta, nem em caixas nem em UEP.
+  - O `.gs` marca todo slot do fim de semana como hora extra.
+  - Os fechamentos gravam META, META DIA, ATRASO, EF e META UEP **0**.
+    Zero quer dizer *sem meta*.
+  - HE CX = REALIZADO. A UEP vai toda para UEP HE.
+- **PERÍODO da ⚖ UEP:** o sábado sai do julgamento.
+  - O card passa a dizer **1 de 5** (só os dias úteis) e *"sábado 14/11 todo
+    hora extra"*.
+  - No gráfico, o sábado é uma barra listrada âmbar com a UEP do dia inteiro
+    (1.440), sem a linha da meta.
+  - A OSCILAÇÃO é calculada só com os dias úteis.
+- **Gerencial e celular, ao vivo num sábado:** o card UEP DO DIA mostra a UEP
+  toda em hora extra, sem selo. Saem RITMO, PROJEÇÃO e PARA A META, porque os
+  três são contra a meta.
+- **Dia passado, HISTÓRICO, relatórios do histórico e da semana, Tela D,
+  diretoria, resumo do WhatsApp e histórico do celular:** o fim de semana
+  aparece como **HORA EXTRA**, sem eficiência, sem selo ABAIXO e sem
+  melhor/pior hora.
+  - EFICIÊNCIA MÉDIA, DIAS COM META e MELHOR/PIOR DIA passam a contar só os
+    dias com meta.
+- **As linhas já gravadas também mudam na tela.** O `rp-core` (`histDiaFds`)
+  lê o sábado gravado pelo `.gs` anterior (07/11 e 14/11) da mesma forma que o
+  `.gs` v5.68 grava.
+- **Atenção — números que mudam:**
+  - PERÍODO de 09–14/11: DIAS QUE BATERAM *1 de 6* → **1 de 5**; % da meta
+    92,7% → **94,7%**; OSCILAÇÃO 30,9% → **6,6%**.
+  - Aba PLANO: o sábado sai da régua de capacidade (antes, 07/11 entrava com
+    465 cx de jornada).
+  - HISTÓRICO: a EFICIÊNCIA MÉDIA e os DIAS COM META deixam de contar o
+    sábado.
+  - Paradas num sábado são valoradas pela meta padrão (a regra de sempre do
+    RP_PARADAS para dia sem meta).
+- **Revoga a `.gs` v5.60 / v7.222.0**, que dava ao sábado uma meta pelas
+  horas de jornada trabalhadas. Feriado trabalhado **não** entra nesta regra:
+  só sábado e domingo.
+- ⚠ **re-deploy** do `ritmoprod_appscript.gs` (v5.68). Antes dele, os painéis
+  já mostram o fim de semana como hora extra, mas o próximo sábado será
+  gravado no HISTORICO com a meta pelas horas (v5.67). A tela relê a linha
+  como hora extra, mas a planilha fica com o número antigo.
+
 ## v7.246.1 — 16/11/2026 · correções da revisão da v7.246.0
 
 - **O 🖨 TAKT DA SEMANA voltou a ter uma folha só.** O item *embalou antes* na
