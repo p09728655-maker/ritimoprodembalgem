@@ -11,6 +11,36 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.256.0 — 16/11/2026 · Tela G da TV: um veredito só
+
+O PPCP, com o print da TV às 15:58: *"essa tela na tv ainda está ruim de ver"* e
+*"está confuso a meta não sai e está no ritmo?"*. A tela dizia **NO RITMO** e,
+logo abaixo, **A META NÃO SAI ATÉ 16:59** — com a linha só 12 UEP (2 min)
+atrás do esperado.
+
+- **Saiu o cartão A META SAI ÀS / A META NÃO SAI ATÉ.** Ele dizia NÃO SAI
+  sempre que a linha estava 1 UEP que fosse atrás do esperado, o dia inteiro,
+  sem a tolerância do selo. Quem julga é o selo. O horário em que a meta sai
+  continua no gráfico, no ponto em que o pontilhado cruza a META.
+- **Minutos por extenso**: `2 min ATRÁS` / `54 min À FRENTE` no lugar de
+  `−2 min` / `+54 min`.
+- **FALTA PARA A META em caixas no número grande** (*156 caixas*, *de
+  PENTEADEIRA PRINCESA · 332 UEP* embaixo).
+- **Letra maior nos cartões**: com dois cartões a tela não precisa mais
+  encolher (escala 0,85 → 1,00 na TV; 0,75 → 1,00 na janela pequena).
+- A legenda do pontilhado diz **RITMO DA META · 314/h** (era *ATÉ A META*).
+
+**Atenção** (antes → depois, Tela G):
+- `−2 min` / `atrás do esperado · −12 UEP` → `2 min ATRÁS` / `do esperado · 12 UEP`.
+- FALTA: `332 UEP` grande e `= 156 caixas deste produto` → `156 caixas` grande e
+  `de PENTEADEIRA PRINCESA · 332 UEP`.
+- A linha `2.429 feitas · 2.441 esperadas` saiu do 1º cartão (os dois números
+  estão no gráfico).
+- O 3º cartão (A META SAI ÀS / NÃO SAI ATÉ / JORNADA NORMAL ENCERRADA) saiu;
+  JORNADA NORMAL ENCERRADA passou a ser o 2º cartão.
+
+---
+
 ## v7.255.0 · mobile 1.53.0 — 16/11/2026 · o ícone do app ganha a caixa
 
 O PPCP pediu uma embalagem dentro da estrela e escolheu a versão com a caixa

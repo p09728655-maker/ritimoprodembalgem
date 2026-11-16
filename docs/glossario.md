@@ -406,9 +406,9 @@ Fora do ciclo por padrão (⚙ → TELA F / TELA G) e **sem veredito** por padr�
 | **1 CAIXA = X UEP** (rodando agora) | UEP do código do produto atual no cadastro; sem cadastro no aparelho, UEP ÷ caixas de hoje do mesmo produto e cor (`porHoraModelo`) | UEP/cx | `v7:_tvUepDoProduto` |
 | **PESO MÉDIO DA CAIXA HOJE** | UEP de jornada ÷ caixas de jornada da HORA_A_HORA (`k.realNormal`) | UEP/cx | `v7:_tvUepMontar` |
 | **O NORMAL** (peso da caixa) | mediana de UEP ÷ caixas de jornada (`_qpRealDia`) nos últimos 30 dias fechados com UEP; menos de 5 dias → não mostra. "mais pesadas/leves" = hoje ÷ normal acima de 1,05 / abaixo de 0,95 | UEP/cx | `v7:_tvUepPesoNormal` |
-| **À FRENTE / ATRÁS (min)** (Tela G) | (UEP feita − esperada) ÷ (meta ÷ 527) — o adiantamento em minutos de linha no ritmo da meta | min | `v7:_tvUepMontar` |
-| **FALTA PARA A META DO DIA** | meta − UEP feita (nunca negativo); em caixas = ⌈falta ÷ UEP/cx do produto de agora⌉ | UEP · cx | `v7:_tvUepMontar` |
-| **A META SAI ÀS** | agora + falta ÷ (meta ÷ 527), andando só pelos minutos de jornada que restam (o almoço não conta). Não cabe até o fim da jornada → mostra o ritmo que faltaria: falta ÷ minutos restantes × 60 | hora · UEP/h | `v7:_tvUepMontar` |
+| **À FRENTE / ATRÁS (min)** (Tela G) | (UEP feita − esperada) ÷ (meta ÷ 527) — o adiantamento em minutos de linha no ritmo da meta. O sentido vai por extenso (`2 min ATRÁS`), nunca por sinal | min | `v7:_tvUepMontar` |
+| **FALTA PARA A META DO DIA** | meta − UEP feita (nunca negativo); em caixas = ⌈falta ÷ UEP/cx do produto de agora⌉. Na Tela G o número grande é o de caixas (desde a v7.256.0); sem UEP do produto de agora, a UEP | UEP · cx | `v7:_tvUepMontar` |
+| **HORA DA META** (no gráfico da Tela G) | agora + falta ÷ (meta ÷ 527), andando só pelos minutos de jornada que restam (o almoço não conta). Só aparece quando o pontilhado cruza a META. Não julga: o cartão A META SAI ÀS / NÃO SAI ATÉ saiu na v7.256.0 (com 1 UEP atrás do esperado ele já dizia NÃO SAI, ao lado do NO RITMO) | hora | `v7:_tvUepMontar` |
 | **ESPERADO** (linha do gráfico) | meta × minutos de jornada **com lançamento** ÷ 527, hora a hora — a mesma régua do card; daqui para a frente, a meta no ritmo do relógio | UEP | `v7:_tvUepMontar` |
 
 ## Relatórios de UEP da aba ⚖ UEP (v7.139.0)

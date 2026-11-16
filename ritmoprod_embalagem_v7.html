@@ -1639,7 +1639,7 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvu-mid{font-family:var(--font-d);font-size:calc(var(--tvu-k,1)*clamp(16px,min(1.8vw,3.2vh),36px));color:var(--txt2);line-height:1.1}
 .tvu-mid b{font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(40px,min(4.4vw,7.6vh),90px));color:var(--txt);margin-right:.12em;font-variant-numeric:tabular-nums}
 .tvu-sub{font-family:var(--font-d);font-size:calc(var(--tvu-k,1)*clamp(12px,min(1.4vw,2.5vh),28px));color:var(--txt2);line-height:1.2}
-.tvu-card .tvu-sub,.tvu-card .tvu-lbl,.tvg-cx{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tvu-card .tvu-sub,.tvu-card .tvu-lbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tvu-leg{display:flex;flex-wrap:wrap;align-items:center;gap:6px clamp(14px,1.8vw,36px);font-family:var(--font-d);font-size:calc(var(--tvu-k,1)*clamp(12px,min(1.2vw,2.2vh),24px));color:var(--txt2);letter-spacing:1px}
 .tvu-leg span{display:inline-flex;align-items:center;gap:10px}
 .tvu-tick{display:inline-block;width:40px;height:0;border-top:4px solid var(--txt)}
@@ -1675,9 +1675,8 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvg-sw.e{border-top:7px dashed var(--txt2)}
 .tvg-sw.p{border-top:7px dotted var(--txt)}
 .tvg-cards{display:flex;flex-direction:column;gap:calc(var(--tvu-k,1)*clamp(10px,2vh,22px));min-width:0;min-height:0}
-.tvg-min{font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(60px,min(7.6vw,13vh),150px));line-height:.9;color:var(--txt);font-variant-numeric:tabular-nums}
-.tvg-cx{font-family:var(--font-d);font-size:calc(var(--tvu-k,1)*clamp(15px,min(1.65vw,2.9vh),32px));color:var(--txt);line-height:1.15}
-.tvg-cx b{font-weight:700}
+.tvg-min{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:.22em;font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(60px,min(7.6vw,13vh),150px));line-height:.9;color:var(--txt);font-variant-numeric:tabular-nums}
+.tvg-dir{white-space:nowrap;font-size:calc(var(--tvu-k,1)*clamp(30px,min(3.8vw,6.6vh),76px));letter-spacing:2px}
 #tv-slide-c .tvb-hero-num{font-size:clamp(90px,11vw,200px)}
 /* .tv-table/td/th têm fonte gigante (feita pra Tela A, 5 colunas curtas) —
    ajusta pro tamanho certo da Tela C (só CÓDIGO/FALTA, conteúdo curto). */
@@ -4182,7 +4181,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.255.0';
+const APP_VER = '7.256.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -27628,7 +27627,6 @@ function _tvUepMontar(D, ctx){
                             andamento:h.andamento, futuro:h.futuro, ate:h.ate })),
     ini, fim, agora, pts, espFut, gaps,
     proj: proj ? proj.p : null, chega: proj ? proj.chega : null, minRest,
-    precisaH: proj && proj.chega == null && minRest > 0 ? falta / minRest * 60 : null,
     baseNome: c.baseNome || ''
   };
 }
@@ -27879,47 +27877,50 @@ function _tvGDesenho(m, selo, W, H){
   return { s:s + '</svg>', n:[pHi, pLo].filter(Boolean).length };
 }
 // TELA G — desenho (sem conta).
+// UM veredito (D4): quem julga é o selo. Até a v7.255.0 um 3º cartão dizia "A
+// META SAI ÀS" / "A META NÃO SAI ATÉ 16:59", andando no ritmo da meta a partir
+// do feito: com 1 UEP atrás do esperado ele já dizia NÃO SAI — o dia inteiro,
+// ao lado do NO RITMO, que tem 4% de tolerância. Era um 2º juiz, sem tolerância
+// (PPCP, 16/11/2026, print das 15:58: −12 UEP, 99,5%, *"está confuso a meta não
+// sai e está no ritmo?"*). O horário em que a meta sai continua no gráfico, no
+// ponto em que o pontilhado cruza a META.
 function _tvGHtml(m, selo){
   const absMin = Math.abs(m.difMin), frente = m.difMin >= 0, noTempo = absMin < 0.5;
-  const minTxt = noTempo ? '0 min' : (frente ? '+' : '−') + _tvMinTxt(absMin);
-  const cap = noTempo ? 'no tempo do esperado'
-    : (frente ? 'à frente do esperado · +' : 'atrás do esperado · −') + fmtN(Math.round(Math.abs(m.difUep))) + ' UEP';
-  let card2, card3 = '';
-  if(m.falta > 0){
-    // Texto curto de propósito: a 15 m cada linha tem de caber inteira no cartão.
+  // O sentido por extenso, não por sinal: "−2 min" ao lado do NO RITMO se lia
+  // como mais uma contradição; "2 min ATRÁS" diz o mesmo sem conta de cabeça.
+  // Número e sentido em itens de flex: quando "54 min À FRENTE" não cabe numa
+  // linha, o sentido desce inteiro e colado (no texto corrido ele quebrava no
+  // meio, "À" numa linha e "FRENTE" na outra).
+  const minTxt = noTempo ? '<span>0 min</span>' : '<span>' + _tvMinTxt(absMin) + '</span><span class="tvg-dir">' + (frente ? 'À FRENTE' : 'ATRÁS') + '</span>';
+  const cap = noTempo ? 'no tempo do esperado' : 'do esperado · ' + fmtN(Math.round(Math.abs(m.difUep))) + ' UEP';
+  let card2;
+  if(m.falta > 0 && m.minRest > 0){
+    // Em CAIXAS do produto de agora, a unidade que a linha conta; a UEP fica
+    // no apoio. Nome comprido corta com "…" (leva a UEP junto): a conta que
+    // importa está no número grande.
     card2 = '<div class="tvu-lbl">FALTA PARA A META DO DIA</div>'
-      + '<div class="tvu-mid"><b>' + fmtN(Math.round(m.falta)) + '</b> UEP</div>'
-      // O número antes do nome: nome comprido corta com "…", a conta não.
-      + (m.faltaCx ? '<div class="tvg-cx">= <b>' + fmtN(m.faltaCx) + ' caixas</b> deste produto</div>'
-                     + '<div class="tvu-sub tvu-nome">' + _tvF2(m.prod.uepCx) + ' UEP/cx · ' + _rpEsc(m.prod.nome) + '</div>'
-                   : '<div class="tvu-sub">' + (m.prod ? 'sem UEP no cadastro para o produto de agora' : 'nenhum produto selecionado no app') + '</div>');
-    // ⚠ "NO RITMO" é a palavra do VEREDITO (slRitmo): rótulo nenhum pode usá-la,
-    // senão o cartão lido a 15 m parece selo mesmo com o selo desligado.
-    const hMeta = fmtN(Math.round(m.porMin * 60));
-    if(m.chega != null){
-      card3 = '<div class="tvu-lbl">A META SAI ÀS</div><div class="tvu-mid"><b>' + fromMin(Math.ceil(m.chega)) + '</b></div>'
-        + '<div class="tvu-sub">mantendo ' + hMeta + ' UEP por hora</div>';
-    } else if(m.minRest > 0){
-      card3 = '<div class="tvu-lbl">A META NÃO SAI ATÉ ' + fromMin(m.fim) + '</div>'
-        + '<div class="tvu-mid"><b>' + fmtN(Math.ceil(m.precisaH)) + '</b> UEP/h</div>'
-        + '<div class="tvu-sub">daqui até ' + fromMin(m.fim) + ' · a meta pede ' + hMeta + '/h</div>';
-    } else {
-      card3 = '<div class="tvu-lbl">JORNADA NORMAL ENCERRADA</div><div class="tvu-mid"><b>' + fmtN(Math.round(m.falta)) + '</b> UEP</div>'
-        + '<div class="tvu-sub">faltaram para a meta do dia</div>';
-    }
+      + (m.faltaCx ? '<div class="tvu-mid"><b>' + fmtN(m.faltaCx) + '</b> caixas</div>'
+                     + '<div class="tvu-sub tvu-nome">de ' + _rpEsc(m.prod.nome) + ' · ' + fmtN(Math.round(m.falta)) + ' UEP</div>'
+                   : '<div class="tvu-mid"><b>' + fmtN(Math.round(m.falta)) + '</b> UEP</div>'
+                     + '<div class="tvu-sub">' + (m.prod ? 'sem UEP no cadastro para o produto de agora' : 'nenhum produto selecionado no app') + '</div>');
+  } else if(m.falta > 0){
+    card2 = '<div class="tvu-lbl">JORNADA NORMAL ENCERRADA</div><div class="tvu-mid"><b>' + fmtN(Math.round(m.falta)) + '</b> UEP</div>'
+      + '<div class="tvu-sub">faltaram para a meta do dia</div>';
   } else {
     card2 = '<div class="tvu-lbl">META DO DIA</div><div class="tvu-mid"><b>ALCANÇADA</b></div>'
       + '<div class="tvu-sub">' + fmtN(Math.round(m.feito)) + ' UEP · +' + fmtN(Math.round(m.feito - m.meta)) + ' acima da meta</div>';
   }
+  // ⚠ "NO RITMO" é a palavra do VEREDITO (slRitmo): rótulo nenhum pode usá-la,
+  // senão lido a 15 m parece selo mesmo com o selo desligado. O pontilhado é
+  // "mantendo o ritmo da meta" — até a v7.255.0 a legenda dizia ATÉ A META, e
+  // ele nem sempre chega nela.
   return '<div class="tvg-corpo"><figure class="tvg-graf">'
     + '<div class="tvu-leg tvg-leg"><span><i class="tvg-sw f"></i>FEITO</span><span><i class="tvg-sw e"></i>ESPERADO</span>'
-    + (m.proj ? '<span><i class="tvg-sw p"></i>ATÉ A META, A ' + fmtN(Math.round(m.porMin * 60)) + '/h</span>' : '') + '</div>'
+    + (m.proj ? '<span><i class="tvg-sw p"></i>RITMO DA META · ' + fmtN(Math.round(m.porMin * 60)) + '/h</span>' : '') + '</div>'
     + _tvGSvg(m, selo) + '</figure><div class="tvg-cards">'
     + '<div class="tvu-card">' + (selo ? '<span class="tvu-selo ' + sc(m.ef) + '">' + slRitmo(m.ef) + '</span>' : '')
-    + '<div class="tvg-min">' + minTxt + '</div><div class="tvu-sub">' + cap + '</div>'
-    + '<div class="tvu-sub">' + fmtN(Math.round(m.feito)) + ' feitas · ' + fmtN(Math.round(m.esp)) + ' esperadas</div></div>'
+    + '<div class="tvg-min">' + minTxt + '</div><div class="tvu-sub">' + cap + '</div></div>'
     + '<div class="tvu-card">' + card2 + '</div>'
-    + (card3 ? '<div class="tvu-card">' + card3 + '</div>' : '')
     + '</div></div>' + _tvUepRodHtml(m);
 }
 // ENCAIXE MEDIDO das Telas F e G. A fonte é por vh, e a tela nem sempre tem
