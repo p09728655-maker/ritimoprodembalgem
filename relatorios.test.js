@@ -480,9 +480,10 @@ ok('desenhar pede a busca (que tem cache de 30 min lá dentro)', _buscas > 0, tr
      ['UEP · HORA EXTRA', '3.275', '14 horas em 5 dias', '']);
   ok('UM veredito, o da UEP: a jornada não bateu, com a hora extra bateu → âmbar',
      [g('selo').className, g('selo').textContent], ['tvd-selo he', '⚠ META BATIDA COM HORA EXTRA']);
-  ok('as caixas viram fato: o total, a jornada contra a meta de caixas e a hora extra — sem cor (fio neutro)',
+  // v7.252.0 (PPCP: "dois vereditos está confuso"): as caixas só em quantidade, sem o % da meta
+  ok('as caixas viram fato: o total, a jornada e a hora extra — sem o % da meta de caixas e sem cor (fio neutro)',
      [g('uep-lbl').textContent, g('uep').textContent, g('uep-pct').innerHTML, g('uep-sub').textContent, g('uep-fio').style.background, g('linha-uep').style.display],
-     ['CAIXAS', '9.879', '', '7.616 na jornada · 84,2% da meta · 2.263 em hora extra', 'var(--txt3)', '']);
+     ['CAIXAS', '9.879', '', '7.616 na jornada · 2.263 em hora extra', 'var(--txt3)', '']);
   ok('a barra e a marca em UEP',
      [Math.round(parseFloat(g('bar-normal').style.width) * 10) / 10, Math.round(parseFloat(g('bar-extra').style.width) * 10) / 10, g('marca-lbl').textContent],
      [Math.round(13068 / 16343 * 1000) / 10, Math.round(3275 / 16343 * 1000) / 10, 'META 13.805 UEP']);
@@ -491,9 +492,9 @@ ok('desenhar pede a busca (que tem cache de 30 min lá dentro)', _buscas > 0, tr
      cards.map(c => [c.slice(0, c.indexOf('"')), (c.match(/tvd-dia-num">([^<]*)</) || [])[1], (c.match(/tvd-dia-pct"[^>]*>([^<]*)</) || [])[1]]),
      [['ruim', '2.596', '94,0% da meta'], ['ok', '2.867', '103,8% da meta'], ['he', '2.380', '86,2% da meta'], ['he', '2.617', '94,8% da meta'],
       ['he', '2.608', '94,5% da meta'], ['he', '1.440', 'todo hora extra']]);
-  ok('cada dia diz a hora extra em UEP e as caixas como fato (o 11/11 de 125% em caixas é 86% em UEP)',
-     [/\+479 UEP em hora extra/.test(cards[2]), />1\.480 cx · 125,3% da meta</.test(cards[2]), /tvd-dia-he vazio">sem hora extra</.test(cards[0]),
-      />1\.145 cx em hora extra</.test(cards[5])], [true, true, true, true]);
+  ok('cada dia diz a hora extra em UEP e as caixas só em quantidade — um % da meta por dia, o da UEP',
+     [/\+479 UEP em hora extra/.test(cards[2]), />1\.480 cx</.test(cards[2]), (cards[2].match(/% da meta/g) || []).length, /tvd-dia-he vazio">sem hora extra</.test(cards[0]),
+      />1\.145 cx em hora extra</.test(cards[5])], [true, true, 1, true, true]);
   // a TV não muda: a mesma semana na Tela D continua em caixas (a TV julga em caixas nas telas A/B)
   pintar('tvd-');
   ok('a Tela D da TV continua em caixas, com o selo das caixas',
@@ -2821,6 +2822,9 @@ console.log('\n── dia passado: hora extra não é julgada, e a meta/h não �
      [true, true, true, true, true, true, true, true, true]);
   ok('o desenho do papel não faz conta (D1): nada de reduce, filter, sort, uepHistResumo ou RP_PARADAS',
      /\.filter\(|\.sort\(|\.reduce\(|\.slice\(0|uepHistResumo|RP_PARADAS|perdaBrutaDeMin|uepDiaMeta/.test(pega('function _relSemUepCorpoHtml(')), false);
+  ok('o anexo das caixas com a UEP na frente: sem EFICIÊNCIA, sem EF. S/ HE e sem o gap em caixas (só a quantidade)',
+     [/\$\{U\?'':`<th>EFICIÊNCIA<\/th>/.test(JS), /\$\{U\?'':`<td class="td-bold">\$\{_diaComMeta\(d\)\?fmtP\(d\.ef\)/.test(JS),
+      /\$\{U\?'':`<td class="td-bold">\$\{efMedia!=null/.test(JS), /\$\{U\?'':`gap: /.test(JS)], [true, true, true, true]);
   ok('o semanal escolhe: com UEP o ONDE PERDEMOS (paradas em UEP pela mesma leitura); sem UEP o papel de antes, com a tabela das caixas',
      [/const U = _gsemUepMontar\(diasSem, kSem\);/.test(JS), /if\(_p && U\) stUep=_relParadasUep\(_p, diasSem, dtToStr\(seg\), dtToStr\(sex\)\);/.test(JS),
       /\$\{U\?_relSemUepCorpoHtml\(U, _relSemUepPerdas\(U, stUep\), \{ parcial, fechados, nDias:diasSem\.length, tabelaCx \}\):`/.test(JS),

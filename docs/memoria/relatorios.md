@@ -204,4 +204,7 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   pelo papel sem UEP e pelo anexo.
 - Medido: o PDF A4 sai em 2 folhas (a 1ª com todo o ONDE PERDEMOS, a 2ª o
   anexo).
+- v7.252.0 (PPCP: *"dois vereditos está confuso"*): o anexo das caixas perdeu
+  EFICIÊNCIA, EF. S/ HE e o gap em caixas — com a UEP na frente, o único % da
+  meta do papel é o da UEP. Ficam as quantidades, a META e a META/H.
 
