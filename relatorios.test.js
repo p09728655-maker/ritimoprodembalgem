@@ -5909,7 +5909,7 @@ process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não te
       const C = { ordem:[], console, document:{ querySelectorAll:q => (q === '.btn-refresh' ? bts : []) } };
       vm.createContext(C);
       vm.runInContext('let _refreshP = null, _refreshRodando = false, PERFIL = "operador";' +
-        'let _refreshPedido = null;' + fn('function _refreshMarca(') + fn('function refresh(') + fn('async function _refresh(') +
+        'let _refreshPedido = null, _gerSegura = false;' + fn('function _refreshMarca(') + fn('function refresh(') + fn('async function _refresh(') + fn('async function _lerSheetsSegura(') +
         ';async function lerSheets(){ ordem.push("lerSheets"); } async function carregarParadas(){ ordem.push("paradas"); }' +
         ';globalThis.T = async () => { const fim = _refreshMarca(); const a = refresh(), b = refresh(), c = refresh();' +
         ' await null; await null; const meio = [globalThis.document.querySelectorAll(".btn-refresh").map(x => [x.disabled, x.textContent]), a === b && b === c, ordem.slice()];' +
@@ -5943,7 +5943,8 @@ process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não te
       { l:'⚠ ATRASO · LOTES VENCIDOS', v:'300<small>cx</small>', sub:'cx de lotes com data anterior a hoje', c:'red larga atr' }]);
   // 1.50.0 (a UEP na frente): o ATRASO é o 2º card, logo abaixo do UEP DO DIA — os dois na 1ª tela do celular
   ok('celular: é o 2º card da grade (logo abaixo do UEP DO DIA), o antigo "⚠ ATRASO NA PROGRAMAÇÃO" do fim da lista saiu; o card vai largo e vermelho pelo CSS; o cadastro que chega redesenha',
-     [/L\.push\(\{ l: 'UEP DO DIA · META '[^\n]*\n  \}\n  if\(atrKpi\) L\.push\(atrKpi\);/.test(mJS) && /if\(!G\.ok\) L\.push\(\{ l: c\.l[^\n]*\n  else \{/.test(mJS), /ATRASO NA PROGRAMAÇÃO/.test(mob),
+     [(F => F.lastIndexOf("L.push({ l: 'UEP DO DIA · META '") < F.indexOf('if(atrKpi) L.push(atrKpi);') && F.indexOf('if(atrKpi) L.push(atrKpi);') < F.indexOf("'RITMO · UEP/HORA'"))(mJS.slice(mJS.indexOf('function _gerUepCardsM('))),
+      /ATRASO NA PROGRAMAÇÃO/.test(mob),
       /\.kpi-card\.larga\{grid-column:1\/-1\}/.test(mob), /\.kpi-card\.atr \.kpi-val\{font-size:34px;color:var\(--red\)\}/.test(mob),
       /carregarProdutos\(\)\.then\(\(\) => \{ if\(PERFIL === 'gerencial'\) renderGerencial\(\); \}\)/.test(mJS), /<div class="kpi-card \$\{c\.c\}">/.test(RG)],
      [true, false, true, true, true, true]);
@@ -6255,10 +6256,28 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
     // velho: a hora lançada sem UEP / com caixas a mais que o registro pode ser só a leitura atrasada
     const hv = celM(RM('_gerHoraLinhaM(_h, 0, null, null, true)', { _h:{ label:'11:00', he:false, lancada:true, andamento:false, uep:null, cxSem:0, metaH:314, cx:120 } }));
     const hp = celM(RM('_gerHoraLinhaM(_h, 100, null, null, true)', { _h:{ label:'11:00', he:false, lancada:true, andamento:false, uep:200, cxSem:0, metaH:314, cx:160 } }));
-    ok('a leitura do dia que falhou: "não respondeu" (era "aguardando…"); a UEP de antes diz de quando é; com ela velha, a hora sem UEP diz NÃO LIDA, sem %',
-       [sf, /<i>UEP de 16:10 — a última leitura não respondeu<\/i>$/.test(sv), hv.slice(3), hp.slice(3), /const velho = G\.ok && PONTOS_DIA_FALHA;/.test(pegaM('function renderTabelaHoraHora('))],
-       ['a leitura do dia não respondeu — o app tenta de novo', true, ['— NÃO LIDA', '120'], ['— NÃO LIDA', '160 meta 157'], true]);
+    const cv = RM('_gerUepCardsM(_G, _k, null)', { _G:Gv, _k:KM })[0];
+    ok('a leitura do dia que falhou: "não veio" (era "aguardando…"); a UEP de antes diz de quando é e NÃO dá selo (o selo vai às caixas programadas); a hora sem UEP diz NÃO LIDA, sem %',
+       [sf, Gv.velha, cv.c, /^UEP de 16:10 — a última leitura não veio<i>sem selo/.test(sv), hv.slice(3), hp.slice(3),
+        /const velho = !!G\.velha;/.test(pegaM('function renderTabelaHoraHora(')), /_gerCxCardsM\(k, !G\.ok \|\| G\.velha\)/.test(pegaM('function renderGerencial('))],
+       ['a leitura do dia não veio — o app tenta de novo', true, 'acc larga hero', true, ['— NÃO LIDA', '120'], ['— NÃO LIDA', '160 meta 157'], true, true]);
+    // a falha de ontem não vale para hoje (o dia novo começa "lendo")
+    { const D = vm.createContext({ Date, dtToStr:M.dtToStr || vm.runInContext('dtToStr', M), hojeStr:() => '14/11/2026' });
+      vm.runInContext(pegaM('function _pontosDiaVazio(') + '\n' + pegaM('function _pontosDiaDeHoje(') + '\nvar PONTOS_DIA = { uep:{ normal:9 }, lidoEm:new Date(2026, 10, 13, 16, 0).getTime() }, PONTOS_DIA_FALHA = true; _pontosDiaDeHoje();', D);
+      ok('a falha de ontem não vale para hoje: o dia novo começa lendo (PONTOS_DIA vazio, a falha zerada)', [vm.runInContext('PONTOS_DIA.uep', D), vm.runInContext('PONTOS_DIA_FALHA', D)], [null, false]); }
     RM('PONTOS_DIA = _pd; PONTOS_DIA_FALHA = false', { _pd:PDM }); }
+  { // 2ª revisão: o desenho do gerencial espera a UEP do dia (o lerSheets do ciclo e do ATUALIZAR não desenha sozinho); rp-core antigo: a tabela só com as caixas
+    const RA = vm.createContext({ PERFIL:'gerencial', _N:0, renderGerencial(){ RA._N++; }, renderLancamentos(){}, lerSheets: async () => { vm.runInContext('renderAtivo()', RA); return true; } });
+    vm.runInContext('var _gerSegura = false;\n' + pegaM('function renderAtivo(') + '\n' + pegaM('async function _lerSheetsSegura('), RA);
+    await vm.runInContext('_lerSheetsSegura()', RA); const n1 = RA._N; vm.runInContext('renderAtivo()', RA);
+    const T = vm.createContext({ console, Math, Number, String, Array, Object, JSON, isFinite, isNaN });
+    vm.runInContext(['function _escH(', 'function _gerHoraLinhaM(', 'function renderTabelaHoraHora('].map(pegaM).join('\n')
+      + `\nvar fmtN = n => String(n), fmtP = n => n + '%', sc = () => 'ok', PONTOS_DIA = {}, PONTOS_DIA_FALHA = false, _TB = { innerHTML:'' };
+      var document = { getElementById: () => _TB }; var _GER_G = { ok:false, lendo:false };`, T);
+    vm.runInContext('renderTabelaHoraHora(_a)', Object.assign(T, { _a:allM }));
+    ok('o lerSheets do ciclo do gerencial não desenha a tela (quem desenha é o renderGerencial depois da UEP do dia); fora dele, desenha', [n1, RA._N], [0, 1]);
+    ok('rp-core antigo em cache (sem uepHorasDia): a tabela sai com as caixas e ATUALIZE, sem quebrar o lerSheets',
+       [(T._TB.innerHTML.match(/<tr>/g) || []).length, celM(T._TB.innerHTML.split('</tr>')[4])], [11, ['09:00-10:00', '—', '—', '— ATUALIZE', '160']]); }
   // 4: sem a UEP do dia a META UEP é "—" (era a meta padrão do código, 288/h, que pulava para 314 quando a leitura chegava)
   ok('sem a UEP do dia, a coluna META UEP diz "—" e não há meta em caixas (celular e PC)',
      [celM(RM('_gerHoraLinhaM(_h, 0, 2, "LENDO…")', { _h:GM.horas[4] })),
@@ -6267,8 +6286,8 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
   // 2: a UEP do dia sai JUNTO com as caixas no ciclo do gerencial (3 min), como no PC
   { const CIC = pegaM('async function cicloRefresh(');
     const blocoDados = CIC.slice(CIC.indexOf('if(c % A_CADA_DADOS === 0){'), CIC.indexOf('if(PERFIL===\'gerencial\' && c % A_CADA_PESADO === 0){'));
-    ok('celular: no gerencial a leitura do dia sai com o getDados (a cada 3 min), logo depois dele; o ciclo de 6 min ficou com o histórico',
-       [/await passo\(lerSheets\);[\s\S]*if\(PERFIL==='gerencial'\)\{[\s\S]*await lerPontosDia\(\); renderGerencial\(\);/.test(blocoDados),
+    ok('celular: no gerencial a leitura do dia sai com o getDados (a cada 3 min), logo depois dele, e a tela desenha uma vez só, depois das duas; o ciclo de 6 min ficou com o histórico',
+       [/await passo\(_lerSheetsSegura\);[\s\S]*if\(PERFIL==='gerencial'\)\{[\s\S]*await lerPontosDia\(\); renderGerencial\(\);/.test(blocoDados),
         /lerPontosDia/.test(CIC.slice(CIC.indexOf('c % A_CADA_PESADO === 0'))), /sem leitura nova \(tenta a cada 3 min\)/.test(mJS)], [true, false, true]); }
   { // 8: as três mutações que passavam — o escape do nome, o arredondamento para cima e a borda da tolerância
     const Ge = RM('PRODUTOS = [{ codigo:"501089003", desc:"VOL 1/1 <b>X</b>", cor:"", uep:2.5 }]; _gerUepModeloM(_k)', { _k:KM });
@@ -6298,7 +6317,7 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
   // ── a tela: o que saiu, e o render
   const RGM = pegaM('function renderGerencial(');
   ok('celular: o render pinta as duas grades pela montagem do núcleo; saíram o % DA META DO DIA, a PROJEÇÃO FINAL em caixas e o NEC. P/ META',
-     [/const G = _gerUepModeloM\(k\);/.test(RGM), /pinta\(_gerUepCardsM\(G, k, atrKpi\)\)/.test(RGM), /pinta\(_gerCxCardsM\(k, !G\.ok\)\)/.test(RGM),
+     [/const G = _gerUepModeloM\(k\);/.test(RGM), /pinta\(_gerUepCardsM\(G, k, atrKpi\)\)/.test(RGM), /pinta\(_gerCxCardsM\(k, !G\.ok \|\| G\.velha\)\)/.test(RGM),
       /id="kpi-grid2"/.test(mob), /'% DA META DO DIA'|'PROJEÇÃO FINAL'|'NEC\. P\/ META'|'PRODUÇÃO REAL'/.test(mJS)], [true, true, true, true, false]);
   ok('celular: o ⚠ de hora fraca e o +N do atraso em caixas saíram da tabela; o getMediaHoras não é mais lido (uma chamada a menos no login)',
      [/MEDIA_HORAS|calcAtrasoHoras\(|action=getMediaHoras|lerMediaHoras\(/.test(mJS), /<th class="td-num"[^>]*>CAIXAS<\/th>/.test(mob)], [false, true]);

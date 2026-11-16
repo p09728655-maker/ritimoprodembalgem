@@ -13451,7 +13451,7 @@ function _gerHoraLinha(h, cx, cxCom, uepCxAgora, o){
   return `<tr class="${ehHE?'he-row':''}">
       <td class="hora-cell">${ehHE?'<span class="he-dot"></span>':''}${h.label}</td>
       <td class="mono" title="${_rpEsc(uepTit)}" style="color:${temU||J?'var(--txt)':'var(--txt3)'}">${uepTxt}</td>
-      <td class="mono" style="color:var(--txt2)"${o.est?' title="a meta de UEP vem com a leitura do dia"':''}>${ehHE||o.est||!(h.metaH>0)?'—':fmtN(Math.round(h.metaH))}</td>
+      <td class="mono" style="color:var(--txt2)"${o.est&&o.est!=='SEM UEP'?' title="a meta de UEP vem com a leitura do dia"':''}>${ehHE||o.est||!(h.metaH>0)?'—':fmtN(Math.round(h.metaH))}</td>
       <td class="mono" style="color:${pct!=null?'var(--'+s2+')':'var(--txt3)'}">${J?fmtP(J.pct)+(J.parte?'*':''):'—'}</td>
       <td class="mono" style="color:${cx!=null?'var(--txt)':'var(--txt3)'}">${cx!=null?fmtN(cx):'—'}</td>
       <td class="mono" style="color:var(--txt2)"${metaCx!=null&&!(temU&&cxCom>0)?' title="pelo produto que está rodando agora"':''}>${metaCx!=null?fmtN(Math.round(metaCx)):'—'}</td>

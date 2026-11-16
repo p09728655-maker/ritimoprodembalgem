@@ -1181,7 +1181,8 @@ let PONTOS_DIA = _pontosDiaVazio();
 // certo — "2.700 UEP de 314 esperadas" com a UEP de ontem e os minutos de hoje.
 // Leitura de outro dia volta ao vazio: os cards da mesma leitura esperam juntos.
 function _pontosDiaDeHoje(){
-  if(PONTOS_DIA.lidoEm && dtToStr(new Date(PONTOS_DIA.lidoEm)) !== hojeStr()) PONTOS_DIA = _pontosDiaVazio();
+  // a falha de ontem também não vale para hoje (1.50.0): o dia novo começa "lendo"
+  if(PONTOS_DIA.lidoEm && dtToStr(new Date(PONTOS_DIA.lidoEm)) !== hojeStr()){ PONTOS_DIA = _pontosDiaVazio(); PONTOS_DIA_FALHA = false; }
 }
 // Último metaDia bruto vindo da aba HORA_A_HORA (fallback quando a PROGRAMAÇÃO
 // não tem nada cadastrado pra hoje — nunca deve cair no default fixo de CFG).
@@ -2743,9 +2744,18 @@ function setDotStatus(tipo, txt){
   });
 }
 
+// _gerSegura (1.50.0): no ciclo e no ATUALIZAR do gerencial, as caixas novas
+// esperam a UEP do dia para desenhar — desenhadas antes, por alguns segundos (até
+// 75 s no cold start) a hora recém-lançada saía SEM UEP e o selo caía.
+let _gerSegura = false;
 function renderAtivo(){
   if(PERFIL==='operador') renderLancamentos();
-  else if(PERFIL==='gerencial') renderGerencial();
+  else if(PERFIL==='gerencial' && !_gerSegura) renderGerencial();
+}
+// lerSheets sem desenhar o gerencial (quem chama desenha depois da UEP do dia)
+async function _lerSheetsSegura(){
+  _gerSegura = PERFIL === 'gerencial';
+  try{ return await lerSheets(); } finally { _gerSegura = false; }
 }
 
 // ════════════════════════════════════════════════
@@ -2894,7 +2904,7 @@ async function cicloRefresh(){
   try{
     if(PERFIL==='operador' || PERFIL==='gerencial') await passo(carregarParadas);
     if(c % A_CADA_DADOS === 0){
-      await passo(lerSheets);
+      await passo(_lerSheetsSegura);
       // 1.50.0 (a UEP na frente): no gerencial a UEP do dia é o veredito, e ela sai
       // JUNTO com as caixas. Lida a cada 6 min contra as caixas a cada 3, a hora
       // recém-lançada aparecia "SEM UEP" e o esperado do card subia sem a UEP da
@@ -2941,7 +2951,7 @@ async function _refresh(){
   _refreshRodando = true; const _fimR = _refreshMarca();
   const passo=async fn=>{ try{ await fn(); }catch(e){ console.warn('refresh:', e.message); } };
   try{
-    await passo(lerSheets);
+    await passo(_lerSheetsSegura);   // o gerencial desenha depois da UEP do dia (abaixo)
     if(PERFIL==='operador' || PERFIL==='gerencial') await passo(carregarParadas);
     if(PERFIL==='gerencial'){
       HIST_PERD_CACHE.k = null;
@@ -3805,7 +3815,7 @@ function renderGerencial(){
   // vão para a 2ª grade, sem cor. Sem a UEP do dia (lendo, falhou, backend ou
   // cadastro), as CAIXAS PROGRAMADAS voltam a julgar — nunca uma tela sem veredito.
   // A conta é a do rp-core (uepGerMontar), a mesma do gerencial do PC.
-  const G = _gerUepModeloM(k);
+  const G = _gerUepModeloM(k);   // G.velha: a UEP é de antes da última leitura que não veio
   _GER_G = G;
   const pinta = L => L.map(c=>`
     <div class="kpi-card ${c.c}">
@@ -3814,7 +3824,7 @@ function renderGerencial(){
       <div class="kpi-sub">${c.sub}</div>
     </div>`).join('');
   document.getElementById('kpi-grid').innerHTML=pinta(_gerUepCardsM(G, k, atrKpi));
-  const g2=document.getElementById('kpi-grid2'); if(g2) g2.innerHTML=pinta(_gerCxCardsM(k, !G.ok));
+  const g2=document.getElementById('kpi-grid2'); if(g2) g2.innerHTML=pinta(_gerCxCardsM(k, !G.ok || G.velha));
 
   renderGerProduto();        // produto embalando agora
   renderGerProdutosDia(k.real); // produtos embalados hoje (1.39.0)
@@ -4042,9 +4052,15 @@ function _gerUepModeloM(k, agoraMin){
     return { ok: false, lendo: false, agoraMin, card: { l: 'UEP DO DIA', v: '—', sub: 'o módulo base está desatualizado — feche e abra o app', c: '' } };
   const slots = _gerSlotsM(k.allHoje);
   const pa = (PRODUTOS || []).find(x => x.codigo === PROD_ATUAL) || {};
-  return uepGerMontar({ uep: PONTOS_DIA.uep, metaUep: PONTOS_DIA.metaUep, minNorm: k.minNorm, slots, allHoje: k.allHoje,
+  const G = uepGerMontar({ uep: PONTOS_DIA.uep, metaUep: PONTOS_DIA.metaUep, minNorm: k.minNorm, slots, allHoje: k.allHoje,
     phm: PONTOS_DIA.porHoraModelo, agoraMin, tolMin: LANC_TOLERANCIA_MIN, cat: PRODUTOS,
     prod: { cod: PROD_ATUAL, desc: pa.desc || '', cor: corDeProduto(pa) } });
+  // UEP VELHA (a última leitura do dia não veio e a que está na tela é de antes):
+  // comparada com os minutos de AGORA, o selo cairia sem a linha ter parado (às
+  // 15:02, "ABAIXO · 60 min atrás" com a hora 14:00 sem UEP) — o selo vai para as
+  // caixas programadas e a hora sem UEP diz NÃO LIDA até a leitura voltar (2ª revisão).
+  G.velha = G.ok && PONTOS_DIA_FALHA;
+  return G;
 }
 // 1ª grade: o veredito (UEP DO DIA, o único card com selo), o ATRASO, o ritmo e a
 // projeção em UEP (sem cor) e o que falta para a meta.
@@ -4054,13 +4070,15 @@ function _gerUepCardsM(G, k, atrKpi){
   // A leitura do dia que falhou diz isso (era "aguardando…" com a tabela dizendo NÃO
   // LIDA logo abaixo); a que é de antes da última que falhou diz de quando é.
   const lidoTxt = PONTOS_DIA.lidoEm ? (d => `${p2(d.getHours())}:${p2(d.getMinutes())}`)(new Date(PONTOS_DIA.lidoEm)) : '';
-  if(!G.ok) L.push({ l: c.l, v: c.v, sub: G.lendo && PONTOS_DIA_FALHA ? 'a leitura do dia não respondeu — o app tenta de novo' : c.sub, c: (c.c || '') + ' larga hero' });
+  if(!G.ok) L.push({ l: c.l, v: c.v, sub: G.lendo && PONTOS_DIA_FALHA ? 'a leitura do dia não veio — o app tenta de novo' : c.sub, c: (c.c || '') + ' larga hero' });
+  else if(G.velha)
+    L.push({ l: 'UEP DO DIA · META ' + fmtN(G.meta), v: fmtN(Math.round(G.feito)) + '<small>UEP</small>', c: 'acc larga hero',
+             sub: `UEP de ${lidoTxt || '—'} — a última leitura não veio<i>sem selo até a leitura voltar: o ritmo do dia sai nas CAIXAS PROGRAMADAS</i>` });
   else {
     const m = G.m, temJ = k.minNorm > 0 && c.ef != null;
     const sub = temJ
       ? `<b>${slRitmo(c.ef)}</b>${m ? ' · ' + uepMinTxt(m.difMin) : ''}<i>${fmtN(Math.round(G.feito))} de ${fmtN(Math.round(c.esperado))} UEP esperadas até agora`
         + (G.he > 0 ? ` · +${fmtN(Math.round(G.he))} em hora extra` : '') + (G.cxSem > 0 ? ` · ${fmtN(G.cxSem)} cx sem UEP` : '') + '</i>'
-        + (PONTOS_DIA_FALHA && lidoTxt ? `<i>UEP de ${lidoTxt} — a última leitura não respondeu</i>` : '')
       : (semHH ? 'a hora a hora ainda não foi lida' : c.sub);
     L.push({ l: 'UEP DO DIA · META ' + fmtN(G.meta), v: fmtN(Math.round(G.feito)) + '<small>UEP</small>', sub, c: (temJ ? c.c : 'acc') + ' larga hero' });
   }
@@ -4133,10 +4151,13 @@ function renderTabelaHoraHora(allHoje){
   }
   const G = _GER_G || _gerUepModeloM(calcKPIs());
   // sem a UEP do dia, as horas do turno (sem UEP) e a palavra do estado
-  const est = G.ok ? null : (!G.lendo ? 'SEM UEP' : PONTOS_DIA_FALHA ? 'NÃO LIDA' : 'LENDO…');
-  const horas = G.ok ? G.horas : uepHorasDia(_gerSlotsM(allHoje), allHoje, {}, PONTOS_DIA.metaUep, nowMin(), LANC_TOLERANCIA_MIN);
+  const core = typeof uepHorasDia === 'function';   // rp-core antigo em cache: as horas só com as caixas
+  const est = G.ok ? null : (!core ? 'ATUALIZE' : !G.lendo ? 'SEM UEP' : PONTOS_DIA_FALHA ? 'NÃO LIDA' : 'LENDO…');
+  const horas = G.ok ? G.horas : core ? uepHorasDia(_gerSlotsM(allHoje), allHoje, {}, PONTOS_DIA.metaUep, nowMin(), LANC_TOLERANCIA_MIN)
+    : allHoje.map(r => ({ label: r.slotLabel || r.horario, inicio: r.horario, he: r.he === true, lancada: r.producaoHora != null,
+        cx: r.producaoHora != null ? Number(r.producaoHora) : null, uep: null, cxSem: 0, metaH: null }));
   const uepCxAgora = G.ok && G.m && G.m.prod ? G.m.prod.uepCx : null;
-  const velho = G.ok && PONTOS_DIA_FALHA;
+  const velho = !!G.velha;
   tbody.innerHTML = horas.map(h => _gerHoraLinhaM(h, (G.cxCom || {})[h.inicio] || 0, uepCxAgora, est, velho)).join('');
 }
 

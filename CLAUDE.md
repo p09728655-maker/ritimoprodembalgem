@@ -3783,22 +3783,33 @@ feito e dá ar de verdade ao que sobrou.
   - **a UEP do dia sai JUNTO com as caixas** no ciclo do gerencial (3 min, era 6):
     no tick só das caixas, a hora recém-lançada saía SEM UEP / PARTE SEM UEP e o
     esperado do card subia sem a UEP dela. Uma leitura a mais a cada 6 min por
-    celular gerencial (o operador não muda). A UEP de antes da última leitura que
-    falhou (`PONTOS_DIA_FALHA` com dado): o card diz *"UEP de HH:MM — a última
-    leitura não respondeu"* e a hora sem UEP diz NÃO LIDA, sem % (`velho`);
+    celular gerencial (o operador não muda). E a tela desenha UMA vez, depois
+    das duas leituras (`_lerSheetsSegura` / `_gerSegura`: o `lerSheets` do ciclo e
+    do ATUALIZAR não desenha o gerencial; quem desenha é o `renderGerencial`
+    depois do `lerPontosDia`) — senão, por segundos (75 s no cold start), as
+    caixas novas com a UEP anterior;
+  - **UEP VELHA** (`G.velha` = `G.ok && PONTOS_DIA_FALHA`: a última leitura do dia
+    não veio e a da tela é de antes): **sem selo** no 1º card (*"UEP de HH:MM — a
+    última leitura não veio"*, `acc`), o selo vai para as CAIXAS PROGRAMADAS, e a
+    hora sem UEP diz NÃO LIDA, sem %. Comparada com os minutos de agora, ela dava
+    *ABAIXO · 60 min atrás* sem a linha ter parado (2ª revisão). ⚠ O PC não tem
+    o `velho` (lê as duas no mesmo ciclo; com a leitura falhando ele faz o de antes);
   - **sem a HORA_A_HORA lida** (o getDados falhou, a leitura do dia não), os slots
     do `getSlots` (`_gerSlotsM`, hora extra pela janela 07:00–fim do turno) e os
     cards dizem *"a hora a hora ainda não foi lida"* — era "jornada encerrada"
     às 10:00;
-  - a leitura do dia que falhou diz *"não respondeu"* no 1º card (era
-    "aguardando…" com a tabela dizendo NÃO LIDA);
+  - a leitura do dia que falhou diz *"não veio"* no 1º card (era "aguardando…"
+    com a tabela dizendo NÃO LIDA; "não veio" cobre o timeout e o `ok:false`); a
+    falha de ontem não passa para hoje (`_pontosDiaDeHoje` zera o
+    `PONTOS_DIA_FALHA` junto);
   - **sem a UEP do dia, META UEP "—"** na tabela (celular e PC): era a meta padrão
     do código (288/h) pulando para a da planilha quando a leitura chegava;
   - a linha do produto diz *"178 cx em HE"* (`heTxt` do rp-core): embaixo de
     "2.697 UEP" o "178 em HE" lia como UEP;
   - o `m` do `uepGerMontar` é protegido (try, como o PC era em volta do
-    `_tvUepMontar`); rp-core antigo em cache (sem `uepGerMontar`) → as caixas
-    julgam, o card diz para fechar e abrir o app;
+    `_tvUepMontar`); rp-core antigo em cache (sem `uepGerMontar`/`uepHorasDia`)
+    → as caixas julgam, o card diz para fechar e abrir o app e a tabela sai só
+    com as caixas (ATUALIZE) — sem isso ela lançava dentro do `lerSheets`;
   - os minutos que restam em h:mm (*"nos 7h47"*, não *"nos 467 min"*);
   - a tabela HORA A HORA com menos ar nas laterais (`.tbl.hh`): a 360 rolava 3 px
     dentro do cartão, hoje 298/298; a 320 rola 13 px dentro do cartão (era 39 px

@@ -53,11 +53,20 @@ gerencial do PC recebeu na v7.243.0/7.244.0.
   hora recém-lançada aparecia "SEM UEP" e o selo do card podia cair por até
   3 min. Custo: uma leitura a mais a cada 6 min por celular gerencial; o
   operador não muda.
-- **Estados de leitura ditos com clareza:** a leitura do dia que falhou diz
-  "não respondeu"; a UEP de antes da última leitura que falhou diz de que horas
-  é, e a hora sem UEP diz NÃO LIDA; sem a hora a hora lida, os cards dizem isso
-  (antes: "jornada encerrada" às 10:00); sem a UEP do dia, a coluna META UEP diz
-  "—" (no PC também; antes, a meta padrão do código, 288/h).
+- **A tela desenha uma vez só, depois das caixas e da UEP do dia.** Antes, por
+  alguns segundos (até 75 s com o Apps Script frio), as caixas novas apareciam
+  com a UEP anterior.
+- **Estados de leitura ditos com clareza:**
+  - a leitura do dia que falhou diz "não veio";
+  - com a UEP de antes da última leitura que falhou, o card diz de que horas ela
+    é e **não dá selo**, porque comparada com os minutos de agora diria "ABAIXO"
+    sem a linha ter parado. Até a leitura voltar, o selo vai para as CAIXAS
+    PROGRAMADAS, e a hora sem UEP diz NÃO LIDA;
+  - sem a hora a hora lida, os cards dizem isso (antes: "jornada encerrada" às
+    10:00);
+  - sem a UEP do dia, a coluna META UEP diz "—" (no PC também; antes, a meta
+    padrão do código, 288/h);
+  - a falha de ontem não passa para hoje.
 - **"178 cx em HE"** na linha do produto (antes "178 em HE", que embaixo da UEP
   lia como UEP).
 
