@@ -110,6 +110,11 @@ via Google Apps Script (JSONP).
   cada indicador, conferida no código).
 - `vercel.json` — `/` e `/diretoria` → PC, `/mobile` → celular; os módulos com
   `must-revalidate` (HTML novo com módulo velho é pior que os dois velhos).
+- ⚠ **`.vercelignore` — o site publica SÓ o painel** (lista do que sai: `/*` e
+  `!arquivo`). Até 16/11/2026 a Vercel servia o repositório inteiro: o CLAUDE.md
+  e o `.gs` abriam pela URL do painel. Arquivo NOVO que o painel carrega
+  (imagem, módulo, manifest) entra na lista, senão 404 em produção; o
+  `deploy.test.js` confere os dois lados.
 
 ## Lançamento e correção no app → `docs/memoria/lancamento.md`
 - Lança a hora corrente e a recém-fechada por 15 min (`LANC_TOLERANCIA_MIN`,

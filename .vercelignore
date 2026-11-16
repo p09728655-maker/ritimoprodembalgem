@@ -1,0 +1,27 @@
+# O site publica SÓ o painel. Lista do que SAI (o resto do repositório fica de
+# fora): CLAUDE.md, docs/, CHANGELOG.md, o .gs, os testes e o .claude/ não são
+# para a internet. Medido em 16/11/2026: até aqui a Vercel servia o repositório
+# inteiro — o CLAUDE.md e o código do Apps Script abriam pela URL do painel.
+#
+# ⚠ Arquivo NOVO que o painel carrega (imagem, módulo, manifest) entra aqui, ou
+# dá 404 em produção. O deploy.test.js confere as duas coisas: tudo o que os
+# HTMLs, os manifests e o service worker pedem está liberado, e nada interno
+# está.
+/*
+!vercel.json
+!ritmoprod_embalagem_v7.html
+!ritmoprod_mobile.html
+!rp-core.js
+!paradas-calc.js
+!sw-mobile.js
+!manifest.json
+!manifest-mobile.json
+!manifest-diretoria.json
+!manifest-diretoria-site.json
+!patrimar-logo.png
+!apple-touch-icon.png
+!favicon-32.png
+!icon-192.png
+!icon-192-maskable.png
+!icon-512.png
+!icon-512-maskable.png

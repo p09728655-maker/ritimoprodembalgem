@@ -121,3 +121,4 @@ de tema entra aqui também.
 - Notas de versão e glossário
 - Notas / armadilhas conhecidas
 - Padrão do código (v7.248.2) — o que saiu do código
+- O site publica só o painel — `.vercelignore` (16/11/2026)

@@ -11,6 +11,17 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## Deploy — 16/11/2026 · o site publica só o painel
+
+- **O site deixa de publicar o resto do repositório.** Até aqui, quem tinha o
+  endereço do painel abria também a documentação interna (CLAUDE.md, docs/), o
+  código do Apps Script e os testes — conferido na produção antes da mudança.
+  Agora sai só o painel: os dois HTMLs, os módulos, os manifests e os ícones
+  (`.vercelignore`).
+- O `deploy.test.js` impede os dois erros: arquivo que o painel usa ficar de
+  fora (404) e arquivo interno voltar a sair.
+- Nada muda nas telas, nos números nem no `.gs`.
+
 ## v7.248.2 · mobile 1.51.2 — 16/11/2026 · código no padrão; revisor do projeto
 
 PPCP: *"precisamos fazer um alinhamento no código, deixa padrão"* →

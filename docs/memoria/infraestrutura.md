@@ -647,3 +647,22 @@ regras.
   v7.248.1, sem a biblioteca (cdnjs barrado), o erro parava o fechamento antes
   da planilha; desde a v7.248.2 o Excel que falha só avisa. Não tirar o
   `<script>` da XLSX sem tirar esse Excel junto.
+
+## O site publica só o painel — `.vercelignore` (16/11/2026)
+- PPCP, 16/11/2026: *"FAÇA"*. Conferido pela ferramenta da Vercel antes: a
+  produção servia o `CLAUDE.md` (status 200) — e, sem `.vercelignore`, todo o
+  repositório: `docs/`, `CHANGELOG.md`, o `ritmoprod_appscript.gs`, os testes, o
+  `.claude/` e dois prints da diretoria (`dir_1366.png`, `dir_1920.png`).
+- **Lista do que SAI** (`/*` e depois `!arquivo`, o formato da documentação da
+  Vercel), e não lista do que esconder: documento, teste ou print novo nunca
+  vaza por esquecimento. O risco contrário — um arquivo que o painel carrega
+  ficar de fora e dar 404 — é o que o `deploy.test.js` prende: ele lê os dois
+  HTMLs (sem os comentários), os manifests (ícones), o `sw-mobile.js` e o
+  `vercel.json`, e exige que tudo o que eles pedem esteja liberado e exista; e
+  que nada interno (`.md`, `.gs`, `*.test.js`, `lint-js.js`, `testes.js`, pasta
+  oculta, `docs`) esteja. Só entende `!nome-na-raiz`: padrão com barra, curinga
+  ou pasta reprova o teste (mudaria o que sai sem ele perceber).
+- Fora da lista de propósito: `manifest.webmanifest` (órfão) e os dois prints.
+  O pdf.js vem do cdnjs, não do site.
+- Conferido na prévia da Vercel antes do merge: o painel, o celular e os
+  módulos com 200; o `CLAUDE.md`, o `.gs` e o `docs/` com 404.
