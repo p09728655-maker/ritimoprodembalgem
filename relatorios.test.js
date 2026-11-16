@@ -4910,7 +4910,7 @@ console.log('\n── estudo de UEP ──');
         'programação não lida', '…', 'sem UEP na programação', 'nenhum dia útil à frente']);
     const RPX = pega('function renderProxDias(');
     ok('o botão PRÓXIMOS DIAS é pintado pelo renderProxDias, em cada desfecho da leitura, com as MESMAS semanas do bloco',
-       [/const W = _gpxSemanasMontar\(P, hoje, _gpxPassadosDoPainel\(hoje\)\), A = _gpxAtrasoMontar\(P\.divLinhas, P\.porMin\);\s*corpo\.innerHTML = _gpxSemanasHtml\(P, W\)/.test(RPX), /sb\(_uepSubProx\(W\)\)/.test(RPX),
+       [/const W = _gpxSemanasMontar\(P, hoje, _gpxPassadosDoPainel\(hoje\)\), A = _gpxAtrasoMontar\(P\.divLinhas, P\.porMin, _taktPtsMapa\(_pdiaPcCat\(\)\)\);\s*corpo\.innerHTML = _gpxSemanasHtml\(P, W\)/.test(RPX), /sb\(_uepSubProx\(W\)\)/.test(RPX),
         /sb\(_uepSubProx\(null, f \? 'falha' : 'lendo'\)\)/.test(RPX), /sb\(_uepSubProx\(null, 'sem-uep'\)\)/.test(RPX)],
        [true, true, true, true]);
     ok('os textos dos botões não fazem conta (só leem o que já foi montado) e a pintura é uma só para a cronoanálise e a UEP',
@@ -5303,6 +5303,23 @@ console.log('\n── estudo de UEP ──');
       const AV = atrasoVencido(LST, { 501082003:1.58, 501059002:2.29, 501088007:1.77, 501083121:2.89 }, 2530);
       ok('celular = PC: o atrasoVencido (rp-core, cadastro por dígitos) dá as MESMAS horas, caixas, códigos sem UEP e desde do cartão ATRASO do PC',
          [AV.min, AV.cx, AV.semUep, AV.desde, Math.round(AV.uep)], [PA.conta.venc, AM.cxVenc, AM.semUep, '20/10', Math.round(PA.conta.uVenc)]); }
+    // v7.249.0 (PPCP, 16/11/2026: "em pontos qtdes de atraso?"): a coluna PTS do quadro — caixas vencidas × pontos do
+    // cadastro de hoje; o total fecha com o card ATRASO do gerencial (atrasoVencido do rp-core, o mesmo do celular)
+    { const LSTp = [{ codigo:'501.082.003', falta:185, atraso:185, atrasoDesde:'22/10/2026' }, { codigo:'501.059.002', falta:4, atraso:4, atrasoDesde:'22/10/2026' },
+                    { codigo:'501.088.007', falta:140, atraso:140, atrasoDesde:'20/10/2026' }, { codigo:'501.083.121', falta:320, atraso:0 },
+                    { codigo:'501.999.001', falta:10, atraso:10, atrasoDesde:'21/10/2026' }];
+      const PT = { '501082003':45.5, '501059002':80.25, '501088007':120.1234, '501083121':99 };   // o 501.999.001 sem pontos
+      const AMp = _gpxAtrasoMontar(LA.linhas, 2530 / 527, PT), AHp = _gpxAtrasoHtml(AMp, PA);
+      const AVp = atrasoVencido(LSTp, { 501082003:1.58, 501059002:2.29, 501088007:1.77, 501083121:2.89 }, 2530, PT);
+      const tot = fmtN(Math.round(140 * 120.1234 + 185 * 45.5 + 4 * 80.25));
+      ok('quadro: a coluna PTS por código (o programado de hoje fora), "sem pontos" no código sem eles, e o total = o card ATRASO do gerencial',
+         [AMp.venc.map(x => x.pts == null ? null : Math.round(x.pts)), AMp.semPts, Math.round(AMp.ptsVenc), Math.round(AVp.pts), AVp.semPts,
+          new RegExp('<td class="n">' + tot.replace('.', '\\.') + '</td></tr>').test(AHp), AHp.includes(' · ' + tot + ' pts'),
+          /<td class="n"><span style="color:var\(--warn\)">sem pontos<\/span><\/td><\/tr>/.test(AHp), /1 código sem pontos no cadastro fica fora dos pontos/.test(AHp)],
+         [[16817, null, 8418, 321], 1, Math.round(140 * 120.1234 + 185 * 45.5 + 4 * 80.25), Math.round(140 * 120.1234 + 185 * 45.5 + 4 * 80.25), 1, true, true, true, true]);
+      ok('quadro sem os pontos do cadastro neste computador: a coluna "—" (nunca "sem pontos" em todas), sem total de pontos, e o aviso',
+         [/sem pontos<\/span>/.test(_gpxAtrasoHtml(AM, PA)), / pts</.test(_gpxAtrasoHtml(AM, PA)), /PTS: sem os pontos do cadastro neste computador/.test(_gpxAtrasoHtml(AM, PA)), AM.ptsVenc, AM.semPts],
+         [false, false, true, null, 0]); }
     { // revisão da v7.227.0 (v7.228.0): 1 cx vencida (menos de 1 min de linha) tem UEP — "menos de 1 min", nunca "sem UEP"
       const L1 = _gpxDivida([{ codigo:'501.088.007', desc:'X', cor:'', falta:1, atraso:1, atrasoDesde:'10/11/2026' }], [{ codigo:'501.088.007', uepCx:1.77 }], 0);
       const P1 = _gpxMontar([it('26/10/2026','25340',700,1.69)], new Date(2026, 9, 23), L1.uep, 425, 2530, 5, L1.uepAtr);
@@ -5387,7 +5404,7 @@ console.log('\n── estudo de UEP ──');
     ok('quadro sem a lista por código (backend antigo) ou sem vencido: nada',
        [_gpxAtrasoHtml(_gpxAtrasoMontar(null, 4.8), PA), _gpxAtrasoHtml(_gpxAtrasoMontar([{ codigo:'1', desc:'X', cor:'', desde:'', atr:0, hoje:50, u:2 }], 4.8), PA)], ['', '']);
     ok('quadro do atraso só na tela (papel e diretoria mostram só as semanas) e os desenhos não fazem conta de carga',
-       [/A = _gpxAtrasoMontar\(P\.divLinhas, P\.porMin\);\s*corpo\.innerHTML = _gpxSemanasHtml\(P, W\) \+ _gpxAtrasoHtml\(A, P\)/.test(pega('function renderProxDias(')),
+       [/A = _gpxAtrasoMontar\(P\.divLinhas, P\.porMin, _taktPtsMapa\(_pdiaPcCat\(\)\)\);\s*corpo\.innerHTML = _gpxSemanasHtml\(P, W\) \+ _gpxAtrasoHtml\(A, P\)/.test(pega('function renderProxDias(')),
         /_gpxAtrasoHtml/.test(pega('function _uepDocHtml(') + pega('function _dirCartHtml(') + pega('function _gpxSemanasHtml(')),
         /uepCx|_gpxDivida\(|_cartAberta\(/.test(pega('function _gpxAtrasoHtml(') + pega('function _gpxSemanasBlocos('))], [true, false, false]);
     // v7.181.0: o ANEXO do papel saiu; quem diz isso é o tooltip do cartão do dia
@@ -6222,7 +6239,7 @@ process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não te
   const card = (prog, prods, metaUep, semFn, cat, o) => { o = o || {};
     const C = { PONTOS_DIA:{ programacao:prog, metaUep, lidoEm: o.lido === false ? undefined : (o.lido || T0) }, PRODUTOS:prods, fmtN, plural, p2, dtToStr, Date,   // o Date de fora: o dtToStr confere instanceof Date
       hojeStr: () => o.hoje || '11/11/2026', localStorage: ls, PONTOS_DIA_FALHA: !!o.falhaDia,
-      atrasoVencido: semFn ? undefined : atrasoVencido, PROD_CAT_TS: cat && cat.ts != null ? cat.ts : 1, PROD_CAT_FALHA: !!(cat && cat.falha) };
+      atrasoVencido: semFn ? undefined : atrasoVencido, atrasoPtsTxt: semFn ? () => '' : atrasoPtsTxt, PROD_CAT_TS: cat && cat.ts != null ? cat.ts : 1, PROD_CAT_FALHA: !!(cat && cat.falha) };
     vm.createContext(C); vm.runInContext(AJ + trecho + ';globalThis.R = atrKpi;', C); return C.R; };
   const LST = [{ codigo:'501070001', falta:100, atraso:100, atrasoDesde:'06/11/2026' }, { codigo:'501071004', falta:300, atraso:200, atrasoDesde:'10/11/2026' },
                { codigo:'501085118', falta:135, atraso:0 }];
@@ -6232,6 +6249,11 @@ process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não te
   ok('celular: o card ATRASO em horas de linha (o MESMO atrasoVencido do rp-core), caixas e desde; o programado de hoje fica fora; vermelho, a largura toda',
      card({ lista:LST, atrasoTotal:300 }, PRODS, 2761),
      { l:'⚠ ATRASO · LOTES VENCIDOS', v:hm(min) + '<small>de linha</small>', sub:'300 cx · desde 06/11', c:'red larga atr' });
+  // 1.52.0 (PPCP, 16/11/2026: "em pontos qtdes de atraso?"): os pontos ao lado das caixas — o MESMO texto do PC (atrasoPtsTxt)
+  ok('celular: os pontos do atraso ao lado das caixas (só o vencido; o programado de hoje fora); código sem pontos é dito',
+     [card({ lista:LST, atrasoTotal:300 }, PRODS.map((p, i) => Object.assign({ pontos:[50, 40.5, 70][i] }, p)), 2761).sub,
+      card({ lista:LST, atrasoTotal:300 }, PRODS.map((p, i) => Object.assign({ pontos:[50, 0, 70][i] }, p)), 2761).sub],
+     ['300 cx · 13.100 pts · desde 06/11', '300 cx · 5.000 pts (sem os pontos de 1 código) · desde 06/11']);
   ok('celular: código sem UEP no cadastro leva * e fica só nas caixas; cadastro ainda não lido → em caixas, "lendo o cadastro…"; lido nesta sessão e sem UEP → "sem UEP no cadastro"',
      [card({ lista:LST.concat([{ codigo:'9', falta:10, atraso:10, atrasoDesde:'21/10/2026' }]), atrasoTotal:310 }, PRODS, 2761).v.includes('*<small>'),
       card({ lista:LST.concat([{ codigo:'9', falta:10, atraso:10, atrasoDesde:'21/10/2026' }]), atrasoTotal:310 }, PRODS, 2761).sub,
@@ -6359,7 +6381,7 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
    'function _gerHoraJulga(', 'function _gerHoraLinha(', 'function _gerAtrasoKpi(', 'function _gerUepCards(', 'function _gerCxCards(', 'function _metaPartes(',
    'function _metaPartesTxt(', 'function _gerAnaliseUep(', 'function _gerKpiHtml(', 'function _gerUepModelo(',
    'function _uepCardLeitura(', 'function _tvUepMontar(', 'function _tvUepDoProduto(', 'function _gerHorasHist(', 'function _gerInfoImpressao(',
-   'function parseBR(', 'function _fdsNome(', 'function _progHojeCx(', 'function _gerAnaliseUepHtml(']
+   'function parseBR(', 'function _fdsNome(', 'function _progHojeCx(', 'function _gerAnaliseUepHtml(', 'function _taktPtsMapa(']
     .forEach(f => vm.runInContext(pega(f), C));
   // o "hoje" é FIXO (sexta 13/11/2026, o retrato): desde a v7.248.0 o sábado e o
   // domingo são todo hora extra, e o teste não pode mudar com o dia em que roda
@@ -6515,6 +6537,19 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
      [At.l, At.v, At.sub, At.c], ['⚠ ATRASO · LOTES VENCIDOS', '0h46 <small>de linha</small>', '120 cx · desde 12/11', 'red']);
   ok('com atraso, ele é o 2º card da 1ª linha',
      R('_gerUepCards(_G, _k)', { _G:G, _k:k }).map(c => c.l).slice(0, 2), ['UEP DO DIA · META 2.761', '⚠ ATRASO · LOTES VENCIDOS']);
+  ok('rp-core antigo em cache: os dois painéis têm a rede do atrasoPtsTxt (o card fica sem os pontos, não quebra)',
+     ['ritmoprod_embalagem_v7.html', 'ritmoprod_mobile.html'].map(f => /if \(typeof window\.atrasoPtsTxt !== 'function'\) window\.atrasoPtsTxt = function\(\)\{ return ''; \};/.test(fs.readFileSync(path.join(__dirname, f), 'utf8'))),
+     [true, true]);
+  // v7.249.0 (PPCP, 16/11/2026: "em pontos qtdes de atraso?"): os pontos do atraso ao lado das caixas, pelo cadastro de hoje
+  R(`_CAT = [{ codigo:'501.089.003', uep:2, pontos:61.4237 }];`);
+  ok('ATRASO em pontos: 120 cx × 61,4237 pts = 7.371 pts ao lado das caixas; as horas não mudam; o title diz que é valor, não tempo',
+     [R('_gerAtrasoKpi()').v, R('_gerAtrasoKpi()').sub, /PONTOS do cadastro de hoje: o valor do que está atrasado, não o tempo/.test(R('_gerAtrasoKpi()').t)],
+     ['0h46 <small>de linha</small>', '120 cx · 7.371 pts · desde 12/11', true]);
+  R(`_CAT = [{ codigo:'501.089.003', pontos:61.4237 }];`);
+  ok('ATRASO sem UEP no cadastro e com pontos: as caixas no número, os pontos no texto',
+     [R('_gerAtrasoKpi()').v, R('_gerAtrasoKpi()').sub], ['120 <small>cx</small>', '7.371 pts · desde 12/11 · sem UEP no cadastro']);
+  R(`_CAT = [{ codigo:'501.089.003', uep:2 }];`);
+  ok('ATRASO com o cadastro sem pontos: o card de antes, sem "0 pts"', R('_gerAtrasoKpi()').sub, '120 cx · desde 12/11');
   R(`_CAT = null;`);
   ok('sem o cadastro neste computador: as caixas e "lendo o cadastro…"; a leitura falhou: "cadastro não lido", nunca "lendo" para sempre',
      [R('_gerAtrasoKpi()').v, R('_gerAtrasoKpi()').sub, R('GER_CAT_FALHA = true; _gerAtrasoKpi().sub')],

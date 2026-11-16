@@ -4143,6 +4143,8 @@ if (_v7Instalado()) _v7EscondeBotao();
     // O fim de semana fica com a leitura antiga até o cache renovar.
     if (typeof window.histDiaFds !== 'function') window.histDiaFds = function(d){ return d; };
     if (typeof window.uepDiaHe !== 'function') window.uepDiaHe = function(d){ return Number(d && d.uepHe) || 0; };
+    // rp-core 1.20.0: os pontos do card ATRASO — com o antigo, o card fica sem eles
+    if (typeof window.atrasoPtsTxt !== 'function') window.atrasoPtsTxt = function(){ return ''; };
     return;
   }
   var n = 0;
@@ -4173,7 +4175,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.248.3';
+const APP_VER = '7.249.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -13425,19 +13427,24 @@ function _gerUepCards(G, k, velho){
 // O ATRASO de lotes vencidos, em horas de linha: o MESMO número do card ATRASO
 // do celular e da faixa da aba ⚖ UEP (atrasoVencido no rp-core, a paridade com o
 // _gpxMontar é testada). Sem o cadastro neste computador, as caixas.
+// v7.249.0 (PPCP, 16/11/2026: "em pontos qtdes de atraso?"): os PONTOS do
+// atraso ao lado das caixas — fato, o valor do que está atrasado (o tempo é a
+// UEP). Pelo cadastro de hoje; a conta e o texto são do rp-core, os mesmos do celular.
 function _gerAtrasoKpi(){
   const prog=PONTOS_DIA.programacao||{};
   const cat=_pdiaPcCat();
   const uepDe={}; (cat||[]).forEach(p=>{ if(p&&Number(p.uep)>0) uepDe[p.codigo]=Number(p.uep); });
-  const a=typeof atrasoVencido==='function'?atrasoVencido(prog.lista, uepDe, PONTOS_DIA.metaUep):null;
+  const a=typeof atrasoVencido==='function'?atrasoVencido(prog.lista, uepDe, PONTOS_DIA.metaUep, _taktPtsMapa(cat)):null;
   const l='⚠ ATRASO · LOTES VENCIDOS';
   if(a&&a.n>0){
+    const pts=atrasoPtsTxt(a), tPts=pts?' Pontos = as mesmas caixas × os PONTOS do cadastro de hoje: o valor do que está atrasado, não o tempo.':'';
     if(a.min!=null) return { l, c:'red',
       v:(a.min>0?_fmtHM(a.min):'&lt;1 min')+(a.semUep?'*':'')+' <small>de linha</small>',
-      sub:`${fmtN(a.cx)} cx${a.desde?' · desde '+a.desde:''}${a.semUep?` · * ${plural(a.semUep,'código sem UEP fica','códigos sem UEP ficam')} só nas caixas`:''}`,
-      t:'Caixas de lotes com data anterior a hoje que ainda faltam, em horas de linha no ritmo da meta (UEP ÷ meta × 527 min). O programado de hoje não entra.' };
+      sub:`${fmtN(a.cx)} cx${pts}${a.desde?' · desde '+a.desde:''}${a.semUep?` · * ${plural(a.semUep,'código sem UEP fica','códigos sem UEP ficam')} só nas caixas`:''}`,
+      t:'Caixas de lotes com data anterior a hoje que ainda faltam, em horas de linha no ritmo da meta (UEP ÷ meta × 527 min). O programado de hoje não entra.'+tPts };
     return { l, c:'red', v:fmtN(a.cx)+' <small>cx</small>',
-      sub:`${a.desde?'desde '+a.desde+' · ':''}${cat?'sem UEP no cadastro':GER_CAT_FALHA?'cadastro não lido (abra a ⚖ UEP para tentar de novo)':'lendo o cadastro…'}` };
+      sub:`${pts?pts.slice(3)+' · ':''}${a.desde?'desde '+a.desde+' · ':''}${cat?'sem UEP no cadastro':GER_CAT_FALHA?'cadastro não lido (abra a ⚖ UEP para tentar de novo)':'lendo o cadastro…'}`,
+      t:tPts.trim() };
   }
   if(!a&&Number(prog.atrasoTotal)>0) return { l, c:'red', v:fmtN(prog.atrasoTotal)+' <small>cx</small>', sub:'cx de lotes com data anterior a hoje' };
   return null;
@@ -20701,12 +20708,20 @@ function _gpxSemanasHtml(P, W){
 // código, o mesmo que a PROGRAMACAO marca EM ATRASO (v7.156.0: o programado de
 // hoje saiu daqui; ele está no cartão HOJE e não é atraso). Só na tela da aba
 // ⚖ UEP: a folha 2 do papel não tem espaço, e o quadro é de conferência.
-function _gpxAtrasoMontar(linhas, porMin){
+// v7.249.0: a coluna PTS — as caixas vencidas × os PONTOS do cadastro de hoje
+// (`ptsDe` = o _taktPtsMapa: código só com dígitos → pontos/cx). O total fecha
+// com o card ATRASO do gerencial (o atrasoVencido do rp-core; o teste confere).
+// Sem os pontos do cadastro neste computador (ptsDe null: não lido, ou sem a
+// coluna PONTOS) a coluna é "—", nunca "sem pontos" em todas as linhas.
+function _gpxAtrasoMontar(linhas, porMin, ptsDe){
   if(!Array.isArray(linhas)) return null;
+  const ptsCx = c => (ptsDe && ptsDe[String(c || '').replace(/\D/g, '')]) || null;
   const venc = linhas.filter(l => l.atr > 0).map(l => ({ codigo:l.codigo, nome:nomeComCor(l.desc, l.cor), desde:l.desde, cx:l.atr,
-      uep: l.u ? l.atr * l.u : null, min: l.u ? l.atr * l.u / porMin : null }))
+      uep: l.u ? l.atr * l.u : null, min: l.u ? l.atr * l.u / porMin : null, pts: ptsCx(l.codigo) ? l.atr * ptsCx(l.codigo) : null }))
     .sort((a,b) => (_cartNum(a.desde) || 99999999) - (_cartNum(b.desde) || 99999999) || b.cx - a.cx);
-  return { venc, cxVenc: venc.reduce((a,x) => a + x.cx, 0), semUep: venc.filter(x => x.uep == null).length };
+  const comPts = venc.filter(x => x.pts != null);
+  return { venc, cxVenc: venc.reduce((a,x) => a + x.cx, 0), semUep: venc.filter(x => x.uep == null).length,
+           semCad: !ptsDe, ptsVenc: comPts.length ? comPts.reduce((a,x) => a + x.pts, 0) : null, semPts: ptsDe ? venc.length - comPts.length : 0 };
 }
 // Desenho: as linhas vêm do _gpxAtrasoMontar e o total do `conta` do
 // _gpxMontar (o mesmo atraso do cartão HOJE).
@@ -20714,13 +20729,14 @@ function _gpxAtrasoHtml(A, P){
   if(!A || !A.venc.length) return '';
   const k = P && P.conta;
   const uep = v => v == null ? '<span style="color:var(--warn)">sem UEP</span>' : fmtN(Math.round(v));
-  const rows = A.venc.map(x => `<tr><td class="n0">${_rpEsc(x.codigo)}</td><td>${_rpEsc(x.nome)}</td><td class="n0">${_rpEsc(x.desde.slice(0,5) || '—')}</td><td class="n">${fmtN(x.cx)}</td><td class="n">${uep(x.uep)}</td><td class="n">${x.min == null ? '—' : _fmtHM(x.min)}</td></tr>`).join('');
+  const pts = v => A.semCad ? '—' : v == null ? '<span style="color:var(--warn)">sem pontos</span>' : fmtN(Math.round(v));
+  const rows = A.venc.map(x => `<tr><td class="n0">${_rpEsc(x.codigo)}</td><td>${_rpEsc(x.nome)}</td><td class="n0">${_rpEsc(x.desde.slice(0,5) || '—')}</td><td class="n">${fmtN(x.cx)}</td><td class="n">${uep(x.uep)}</td><td class="n">${x.min == null ? '—' : _fmtHM(x.min)}</td><td class="n">${pts(x.pts)}</td></tr>`).join('');
   // v7.198.0 (aba ⚖ UEP em sub-abas, "enxugar"): recolhido, com o total no título — aberto, fica aberto no refresh
-  const tot = `${fmtN(A.cxVenc)} cx${k && k.uVenc != null ? ' · ' + fmtN(Math.round(k.uVenc)) + ' UEP' : ''}${k && k.venc != null ? ' · ' + _fmtHM(k.venc) : ''}`;
+  const tot = `${fmtN(A.cxVenc)} cx${k && k.uVenc != null ? ' · ' + fmtN(Math.round(k.uVenc)) + ' UEP' : ''}${k && k.venc != null ? ' · ' + _fmtHM(k.venc) : ''}${A.ptsVenc != null ? ' · ' + fmtN(Math.round(A.ptsVenc)) + ' pts' : ''}`;
   return `<details class="gpx-atr"${GPX_ATR_ABERTO ? ' open' : ''} ontoggle="_gpxAtrToggle(this.open)"><summary class="gpx-atr-t"><b>ATRASO — CONFERÊNCIA</b> · <b>${tot}</b> · ${plural(A.venc.length, 'código', 'códigos')}<span title="Vencido com saldo na PROGRAMACAO (STATUS EM ATRASO), por código. Linha encerrada com X não entra; o programado de hoje não é atraso."> · vencido com saldo na PROGRAMACAO · o programado de hoje não é atraso</span></summary>
-    <table><thead><tr><th>CÓDIGO</th><th>PRODUTO</th><th>DESDE</th><th class="n">CX</th><th class="n">UEP</th><th class="n">HORAS</th></tr></thead><tbody>${rows}
-    <tr class="c f"><td colspan="3">ATRASO</td><td class="n">${fmtN(A.cxVenc)}</td><td class="n">${k && k.uVenc != null ? fmtN(Math.round(k.uVenc)) : '—'}</td><td class="n">${k && k.venc != null ? _fmtHM(k.venc) : '—'}</td></tr>
-    </tbody></table>${A.semUep ? `<div class="gpx-atr-p">${plural(A.semUep, 'código sem UEP fica', 'códigos sem UEP ficam')} fora da UEP e das horas (só nas caixas) — ver a lista SEM UEP abaixo.</div>` : ''}</details>`;
+    <table><thead><tr><th>CÓDIGO</th><th>PRODUTO</th><th>DESDE</th><th class="n">CX</th><th class="n">UEP</th><th class="n">HORAS</th><th class="n" title="Caixas vencidas × os PONTOS do cadastro de hoje: o valor do que está atrasado, não o tempo.">PTS</th></tr></thead><tbody>${rows}
+    <tr class="c f"><td colspan="3">ATRASO</td><td class="n">${fmtN(A.cxVenc)}</td><td class="n">${k && k.uVenc != null ? fmtN(Math.round(k.uVenc)) : '—'}</td><td class="n">${k && k.venc != null ? _fmtHM(k.venc) : '—'}</td><td class="n">${A.ptsVenc != null ? fmtN(Math.round(A.ptsVenc)) : '—'}</td></tr>
+    </tbody></table>${A.semUep ? `<div class="gpx-atr-p">${plural(A.semUep, 'código sem UEP fica', 'códigos sem UEP ficam')} fora da UEP e das horas (só nas caixas) — ver a lista SEM UEP abaixo.</div>` : ''}${A.semPts ? `<div class="gpx-atr-p">${plural(A.semPts, 'código sem pontos no cadastro fica', 'códigos sem pontos no cadastro ficam')} fora dos pontos.</div>` : ''}${A.semCad ? '<div class="gpx-atr-p">PTS: sem os pontos do cadastro neste computador (não lido, ou sem a coluna PONTOS).</div>' : ''}</details>`;
 }
 let GPX_CARREGANDO = false, GPX_TENT = 0, GPX_ATR_ABERTO = false;
 function _gpxAtrToggle(aberto){ GPX_ATR_ABERTO = !!aberto; }
@@ -20783,7 +20799,7 @@ function renderProxDias(){
   }
   const hoje = new Date(), P = _gpxDoPainel(_gpxNSemanas(hoje, PROG_FERIADOS));
   if(P.falha){ corpo.innerHTML = '<div class="empty-msg" style="padding:14px 16px">A programação não traz UEP (cadastro sem UEP ou .gs anterior à v5.13) — sem ela não há como converter a carteira em horas.</div>'; sb(_uepSubProx(null, 'sem-uep')); sbA(_uepSubAtr(null, null, 'sem-uep')); return; }
-  const W = _gpxSemanasMontar(P, hoje, _gpxPassadosDoPainel(hoje)), A = _gpxAtrasoMontar(P.divLinhas, P.porMin);
+  const W = _gpxSemanasMontar(P, hoje, _gpxPassadosDoPainel(hoje)), A = _gpxAtrasoMontar(P.divLinhas, P.porMin, _taktPtsMapa(_pdiaPcCat()));
   corpo.innerHTML = _gpxSemanasHtml(P, W) + _gpxAtrasoHtml(A, P);
   sb(_uepSubProx(W));
   // sem a lista por código: o dia ainda não foi lido ('…'), nada em aberto, ou o .gs sem o atraso por código

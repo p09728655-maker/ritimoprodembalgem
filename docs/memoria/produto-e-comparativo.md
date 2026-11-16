@@ -429,7 +429,8 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   recalculavam com o cadastro de AGORA, e trocar a tabela mudava todo o
   passado. Célula vazia → cadastro de agora; **zero é valor**.
   - A **programação** (carteira, PROGRAMAÇÃO × CAPACIDADE, diretoria) continua
-    `qtde × cadastro` — é futuro, vale a tabela nova.
+    `qtde × cadastro` — é futuro, vale a tabela nova. O ATRASO em pontos
+    (v7.249.0) também: caixas vencidas × cadastro de hoje.
   - O `trocarProdutoLancamento` regrava o PONTOS da linha com o cadastro de
     agora (é o produto certo daquela linha) — continua igual.
   - ⚠ Erro de cadastro também fica congelado: a BANQUETA VERSATIL CINAMOMO

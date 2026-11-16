@@ -200,7 +200,9 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     *"mostra o atraso separado para conferência"*): só o VENCIDO, código por
     código (o `atraso` da lista; `_gpxDivida` → `linhas`), do `atrasoDesde`
     mais antigo, fechando no mesmo ATRASO do cartão HOJE. Código sem UEP entra
-    com as caixas e "sem UEP". O programado de hoje não aparece aqui;
+    com as caixas e "sem UEP". O programado de hoje não aparece aqui
+    (v7.249.0: + a coluna PTS — ver *O ATRASO TAMBÉM EM PONTOS* em
+    `gerencial.md`);
   - papel da UEP e diretoria: só os próximos dias (sem cartão HOJE e sem
     quadro). O ANEXO diz que cada dia leva só os lotes dele.
   - ⚠ A aba PLANO (carteira em UEP) **ainda** põe a dívida nos primeiros dias

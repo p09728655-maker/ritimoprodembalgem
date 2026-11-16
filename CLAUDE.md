@@ -315,7 +315,9 @@ via Google Apps Script (JSONP).
   veredito por produto, as paradas na faixa (`pdiaParMontar`); a barra é a
   parte da UEP do dia COM a hora extra.
 - Card ATRASO do celular: `atrasoVencido` (rp-core), o mesmo número do cartão do
-  PC; guardado no aparelho (`rp_atr_ret`).
+  PC; guardado no aparelho (`rp_atr_ret`). Desde a v7.249.0 o card (PC e
+  celular) e o ATRASO — CONFERÊNCIA dizem também os PONTOS (cadastro de hoje;
+  `atrasoPtsTxt`): valor, não tempo; código sem pontos fora e dito, nunca 0.
 - Diretoria: um veredito só (a UEP); retrato guardado no aparelho; sem o
   `pollParadaTV` nem o `lerMediaHoras`.
 
