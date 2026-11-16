@@ -1099,6 +1099,8 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
     // O fim de semana fica com a leitura antiga até o cache renovar.
     if (typeof window.histDiaFds !== 'function') window.histDiaFds = function(d){ return d; };
     if (typeof window.uepDiaHe !== 'function') window.uepDiaHe = function(d){ return Number(d && d.uepHe) || 0; };
+    // rp-core 1.20.0: os pontos do card ATRASO — com o antigo, o card fica sem eles
+    if (typeof window.atrasoPtsTxt !== 'function') window.atrasoPtsTxt = function(){ return ''; };
     return;
   }
   var n = 0;
@@ -1131,7 +1133,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.51.2';
+const APP_VER   = '1.52.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -3799,7 +3801,11 @@ function renderGerencial(){
   // sem o atraso por código: o cartão em caixas, como era.
   const _prog = PONTOS_DIA.programacao || {lista:[],metaEfetiva:0,programadoHoje:0,atrasoTotal:0};
   const _uepDe = {}; (PRODUTOS || []).forEach(p => { if(p && Number(p.uep) > 0) _uepDe[p.codigo] = Number(p.uep); });
-  const _atr = typeof atrasoVencido === 'function' ? atrasoVencido(_prog.lista, _uepDe, PONTOS_DIA.metaUep) : null;
+  // 1.52.0 (PPCP, 16/11/2026: "em pontos qtdes de atraso?"): os PONTOS do atraso ao
+  // lado das caixas, pelo cadastro de hoje — a conta e o texto do rp-core, os do PC
+  const _ptsDe = {}; (PRODUTOS || []).forEach(p => { if(p && Number(p.pontos) > 0) _ptsDe[p.codigo] = Number(p.pontos); });
+  const _atr = typeof atrasoVencido === 'function' ? atrasoVencido(_prog.lista, _uepDe, PONTOS_DIA.metaUep, _ptsDe) : null;
+  const _pts = atrasoPtsTxt(_atr);
   const _hm = m => Math.floor(m/60) + 'h' + p2(Math.round(m) % 60);
   // Revisão: min 0 é atraso de menos de 1 min (tem UEP) — não "sem UEP"; o
   // cadastro guardado no aparelho (sem leitura nesta sessão) é dito; sem cadastro
@@ -3808,9 +3814,9 @@ function renderGerencial(){
   const atrKpi0 = _atr && _atr.n > 0
     ? (_atr.min != null
         ? {l:'⚠ ATRASO · LOTES VENCIDOS', v:(_atr.min > 0 ? _hm(_atr.min) : '&lt;1 min') + (_atr.semUep ? '*' : '') + '<small>de linha</small>',
-           sub:`${fmtN(_atr.cx)} cx${_atr.desde ? ' · desde ' + _atr.desde : ''}${_atr.semUep ? ` · * ${plural(_atr.semUep,'código sem UEP fica','códigos sem UEP ficam')} só nas caixas` : ''}${_guard}`, c:'red larga atr'}
+           sub:`${fmtN(_atr.cx)} cx${_pts}${_atr.desde ? ' · desde ' + _atr.desde : ''}${_atr.semUep ? ` · * ${plural(_atr.semUep,'código sem UEP fica','códigos sem UEP ficam')} só nas caixas` : ''}${_guard}`, c:'red larga atr'}
         : {l:'⚠ ATRASO · LOTES VENCIDOS', v:fmtN(_atr.cx) + '<small>cx</small>',
-           sub:`${_atr.desde ? 'desde ' + _atr.desde + ' · ' : ''}${PROD_CAT_TS ? 'sem UEP no cadastro' : PROD_CAT_FALHA ? 'cadastro não lido — tenta de novo em 3 min' : 'lendo o cadastro…'}`, c:'red larga atr'})
+           sub:`${_pts ? _pts.slice(3) + ' · ' : ''}${_atr.desde ? 'desde ' + _atr.desde + ' · ' : ''}${PROD_CAT_TS ? 'sem UEP no cadastro' : PROD_CAT_FALHA ? 'cadastro não lido — tenta de novo em 3 min' : 'lendo o cadastro…'}`, c:'red larga atr'})
     : (!_atr && _prog.atrasoTotal > 0
         ? {l:'⚠ ATRASO · LOTES VENCIDOS', v:fmtN(_prog.atrasoTotal) + '<small>cx</small>', sub:'cx de lotes com data anterior a hoje', c:'red larga atr'}
         : null);

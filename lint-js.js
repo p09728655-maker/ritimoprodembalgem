@@ -61,7 +61,7 @@ const G_MODULOS = [
   'RP_CORE','RP_PARADAS','p2','fmtN','fmtP','fmt1','plural','toMin','fromMin',
   'normHora','hojeStr','dtToStr','mergeMedias','calcAtrasoHoras','sc','efNoRitmo','slRitmo',
   'uepCard','UEP_META_PADRAO','UEP_MIN_DIA','uepPorHora','_uepHHMM','uepCelula','uepDiaMeta','uepDiaHe','histDiaFds','metaDiasParadas','metaMedianaUteis','uepHistResumo','uepFimDeSemana','uepCusto','uepCustoPeriodo','minSlotDecorrido',
-  'nomeComCor','_rpOk','PDIA_LARG','pdiaVol','pdiaBase','pdiaCurto','pdiaMontar','pdiaParMontar','PDIA_PAR_ROT_PX','atrasoVencido',
+  'nomeComCor','_rpOk','PDIA_LARG','pdiaVol','pdiaBase','pdiaCurto','pdiaMontar','pdiaParMontar','PDIA_PAR_ROT_PX','atrasoVencido','atrasoPtsTxt',
   'PARADA_A_INFORMAR','paradaAInformar',
   'UEP_HORA_TOL_MIN','uepHorasDia','uepHoraJulga','uepCxComHora','uepMinTxt','uepProj','uepDoProduto','uepGerMontar',
 ];

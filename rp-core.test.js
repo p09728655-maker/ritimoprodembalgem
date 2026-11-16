@@ -365,9 +365,31 @@ ok('sem meta do dia também não',
      [0, null, null, Math.round(27.2 / (UEP_META_PADRAO / 527))]);
 }
 
+// ── ATRASO EM PONTOS (rp-core 1.20.0, PPCP 16/11/2026: "em pontos qtdes de atraso?") ─────
+{
+  // o caso de 16/11: 410 cx vencidas desde 10/11; pontos = CUSTO REP do cadastro, com 4 casas
+  const L = [
+    { codigo:'501.089.003', falta:200, atraso:120, atrasoDesde:'12/11/2026' }, { codigo:'501071004', falta:290, atraso:290, atrasoDesde:'10/11/2026' },
+    { codigo:'501085118', falta:135, atraso:0 }
+  ];
+  const U = { 501089003:2, 501071004:2.92, 501085118:2.33 }, P = { '501089003':61.4237, '501.071.004':48.105, 501085118:70 };
+  const a = atrasoVencido(L, U, 2761, P);
+  ok('pontos do atraso: só as caixas vencidas × pontos/cx (o programado de hoje fica fora), soma crua; código casado pelos dígitos',
+     [a.pts, a.semPts, a.cx], [120 * 61.4237 + 290 * 48.105, 0, 410]);
+  ok('o texto do card: " · N pts", arredondado só na exibição',
+     atrasoPtsTxt(a), ' · ' + fmtN(Math.round(120 * 61.4237 + 290 * 48.105)) + ' pts');
+  const s1 = atrasoVencido(L, U, 2761, { 501089003:61.4237, 501071004:0 });
+  ok('código com pontos vazio ou 0 no cadastro fica fora da soma e é dito; as horas não mudam por causa dos pontos',
+     [s1.pts, s1.semPts, atrasoPtsTxt(s1), s1.min], [120 * 61.4237, 1, ' · ' + fmtN(Math.round(120 * 61.4237)) + ' pts (sem os pontos de 1 código)', a.min]);
+  ok('sem pontos em nenhum código, sem o mapa (painel antigo) ou sem atraso: pts null e o texto vazio — nunca "0 pts"',
+     [atrasoVencido(L, U, 2761, { 1:5 }).pts, atrasoVencido(L, U, 2761).pts, atrasoPtsTxt(atrasoVencido(L, U, 2761)),
+      atrasoVencido([{ codigo:'501085118', falta:135, atraso:0 }], U, 2761, P).pts, atrasoPtsTxt(null)],
+     [null, null, '', null, '']);
+}
+
 console.log('\n── os painéis não podem ter cópia própria ──');
 const FNS = ['toMin', 'fromMin', 'hojeStr', 'dtToStr', 'normHora', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'slRitmo',
-             'efNoRitmo', 'nomeComCor', '_rpOk', 'pdiaVol', 'pdiaBase', 'pdiaCurto', 'pdiaMontar', 'atrasoVencido',
+             'efNoRitmo', 'nomeComCor', '_rpOk', 'pdiaVol', 'pdiaBase', 'pdiaCurto', 'pdiaMontar', 'atrasoVencido', 'atrasoPtsTxt',
              // 1.18.0: o gerencial com a UEP na frente (PC e celular)
              'uepHorasDia', 'uepHoraJulga', 'uepCxComHora', 'uepMinTxt', 'uepProj', 'uepDoProduto', 'uepGerMontar'];
 const CONSTS = ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural'];

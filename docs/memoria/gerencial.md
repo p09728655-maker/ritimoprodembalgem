@@ -446,3 +446,39 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   velho sem veredito*): o `_tickCountdown` real com o relógio na mão (1 tique por
   minuto escondida; 12 min sem tique), o `_dadoVelho`, os dois cards no retrato
   de 16/11 13:36; 4 de 4 mutações pegas.
+
+## O ATRASO TAMBÉM EM PONTOS (v7.249.0 / mobile 1.52.0 / rp-core 1.20.0)
+- PPCP, 16/11/2026: *"em pontos qtdes de atraso?"* → prévia com dados de teste
+  (card do PC, card do celular e o quadro) → *"aprovado os pontos"*.
+- **Onde**: o card ⚠ ATRASO · LOTES VENCIDOS do gerencial do PC (e da diretoria,
+  a mesma função `_gerAtrasoKpi`) e do celular, no texto ao lado das caixas
+  (*410 cx · 21.321 pts · desde 10/11*); a coluna **PTS** do ATRASO —
+  CONFERÊNCIA (⚖ UEP › PRÓXIMOS DIAS), com o total no rodapé e no título. O
+  número grande do card continua em horas de linha. A faixa da ⚖ UEP (o cartão
+  ATRASO de ~166 px a 1280) e a Tela C da TV ficaram sem pontos.
+- **A conta é UMA** (`atrasoVencido(lista, uepDe, metaUep, ptsDe)` no rp-core →
+  `pts`, `semPts`) e o texto também (`atrasoPtsTxt`, o mesmo nos dois painéis);
+  o quadro soma por código no `_gpxAtrasoMontar(linhas, porMin, ptsDe)`, com o
+  `_taktPtsMapa(_pdiaPcCat())`, e o teste confere que o total dele = o `pts` do
+  card. Nenhuma leitura nova: o cadastro que os dois painéis já leem traz
+  `pontos` (`lerCatalogoProdutos`).
+- **Por quê pontos e não só UEP**: pontos = CUSTO REP do ERP — o VALOR do que
+  está atrasado. O TEMPO para recuperar é a UEP (horas de linha). Não somar nem
+  comparar um com o outro.
+- **Cadastro de HOJE** (o atraso é carteira, como a programação — ver *PONTOS:
+  a tabela é do ERP* em `produto-e-comparativo.md`); o passado congelado do log
+  não entra aqui.
+- **Sem dado não é zero**: código com pontos vazio ou 0 no cadastro (o catálogo
+  lê vazio como 0) fica fora da soma e é dito (*sem os pontos de 1 código*);
+  nenhum com pontos → o card não fala de pontos. No quadro, sem os pontos do
+  cadastro neste computador a coluna é "—" com um aviso (nunca "sem pontos" em
+  todas as linhas).
+- **rp-core antigo em cache**: a guarda do `<head>` dos dois HTMLs dá um
+  `atrasoPtsTxt` que devolve '' — o card fica como era, não quebra.
+- Medido no Chromium: PC 1280/1366/1920 o card não muda de altura (o texto do
+  pior caso — sem pontos e sem UEP — vai a 2 linhas dentro dos 96 px da
+  fileira); celular 360/390 o pior caso vai a 3 linhas (+26 px), 430 a 2; o caso
+  normal fica em 1 linha em todas. Testes: `rp-core.test.js` (*ATRASO EM
+  PONTOS*) e `relatorios.test.js` (card do PC, do celular, quadro = card, a
+  guarda); 7 de 7 mutações pegas (a 8ª era equivalente).
+

@@ -851,13 +851,21 @@ function pdiaParMontar(lista, F, o){
 // dígitos (a lista e o cadastro escrevem o código de jeitos diferentes).
 // Código sem UEP fica só nas caixas (`semUep`); sem nenhum com UEP, `min` null.
 // null = sem a lista por código, ou o .gs sem o `atraso` por código.
-function atrasoVencido(lista, uepDe, metaUep){
+// PONTOS (rp-core 1.20.0, PPCP 16/11/2026: "em pontos qtdes de atraso?"):
+// `ptsDe` = { código: PONTOS/cx } do cadastro de HOJE (CUSTO REP do ERP; o
+// atraso é carteira, vale a tabela de agora, como na programação). `pts` = a
+// soma crua das caixas vencidas × pontos — o VALOR do que está atrasado, não o
+// tempo (o tempo é a UEP). Código sem pontos (vazio ou 0 no cadastro) fica fora
+// da soma e é contado em `semPts`; sem nenhum com pontos, ou sem `ptsDe`, `pts`
+// null (nunca 0).
+function atrasoVencido(lista, uepDe, metaUep, ptsDe){
   if(!Array.isArray(lista)) return null;
   const k = c => String(c == null ? '' : c).replace(/\D/g, '');
   const dNum = s => { const m = /^(\d{2})\/(\d{2})\/(\d{4})/.exec(String(s || '')); return m ? Number(m[3] + m[2] + m[1]) : null; };
-  const u = {};
+  const u = {}, p = {};
   Object.keys(uepDe || {}).forEach(c => { const v = Number(uepDe[c]); if(v > 0) u[k(c)] = v; });
-  let n = 0, cx = 0, uep = 0, semUep = 0, desde = '', dMin = null, temAtr = true;
+  Object.keys(ptsDe || {}).forEach(c => { const v = Number(ptsDe[c]); if(v > 0) p[k(c)] = v; });
+  let n = 0, cx = 0, uep = 0, semUep = 0, pts = 0, semPts = 0, desde = '', dMin = null, temAtr = true;
   lista.forEach(x => {
     if(!x) return;
     const f = Number(x.falta) || 0;
@@ -868,12 +876,22 @@ function atrasoVencido(lista, uepDe, metaUep){
     n++; cx += a;
     const uc = u[k(x.codigo)];
     if(uc) uep += a * uc; else semUep++;
+    const pc = p[k(x.codigo)];
+    if(pc) pts += a * pc; else semPts++;
     const d = dNum(x.atrasoDesde);
     if(d != null && (dMin == null || d < dMin)){ dMin = d; desde = String(x.atrasoDesde).slice(0, 5); }
   });
   if(!temAtr) return null;
   const meta = Number(metaUep) > 0 ? Number(metaUep) : UEP_META_PADRAO;
-  return { n, cx, uep, min: n > semUep ? Math.round(uep / (meta / UEP_MIN_DIA)) : null, semUep, desde };
+  return { n, cx, uep, min: n > semUep ? Math.round(uep / (meta / UEP_MIN_DIA)) : null, semUep, desde,
+           pts: n > semPts ? pts : null, semPts };
+}
+// O texto dos pontos do card ATRASO, o MESMO no PC e no celular (1.20.0):
+// " · 25.338 pts", arredondado só aqui. Código sem pontos fica fora da soma e é
+// dito; sem nenhum com pontos (ou sem `a`), '' — o card não mostra pontos, nunca 0.
+function atrasoPtsTxt(a){
+  if(!a || a.pts == null) return '';
+  return ` · ${fmtN(Math.round(a.pts))} pts${a.semPts ? ` (sem os pontos de ${plural(a.semPts, 'código', 'códigos')})` : ''}`;
 }
 
 // ── Identificação do módulo ─────────────────────────────────────────────────
@@ -901,10 +919,10 @@ function paradaAInformar(tipo){
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.19.0',
+  versao: '1.20.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
         'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepDiaHe', 'histDiaFds', 'metaDiasParadas', 'metaMedianaUteis', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido',
-        'pdiaVol', 'pdiaBase', 'pdiaCurto', 'pdiaMontar', 'pdiaParMontar', 'atrasoVencido', 'paradaAInformar',
+        'pdiaVol', 'pdiaBase', 'pdiaCurto', 'pdiaMontar', 'pdiaParMontar', 'atrasoVencido', 'atrasoPtsTxt', 'paradaAInformar',
         'uepHorasDia', 'uepHoraJulga', 'uepCxComHora', 'uepMinTxt', 'uepProj', 'uepDoProduto', 'uepGerMontar']
 };

@@ -11,6 +11,25 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.249.0 · mobile 1.52.0 · rp-core 1.20.0 — 16/11/2026 · o atraso também em pontos
+
+O PPCP pediu o atraso em pontos (*"em pontos qtdes de atraso?"*), conferiu a
+prévia e aprovou.
+
+- **Card ⚠ ATRASO · LOTES VENCIDOS** (gerencial do PC, diretoria e celular): ao
+  lado das caixas, os pontos do que está vencido — *410 cx · 21.321 pts · desde
+  10/11*. O número grande continua em horas de linha.
+- **ATRASO — CONFERÊNCIA** (⚖ UEP › PRÓXIMOS DIAS): coluna **PTS** por código, o
+  total no rodapé e no título do quadro. O total é o mesmo número do card.
+- Pontos = caixas vencidas × PONTOS do cadastro de hoje (CUSTO REP do ERP). É o
+  valor do que está atrasado, não o tempo: o tempo é a UEP (horas de linha).
+- Código sem pontos no cadastro fica fora da soma e é dito (*sem os pontos de 1
+  código*); sem pontos em nenhum código, o card não mostra pontos (nunca *0 pts*).
+- **Atenção:** número novo no card e no quadro; os números que já existiam
+  (horas, caixas, UEP) não mudam. Sem o `.gs` novo: nada a colar.
+
+---
+
 ## v7.248.3 — 16/11/2026 · o PC atualiza na hora certa; dado velho sem veredito
 
 O PPCP comparou a diretoria com o gerencial do PC e viu números diferentes
