@@ -197,12 +197,14 @@ via Google Apps Script (JSONP).
   `=== true` (com `!== false`, a config salva antes ligaria a tela na TV da
   fábrica no primeiro deploy).
 - F e G: escala medida (`_tvUepCabe`, `--tvu-k`) e o gráfico da G no tamanho
-  da caixa (`_tvGSvg(m, selo, dim)`); os dois números do agora sempre. Mexeu
+  da caixa (`_tvGSvg(m, selo, dim)`); na G, o número do FEITO sempre. Mexeu
   em texto ou tamanho: medir na TV e no gerencial, ALTURA e largura.
-- G com UM veredito (v7.256.0): nenhum cartão diz se a meta sai — o "A META
-  NÃO SAI" tinha tolerância zero e brigava com o NO RITMO; a hora da meta mora
-  só no gráfico. Minutos com o sentido por extenso (`2 min ATRÁS`), a falta em
-  caixas.
+- G (v7.257.0, "menos informação, mais visibilidade"): UM veredito, o selo de
+  sempre — nunca ADIANTADO/ATRASADO por minutos (o PPCP escolheu a variante A);
+  minutos enormes e o sentido por extenso (À FRENTE / ATRÁS); a falta em UEP e
+  em caixas; sem projeção (nem cartão "a meta sai", nem pontilhado); só o FEITO
+  tem número no gráfico; sem o rodapé "1 UEP = …". ⚠ Número nunca na linha
+  `.tvu-nome` (corta com "…").
 - Tela cheia de PARADA: poll de 15 s só na TV (`_paradaNaTV`); a parada sem FIM
   é a aberta; o START é no celular. PAROU AGORA, motivo depois: TIPO
   `A INFORMAR`.

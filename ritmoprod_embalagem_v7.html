@@ -1666,17 +1666,34 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvg-graf{margin:0;min-width:0;min-height:0;display:flex;flex-direction:column;gap:clamp(4px,1vh,10px)}
 .tvg-svg{flex:1;min-height:0;width:100%;height:100%;display:block}
 .tvg-svg text{font-family:var(--font-d)}
-.tvg-svg .tvg-t0{font-family:var(--font-h);font-weight:700;font-size:54px;fill:var(--txt)}
-.tvg-svg .tvg-t1{font-family:var(--font-h);font-weight:600;font-size:42px;fill:var(--txt2)}
-.tvg-svg .tvg-t2{font-family:var(--font-h);font-weight:600;font-size:34px;fill:var(--txt2)}
-.tvg-leg{font-size:calc(var(--tvu-k,1)*clamp(16px,min(1.7vw,3vh),34px))}
-.tvg-sw{display:inline-block;width:64px;height:0}
-.tvg-sw.f{border-top:11px solid var(--txt);border-radius:6px}
-.tvg-sw.e{border-top:7px dashed var(--txt2)}
-.tvg-sw.p{border-top:7px dotted var(--txt)}
+.tvg-svg .tvg-t0{font-family:var(--font-h);font-weight:700;font-size:80px;fill:var(--txt)}
+.tvg-svg .tvg-tm{font-family:var(--font-h);font-weight:700;font-size:52px;fill:var(--acc)}
+.tvg-svg .tvg-t2{font-family:var(--font-h);font-weight:600;font-size:40px;fill:var(--txt2)}
+.tvg-sw{display:inline-block;width:72px;height:0}
+.tvg-sw.f{border-top:16px solid var(--txt);border-radius:8px}
+.tvg-sw.e{border-top:9px dashed var(--txt2)}
+.tvg-sw.m{border-top:7px solid var(--acc)}
 .tvg-cards{display:flex;flex-direction:column;gap:calc(var(--tvu-k,1)*clamp(10px,2vh,22px));min-width:0;min-height:0}
-.tvg-min{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:.22em;font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(60px,min(7.6vw,13vh),150px));line-height:.9;color:var(--txt);font-variant-numeric:tabular-nums}
-.tvg-dir{white-space:nowrap;font-size:calc(var(--tvu-k,1)*clamp(30px,min(3.8vw,6.6vh),76px));letter-spacing:2px}
+/* TELA G (v7.257.0): letra de TV a 10–15 m, tudo pela escala --tvu-k */
+#tv-slide-g{padding:10px 2.5vw 12px}
+#tv-slide-g .tvb-setor-lbl{font-size:clamp(18px,2.4vw,44px);color:var(--txt)}
+#tv-slide-g .tvb-clock-lbl{font-size:clamp(22px,3vw,52px)}
+#tv-slide-g .tvg-leg{font-family:var(--font-h);font-weight:600;letter-spacing:1px;color:var(--txt);font-size:calc(var(--tvu-k,1)*clamp(22px,min(2.5vw,4.4vh),50px))}
+#tv-slide-g .tvu-card{border-width:0}
+#tv-slide-g .tvu-card.tvg-sit.ok{border:6px solid var(--ok)}
+#tv-slide-g .tvu-card.tvg-sit.warn{border:6px solid var(--warn)}
+#tv-slide-g .tvu-card.tvg-sit.red{border:6px solid var(--red)}
+#tv-slide-g .tvg-selo{align-self:flex-start;font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(34px,min(4.4vw,7.8vh),88px));line-height:1;letter-spacing:2px;padding:.1em .4em;border-radius:12px;color:var(--bg);white-space:nowrap}
+#tv-slide-g .tvg-selo.ok{background:var(--ok)}
+#tv-slide-g .tvg-selo.warn{background:var(--warn)}
+#tv-slide-g .tvg-selo.red{background:var(--red)}
+#tv-slide-g .tvg-min{font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(80px,min(11vw,19.5vh),230px));line-height:.88;color:var(--txt);font-variant-numeric:tabular-nums;white-space:nowrap}
+#tv-slide-g .tvg-dir{font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(44px,min(6vw,10.6vh),124px));line-height:.95;color:var(--txt);letter-spacing:2px;white-space:nowrap}
+#tv-slide-g .tvg-uep{font-family:var(--font-h);font-weight:600;font-size:calc(var(--tvu-k,1)*clamp(20px,min(2.4vw,4.2vh),48px));color:var(--txt2);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tv-slide-g .tvg-lbl{font-family:var(--font-h);font-weight:600;font-size:calc(var(--tvu-k,1)*clamp(24px,min(2.8vw,4.9vh),56px));letter-spacing:4px;color:var(--txt);white-space:nowrap}
+#tv-slide-g .tvg-falta{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 .5em;font-family:var(--font-h);font-weight:600;color:var(--txt);font-size:calc(var(--tvu-k,1)*clamp(26px,min(3vw,5.3vh),60px))}
+#tv-slide-g .tvg-falta b{font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(64px,min(8.2vw,14.6vh),170px));line-height:.92;margin-right:.08em;font-variant-numeric:tabular-nums}
+#tv-slide-g .tvg-prod{font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(26px,min(3.1vw,5.5vh),62px));color:var(--txt);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #tv-slide-c .tvb-hero-num{font-size:clamp(90px,11vw,200px)}
 /* .tv-table/td/th têm fonte gigante (feita pra Tela A, 5 colunas curtas) —
    ajusta pro tamanho certo da Tela C (só CÓDIGO/FALTA, conteúdo curto). */
@@ -4181,7 +4198,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.256.0';
+const APP_VER = '7.257.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -27586,21 +27603,17 @@ function _tvUepMontar(D, ctx){
     if(f0 > agora) rest.push([Math.max(i0, agora), f0]);
   });
   const minRest = rest.reduce((s, r) => s + r[1] - r[0], 0);
-  // Caminho no ritmo da meta, de agora até `alvo` (ou até o fim da jornada).
-  const andar = (v0, alvo) => {
-    const p = [{ t:agora, v:v0 }];
-    let v = v0, chega = null;
-    for(const [de, ate] of rest){
-      if(de > p[p.length - 1].t) p.push({ t:de, v });
-      const cap = (ate - de) * porMin;
-      if(alvo != null && v + cap >= alvo){ const t = de + (alvo - v) / porMin; p.push({ t, v:alvo }); chega = t; v = alvo; break; }
-      v += cap; p.push({ t:ate, v });
-    }
-    return { p, chega };
-  };
+  // O esperado daqui até o fim da jornada, no ritmo da meta (o almoço fora).
+  // Até a v7.256.x havia também a PROJEÇÃO do feito (o pontilhado e a hora em
+  // que a meta sai): saiu na v7.257.0 — a TV do chão de fábrica não projeta
+  // fechamento (PPCP, 16/11/2026).
+  const espFut = [{ t:agora, v:esp }];
+  let vEsp = esp;
+  for(const [de, ate] of rest){
+    if(de > espFut[espFut.length - 1].t) espFut.push({ t:de, v:vEsp });
+    vEsp += (ate - de) * porMin; espFut.push({ t:ate, v:vEsp });
+  }
   const falta = Math.max(0, meta - feito);
-  const proj = falta > 0 ? andar(feito, meta) : null;
-  const espFut = andar(esp, null).p;
   const gaps = [];
   for(let i = 1; i < jorn.length; i++){
     const a = toMin(jorn[i - 1].inicio) + (minDe[jorn[i - 1].inicio] || 60), b = toMin(jorn[i].inicio);
@@ -27626,7 +27639,7 @@ function _tvUepMontar(D, ctx){
     horas: jorn.map(h => ({ rot:h.inicio, uep:h.uep, metaH:h.metaH, cls:h.cls, lancada:h.lancada,
                             andamento:h.andamento, futuro:h.futuro, ate:h.ate })),
     ini, fim, agora, pts, espFut, gaps,
-    proj: proj ? proj.p : null, chega: proj ? proj.chega : null, minRest,
+    minRest,
     baseNome: c.baseNome || ''
   };
 }
@@ -27686,7 +27699,8 @@ function _tvFHtml(m, selo){
 // TELA G — o gráfico da corrida (desenho, SVG no DOM: os tokens resolvem).
 // Medido para a TV de 65" a 1920×1080 (1 px ≈ 0,75 mm): na TV cheia 1 unidade
 // do desenho = 1 px ≈ 0,75 mm na parede. Traço e letra dimensionados para isso
-// — o FEITO a 12 (≈ 1 cm), os números do agora a 54/42, o eixo a 34.
+// — desde a v7.257.0 (PPCP: *"aumenta o que puder"*) o FEITO a 18 (≈ 1,4 cm),
+// o número dele a 80, a META a 52, o eixo a 40.
 // ESCALA (v7.173.0): o desenho tem o TAMANHO DA CAIXA (`dim`, px, medido pelo
 // _tvGEncaixa) e 1 unidade = _tvGEscala(altura) px. Com o viewBox fixo de
 // 1000×840 o SVG ficava limitado pela altura: no print de 27/10 (a janela do
@@ -27702,45 +27716,49 @@ function _tvGEscala(h){
 }
 function _tvGSvg(m, selo, dim){
   if(!(dim && dim.w > 0 && dim.h > 0)) return _tvGDesenho(m, selo, 1000, 840).s;
-  // Os DOIS números do agora sempre aparecem: se o par não acha lugar com a
-  // letra da escala, ela desce de 10 em 10% (até TV_G_Z_MIN). Medido no
-  // sorteio de 4.000 dias: na TV de 1366×768, 3% dos desenhos ficavam sem um.
+  // O número do FEITO sempre num lugar livre: se não acha um com a letra da
+  // escala, ela desce de 10 em 10% (até TV_G_Z_MIN); lá, o _tvGDesenho o põe
+  // mesmo encostado numa curva. (Até a v7.256.x eram dois números, FEITO e
+  // ESPERADO: no sorteio de 4.000 dias, na TV de 1366×768, 3% dos desenhos
+  // ficavam sem um.)
   let z = _tvGEscala(dim.h);
   for(;;){
     const d = _tvGDesenho(m, selo, Math.round(dim.w / z), Math.round(dim.h / z));
-    if(d.n === 2 || z <= TV_G_Z_MIN + 1e-9) return d.s;
+    if(d.n || z <= TV_G_Z_MIN + 1e-9) return d.s;
     z = Math.max(TV_G_Z_MIN, z * 0.9);
   }
 }
-// O desenho em W×H unidades; devolve também quantos números do agora couberam.
+// O desenho em W×H unidades; `n` = 1 quando o FEITO achou lugar LIVRE.
 function _tvGDesenho(m, selo, W, H){
-  const L = 100, R = 34, T = 60, B = 72, pw = W - L - R, ph = H - T - B;
+  const L = 112, R = 30, T = 72, B = 80, pw = W - L - R, ph = H - T - B;
   const topo = Math.max(m.meta, m.feito, m.espFut.length ? m.espFut[m.espFut.length - 1].v : 0) * 1.1;
   const x = t => L + (t - m.ini) / Math.max(1, m.fim - m.ini) * pw;
   const y = v => T + ph - v / topo * ph;
   const pl = arr => arr.map(p => x(p[0]).toFixed(1) + ',' + y(p[1]).toFixed(1)).join(' ');
   // Grade de no máximo 4 passos (1.000 e 2.000 com a meta de 2.530): o número
-  // do agora e a META já estão escritos no gráfico; cinco linhas cinzas com
+  // do FEITO e a META já estão escritos no gráfico; cinco linhas cinzas com
   // número disputavam com eles e, a 15 m, o eixo não se lê de qualquer jeito.
   const passo = [100, 200, 250, 500, 1000, 2000].find(p => topo / p <= 4) || 5000;
   let s = '<svg class="tvg-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMin meet" role="img" aria-label="UEP acumulada de hoje: '
     + fmtN(Math.round(m.feito)) + ' feitas contra ' + fmtN(Math.round(m.esp)) + ' esperadas">';
   m.gaps.forEach(g => {
     s += '<rect x="' + x(g.de).toFixed(1) + '" y="' + T + '" width="' + (x(g.ate) - x(g.de)).toFixed(1) + '" height="' + ph + '" fill="var(--surface)"/>'
-      + '<text x="' + ((x(g.de) + x(g.ate)) / 2).toFixed(1) + '" y="' + (T + ph - 16) + '" text-anchor="middle" class="tvg-t2">ALMOÇO</text>';
+      + '<text x="' + ((x(g.de) + x(g.ate)) / 2).toFixed(1) + '" y="' + (T + ph - 18) + '" text-anchor="middle" class="tvg-t2">ALMOÇO</text>';
   });
   for(let v = passo; v < topo; v += passo){
     s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '" stroke="var(--border)" stroke-width="2"/>'
-      + '<text x="' + (L - 14) + '" y="' + (y(v) + 11).toFixed(1) + '" text-anchor="end" class="tvg-t2">' + fmtN(v) + '</text>';
+      + '<text x="' + (L - 14) + '" y="' + (y(v) + 14).toFixed(1) + '" text-anchor="end" class="tvg-t2">' + fmtN(v) + '</text>';
   }
   s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(0) + '" y2="' + y(0) + '" stroke="var(--txt3)" stroke-width="3"/>';
   for(let h = Math.ceil(m.ini / 60) * 60; h <= m.fim; h += 120){
-    s += '<text x="' + x(h).toFixed(1) + '" y="' + (H - 20) + '" text-anchor="middle" class="tvg-t2">' + fromMin(h) + '</text>';
+    s += '<text x="' + x(h).toFixed(1) + '" y="' + (H - 22) + '" text-anchor="middle" class="tvg-t2">' + fromMin(h) + '</text>';
   }
   // A META é linha CHEIA: tracejado é só o ESPERADO. As duas eram cinza
   // tracejadas, e de longe "a linha que eu devia seguir" e "o alvo" se confundiam.
-  s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(m.meta).toFixed(1) + '" y2="' + y(m.meta).toFixed(1) + '" stroke="var(--txt3)" stroke-width="3"/>'
-    + '<text x="' + (L + 8) + '" y="' + (y(m.meta) - 14).toFixed(1) + '" class="tvg-t1">META DO DIA ' + fmtN(m.meta) + '</text>';
+  // Desde a v7.257.0 ela é LARANJA (--acc): se distingue pela cor E pelo traço,
+  // não por dois tons de cinza (PPCP: "cores bem contrastantes").
+  s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(m.meta).toFixed(1) + '" y2="' + y(m.meta).toFixed(1) + '" stroke="var(--acc)" stroke-width="7"/>'
+    + '<text x="' + (L + 8) + '" y="' + (y(m.meta) - 18).toFixed(1) + '" class="tvg-tm">META DO DIA ' + fmtN(m.meta) + '</text>';
   // A DISTÂNCIA entre o feito e o esperado, desenhada: a faixa entre as duas
   // curvas até agora. De longe é ela que mostra quem está em cima — a linha
   // sozinha some quando a diferença é de poucas dezenas de UEP. Tinta neutra:
@@ -27750,56 +27768,41 @@ function _tvGDesenho(m, selo, W, H){
     s += '<polygon points="' + pl(ida.concat(volta)) + '" fill="' + (selo ? 'var(--' + sc(m.ef) + ')' : 'var(--txt)') + '" opacity=".2"/>';
   }
   // esperado: o que já passou + o que falta da jornada, a mesma linha tracejada.
-  // Daqui para a frente ele e o ATÉ A META andam juntos (os dois no ritmo da
-  // meta, separados pela distância de agora): com o dia no tempo os dois ficam
-  // colados e o tracejado por baixo dos pontos virava uma terceira textura (o
-  // print de 27/10). Colados, fica só o ATÉ A META.
-  const colados = !!(m.proj && m.proj.length > 1) && Math.abs(y(m.feito) - y(m.esp)) < 12;
-  const xChega = m.chega != null ? Math.min(x(m.chega), W - 70) : null;
-  const espLinha = m.pts.map(p => [p.t, p.e]).concat(colados ? [] : m.espFut.slice(1).map(p => [p.t, p.v]));
-  s += '<polyline fill="none" stroke="var(--txt2)" stroke-width="7" stroke-dasharray="24 14" stroke-linejoin="round" points="'
+  // (Até a v7.256.x ele parava no agora quando andava colado ao pontilhado da
+  // projeção, que saiu na v7.257.0.)
+  const espLinha = m.pts.map(p => [p.t, p.e]).concat(m.espFut.slice(1).map(p => [p.t, p.v]));
+  s += '<polyline fill="none" stroke="var(--txt2)" stroke-width="10" stroke-dasharray="28 16" stroke-linejoin="round" points="'
     + pl(espLinha) + '"/>';
-  if(m.proj && m.proj.length > 1){
-    s += '<polyline fill="none" stroke="var(--txt)" stroke-width="7" stroke-dasharray="0 16" stroke-linecap="round" points="' + pl(m.proj.map(p => [p.t, p.v])) + '"/>';
-    if(m.chega != null){
-      // o horário não passa da borda direita: a meta saindo às 16:5x punha
-      // metade do número fora do desenho (antes a sobra lateral escondia isso)
-      s += '<circle cx="' + x(m.chega).toFixed(1) + '" cy="' + y(m.meta).toFixed(1) + '" r="12" fill="var(--bg)" stroke="var(--txt)" stroke-width="4"/>'
-        + '<text x="' + xChega.toFixed(1) + '" y="' + (y(m.meta) - 22).toFixed(1) + '" text-anchor="middle" class="tvg-t0">' + fromMin(Math.ceil(m.chega)) + '</text>';
-    }
-  }
   const fp = pl(m.pts.map(p => [p.t, p.f]));
-  s += '<polyline fill="none" stroke="var(--bg)" stroke-width="20" stroke-linejoin="round" stroke-linecap="round" points="' + fp + '"/>'
-    + '<polyline fill="none" stroke="var(--txt)" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" points="' + fp + '"/>';
+  s += '<polyline fill="none" stroke="var(--bg)" stroke-width="28" stroke-linejoin="round" stroke-linecap="round" points="' + fp + '"/>'
+    + '<polyline fill="none" stroke="var(--txt)" stroke-width="18" stroke-linejoin="round" stroke-linecap="round" points="' + fp + '"/>';
   const xa = x(m.agora), yf = y(m.feito), ye = y(m.esp);
   s += '<line x1="' + xa.toFixed(1) + '" x2="' + xa.toFixed(1) + '" y1="' + yf.toFixed(1) + '" y2="' + ye.toFixed(1) + '" stroke="'
-    + (selo ? 'var(--' + sc(m.ef) + ')' : 'var(--txt2)') + '" stroke-width="6"/>'
-    + '<circle cx="' + xa.toFixed(1) + '" cy="' + ye.toFixed(1) + '" r="12" fill="var(--txt2)" stroke="var(--bg)" stroke-width="4"/>'
-    + '<circle cx="' + xa.toFixed(1) + '" cy="' + yf.toFixed(1) + '" r="18" fill="var(--txt)" stroke="var(--bg)" stroke-width="5"/>';
-  // Rótulos do AGORA, sempre (de longe são o que se lê): o número do FEITO e o
-  // do ESPERADO perto dos pontos. A posição é a 1ª de uma lista de candidatas
-  // que NÃO encosta nas curvas, no texto da META, no horário da meta nem no
-  // outro rótulo — regra fixa por hora do dia errava: às 15:02 o ESPERADO caía
-  // em cima da curva do FEITO, e de manhã os dois em cima das linhas que sobem.
-  // A linha da META pode passar atrás (a tarja cobre). Longe do
-  // ponto, uma guia fina liga o número a ele.
-  const fAlto = m.feito >= m.esp;
-  const rF = { t:'FEITO ' + fmtN(Math.round(m.feito)), py:yf, c:'tvg-t0', f:54 };
-  const rE = { t:'ESPERADO ' + fmtN(Math.round(m.esp)), py:ye, c:'tvg-t1', f:42 };
-  const hi = fAlto ? rF : rE, lo = fAlto ? rE : rF;
+    + (selo ? 'var(--' + sc(m.ef) + ')' : 'var(--txt2)') + '" stroke-width="7"/>'
+    + '<circle cx="' + xa.toFixed(1) + '" cy="' + ye.toFixed(1) + '" r="14" fill="var(--txt2)" stroke="var(--bg)" stroke-width="4"/>'
+    + '<circle cx="' + xa.toFixed(1) + '" cy="' + yf.toFixed(1) + '" r="22" fill="var(--txt)" stroke="var(--bg)" stroke-width="6"/>';
+  // O número do FEITO, sempre (de longe é o que se lê). Desde a v7.257.0 é o
+  // ÚNICO número do agora no gráfico: o do ESPERADO saiu (PPCP, 16/11/2026,
+  // "destacar o volume realizado") — a distância está no 1º cartão, em minutos
+  // e UEP. Lugar: a 1ª candidata perto do ponto que NÃO encosta nas curvas, no
+  // texto da META nem no ALMOÇO (a linha da META pode passar atrás — a tarja
+  // cobre); longe do ponto, uma guia fina. Regra fixa por hora do dia errava:
+  // às 15:02 caía em cima da curva, de manhã em cima das linhas que sobem.
+  // Sem lugar livre nem com a letra no mínimo (a janela pequena do gerencial),
+  // ele vai encostado numa curva, sobre a tarja: o número nunca sai da tela —
+  // e o cartão não o repete mais (revisão de 16/11/2026).
+  const rF = { t:'FEITO ' + fmtN(Math.round(m.feito)), py:yf, f:80 };
   const fundo = T + ph - 10;   // abaixo disto é o eixo e as horas
   const linhas = [m.pts.map(p => [x(p.t), y(p.f)]), espLinha.map(p => [x(p[0]), y(p[1])])];
-  if(m.proj && m.proj.length > 1) linhas.push(m.proj.map(p => [x(p.t), y(p.v)]));
   const larg = r => r.t.length * r.f * .42 + 18;
-  const ocupado = [[L, y(m.meta) - 56, L + 8 + larg({ t:'META DO DIA ' + fmtN(m.meta), f:42 }), y(m.meta) - 6]];
-  if(m.proj && m.chega != null) ocupado.push([Math.min(x(m.chega) - 20, xChega - 80), y(m.meta) - 76, Math.max(x(m.chega) + 20, xChega + 80), y(m.meta) + 16]);
+  const ocupado = [[L, y(m.meta) - 66, L + 8 + larg({ t:'META DO DIA ' + fmtN(m.meta), f:52 }), y(m.meta) - 8]];
   // o ALMOÇO mora no PÉ da faixa (v7.173.0): no alto, com o gráfico mais
   // baixo da janela do app, ele disputava o lugar com o FEITO da tarde
-  m.gaps.forEach(g => { const cx = (x(g.de) + x(g.ate)) / 2, w = larg({ t:'ALMOÇO', f:34 }) / 2;
-    ocupado.push([cx - w, T + ph - 16 - 34 * .82, cx + w, T + ph - 16 + 34 * .16]); });
-  const caixa = (r, xx, yy, ancora) => {
-    const w = larg(r), x0 = ancora === 'end' ? xx - w + 9 : xx - 9;
-    return [x0, yy - r.f * .82, x0 + w, yy + r.f * .16];
+  m.gaps.forEach(g => { const cx = (x(g.de) + x(g.ate)) / 2, w = larg({ t:'ALMOÇO', f:40 }) / 2;
+    ocupado.push([cx - w, T + ph - 18 - 40 * .82, cx + w, T + ph - 18 + 40 * .16]); });
+  const caixa = (xx, yy, ancora) => {
+    const w = larg(rF), x0 = ancora === 'end' ? xx - w + 9 : xx - 9;
+    return [x0, yy - rF.f * .82, x0 + w, yy + rF.f * .16];
   };
   const cruza = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
   const toca = bx => linhas.some(pl => pl.some((q, i) => {
@@ -27811,117 +27814,91 @@ function _tvGDesenho(m, selo, W, H){
     }
     return false;
   }));
-  const livre = (bx, extra) => bx[0] >= L + 2 && bx[2] <= W - R && bx[1] >= 6 && bx[3] <= fundo && !toca(bx)
-    && !ocupado.concat(extra || []).some(o => cruza(o, bx));
-  const D = [0, 46, 92, 138, 184, 230, 276, 322, 368, 414];
-  // Perto do próprio ponto: primeiro para o lado dele (o mais alto para cima, o
-  // mais baixo para baixo), à esquerda, à direita e encostado na borda direita,
-  // cada vez mais longe; depois para o outro lado (entre as duas curvas, num
-  // dia muito atrasado ou muito adiantado, há espaço); por fim na altura dele.
-  // `dMax` limita o quão longe: a 1ª rodada só aceita perto do ponto; longe,
-  // só se nem empilhados couber. A borda direita só conta com o agora perto dela.
-  const perto = (r, cima, dMax) => {
-    const c = [], borda = W - R - xa < 420, lado = up => D.forEach(d => {
+  const dentro = bx => bx[0] >= L + 2 && bx[2] <= W - R && bx[1] >= 6 && bx[3] <= fundo && !ocupado.some(o => cruza(o, bx));
+  const livre = bx => dentro(bx) && !toca(bx);
+  const D = [0, 46, 92, 138, 184, 230, 276, 322, 368, 414, 460, 506, 552, 598];
+  // Perto do ponto: primeiro para o lado dele (acima do esperado, para cima;
+  // abaixo, para baixo), à esquerda, à direita e encostado na borda direita,
+  // cada vez mais longe; depois para o outro lado; por fim na altura dele.
+  // `dMax` limita o quão longe. A borda direita só conta com o agora perto dela.
+  const perto = (cima, dMax) => {
+    const c = [], borda = W - R - xa < 460, lado = up => D.forEach(d => {
       if(d > dMax) return;
-      const yy = r.py + (up ? -34 - d : 62 + d);
-      c.push([xa - 30, yy, 'end'], [xa + 30, yy]);
+      const yy = yf + (up ? -40 - d : 80 + d);
+      c.push([xa - 34, yy, 'end'], [xa + 34, yy]);
       if(borda) c.push([W - R - 12, yy, 'end']);
     });
     lado(cima); lado(!cima);
-    c.push([xa - 34, r.py + r.f * .3, 'end'], [xa + 34, r.py + r.f * .3]);
+    c.push([xa - 40, yf + rF.f * .3, 'end'], [xa + 40, yf + rF.f * .3]);
     return c;
   };
-  const separados = dMax => {
-    let h = poe(hi, perto(hi, true, dMax)), l = poe(lo, perto(lo, false, dMax), h ? [h.bx] : []);
-    if(l && !h) h = poe(hi, perto(hi, true, dMax), [l.bx]);
-    return [h, l];
-  };
-  const poe = (r, cand, extra) => {
-    for(const c of cand){ const bx = caixa(r, c[0], c[1], c[2]); if(livre(bx, extra)) return { r, xx:c[0], yy:c[1], an:c[2], bx }; }
+  const poe = (cand, ok) => {
+    for(const c of cand){ const bx = caixa(c[0], c[1], c[2]); if(ok(bx)) return { xx:c[0], yy:c[1], an:c[2], bx }; }
     return null;
   };
-  // 1) cada um PERTO do seu ponto: o mais alto para cima, o mais baixo para baixo
-  let [pHi, pLo] = separados(138);
-  // 2) senão (começo do dia: os pontos colados no eixo e nada cabe à esquerda),
-  //    os dois EMPILHADOS acima dos pontos, o mais alto em cima — as linhas que
-  //    vêm pela frente sobem para a direita, e acima-à-esquerda ainda está vazio
-  let bloco = false;
-  if(!pHi || !pLo){
-    pHi = pLo = null; bloco = true;
-    const yTopo = Math.min(hi.py, lo.py);
-    for(const x0 of [Math.max(L + 20, xa - 40), xa + 30]){
-      for(const d of D.concat([460, 506, 552, 598])){
-        const bh = caixa(hi, x0, yTopo - 92 - d), bl = caixa(lo, x0, yTopo - 36 - d);
-        if(livre(bh) && livre(bl)){ pHi = { r:hi, xx:x0, yy:yTopo - 92 - d, bx:bh }; pLo = { r:lo, xx:x0, yy:yTopo - 36 - d, bx:bl, guia:true }; break; }
-      }
-      if(pHi) break;
-    }
-    // 3) nem empilhados: cada um onde couber, mais longe (com a guia); o que
-    //    não couber fica de fora — os dois estão no 1º cartão
-    if(!pHi){ [pHi, pLo] = separados(Infinity); bloco = false; }
-  }
-  [pHi, pLo].forEach(p => {
-    if(!p) return;   // nenhum lugar livre: os dois números estão no 1º cartão, ao lado
-    const bx = p.bx, cx = Math.max(bx[0] + 12, Math.min(bx[2] - 12, xa)), cy = p.r.py < bx[1] ? bx[1] : bx[3];
-    const longe = Math.hypot(cx - xa, cy - p.r.py) > 46;
-    if(longe && (!bloco || p.guia)){   // empilhados: uma guia só, a de baixo
-      const py = p.guia ? Math.min(hi.py, lo.py) : p.r.py;
-      s += '<line x1="' + xa.toFixed(1) + '" y1="' + (py - 20).toFixed(1) + '" x2="' + cx.toFixed(1) + '" y2="' + cy.toFixed(1)
+  const cima = m.feito >= m.esp;
+  const p = poe(perto(cima, 138), livre) || poe(perto(cima, Infinity), livre);
+  const pf = p || poe(perto(cima, Infinity), dentro);
+  if(pf){
+    const bx = pf.bx, cx = Math.max(bx[0] + 12, Math.min(bx[2] - 12, xa)), cy = yf < bx[1] ? bx[1] : bx[3];
+    if(Math.hypot(cx - xa, cy - yf) > 50){
+      s += '<line x1="' + xa.toFixed(1) + '" y1="' + (yf + (cy < yf ? -24 : 24)).toFixed(1) + '" x2="' + cx.toFixed(1) + '" y2="' + cy.toFixed(1)
         + '" stroke="var(--txt3)" stroke-width="3" stroke-dasharray="3 6"/>';
     }
     s += '<rect x="' + bx[0].toFixed(1) + '" y="' + bx[1].toFixed(1) + '" width="' + (bx[2] - bx[0]).toFixed(1) + '" height="'
       + (bx[3] - bx[1]).toFixed(1) + '" rx="8" fill="var(--bg)" opacity=".86"/>'
-      + '<text x="' + p.xx.toFixed(1) + '" y="' + p.yy.toFixed(1) + '"' + (p.an ? ' text-anchor="' + p.an + '"' : '')
-      + ' class="' + p.r.c + '">' + p.r.t + '</text>';
-  });
-  return { s:s + '</svg>', n:[pHi, pLo].filter(Boolean).length };
+      + '<text x="' + pf.xx.toFixed(1) + '" y="' + pf.yy.toFixed(1) + '"' + (pf.an ? ' text-anchor="' + pf.an + '"' : '')
+      + ' class="tvg-t0">' + rF.t + '</text>';
+  }
+  return { s:s + '</svg>', n:p ? 1 : 0 };
 }
 // TELA G — desenho (sem conta).
-// UM veredito (D4): quem julga é o selo. Até a v7.255.0 um 3º cartão dizia "A
-// META SAI ÀS" / "A META NÃO SAI ATÉ 16:59", andando no ritmo da meta a partir
-// do feito: com 1 UEP atrás do esperado ele já dizia NÃO SAI — o dia inteiro,
-// ao lado do NO RITMO, que tem 4% de tolerância. Era um 2º juiz, sem tolerância
-// (PPCP, 16/11/2026, print das 15:58: −12 UEP, 99,5%, *"está confuso a meta não
-// sai e está no ritmo?"*). O horário em que a meta sai continua no gráfico, no
-// ponto em que o pontilhado cruza a META.
+// UM veredito (D4): quem julga é o selo, o mesmo do card UEP DO DIA do
+// gerencial (`sc`/`slRitmo`). Até a v7.255.0 um 3º cartão dizia "A META NÃO
+// SAI ATÉ 16:59" com 1 UEP atrás do esperado, ao lado do NO RITMO (PPCP,
+// 16/11/2026: *"está confuso a meta não sai e está no ritmo?"*).
+// v7.257.0 (PPCP, com a maquete *"menos informação, mais visibilidade"*): três
+// perguntas em 3 s a 10–15 m — estamos à frente ou atrás? quanto já fizemos?
+// quanto falta? O selo e o sentido por extenso (À FRENTE / ATRÁS, nunca
+// ADIANTADO / ATRASADO: o PPCP escolheu a variante A — uma régua em minutos
+// fixos diria ATRASADO em vermelho com o gerencial em NO RITMO), os minutos
+// enormes, a falta em UEP E em caixas, o produto. Saíram as linhas de apoio
+// (feitas · esperadas, UEP/cx) e o rodapé "1 UEP = 1 caixa de …".
 function _tvGHtml(m, selo){
   const absMin = Math.abs(m.difMin), frente = m.difMin >= 0, noTempo = absMin < 0.5;
-  // O sentido por extenso, não por sinal: "−2 min" ao lado do NO RITMO se lia
-  // como mais uma contradição; "2 min ATRÁS" diz o mesmo sem conta de cabeça.
-  // Número e sentido em itens de flex: quando "54 min À FRENTE" não cabe numa
-  // linha, o sentido desce inteiro e colado (no texto corrido ele quebrava no
-  // meio, "À" numa linha e "FRENTE" na outra).
-  const minTxt = noTempo ? '<span>0 min</span>' : '<span>' + _tvMinTxt(absMin) + '</span><span class="tvg-dir">' + (frente ? 'À FRENTE' : 'ATRÁS') + '</span>';
-  const cap = noTempo ? 'no tempo do esperado' : 'do esperado · ' + fmtN(Math.round(Math.abs(m.difUep))) + ' UEP';
+  const cls = selo ? ' ' + sc(m.ef) : '';
+  const card1 = '<div class="tvu-card tvg-sit' + cls + '">'
+    + (selo ? '<span class="tvg-selo' + cls + '">' + slRitmo(m.ef) + '</span>' : '')
+    + '<div class="tvg-min">' + (noTempo ? '0 min' : _tvMinTxt(absMin)) + '</div>'
+    + '<div class="tvg-dir">' + (noTempo ? 'NO TEMPO' : frente ? 'À FRENTE' : 'ATRÁS') + '</div>'
+    + (noTempo ? '' : '<div class="tvg-uep">DO ESPERADO · ' + fmtN(Math.round(Math.abs(m.difUep))) + ' UEP</div>') + '</div>';
   let card2;
   if(m.falta > 0 && m.minRest > 0){
-    // Em CAIXAS do produto de agora, a unidade que a linha conta; a UEP fica
-    // no apoio. Nome comprido corta com "…" (leva a UEP junto): a conta que
-    // importa está no número grande.
-    card2 = '<div class="tvu-lbl">FALTA PARA A META DO DIA</div>'
-      + (m.faltaCx ? '<div class="tvu-mid"><b>' + fmtN(m.faltaCx) + '</b> caixas</div>'
-                     + '<div class="tvu-sub tvu-nome">de ' + _rpEsc(m.prod.nome) + ' · ' + fmtN(Math.round(m.falta)) + ' UEP</div>'
-                   : '<div class="tvu-mid"><b>' + fmtN(Math.round(m.falta)) + '</b> UEP</div>'
-                     + '<div class="tvu-sub">' + (m.prod ? 'sem UEP no cadastro para o produto de agora' : 'nenhum produto selecionado no app') + '</div>');
+    // ⚠ Número nunca na linha do nome (.tvu-nome corta com "…": na v7.256.0 a
+    // UEP ia no fim dela e "KIT 2 MESA CABECEIRA SLEEP" saía "· 2.05…").
+    card2 = '<div class="tvg-lbl">FALTA PARA A META</div>'
+      + '<div class="tvg-falta"><span><b>' + fmtN(Math.round(m.falta)) + '</b>UEP</span>'
+      + (m.faltaCx ? '<span><b>' + fmtN(m.faltaCx) + '</b>caixas</span>' : '') + '</div>'
+      + (m.faltaCx ? '<div class="tvg-prod tvu-nome">' + _rpEsc(m.prod.nome) + '</div>'
+         : '<div class="tvg-uep">' + (m.prod ? 'SEM UEP NO CADASTRO PARA O PRODUTO DE AGORA' : 'NENHUM PRODUTO SELECIONADO NO APP') + '</div>');
   } else if(m.falta > 0){
-    card2 = '<div class="tvu-lbl">JORNADA NORMAL ENCERRADA</div><div class="tvu-mid"><b>' + fmtN(Math.round(m.falta)) + '</b> UEP</div>'
-      + '<div class="tvu-sub">faltaram para a meta do dia</div>';
+    card2 = '<div class="tvg-lbl">JORNADA ENCERRADA</div><div class="tvg-falta"><span><b>' + fmtN(Math.round(m.falta)) + '</b>UEP</span></div>'
+      + '<div class="tvg-uep">FALTARAM PARA A META</div>';
   } else {
-    card2 = '<div class="tvu-lbl">META DO DIA</div><div class="tvu-mid"><b>ALCANÇADA</b></div>'
-      + '<div class="tvu-sub">' + fmtN(Math.round(m.feito)) + ' UEP · +' + fmtN(Math.round(m.feito - m.meta)) + ' acima da meta</div>';
+    card2 = '<div class="tvg-lbl">META DO DIA</div><div class="tvg-falta"><span><b>ALCANÇADA</b></span></div>'
+      + '<div class="tvg-uep">' + fmtN(Math.round(m.feito - m.meta)) + ' UEP ACIMA DA META</div>';
   }
   // ⚠ "NO RITMO" é a palavra do VEREDITO (slRitmo): rótulo nenhum pode usá-la,
-  // senão lido a 15 m parece selo mesmo com o selo desligado. O pontilhado é
-  // "mantendo o ritmo da meta" — até a v7.255.0 a legenda dizia ATÉ A META, e
-  // ele nem sempre chega nela.
+  // senão lido a 15 m parece selo mesmo com o selo desligado.
+  // Rodapé: só a hora extra (fora da meta); o "1 UEP = 1 caixa de …" saiu da G
+  // na v7.257.0 (PPCP) e fica na F.
   return '<div class="tvg-corpo"><figure class="tvg-graf">'
     + '<div class="tvu-leg tvg-leg"><span><i class="tvg-sw f"></i>FEITO</span><span><i class="tvg-sw e"></i>ESPERADO</span>'
-    + (m.proj ? '<span><i class="tvg-sw p"></i>RITMO DA META · ' + fmtN(Math.round(m.porMin * 60)) + '/h</span>' : '') + '</div>'
+    + '<span><i class="tvg-sw m"></i>META DO DIA</span></div>'
     + _tvGSvg(m, selo) + '</figure><div class="tvg-cards">'
-    + '<div class="tvu-card">' + (selo ? '<span class="tvu-selo ' + sc(m.ef) + '">' + slRitmo(m.ef) + '</span>' : '')
-    + '<div class="tvg-min">' + minTxt + '</div><div class="tvu-sub">' + cap + '</div></div>'
-    + '<div class="tvu-card">' + card2 + '</div>'
-    + '</div></div>' + _tvUepRodHtml(m);
+    + card1 + '<div class="tvu-card">' + card2 + '</div>'
+    + '</div></div>'
+    + (m.he > 0 ? '<div class="tvu-rod"><span>+' + fmtN(Math.round(m.he)) + ' UEP em hora extra hoje — fora da meta</span></div>' : '');
 }
 // ENCAIXE MEDIDO das Telas F e G. A fonte é por vh, e a tela nem sempre tem
 // 100vh: no gerencial (aba TV OPERACIONAL) ela perde o cabeçalho, as abas e o

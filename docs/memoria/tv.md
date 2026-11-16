@@ -185,8 +185,10 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   - O **esperado da curva** anda pela régua do card (só hora com lançamento; a
     em andamento pelo `minSlotDecorrido`): o ponto de agora FECHA com o card.
   - **À frente em minutos** = (feito − esperado) ÷ (meta ÷ 527). **A meta sai
-    às** = anda só pelos minutos de jornada que restam (almoço fora); não
-    cabendo, mostra o ritmo que faltaria. Caixas = ⌈falta ÷ UEP/cx⌉, para cima.
+    às** = anda só pelos minutos de jornada que restam (almoço fora); ~~não
+    cabendo, mostra o ritmo que faltaria~~ (saiu na v7.256.0 — o horário só
+    aparece no gráfico, quando o pontilhado cruza a META). Caixas = ⌈falta ÷
+    UEP/cx⌉, para cima.
   - **UEP/cx do produto de agora**: o cadastro (`CAP_RAW`, ou o guardado no
     aparelho); sem ele, a média de hoje do MESMO produto e cor no
     `porHoraModelo` (o 501130 tem quatro mesas — nunca só pelos 6 dígitos).
@@ -242,9 +244,11 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   polegadas"*).** A 1920×1080 numa 65", 1 px ≈ 0,75 mm, e o SVG sai a ~1,05×
   o viewBox. Antes: FEITO a 6 (≈ 5 mm), eixo a 23 (≈ 17 mm de corpo) e, de
   manhã, nenhum número no gráfico.
-  - **Traço**: FEITO 12 (halo 20), ESPERADO 7 tracejado `24 14`, ATÉ A META 7
-    em pontos redondos (`0 16`), META 3; pontos do agora r 18 / 12.
-  - **Letra** (`.tvg-t0/1/2`): números do agora **54/42**, eixo e ALMOÇO **32**;
+  - ~~**Traço**: FEITO 12 (halo 20), ESPERADO 7 tracejado `24 14`, ATÉ A META 7
+    em pontos redondos (`0 16`), META 3; pontos do agora r 18 / 12.~~
+    (v7.257.0: FEITO 18, ESPERADO 10, META 7 laranja, sem pontilhado — abaixo.)
+  - ~~**Letra** (`.tvg-t0/1/2`): números do agora **54/42**, eixo e ALMOÇO **32**;~~
+    (v7.257.0: FEITO 80, META 52, eixo 40 — abaixo.)
     legenda `.tvg-leg` pela escala `--tvu-k` (até 34 px) com amostras de 64 px.
     Margens do viewBox foram junto (`L` 124, `B` 72) para o eixo maior caber.
   - **A distância FEITO × ESPERADO é uma FAIXA** (`<polygon>` entre as duas
@@ -252,7 +256,8 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     cima — a linha sozinha some quando a diferença é de poucas dezenas de UEP.
     **Tinta neutra sem o selo**; com o selo, a cor do `sc(ef)` (a regra do
     veredito da tela não mudou).
-  - **Rótulos FEITO/ESPERADO SEMPRE**, cada um com tarja da cor do fundo, na
+  - ~~**Rótulos FEITO/ESPERADO SEMPRE**~~ (v7.257.0: só o FEITO tem número —
+    abaixo; a busca de lugar é a mesma), cada um com tarja da cor do fundo, na
     1ª posição de uma lista de candidatas que **não encosta em curva nenhuma**,
     no texto da META, no horário da meta nem no outro rótulo (a linha tracejada
     da META pode passar atrás — a tarja cobre). Perto do ponto primeiro (o mais
@@ -300,7 +305,8 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   - Na janela de 1920: plotagem **892×522 px** (era 656×551), eixo 34 px, FEITO
     54 px, traço 12 px — os números da TV cheia. TV cheia 1920×1080: igual a
     antes, só mais larga (892×710). TV 1366×768: ×0,93 (era ×0,68).
-  - **Os DOIS números do agora continuam sempre**: com a letra maior num campo
+  - ~~**Os DOIS números do agora continuam sempre**~~ (v7.257.0: o FEITO
+    sempre): com a letra maior num campo
     mais estreito, o sorteio de 4.000 dias deixava 3% dos desenhos da TV de
     1366×768 sem um deles. Quando o par não cabe, a letra desce de 10 em 10%
     até `TV_G_Z_MIN`. Sorteio de novo (3.983 dias × 5 caixas × com/sem selo =
@@ -309,15 +315,16 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   - **Só o ESPERADO é tracejado**: a META virou linha CHEIA (eram duas linhas
     cinza tracejadas, de sentidos diferentes). E com o dia no tempo (o print:
     1.906 = 1.906) o esperado daqui para a frente e o ATÉ A META andam colados
-    — o tracejado por baixo dos pontos virava uma terceira textura: colados
-    (menos de 12 unidades), o esperado PARA no agora e fica só o ATÉ A META.
+    — o tracejado por baixo dos pontos virava uma terceira textura: ~~colados
+    (menos de 12 unidades), o esperado PARA no agora e fica só o ATÉ A META~~
+    (v7.257.0: sem a projeção, o esperado vai sempre até o fim).
   - **Eixo**: grade de no máximo 4 passos (1.000 e 2.000 com a meta de 2.530 —
     eram 5 linhas com número), em Barlow Condensed 600 a 34 (era IBM Plex Mono
     400 a 32, fino e cinza). Margem do eixo 124 → 100 (o número condensado é
     mais estreito). O **ALMOÇO mora no PÉ da faixa** e é lugar ocupado para os
     rótulos: no alto, com o gráfico mais baixo, o FEITO da tarde caía nele.
-  - O horário da meta (`16:59`) não passa da borda direita (`xChega`): antes a
-    sobra lateral escondia o corte.
+  - ~~O horário da meta (`16:59`) não passa da borda direita (`xChega`): antes a
+    sobra lateral escondia o corte.~~ (O horário saiu na v7.257.0.)
   - ⚠ **Se o PC da TV mostra a janela do app**, a TV perde ~18% da altura para
     cabeçalho, abas, rodapé e barra do Windows. ⛶ PAINEL CHEIO (ou o perfil
     OPERADOR, que já abre nele) devolve ao gráfico a caixa de 842 px.
@@ -334,20 +341,21 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     96,8%, também). Era um 2º juiz, com tolerância zero, ao lado do selo, que
     tem 4% (`sc`: ≥ 96 = NO RITMO). Pedir 327/h contra 314/h é 4% a mais na
     última hora, não "não sai".
-  - **Saiu o 3º cartão** (A META SAI ÀS / NÃO SAI ATÉ / JORNADA ENCERRADA). O
+  - **Saiu o 3º cartão** (A META SAI ÀS / NÃO SAI ATÉ / JORNADA ENCERRADA). ~~O
     horário em que a meta sai continua **no gráfico**, no ponto em que o
-    pontilhado cruza a META (só aparece quando cruza). JORNADA NORMAL ENCERRADA
+    pontilhado cruza a META (só aparece quando cruza).~~ (Saiu na v7.257.0.) JORNADA NORMAL ENCERRADA
     virou o 2º cartão. O `precisaH` saiu do modelo (sem leitor).
   - **O sentido por extenso**: `2 min ATRÁS` / `54 min À FRENTE` (número e
     palavra em itens de flex — no texto corrido o "À" ficava numa linha e o
     "FRENTE" na outra). O `−2 min` ao lado do NO RITMO se lia como contradição.
-    Saiu a linha *"2.429 feitas · 2.441 esperadas"*: os dois números estão no
-    gráfico, na letra maior da tela.
+    ~~Saiu a linha *"2.429 feitas · 2.441 esperadas"*: os dois números estão no
+    gráfico~~ — **voltou na v7.256.1** (abaixo).
   - **A falta em CAIXAS no número grande** (*156 caixas*), com o produto e a
-    UEP no apoio (*de PENTEADEIRA PRINCESA · 332 UEP*). Sem UEP no cadastro
-    para o produto de agora, o número grande volta a ser a UEP.
-  - A legenda do pontilhado diz **RITMO DA META · 314/h** (era *ATÉ A META, A
-    314/h*: com a linha atrás do esperado ele não chega na meta).
+    UEP no apoio. Sem UEP no cadastro para o produto de agora, o número grande
+    volta a ser a UEP. ~~*de PENTEADEIRA PRINCESA · 332 UEP* numa linha só~~ —
+    corrigido na v7.256.1 (abaixo).
+  - ~~A legenda do pontilhado diz **RITMO DA META · 314/h**~~ (era *ATÉ A META,
+    A 314/h*; o pontilhado saiu na v7.257.0).
   - Com dois cartões, a escala `--tvu-k` não precisa encolher: medido no
     Chromium (15:58, 09:20, 15:02 à frente, 16:34 abaixo), TV 1920×1080 e
     1366×768 e a janela de 1920×975 e 1366×560 — **1,00 em todas** (antes 0,85
@@ -360,6 +368,98 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     *"não cabe até 17:00 no ritmo da meta"* — o mesmo critério de tolerância
     zero, em letra pequena e com o "no ritmo da meta" escrito. Não mexido nesta
     versão.
+  - **v7.256.1 — o que a revisão achou depois do merge da v7.256.0** (revisor
+    do projeto, 16/11/2026):
+    - **Número cortado no meio**: a UEP ia no FIM da linha `.tvu-nome`, que
+      corta com "…". Com *KIT 2 MESA CABECEIRA SLEEP* às 09:20 a TV mostrava
+      *"· 2.05…"* (a linha pedia 661 px num cartão de 607); *PENTEADEIRA
+      PRINCESA* cabia com 0 px de folga. ⚠ **Número nunca na linha do nome**:
+      ela tem só *de NOME*, e a conta vai em linha própria, *= 332 UEP · 2,14
+      UEP/cx* (a UEP/cx tinha saído na v7.256.0 — número não sai da tela).
+    - **A rede dos dois números**: sem a linha *feitas · esperadas*, nas
+      janelas pequenas do gerencial (gráfico de 747×268 e 700×307) o gráfico
+      deixava um dos dois de fora em 46 de 29.780 desenhos sorteados (0 na
+      TV), e o número sumia da tela. ~~A linha voltou ao 1º cartão.~~ (A
+      v7.256.1 não foi publicada: na v7.257.0 a rede passou para o gráfico —
+      abaixo.)
+    - ~~A legenda RITMO DA META só com o pontilhado desenhado~~ (o pontilhado
+      saiu na v7.257.0).
+    - CSS da linha mexida com escopo (`#tv-slide-g .tvg-min`, `.tvg-dir`).
+    - Medido de novo (15:58, 09:20, 15:02, 16:34 e o nome comprido): TV
+      1920×1080 e 1366×768, janelas 1920×975, 1366×560 e 1280×600 — escala
+      1,00 em todas, nada corta, o nome comprido inteiro.
+- **MENOS INFORMAÇÃO, MAIS VISIBILIDADE (v7.257.0, PPCP 16/11/2026).** O PPCP
+  trouxe uma maquete feita no ChatGPT e um pedido escrito: em menos de 3 s, a
+  10–15 m, o operador responde *"estamos adiantados ou atrasados? quanto já
+  produzimos? quanto falta?"*. Sem indicador novo, sem projeção de fechamento,
+  sem texto explicativo e sem mudar conta. Depois: *"1 UEP = 1 caixa de MESA
+  CABECEIRA MADERO, pode tirar"* e *"aumenta o que puder"*. A v7.256.1 (PR
+  #544, não publicada) entrou junto.
+  - **O veredito é o selo de sempre (variante A).** O pedido escrito era
+    ADIANTADO (verde) · NO RITMO (neutro) · ATRASADO (vermelho). Mostradas as
+    duas variantes renderizadas, o PPCP escolheu a A. Motivo: ADIANTADO /
+    ATRASADO por minutos fixos é uma régua nova. Às 16:00, com 17 min atrás
+    (96,3%), ela diria **ATRASADO vermelho** com o card UEP DO DIA do gerencial
+    em **NO RITMO**. Minutos fixos também mudam de peso ao longo do dia: são
+    frouxos de manhã e rígidos à tarde. Deixar o NO RITMO neutro mudaria a cor
+    do selo em todas as telas. ⚠ Não propor de novo sem antes discutir a
+    tolerância do selo (96% / 90%), que vale para todas as telas.
+  - **1º cartão**: o selo cheio (fundo na cor, letra escura) e maior, a borda
+    do cartão na cor do selo, os minutos enormes (`.tvg-min`, até 230 px) e o
+    sentido logo abaixo, também grande (`.tvg-dir`, À FRENTE / ATRÁS / NO
+    TEMPO). Embaixo, *DO ESPERADO · N UEP*. Sem o selo (o padrão), nada de cor.
+  - **2º cartão**: FALTA PARA A META com **UEP e caixas, os dois no número
+    grande** (`.tvg-falta`; em 1920 eles empilham), e o produto sozinho na
+    linha `.tvg-prod.tvu-nome`. JORNADA ENCERRADA e META DO DIA ALCANÇADA no
+    mesmo desenho.
+  - **Gráfico**:
+    - FEITO 18 (halo 28), ESPERADO 10 tracejado `28 16`.
+    - **META 7, LARANJA (`--acc`), com o rótulo laranja (`.tvg-tm`)**: a
+      linha se distingue pela cor e pelo traço, não por dois cinzas.
+    - Letra: FEITO 80, META 52, eixo e ALMOÇO 40. Margens `L` 112, `T` 72,
+      `B` 80. Pontos do agora r 22 / 14.
+    - Legenda em Barlow, branca, até 50 px.
+  - **Sem projeção**: saíram do modelo o `proj` e o `chega` (o pontilhado e a
+    hora em que a meta sai). O esperado vai sempre até o fim da jornada.
+  - **Só o FEITO tem número no gráfico.** A distância está no 1º cartão, em
+    minutos e UEP. Ele vai na 1ª candidata livre perto do ponto. Sem lugar
+    livre nem com a letra no mínimo, vai **encostado numa curva, sobre a
+    tarja** (`dentro` × `livre`): o número nunca sai, e o cartão não o repete.
+    Sorteio de 3.911 dias × 6 caixas × com e sem selo (46.932 desenhos):
+    - 0 sem FEITO, 0 fora, 0 NaN;
+    - nas caixas da TV, 0 encostado em curva;
+    - nas janelas do gerencial de 1366×560 e 1280×600, 22 de 7.822 (0,3%)
+      encostados.
+  - **Rodapé**: o *"1 UEP = 1 caixa de …"* saiu da G (a F continua com ele).
+    A linha da hora extra (*+N UEP em hora extra hoje — fora da meta*) só
+    aparece com hora extra.
+  - A tela usa mais área: padding lateral de 4vw para 2,5vw, o cabeçalho
+    (setor e relógio) maior e as letras dos cartões pela escala `--tvu-k`.
+    Escala medida no Chromium (8 situações):
+
+    | Tela | `--tvu-k` |
+    |---|---|
+    | TV 1920×1080 | 0,90 |
+    | TV 1366×768 | 0,85–0,90 |
+    | Janela 1920×975 | 0,80–0,95 |
+    | Janela 1366×560 | 0,75–0,80 |
+    | Janela 1280×600 | 0,80 |
+
+    Nada corta. O nome comprido (KIT 2 MESA CABECEIRA SLEEP) cortava com "…"
+    na TV de 1920 com o produto em 70 px; com 62 px, cabe inteiro em todas as
+    resoluções.
+  - O teste (`tela-uep.test.js`) prende:
+    - o print das 15:58 (selo NO RITMO, `2 min` / `ATRÁS`, 332 UEP e 156
+      caixas);
+    - nenhum ADIANTADO / ATRASADO;
+    - nenhuma projeção (pontilhado `0 16` ou horário) e `proj` / `chega` fora
+      do modelo;
+    - nenhum rodapé "1 UEP ="; a hora extra continua;
+    - o FEITO em todos os casos e caixas (na TV, livre), e o ESPERADO sem
+      número;
+    - o traço e a letra novos.
+
+    Contra a v7.256.1, 26 falhas.
 - Mexeu em texto ou tamanho? Renderizar de novo na TV e no gerencial, nas
   duas resoluções, medindo ALTURA e largura.
 

@@ -83,7 +83,6 @@ console.log('\n── a conta das Telas F e G sai da montagem da aba UEP ──'
 ok('feito e esperado são os do card (2.270,9 de 1.958,7)', [r1(M.feito), r1(M.esp)], [2270.9, 1958.7]);
 ok('à frente: +312 UEP = 65 min de linha no ritmo da meta', [Math.round(M.difUep), Math.round(M.difMin)], [312, 65]);
 ok('falta 259 UEP = 250 caixas de BANQUETA (1,04) — arredonda PARA CIMA', [Math.round(M.falta), M.faltaCx], [259, 250]);
-ok('no ritmo da meta chega às 15:56', fromMin(Math.ceil(M.chega)), '15:56');
 ok('"VOL 1/1" sai do nome na TV; a cor vem pelo nomeComCor do núcleo', M.prod.rot, 'BANQUETA VERSATIL · BRANCO');
 ok('peso da caixa de hoje = UEP de jornada ÷ caixas de jornada (1,53)', _tvF2(M.peso), '1,53');
 ok('jornada 07:00–16:59 e o almoço como buraco (11:00–12:12)', [fromMin(M.ini), fromMin(M.fim), M.gaps], ['07:00', '16:59', [{ de: 660, ate: 732 }]]);
@@ -105,11 +104,14 @@ ok('nenhuma hora de jornada lançada → null (05:00 de HE, turno nem começou)'
 console.log('\n── os outros desfechos da corrida ──');
 const tarde = montarD(990, { '07:00': 100, '08:00': 100 }, { '07:00': 60, '08:00': 60 });
 const Mt = _tvUepMontar(tarde, { agoraMin: 990, prod: PROD, cat: CAT });
-ok('não chega na jornada no ritmo da meta: sem hora (o gráfico não marca horário)', [Mt.chega, Mt.minRest], [null, 29]);
+ok('fim da tarde: restam 29 min de jornada', Mt.minRest, 29);
 const fimDia = _tvUepMontar(montarD(1030, { '07:00': 100 }, { '07:00': 60 }), { agoraMin: 1030 });
-ok('jornada encerrada: nada resta, nada a projetar', [fimDia.minRest, fimDia.chega, fimDia.agora], [0, null, 1019]);
+ok('jornada encerrada: nada resta', [fimDia.minRest, fimDia.agora], [0, 1019]);
 const batida = _tvUepMontar(montarD(960, Object.assign({}, UEP_H, { '15:00': 400 }), Object.assign({}, CX_H, { '15:00': 300 })), { agoraMin: 960 });
-ok('meta batida: falta 0 e nenhuma projeção', [batida.falta, batida.proj, batida.faltaCx], [0, null, null]);
+ok('meta batida: falta 0, sem caixas a fazer', [batida.falta, batida.faltaCx], [0, null]);
+// v7.257.0 (PPCP, 16/11/2026: "não incluir projeção de fechamento"): o modelo
+// não monta mais a projeção do feito (o pontilhado e a hora da meta).
+ok('sem projeção no modelo (proj e chega saíram)', [M, Mt, fimDia, batida].map(mm => 'proj' in mm || 'chega' in mm), [false, false, false, false]);
 
 console.log('\n── UEP do produto de agora ──');
 ok('o cadastro manda (código com ou sem pontos)', _tvUepDoProduto('501140001', '', '', CAT, []), 1.04);
@@ -194,10 +196,19 @@ ok('Tela F traz o produto, a UEP da caixa e o peso contra o normal',
    [F0.includes('>BANQUETA VERSATIL<'), F0.includes('RODANDO AGORA · BRANCO'), F0.includes('<b>1,04</b> UEP'), F0.includes('o normal é 1,85 · hoje mais leves')],
    [true, true, true, true]);
 ok('Tela F: hora em andamento diz "até HH:MM", a futura sai "—"', [F0.includes('até 15:02'), /tvf-col fut">[\s\S]*?class="tvf-val"[^>]*>—</.test(F0)], [true, true]);
-ok('Tela G fala em tempo e em caixas: o sentido por extenso, a falta em caixas do produto de agora, a hora da meta no gráfico',
-   [G0.includes('<span>1h05</span><span class="tvg-dir">À FRENTE</span>'), G0.includes('<b>250</b> caixas') && G0.includes('de BANQUETA VERSATIL · 259 UEP'),
-    G0.includes('class="tvg-t0">15:56</text>'), G0.includes('RITMO DA META · 288/h')],
-   [true, true, true, true]);
+// v7.257.0 (PPCP, 16/11/2026, a maquete "menos informação, mais visibilidade"):
+// o selo, os minutos enormes e o sentido por extenso; a falta em UEP E em
+// caixas, as duas no número grande, e o produto; a legenda com a META.
+ok('Tela G: minutos e sentido, a falta em UEP e em caixas, o produto, a legenda com a META',
+   [G0.includes('<div class="tvg-min">1h05</div><div class="tvg-dir">À FRENTE</div>'), G0.includes('<div class="tvg-uep">DO ESPERADO · 312 UEP</div>'),
+    G0.includes('<span><b>259</b>UEP</span><span><b>250</b>caixas</span>'), G0.includes('<div class="tvg-prod tvu-nome">BANQUETA VERSATIL</div>'),
+    G0.includes('<i class="tvg-sw m"></i>META DO DIA')],
+   [true, true, true, true, true]);
+ok('Tela G sem o rodapé "1 UEP = 1 caixa de …" (PPCP: "pode tirar"); a hora extra continua, fora da meta',
+   [/1 UEP = 1 caixa/.test(G0 + G1), /tvu-rod/.test(G0), _tvGHtml(Object.assign({}, M, { he: 87.4 }), false).includes('+87 UEP em hora extra hoje — fora da meta')],
+   [false, false, true]);
+ok('sem projeção no gráfico: nenhum pontilhado (0 16) nem horário de meta, em caso nenhum',
+   [M, Mt, fimDia, batida].map(mm => /stroke-dasharray="0 16"|class="tvg-t0">\d\d:\d\d</.test(_tvGSvg(mm, true))), [false, false, false, false]);
 // O print de 16/11/2026 15:58: 2.429 feitas × 2.441 esperadas (−12 UEP, 99,5%)
 // e a tela dizia NO RITMO e "A META NÃO SAI ATÉ 16:59" — o 3º cartão andava no
 // ritmo da meta a partir do feito e, com 1 UEP atrás, dizia NÃO SAI o dia
@@ -210,13 +221,35 @@ ok('Tela G fala em tempo e em caixas: o sentido por extenso, a falta em caixas d
   const M1558 = _tvUepMontar(D1558, { agoraMin: 958, prod: PEN, cat: CATP });
   const M0920 = _tvUepMontar(montarD(560, { '07:00': 300, '08:00': 290, '09:00': 120 }, { '07:00': 150, '08:00': 145, '09:00': 60 }), { agoraMin: 560, prod: PEN, cat: CATP });
   const G1558 = _tvGHtml(M1558, true);
-  ok('o print das 15:58: −12 UEP, NO RITMO, 156 caixas de PENTEADEIRA',
-     [Math.round(M1558.difUep), slRitmo(M1558.ef), M1558.chega, G1558.includes('>NO RITMO<'), G1558.includes('<b>156</b> caixas'),
-      G1558.includes('<span>2 min</span><span class="tvg-dir">ATRÁS</span>')], [-12, 'NO RITMO', null, true, true, true]);
+  ok('o print das 15:58: −12 UEP, NO RITMO, 2 min ATRÁS, 332 UEP e 156 caixas de PENTEADEIRA',
+     [Math.round(M1558.difUep), slRitmo(M1558.ef), G1558.includes('<span class="tvg-selo ok">NO RITMO</span>'),
+      G1558.includes('<div class="tvg-min">2 min</div><div class="tvg-dir">ATRÁS</div>'),
+      G1558.includes('<span><b>332</b>UEP</span><span><b>156</b>caixas</span>'), G1558.includes('>PENTEADEIRA PRINCESA<')],
+     [-12, 'NO RITMO', true, true, true, true]);
+  // A variante A (PPCP, 16/11/2026): o veredito é o selo de sempre, o sentido
+  // é FATO (À FRENTE / ATRÁS). ADIANTADO / ATRASADO por minutos fixos diria
+  // ATRASADO em vermelho com o gerencial em NO RITMO (16:00, 17 min, 96,3%).
+  ok('variante A: nenhum ADIANTADO / ATRASADO na tela (o veredito é o selo)',
+     [M1558, M0920, M, Mt, batida].map(mm => /ADIANTADO|ATRASADO/.test(_tvGHtml(mm, true))), [false, false, false, false, false]);
   ok('um veredito só: nenhum cartão diz se a meta sai (15:58, 09:20, 15:02 à frente, fim da tarde, jornada encerrada, meta batida)',
      [M1558, M0920, M, Mt, fimDia, batida].map(mm => [false, true].map(s => /SAI ÀS|NÃO SAI|NÃO CABE|tvu-card[^]*tvu-card[^]*tvu-card/i.test(_tvGHtml(mm, s)))).flat()
        .filter(Boolean).length, 0);
   ok('o sentido vai por extenso, nunca por sinal ("−2 min" ao lado do NO RITMO)', /[−+]\d/.test(G1558.replace(/<svg[\s\S]*<\/svg>/, '')), false);
+  // Revisão de 16/11/2026 (v7.256.1): na v7.256.0 a UEP ia no FIM da linha do
+  // nome, que corta com "…" — "KIT 2 MESA CABECEIRA SLEEP · 2.05…" na TV. E a
+  // linha "feitas · esperadas" tinha saído: na janela pequena o gráfico pode
+  // não pôr um dos dois, e o número sumia da tela.
+  const MK = _tvUepMontar(montarD(560, { '07:00': 300, '08:00': 290, '09:00': 120 }, { '07:00': 150, '08:00': 145, '09:00': 60 }),
+                          { agoraMin: 560, prod: { cod: '502200001', desc: 'VOL 1/1 KIT 2 MESA CABECEIRA SLEEP', cor: 'BRANCO' }, cat: [{ codigo: '502.200.001', uep: 1.3 }] });
+  const GK = _tvGHtml(MK, true);
+  ok('nome comprido: a linha que corta (.tvu-nome) só tem o nome — nenhum número nela',
+     [...GK.matchAll(/class="[^"]*tvu-nome[^"]*">([^<]*)</g)].map(x => /\d{2}|UEP/.test(x[1].replace('KIT 2', ''))), [false]);
+  ok('a falta em UEP e em caixas no número grande, fora da linha que corta',
+     GK.includes('<div class="tvg-falta"><span><b>' + fmtN(Math.round(MK.falta)) + '</b>UEP</span><span><b>' + fmtN(MK.faltaCx) + '</b>caixas</span></div>'), true);
+  // v7.257.0: "feitas · esperadas" e a UEP/cx saíram do cartão (PPCP, "apresentar
+  // somente UEP restante, caixas e o produto"); a rede do FEITO passou para o
+  // gráfico — sem lugar livre, ele vai encostado numa curva (testado abaixo).
+  ok('o cartão não repete feitas · esperadas nem a UEP/cx', [/feitas ·|UEP\/cx/.test(G1558), /feitas ·|UEP\/cx/.test(GK)], [false, false]);
 }
 ok('o rodapé diz o que é 1 UEP', F0.includes('1 UEP = 1 caixa de MESA CABECEIRA MADERO'), true);
 ok('desenho sem conta: nenhuma régua de UEP dentro dos três',
@@ -228,13 +261,13 @@ console.log('\n── rótulos do gráfico e encaixe na altura (19/10/2026; TV d
 // 19/10: o ESPERADO 571 das 08:59 caía acima-à-direita do ponto, com as linhas
 // que vêm pela frente subindo por cima dele. 20/10 (TV de 65"): às 08:46 o
 // gráfico não tinha número nenhum, e às 15:02 o ESPERADO caía em cima da curva
-// do FEITO. A regra hoje é o INVARIANTE, não a posição: os dois números sempre
-// aparecem, dentro da área do gráfico, sem encostar em curva nenhuma nem um
-// no outro.
+// do FEITO. A regra hoje é o INVARIANTE, não a posição. Desde a v7.257.0 o
+// gráfico tem UM número, o do FEITO (o do ESPERADO saiu): ele sempre aparece,
+// dentro da área do gráfico; nas caixas da TV, sem encostar em curva nenhuma.
 function rotulos(svg){
   const caixa = re => { const m = svg.match(re); return m ? [+m[1], +m[2], +m[1] + +m[3], +m[2] + +m[4]] : null; };
   const R = '<rect x="([\\d.-]+)" y="([\\d.-]+)" width="([\\d.]+)" height="([\\d.]+)" rx="8" fill="var\\(--bg\\)" opacity=".86"/><text [^>]*>';
-  const pts = [...svg.matchAll(/<circle cx="([\d.]+)" cy="([\d.]+)" r="(?:12" fill="var\(--txt2\)|18)"/g)].map(m => ({ x: +m[1], y: +m[2] }));
+  const pts = [...svg.matchAll(/<circle cx="([\d.]+)" cy="([\d.]+)" r="(?:14" fill="var\(--txt2\)|22)"/g)].map(m => ({ x: +m[1], y: +m[2] }));
   const curvas = [...svg.matchAll(/<polyline [^>]*points="([^"]+)"/g)].map(m => m[1].split(' ').map(p => p.split(',').map(Number)));
   return { feito: caixa(new RegExp(R + 'FEITO ')), esp: caixa(new RegExp(R + 'ESPERADO ')), pts, curvas,
            vb: svg.match(/viewBox="0 0 (\d+) (\d+)"/).slice(1).map(Number) };
@@ -266,63 +299,68 @@ const CASOS_G = {
 };
 Object.entries(CASOS_G).forEach(([nome, mm]) => {
   [false, true].forEach(selo => {
-    const R = rotulos(_tvGSvg(mm, selo)), bxs = [R.feito, R.esp];
-    ok(nome + (selo ? ' · selo' : '') + ': os dois números aparecem, dentro do gráfico, sem encostar em curva nem um no outro',
-       [bxs.every(Boolean), bxs.every(b => b && b[0] >= 0 && b[1] >= 0 && b[2] <= R.vb[0] && b[3] <= R.vb[1]),
-        bxs.some(b => b && encosta(b, R.curvas)), !!(R.feito && R.esp && cruzaBx(R.feito, R.esp))],
+    const R = rotulos(_tvGSvg(mm, selo)), bx = R.feito;
+    ok(nome + (selo ? ' · selo' : '') + ': o FEITO aparece, dentro do gráfico, sem encostar em curva — e o ESPERADO não tem número',
+       [!!bx, !!bx && bx[0] >= 0 && bx[1] >= 0 && bx[2] <= R.vb[0] && bx[3] <= R.vb[1], !!bx && encosta(bx, R.curvas), !!R.esp],
        [true, true, false, false]);
   });
 });
 const S1502 = _tvGSvg(M, false);
 ok('a DISTÂNCIA feito × esperado é uma faixa desenhada (tinta neutra sem o selo)', /<polygon points="[^"]+" fill="var\(--txt\)" opacity=".2"\/>/.test(S1502), true);
 ok('com o selo, a faixa pega a cor do veredito', /<polygon points="[^"]+" fill="var\(--(ok|warn|red)\)" opacity=".2"\/>/.test(_tvGSvg(M, true)), true);
-ok('traço de TV de 65": FEITO 12, ESPERADO 7 tracejado, ATÉ A META 7 em pontos',
-   [/stroke="var\(--txt\)" stroke-width="12"/.test(S1502), /stroke="var\(--txt2\)" stroke-width="7" stroke-dasharray="24 14"/.test(S1502),
-    /stroke-width="7" stroke-dasharray="0 16" stroke-linecap="round"/.test(S1502)], [true, true, true]);
-ok('letra do gráfico para 65": números do agora 54/42, eixo 34 em Barlow Condensed 600 (o mono 400 cinza era fino demais)',
-   ['.tvg-svg .tvg-t0{font-family:var(--font-h);font-weight:700;font-size:54px', '.tvg-svg .tvg-t1{font-family:var(--font-h);font-weight:600;font-size:42px',
-    '.tvg-svg .tvg-t2{font-family:var(--font-h);font-weight:600;font-size:34px'].map(t => html.includes(t)), [true, true, true]);
+ok('traço (v7.257.0, "aumenta o que puder"): FEITO 18, ESPERADO 10 tracejado, META 7 laranja, nenhum pontilhado',
+   [/stroke="var\(--txt\)" stroke-width="18"/.test(S1502), /stroke="var\(--txt2\)" stroke-width="10" stroke-dasharray="28 16"/.test(S1502),
+    /stroke="var\(--acc\)" stroke-width="7"/.test(S1502), /stroke-dasharray="0 16"/.test(S1502)], [true, true, true, false]);
+ok('letra do gráfico (v7.257.0): FEITO 80, META 52 laranja, eixo 40 em Barlow Condensed',
+   ['.tvg-svg .tvg-t0{font-family:var(--font-h);font-weight:700;font-size:80px', '.tvg-svg .tvg-tm{font-family:var(--font-h);font-weight:700;font-size:52px;fill:var(--acc)',
+    '.tvg-svg .tvg-t2{font-family:var(--font-h);font-weight:600;font-size:40px'].map(t => html.includes(t)), [true, true, true]);
 
 console.log('\n── o gráfico no TAMANHO DA CAIXA (v7.173.0; print de 27/10, a janela do app no PC da TV) ──');
 // Caixas medidas no Chromium: a janela do app em 1920 (cabeçalho, abas, rodapé
 // e barra do Windows — o print), a TV cheia em 1920×1080 e em 1366×768, e o
-// gerencial numa janela de 1366×650.
+// gerencial em janelas de 1366×650, 1366×560 e 1280×600 (as duas últimas, da
+// revisão de 16/11/2026: lá o gráfico deixava um número de fora).
 const CAIXAS_G = { 'janela 1920 (o print)': { w: 1050, h: 654 }, 'TV cheia 1920×1080': { w: 1050, h: 842 },
-                   'TV cheia 1366×768': { w: 747, h: 575 }, 'janela 1366×650': { w: 747, h: 357 } };
+                   'TV cheia 1366×768': { w: 747, h: 575 }, 'janela 1366×650': { w: 747, h: 357 },
+                   'janela 1366×560': { w: 747, h: 268 }, 'janela 1280×600': { w: 700, h: 307 } };
+const CAIXA_TV = ['janela 1920 (o print)', 'TV cheia 1920×1080', 'TV cheia 1366×768'];
 ok('escala: a letra da TV cheia vale até 620 px de altura; abaixo encolhe junto; sem caixa, 1',
    [_tvGEscala(654), +_tvGEscala(842).toFixed(3), +_tvGEscala(575).toFixed(3), +_tvGEscala(357).toFixed(3), _tvGEscala(0), _tvGEscala(5000)],
    [1, 1.002, 0.927, 0.576, 1, 1.3]);
 ok('o viewBox tem a proporção da caixa (antes 1000×840 fixo: na janela de 1920 sobravam 135 px de cada lado)',
    Object.values(CAIXAS_G).map(d => { const v = _tvGSvg(M, false, d).match(/viewBox="0 0 (\d+) (\d+)"/).slice(1).map(Number);
-     return Math.abs(v[0] / v[1] - d.w / d.h) < 0.01; }), [true, true, true, true]);
+     return Math.abs(v[0] / v[1] - d.w / d.h) < 0.01; }), [true, true, true, true, true, true]);
 ok('sem caixa (1º desenho, escondida) continua 1000×840', /viewBox="0 0 1000 840"/.test(_tvGSvg(M, false)), true);
 const noTempo = _tvUepMontar(montarD(889, { '07:00': 300, '08:00': 270, '09:00': 290, '10:00': 330, '12:12': 215, '13:00': 435, '14:00': 66 },
                                      { '07:00': 290, '08:00': 260, '09:00': 280, '10:00': 320, '12:12': 200, '13:00': 420, '14:00': 64 }),
                          { agoraMin: 889, prod: PROD, cat: CAT });
 Object.entries(CAIXAS_G).forEach(([cn, d]) => {
-  const res = Object.entries(Object.assign({ '14:49 (o print de 27/10: a meta sai às 16:59, na borda)': noTempo,
-    // do sorteio: na TV de 1366×768 o par só cabe com a letra 10% menor
+  const tv = CAIXA_TV.includes(cn);
+  const res = Object.entries(Object.assign({ '14:49 (o print de 27/10: feito = esperado)': noTempo,
     '10:12 (muito adiantado)': _tvUepMontar(montarD(612, { '07:00': 344.5, '08:00': 345.1, '09:00': 203.3, '10:00': 534.1 },
                                                        { '07:00': 230, '08:00': 230, '09:00': 136, '10:00': 356 }), { agoraMin: 612, prod: PROD, cat: CAT }) }, CASOS_G)).map(([nome, mm]) => [false, true].map(selo => {
-    const svg = _tvGSvg(mm, selo, d), R = rotulos(svg), bxs = [R.feito, R.esp];
+    const svg = _tvGSvg(mm, selo, d), R = rotulos(svg), bx = R.feito;
     const alm = (() => { const m = svg.match(/<text x="([\d.]+)" y="([\d.]+)" text-anchor="middle" class="tvg-t2">ALMOÇO<\/text>/);
-      return m ? [+m[1] - 52, +m[2] - 28, +m[1] + 52, +m[2] + 6] : null; })();
-    const hora = svg.match(/<text x="([\d.]+)" y="[\d.]+" text-anchor="middle" class="tvg-t0">\d\d:\d\d<\/text>/);
-    return [bxs.every(Boolean), bxs.every(b => b && b[0] >= 0 && b[1] >= 0 && b[2] <= R.vb[0] && b[3] <= R.vb[1]),
-            bxs.some(b => b && encosta(b, R.curvas)), !!(R.feito && R.esp && cruzaBx(R.feito, R.esp)),
-            !!alm && bxs.some(b => b && cruzaBx(b, alm)), !!hora && +hora[1] + 62 > R.vb[0]].join() === 'true,true,false,false,false,false'
+      return m ? [+m[1] - 60, +m[2] - 33, +m[1] + 60, +m[2] + 7] : null; })();
+    // na TV, lugar LIVRE; na janela pequena do gerencial pode encostar numa
+    // curva (sobre a tarja) — o que não pode é faltar
+    return [!!bx, !!bx && bx[0] >= 0 && bx[1] >= 0 && bx[2] <= R.vb[0] && bx[3] <= R.vb[1],
+            tv && !!bx && encosta(bx, R.curvas), !!alm && !!bx && cruzaBx(bx, alm)].join() === 'true,true,false,false'
       ? null : nome + (selo ? ' · selo' : '');
   })).flat().filter(Boolean);
-  ok(cn + ': nos 11 casos, com e sem selo, os dois números aparecem dentro, sem encostar em curva, um no outro, no ALMOÇO, e o horário da meta não passa da borda', res, []);
+  ok(cn + ': nos 11 casos, com e sem selo, o FEITO aparece dentro do gráfico, fora do ALMOÇO' + (tv ? ' e sem encostar em curva' : ''), res, []);
 });
 
-console.log('\n── as linhas: só o ESPERADO é tracejado, e o que anda colado não se desenha duas vezes ──');
-ok('a META é linha cheia (o tracejado 6 10 sumiu)', [/stroke-dasharray="6 10"/.test(S1502), /stroke="var\(--txt3\)" stroke-width="3"\/><text [^>]*class="tvg-t1">META DO DIA/.test(S1502)], [false, true]);
-const espPts = svg => svg.match(/stroke="var\(--txt2\)" stroke-width="7" stroke-dasharray="24 14" stroke-linejoin="round" points="([^"]+)"/)[1].split(' ').length;
-ok('o print de 27/10 (14:49, 1.906 feitas = 1.906 esperadas): o esperado PARA no agora — daqui para a frente fica só o ATÉ A META',
-   [Math.round(noTempo.difUep), espPts(_tvGSvg(noTempo, false)), noTempo.pts.length], [0, noTempo.pts.length, noTempo.pts.length]);
+console.log('\n── as linhas: só o ESPERADO é tracejado, e vai até o fim da jornada ──');
+ok('a META é linha cheia e laranja (o tracejado 6 10 sumiu)', [/stroke-dasharray="6 10"/.test(S1502), /stroke="var\(--acc\)" stroke-width="7"\/><text [^>]*class="tvg-tm">META DO DIA/.test(S1502)], [false, true]);
+const espPts = svg => svg.match(/stroke="var\(--txt2\)" stroke-width="10" stroke-dasharray="28 16" stroke-linejoin="round" points="([^"]+)"/)[1].split(' ').length;
+// Até a v7.256.x, com feito = esperado (o print de 27/10, 14:49), o esperado
+// PARAVA no agora para não andar colado ao pontilhado da projeção; sem a
+// projeção (v7.257.0) ele segue sempre até o fim da jornada.
+ok('feito = esperado (14:49, o print de 27/10): o esperado segue até o fim da jornada',
+   [Math.round(noTempo.difUep), espPts(_tvGSvg(noTempo, false)) > noTempo.pts.length], [0, true]);
 ok('com distância (15:02, +312 UEP), o esperado segue até o fim da jornada', espPts(S1502) > M.pts.length, true);
-ok('meta batida (sem ATÉ A META): o esperado segue até o fim', espPts(_tvGSvg(batida, false)) > batida.pts.length, true);
+ok('meta batida: o esperado segue até o fim', espPts(_tvGSvg(batida, false)) > batida.pts.length, true);
 ok('grade de no máximo 4 passos: com a meta de 2.530, só 1.000 e 2.000',
    [...S1502.matchAll(/text-anchor="end" class="tvg-t2">([\d.]+)</g)].map(m => m[1]), ['1.000', '2.000']);
 ok('o ALMOÇO mora no pé da faixa', /y="(\d+)" text-anchor="middle" class="tvg-t2">ALMOÇO/.test(S1502) && +S1502.match(/y="(\d+)" text-anchor="middle" class="tvg-t2">ALMOÇO/)[1] > 700, true);
@@ -330,7 +368,7 @@ const CABE_G = pegaJs('function _tvUepCabe('), ENC = pegaJs('function _tvGEncaix
 ok('o encaixe redesenha o gráfico no tamanho da caixa, com o modelo que o ciclo deixou no corpo',
    [/_tvGEncaixa\(corpo\)/.test(CABE_G), /_tvGSvg\(a\[0\], a\[1\], \{ w:r\.width, h:r\.height \}\)/.test(ENC),
     /corpo\._tvgArgs = t === 'g' \? \[m, selo\] : null/.test(JS)], [true, true, true]);
-const CSS_FG = html.split('\n').filter(l => /^\.tv[ufg]-/.test(l) && !/^\.tvu-slide\{/.test(l) && /font-size:/.test(l));
+const CSS_FG = html.split('\n').filter(l => /^(\.tv[ufg]-|#tv-slide-g \.tvg-)/.test(l) && !/^\.tvu-slide\{/.test(l) && /font-size:/.test(l));
 ok('fonte das Telas F/G pela escala --tvu-k (nenhum font-size solto por vh)',
    CSS_FG.filter(l => /font-size:clamp\(/.test(l)).length, 0);
 ok('o cartão cresce pelo CONTEÚDO (1 1 auto), não em fatias iguais', /^\.tvu-card\{flex:1 1 auto;/m.test(html), true);
@@ -339,7 +377,7 @@ ok('o encaixe reduz a escala até TV_UEP_K_MIN e só refaz quando o tamanho muda
    [/TV_UEP_K_MIN/.test(CABE), /_tvuTam === tam/.test(CABE), /--tvu-k/.test(CABE)], [true, true, true]);
 ok('mede a ALTURA (scrollHeight) — o teste da v7.138.0 só via a largura',
    /scrollHeight > e\.clientHeight/.test(pegaJs('function _tvUepCorta(')), true);
-ok('nome de produto pode cortar com "…" sem encolher a tela', /tvu-nome/.test(pegaJs('function _tvUepCorta(')) && /tvu-prod tvu-nome/.test(F0) && /tvu-sub tvu-nome/.test(G0), true);
+ok('nome de produto pode cortar com "…" sem encolher a tela', /tvu-nome/.test(pegaJs('function _tvUepCorta(')) && /tvu-prod tvu-nome/.test(F0) && /tvg-prod tvu-nome/.test(G0), true);
 const CICLO = JS.slice(JS.indexOf('function _sincSlideUep('), JS.indexOf('function _sincSlideUep(') + 9000);
 ok('o ciclo mede depois de desenhar e depois de MOSTRAR (escondida não tem altura)',
    [/innerHTML = t === 'f'[\s\S]{0,120}_tvUepCabe\(/.test(CICLO), /slides\[t\]\.style\.display = 'flex'; _tvUepCabe\(slides\[t\], true\)/.test(JS)], [true, true]);
