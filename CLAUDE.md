@@ -86,7 +86,9 @@ via Google Apps Script (JSONP).
   `getProgramacaoSemana` — as duas abas, o saldo só da própria linha, cada dia
   igual à META do dia), e o TAKT DA SEMANA dos tempos-alvo (v5.63: as 6 semanas
   do `getTemposAlvo` contra o `_taktMontar` REAL do painel, extraído do HTML,
-  com lote no sábado, domingo e feriado; o que falhou não fica no cache):
+  com lote no sábado, domingo e feriado; o que falhou não fica no cache), e o
+  LOTE DE HOJE antes do 1º lançamento (v5.66: PRODUZIDO e SALDO vazios → a
+  QTDE; vencida ou com o SALDO de outra linha, null):
   `node programacao.test.js`.
 - `uep-padrao.test.js` — UEP padrão versionada (`UEP_VERSOES`), trava do GRAVAR
   UEP e o bloco 7 da aba ⚖ UEP (padrão × realizado por produto; v7.206.0: a
@@ -176,8 +178,11 @@ via Google Apps Script (JSONP).
   em s por UEP, frase, cascata, AGORA e DETALHES da esta semana), a ordem do
   olhar nas três telas e o PARA FECHAR numa linha sem repetir as caixas; e
   (v7.242.0) o PRECISA em partes (atraso · hoje · dias que vêm, o retrato real
-  de 13/11, o arredondamento do acumulado, 4.000 sorteios, a tela e o 🖨):
-  `node takt-semana.test.js`.
+  de 13/11, o arredondamento do acumulado, 4.000 sorteios, a tela e o 🖨); e
+  (v7.245.0) o vencido de antes da segunda e o lote de hoje no PRECISA, com o
+  retrato real de 16/11 06:54 (FECHA sobram 3h39 → NÃO FECHA faltam 6h07; as
+  quatro partes; o não lido avisado; as 4 SEMANAS com o mesmo número; 9 de 10
+  mutações — a 10ª é equivalente): `node takt-semana.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -7238,10 +7243,10 @@ feito e dá ar de verdade ao que sobrou.
   saída (o mesmo `A` do quadro). O toque (`_uepAtrAbrir`) abre o PRÓXIMOS DIAS
   com o quadro aberto e rola até ele. Borda vermelha com atraso
   (`.uep-sb-atr.red`). Só o VENCIDO: o programado de hoje continua fora (v7.156.0).
-  - ⚠ **O NÃO FECHA da TAKT ESTA SEMANA não soma o vencido de antes da
-    segunda** (só os lotes datados na semana). Em 11/11/2026: cartão 3h45 (425
-    cx: 25396 de 06/11 1h44 · 25411 de 10/11 1h52 · 25413 de 10/11 0h09),
-    TAKT faltam 5h47 sem o 1h44 do 25396. Somar foi oferecido, não decidido.
+  - ~~⚠ **O NÃO FECHA da TAKT ESTA SEMANA não soma o vencido de antes da
+    segunda**~~ — **soma desde a v7.245.0** (ver *O ATRASO E O LOTE DE HOJE NO
+    PRECISA*). Em 11/11/2026 o cartão dizia 3h45 e o TAKT faltam 5h47 sem o
+    1h44 do 25396 (06/11).
   - Medido no Chromium: 1920, uma linha (o cartão com 228 px, texto inteiro);
     1366 e 1280, duas linhas (o corte de texto nos outros cartões já existia).
   - **NO CELULAR (mobile 1.43.0**, PPCP: *"essa card do atraso pode ir para
@@ -7299,19 +7304,16 @@ feito e dá ar de verdade ao que sobrou.
     TAKT *"faltam 6h16"* — *"como falta 6?"* → prévia → *"pode subir"*):
     `<small id="uep-sb-atr-s" style="display:none">` (nasce escondida: sem
     isso a faixa cresce 2 px antes do 1º desenho), texto do `_uepAtrSub(venc,
-    hojeN)` (puro, pelo `A.venc`): *já está no PRECISA do TAKT* (vencido desta
-    semana, com UEP) · *antes de dd/mm: fora do TAKT* (o TAKT só soma os lotes
-    de segunda em diante) · *sem UEP: fora do TAKT* / *sem UEP (\*)…* · *antes de
-    dd/mm e sem UEP: fora* (os dois) · *fora do TAKT desta semana* (hoje segunda). Até 30
+    hojeN)` (puro, pelo `A.venc`): *já está no PRECISA do TAKT* (todo vencido
+    com UEP — desde a v7.245.0 também o de antes da segunda; as frases *antes de
+    dd/mm: fora do TAKT* e *fora do TAKT desta semana* saíram) · *sem UEP: fora
+    do TAKT* / *sem UEP (\*): fora do TAKT* (só o código sem UEP fica fora). Até 30
     caracteres (o card tem ~166 px a 1280; a 1ª versão, *"o de antes de 09/11
     não conta no FALTAM da semana"*, saía cortada em toda largura) e sem a
     palavra FALTAM (com a semana fechando o veredito diz SOBRAM/FICARAM); a
     explicação vai no `title` (`subT`). O `_uepSubAtr(P, A, est, hojeN)` devolve
     `sub`/`subT` só com o dia e com vencido; o `sbA` do `renderProxDias` pinta e
     esconde a linha no estado seguinte sem `sub`.
-    - ⚠ Pela data do lote mais antigo de cada código (`desde`): um código com
-      vencido de antes E desta semana cai em *antes de dd/mm* (a frase vale: o
-      de antes fica fora).
     - ⚠ Fontes diferentes: o card é o atraso por código (FIFO, `PONTOS_DIA` +
       `getProgramacaoDetalhada`), o TAKT o saldo de cada linha
       (`getProgramacaoSemana`), com caches diferentes — podem diferir por
@@ -7654,6 +7656,48 @@ feito e dá ar de verdade ao que sobrou.
     partes, também com o *"(com hora extra)"* — a legenda do papel começa na
     margem, embaixo do rótulo PRECISA; alinhada com a barra ela quebrava em 2
     linhas e a folha ia a 716); tela 1920 e 1366 sem passar da largura.
+  - **O ATRASO E O LOTE DE HOJE NO PRECISA (v7.245.0 / `.gs` v5.66**, PPCP
+    16/11/2026 06:54, com o card ATRASO *6h04 · 800 cx · desde 10/11* e o TAKT
+    na tela: *"6h04 não contempla o lote de hj?"* → prévia com os dados do dia
+    → *"sim faz as duas"*). Duas coisas ficavam fora do PRECISA da ESTA SEMANA,
+    e o veredito dizia **FECHA, sobram 3h39** quando era **NÃO FECHA, faltam
+    6h07** (≈ 1.300 cx):
+    - **o vencido de antes da segunda** (o card ATRASO): o
+      `getProgramacaoSemana` da semana de hoje manda o **`vencidoAntes`** (`.gs`
+      v5.66): as linhas ABERTAS com data antes do "de", com o SALDO da própria
+      linha (`_saldoConfiavel`; arquivada, encerrada e fora da esteira fora). O
+      `_taktHoje` leva `antes:_taktAntesDoPainel(hojeN)` =
+      `_taktAntesSoma(TKS.vencidoAntes)`; o `_taktMontar` soma em
+      `falta.uep`/`cx` (o sem UEP só em `cxSemUep`, linha sem saldo em
+      `semSaldo`) e guarda `falta.uepAntes`. `h.antes` undefined (semana que
+      vem, AVALIAR) = nada muda; **false** = o `.gs` não manda o campo;
+      **null** = a semana de hoje não lida — os dois ficam fora e o
+      `_taktAntesAviso` diz por quê (tela e 🖨). ⚠ **Da MESMA leitura, nunca do
+      `falta` da programação detalhada**: a 1ª versão fazia `falta` (lida a cada
+      15 min) − saldo da semana (a cada 5) e um lançamento entre as duas punha
+      no TAKT caixa que já tinha saído (revisão: segunda de manhã o card caía
+      para 5h28 e o TAKT seguia 6h04). O AVALIAR (`_tkaPainel`) também prefere o
+      `vencidoAntes`; o `_tkaVencidoAntes` ficou só para o `.gs` antigo.
+      O card ATRASO recebe o `_taktAntesFora` e só diz *já está no PRECISA* com
+      o vencido no TAKT.
+    - **o lote de hoje antes do 1º lançamento**: até ele a linha de hoje tem
+      PRODUZIDO e SALDO vazios (ontem era futura) e o `getProgramacaoSemana`
+      mandava `saldo` null — fora da falta (*"7 linhas sem saldo confiável"*).
+      `.gs` v5.66: `saidaVazia` no `_lerProgDaAba` e a linha de HOJE com as duas
+      vazias vem com a QTDE. Vencida vazia e SALDO de outra linha seguem null.
+    - **A barra PRECISA em até 4 partes**: *vencidos antes de dd/mm* (p1) ·
+      *vencidos desta semana* · *dos lotes de hoje* · *dos dias que vêm*; pele
+      `i.p4` (opacidade .18 na tela, contorno tracejado no papel). Nome *vencidos*,
+      nunca *atraso* (o card ATRASO é a soma das duas primeiras).
+    - **O "pede X%" não muda**: é a programação desta semana (a datação), não a
+      dívida. O card ATRASO diz *já está no PRECISA do TAKT*.
+    - **4 SEMANAS**: a 1ª semana soma o mesmo vencido (`uAnt`, `antesSeg`, linha
+      no dia a dia, aviso na frase sem a leitura). Com todo dia útil programado e
+      sem lote no fim de semana, a 1ª semana dá o MESMO do veredito (o teste
+      confere com o retrato de 16/11: 41h15 · 35h08 · 6h07).
+    - ⚠ Antes do re-deploy do v5.66 nada muda no veredito: o vencido fica fora
+      (aviso *"até colar o ritmoprod_appscript.gs v5.66"*, card *antes de dd/mm:
+      fora do TAKT*) e o lote de hoje continua fora até o 1º lançamento.
   - **4 SEMANAS (v7.237.0**, PPCP 13/11/2026: *"tem como colocar mais
     semanas?"* → o quadro, recomendado contra mais botões; *"sempre dias
     úteis"*): `TKS_SEM` = 3, botão entre SEMANA QUE VEM e AVALIAR. Esta semana +
@@ -7684,8 +7728,8 @@ feito e dá ar de verdade ao que sobrou.
       *16/11–19/11 (20/11 feriado · 19/11 sem programação — fora)* e a frase
       fecha no último dia PROGRAMADO (*"chega a 18/11"*), nunca no domingo.
     - Desenho `_taktSemanasHtml` (sem conta), toque abre o dia a dia (`TKS4_AB`).
-      Não soma o vencido de antes desta segunda (o card ATRASO; somar foi
-      oferecido e não decidido).
+      ~~Não soma o vencido de antes desta segunda~~ — soma desde a v7.245.0 (a
+      1ª semana, linha *vencidos antes de dd/mm (o card ATRASO)* no dia a dia).
     - Revisões: a 1ª versão (o `_tkaCorrente` inteiro) contava o vencido em dobro
       (o `falta` do `getProgramacaoDetalhada` é POR CÓDIGO — e o `_tkaPainel` do
       AVALIAR ainda soma ele por linha: defeito antigo, não mexido); a 2ª (o
@@ -8116,7 +8160,8 @@ feito e dá ar de verdade ao que sobrou.
   linha: data, lote, ordem, código, cor, qtde, `uepCx`/`uep` (cadastro de agora;
   null sem UEP), `saldo` (`_saldoConfiavel`: o SALDO do write-back só quando
   PRODUZIDO + SALDO = QTDE; concluída, encerrada vencida e fora da esteira 0;
-  futura sem conta a QTDE; sem conta null, nunca 0), `aba`, `encerrada`,
+  futura sem conta a QTDE; desde a v5.66 a de HOJE com PRODUZIDO e SALDO
+  vazios também — ainda sem lançamento; sem conta null, nunca 0), `aba`, `encerrada`,
   `foraEsteira`; e os feriados do período. Sem datas: a semana de hoje (seg–dom).
   Máx. 14 dias. Não refaz o FIFO (lê as abas e o cadastro).
   - ⚠ **Só as duas abas juntas**: lendo só a PROGRAMACAO, o total da semana

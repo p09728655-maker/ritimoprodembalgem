@@ -11,6 +11,58 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.245.0 · `.gs` v5.66 — 16/11/2026 · TAKT DA SEMANA: o atraso e o lote de hoje no PRECISA
+
+O PPCP perguntou às 06:54, com o card ATRASO (*6h04 · 800 cx · desde 10/11*)
+e o TAKT DA SEMANA na tela: *"6h04 não contempla o lote de hj?"*. Ele viu a
+prévia com os dados do dia e respondeu *"sim faz as duas"*.
+
+- **O PRECISA da ESTA SEMANA agora soma o vencido de antes da segunda**, que é
+  o card ATRASO. Até a v7.243.0 o TAKT só somava os lotes datados nesta semana.
+- **O lote de hoje passa a entrar antes do 1º lançamento do dia** (`.gs`
+  v5.66). Até o 1º lançamento, a linha de hoje tem PRODUZIDO e SALDO vazios:
+  ontem ela tinha data futura, e o painel não preenche essas colunas para data
+  futura. Antes, essa linha ficava fora da falta. Agora a linha de hoje com as
+  duas colunas vazias entra com a QTDE.
+- **A barra PRECISA mostra de onde vem cada parte**, até quatro: *vencidos antes
+  de dd/mm* · *vencidos desta semana* · *dos lotes de hoje* · *dos dias que
+  vêm*.
+- **O "pede X% da referência" não muda.** Ele continua medindo só a
+  programação desta semana.
+- **Card ATRASO:** a 2ª linha diz *já está no PRECISA do TAKT*. Só o vencido de
+  código sem UEP fica fora, e a linha diz isso.
+- **4 SEMANAS:** a 1ª semana soma o mesmo vencido. No dia a dia ele aparece
+  como a linha *vencidos antes de dd/mm (o card ATRASO)*. A hora extra a
+  programar sobe junto.
+- **O vencido vem da mesma leitura da semana** (`.gs` v5.66: o
+  `getProgramacaoSemana` manda as linhas abertas com data antes da segunda, com
+  o saldo de cada uma). A 1ª versão tirava o vencido da programação detalhada,
+  lida em outra hora: um lançamento entre as duas leituras deixava o TAKT até
+  15 min atrás do card ATRASO (achado da revisão).
+- **Sem o vencido** (o `.gs` antigo, ou a semana não lida), ele fica fora e a
+  tela avisa logo abaixo do veredito. O card ATRASO diz *antes de dd/mm: fora
+  do TAKT*.
+
+**Atenção — o veredito da ESTA SEMANA e o atraso das 4 SEMANAS mudam de
+número.** Com os dados de 16/11 às 06:54:
+
+| | antes | agora |
+|---|---|---|
+| veredito | **FECHA, sobram 3h39** | **NÃO FECHA, faltam 6h07** (≈ 1.300 cx) |
+| PRECISA | 31h29 | 41h15 = 6h04 + 3h46 + 31h25 |
+| TEM | 35h08 | 35h08 |
+
+- **Antes:** ficavam fora os 6h04 de atraso e os lotes 25442 e 25443 de hoje
+  (1.150 cx).
+- **Agora:** 6h04 vencidos antes de 16/11 + 3h46 dos lotes de hoje + 31h25 dos
+  dias que vêm.
+
+O "pede 115,3%" é o mesmo nos dois casos.
+
+⚠ **re-deploy** do `.gs` v5.66. Antes dele nada muda no veredito: o vencido
+fica fora (a tela diz *"até colar o ritmoprod_appscript.gs v5.66"*) e o lote de
+hoje segue fora até o 1º lançamento (a nota *"linhas sem saldo confiável"* diz
+isso).
 ## v7.244.0 — 13/11/2026 · GERENCIAL DO PC: correções da revisão da v7.243.0
 
 A revisão terminou depois do merge da v7.243.0. Pelo combinado com o PPCP, as
