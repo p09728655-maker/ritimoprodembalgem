@@ -11,6 +11,30 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.246.0 · `.gs` v5.67 — 16/11/2026 · TAKT DA SEMANA: o que já foi embalado antes, na barra do dia
+
+O PPCP viu, com a v7.245.0 na tela, a barra de 16/11 no DIA A DIA mostrando
+9h06 programadas enquanto o veredito contava só 3h46 do dia. Ele aceitou a
+sugestão: *"sim com a mensagem que embalou antes ai fica completo"*.
+
+- **A barra do programado mostra, no pé, o trecho já embalado antes do dia do
+  lote**, listrado, com as horas dentro dele quando cabem. Embaixo do dia vem
+  escrito *"embalou 5h20 antes"*; no papel e em barra estreita, *"embalou
+  5h20"*.
+- Ao passar o mouse, aparecem as caixas e a UEP: em 16/11, 838 cx do 25441 =
+  1.676 UEP = 5h20.
+- Na legenda, *embalou antes (adiantado)*, só quando algum dia tem esse
+  trecho.
+- **A fonte é a coluna ADIANTADO_CX da PROGRAMACAO**, que o script grava a cada
+  lançamento desde o `.gs` v5.23: as caixas de produção feita antes da data do
+  lote. O `.gs` v5.67 passa a mandá-la junto com a programação da semana, e só
+  quando o saldo da linha é dela.
+- **Nenhum número muda.** O PRECISA já não contava o adiantado; agora o
+  gráfico mostra onde ele está.
+
+⚠ **re-deploy** do `.gs` v5.67. Antes dele a barra fica como estava, e uma nota
+embaixo do gráfico diz que falta colar o arquivo.
+
 ## v7.245.0 · `.gs` v5.66 — 16/11/2026 · TAKT DA SEMANA: o atraso e o lote de hoje no PRECISA
 
 O PPCP perguntou às 06:54, com o card ATRASO (*6h04 · 800 cx · desde 10/11*)

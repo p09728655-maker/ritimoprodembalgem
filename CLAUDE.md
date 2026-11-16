@@ -88,7 +88,9 @@ via Google Apps Script (JSONP).
   do `getTemposAlvo` contra o `_taktMontar` REAL do painel, extraído do HTML,
   com lote no sábado, domingo e feriado; o que falhou não fica no cache), e o
   LOTE DE HOJE antes do 1º lançamento (v5.66: PRODUZIDO e SALDO vazios → a
-  QTDE; vencida ou com o SALDO de outra linha, null):
+  QTDE; vencida ou com o SALDO de outra linha, null; o `vencidoAntes`), e o
+  `adiantadoCx` por linha (v5.67: a coluna ADIANTADO_CX, null sem ela ou com o
+  SALDO de outra linha):
   `node programacao.test.js`.
 - `uep-padrao.test.js` — UEP padrão versionada (`UEP_VERSOES`), trava do GRAVAR
   UEP e o bloco 7 da aba ⚖ UEP (padrão × realizado por produto; v7.206.0: a
@@ -182,7 +184,9 @@ via Google Apps Script (JSONP).
   (v7.245.0) o vencido de antes da segunda e o lote de hoje no PRECISA, com o
   retrato real de 16/11 06:54 (FECHA sobram 3h39 → NÃO FECHA faltam 6h07; as
   quatro partes; o não lido avisado; as 4 SEMANAS com o mesmo número; 9 de 10
-  mutações — a 10ª é equivalente): `node takt-semana.test.js`.
+  mutações — a 10ª é equivalente); e (v7.246.0) o EMBALOU ANTES na barra do
+  dia (o 25441 de 16/11: 838 cx, 5h20; tela, papel, legenda, sem o campo):
+  `node takt-semana.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -7698,6 +7702,25 @@ feito e dá ar de verdade ao que sobrou.
     - ⚠ Antes do re-deploy do v5.66 nada muda no veredito: o vencido fica fora
       (aviso *"até colar o ritmoprod_appscript.gs v5.66"*, card *antes de dd/mm:
       fora do TAKT*) e o lote de hoje continua fora até o 1º lançamento.
+  - **O QUE JÁ FOI EMBALADO ANTES, NA BARRA DO DIA (v7.246.0 / `.gs` v5.67**,
+    PPCP 16/11/2026, com a barra de 16/11 em 9h06 e o veredito contando 3h46
+    do dia: *"sim com a mensagem que embalou antes ai fica completo"*). No DIA
+    A DIA da ESTA SEMANA, o pé da barra do programado é LISTRADO
+    (`<pattern>` com id único por gráfico, `_taktSvg.n`; `--tks-feito` sobre
+    `--tks-base`) até as horas que a linha recebeu de produção feita ANTES da
+    data do lote; as horas dentro do trecho só quando cabem na LARGURA da barra
+    (no papel encostavam no *até agora* do feito) e embaixo do dia *"embalou
+    5h20 antes"* (papel e barra estreita: *"embalou 5h20"*); `title` com caixas
+    e UEP; legenda *embalou antes (adiantado)* (`.tks-la`) só com algum. A
+    SEMANA QUE VEM não marca (o saldo já não tem o adiantado).
+    - Fonte: a coluna **ADIANTADO_CX** da PROGRAMACAO (o write-back grava desde
+      o `.gs` v5.23); o `.gs` v5.67 lê no `_lerProgDaAba` (`adiCx`) e o
+      `getProgramacaoSemana` manda `adiantadoCx` por linha — só quando o SALDO
+      é da linha (`pr.saldo != null`), senão null (nunca 0). O `_taktMontar`
+      soma por dia `adiCx`/`adiUep` (mín(adiantado, qtde) × UEP) e devolve
+      `adiCampo`; sem o campo, a nota manda colar o v5.67.
+    - Só desenho: o PRECISA já não contava o adiantado (o saldo é QTDE − o que
+      saiu). Medido em 16/11: 25441, 838 cx = 1.676 UEP = 5h20.
   - **4 SEMANAS (v7.237.0**, PPCP 13/11/2026: *"tem como colocar mais
     semanas?"* → o quadro, recomendado contra mais botões; *"sempre dias
     úteis"*): `TKS_SEM` = 3, botão entre SEMANA QUE VEM e AVALIAR. Esta semana +

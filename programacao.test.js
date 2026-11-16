@@ -1015,6 +1015,34 @@ console.log('\n── v5.66: o lote de hoje antes do 1º lançamento ──');
      [true, true]);
 }
 
+// v5.67 — O QUE JÁ FOI EMBALADO ANTES DO DIA DO LOTE. PPCP, 16/11/2026: a barra de 16/11 do DIA A DIA
+// mostrava 9h06 programadas e o veredito 0h05 — o 25441 tinha sido embalado na semana passada → "sim com
+// a mensagem que embalou antes". Cada linha da semana leva a coluna ADIANTADO_CX (o write-back grava desde
+// a v5.23), só quando o SALDO da linha é dela.
+console.log('\n── v5.67: o embalado antes (ADIANTADO_CX) na programação da semana ──');
+{
+  const prog = [
+    { lote: '25441', data: '16/11', ordem: 1, cod: '501089001', qtde: 130, prod: 128 },   // hoje, adiantada: 128 (o caso real)
+    { lote: '25442', data: '16/11', ordem: 2, cod: '501128002', qtde: 140 },              // hoje sem lançamento: vazio → null
+    { lote: '25443', data: '16/11', ordem: 3, cod: '501140001', qtde: 380, prod: 10, saldo: 99 },   // SALDO de outra linha: a célula também não é dela → null
+    { lote: '25446', data: '17/11', ordem: 1, cod: '501134002', qtde: 450, prod: 0 },     // futura sem adiantamento: 0 (calculado, nada)
+    { lote: '25447', data: '18/11', ordem: 1, cod: '501070001', qtde: 60, prod: 60 },     // futura toda adiantada: "60" em texto (pt-BR) → 60
+  ];
+  const adi = ['128', '', '50', 0, '60'];
+  const m = montar(prog, [], { hoje: '16/11/2026', fer: [['DATA', 'DESCRICAO'], ['20/11/2026', 'CONSCIÊNCIA NEGRA']] });
+  m.ABAS.PROGRAMACAO[0].push('ADIANTADO_CX');
+  m.ABAS.PROGRAMACAO.slice(1).forEach((r, i) => r.push(adi[i]));
+  const r = vm.runInContext('(function(){ _invalidarValores(); return getProgramacaoSemana({}); })()', m.ctx);
+  ok('cada linha leva o adiantadoCx (a coluna ADIANTADO_CX): 128 do 25441; vazio, ou com o SALDO de outra linha, null (nunca 0); 0 calculado fica 0; texto vira número',
+     ['501089001', '501128002', '501140001', '501134002', '501070001'].map(c => (r.linhas.find(x => x.codigo === c) || {}).adiantadoCx), [128, null, null, 0, 60]);
+  const m2 = montar(prog.slice(0, 1), [], { hoje: '16/11/2026' });
+  const r2 = vm.runInContext('(function(){ _invalidarValores(); return getProgramacaoSemana({}); })()', m2.ctx);
+  ok('aba sem a coluna ADIANTADO_CX: o campo vai null (o painel não marca nada)', r2.linhas.map(x => x.adiantadoCx), [null]);
+  ok('a versão: cabeçalho, GS_VERSAO e o _lerProgDaAba lendo a coluna pelo nome',
+     [/^\/\/ Versão: 5\.67 /m.test(GS), /const GS_VERSAO = '5\.67';/.test(GS), /const iAdi  = hdr\.indexOf\('ADIANTADO_CX'\);/.test(GS),
+      /adiantadoCx: pr\.saldo != null && pr\.adiCx != null \? pr\.adiCx : null,/.test(GS)], [true, true, true, true]);
+}
+
 console.log('\n── v5.63: o takt da semana do .gs = o TAKT DA SEMANA do painel ──');
 {
   const JS = [...V7.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)].map(x => x[1]).join('\n');

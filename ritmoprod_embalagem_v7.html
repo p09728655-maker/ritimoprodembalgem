@@ -966,6 +966,7 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-uep .uep-leg .tks-lp::before{background:none;border:1.5px dashed var(--txt2);width:8px;height:8px}
 #sec-uep .uep-leg .tks-lb::before{background:var(--tks-base)} #sec-uep .uep-leg .tks-lx::before{background:var(--red)}
 #sec-uep .uep-leg .tks-lr::before{height:0;border-top:2px solid var(--txt);width:14px;background:none;vertical-align:3px}
+#sec-uep .uep-leg .tks-la::before{background:repeating-linear-gradient(135deg,var(--tks-feito) 0 2.5px,var(--tks-base) 2.5px 5px)}   /* v7.246.0: embalou antes (o listrado da barra) */
 .pg-sim-wrap .pg-sim{border:1px solid var(--border);border-radius:8px;padding:13px 15px;background:var(--surface)}
 .pg-sim-wrap .pg-sim-tag{font-family:var(--font-d);font-size:9.5px;font-weight:700;letter-spacing:1px;color:var(--warn);border:1px solid var(--warn);border-radius:3px;padding:1px 5px;margin-left:8px;vertical-align:1px}
 .pg-sim-wrap .pg-sim-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:18px}
@@ -4156,14 +4157,14 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.245.0';
+const APP_VER = '7.246.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
 // .gs v5.57) e o rodapé compara: o GitHub e o editor do Apps Script não se
 // falam, e sem isso ninguém via qual .gs estava rodando. Mudou o .gs? Suba este
 // número junto com o GS_VERSAO de lá (o apps-script.test.js confere).
-const GS_REPO   = '5.66';
+const GS_REPO   = '5.67';
 let GS_IMPL;   // undefined = ainda não leu · null = o .gs implantado não informa (antes da v5.57)
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -10723,13 +10724,14 @@ function _taktMontar(S, hist, H, pts, est){
     const dow=dt.getDay(), feriado=fer[n]||null;
     const d={ n, data:p2(dt.getDate())+'/'+p2(dt.getMonth()+1)+'/'+dt.getFullYear(), dow, feriado,
       util:dow>=1 && dow<=5 && !feriado, passado:n<hojeN, hoje:n===hojeN,
-      cx:0, uep:0, cxSemUep:0, cxFora:0, saldoCx:0, saldoUep:0, saldoPts:0, saldoUepPts:0, baixaUep:0, feito:null, he:null, meta:null, min:0, semDado:false };
+      cx:0, uep:0, cxSemUep:0, cxFora:0, saldoCx:0, saldoUep:0, saldoPts:0, saldoUepPts:0, baixaUep:0, adiCx:0, adiUep:0, feito:null, he:null, meta:null, min:0, semDado:false };
     dias.push(d); porN[n]=d;
   }
   // a programação de cada dia (fora da esteira de fora, como na META do dia) e o saldo
   const falta={ cx:0, uep:0, uepVenc:0, cxSemUep:0, semSaldo:0, pts:0, uepPts:0 };
   // v7.217.0: a programação por PRODUTO · VOLUME (as cores juntas) — o TAKT POR CAIXA
   const prods={};
+  let adiCampo=false;   // v7.246.0: o .gs manda o embalado antes (adiantadoCx, v5.67)?
   S.linhas.forEach(l=>{
     const ln=Number(l && l.dataNum) || _cartNum(l && l.data), d=porN[ln];
     const q=Number(l.qtde)||0, u=Number(l.uepCx)>0 ? Number(l.uepCx) : null;
@@ -10746,6 +10748,13 @@ function _taktMontar(S, hist, H, pts, est){
       if(e>0){ g.cxEst+=q; g.estSoma+=q*e; }
       if(u){ g.cxUep+=q; g.uepSoma+=q*u; g.uMin=g.uMin==null ? u : Math.min(g.uMin, u); g.uMax=g.uMax==null ? u : Math.max(g.uMax, u); }
     }
+    // v7.246.0 (PPCP, 16/11/2026: a barra de 16/11 mostrava 9h06 programadas e o veredito 0h05 — 5h20
+    // tinham sido embaladas na semana passada → "sim com a mensagem que embalou antes"): o que a linha
+    // recebeu de produção feita ANTES da data dela (a coluna ADIANTADO_CX, .gs v5.67). Só desenho: o
+    // saldo já não conta isso.
+    if(l && 'adiantadoCx' in l) adiCampo=true;
+    const ad=Math.min(Math.max(0, Number(l.adiantadoCx)||0), q);
+    if(d && u && ad>0){ d.adiCx+=ad; d.adiUep+=ad*u; }
     if(l.saldo==null){ falta.semSaldo++; return; }
     const s=Math.max(0, Number(l.saldo)||0);
     if(d && u) d.baixaUep+=Math.max(0, q-s)*u;   // o que já saiu do lote (feito; num dia que vem, adiantado)
@@ -10821,7 +10830,7 @@ function _taktMontar(S, hist, H, pts, est){
     exec:{ uep:exUep, min:exMin, s:exUep>0 ? exMin*fProd*60/exUep : null, pct:exMeta>0 ? exUep/exMeta*100 : null,
            nFech:ex.filter(d=>d.passado).length, minHoje:dHoje && dHoje.util && ex.indexOf(dHoje)>=0 ? dHoje.min : 0,
            he:heUteis, fora:foraUteis },
-    cas, falta, semDado:dias.filter(d=>d.semDado).map(d=>d.data) };
+    cas, falta, semDado:dias.filter(d=>d.semDado).map(d=>d.data), adiCampo };
 }
 // SEMANA QUE VEM: o planejamento (nada foi feito ainda). Pelo SALDO de cada dia
 // útil (futura = a QTDE; o que já foi adiantado sai), contra a referência:
@@ -11129,6 +11138,7 @@ function _taktHtml(T, G, opt){
     T.semDado.length ? `Sem UEP no histórico: ${T.semDado.map(x=>e(x.slice(0, 5))).join(', ')} — fora do executado e da conta do porquê.` : '',
     F.semSaldo>0 ? `${plural(F.semSaldo, 'linha', 'linhas')} sem saldo confiável na planilha ficaram fora da falta.` : '',
     F.cxSemUep>0 ? `${fmtN(F.cxSemUep)} cx de saldo sem UEP ficaram fora da falta.` : '',
+    T.adiCampo===false ? 'O que já foi embalado antes do dia do lote aparece na barra depois de colar o ritmoprod_appscript.gs v5.67.' : '',
     o.escala || ''
   ].filter(Boolean);
   // a ordem: o veredito e o que fazer, o dia a dia (onde e por quê), o número da linha e do app.
@@ -11140,7 +11150,7 @@ function _taktHtml(T, G, opt){
   return tit+_taktHeroHtml(o.V, { semana:'esta', ate:F.ate, partes:_taktPrecisaPartes(T, o.V) })+_taktAntesAviso(T)
     +_taktFecharHtml(_taktFecharDados(o.V, { semana:'esta', ate:F.ate }))
     +`<div class="uep-sec"><b>DIA A DIA</b> horas de linha · programado × feito<span class="tks-sec-r" title="${e(porT)}">${porR}</span></div><div class="uep-card" id="tks-g-box">${svg}`
-    +`<div class="uep-leg"><span class="tks-lb">programado até 1 dia de linha</span><span class="tks-lx">programado acima de 1 dia</span><span style="--c:var(--tks-feito)">feito na jornada</span><span style="--c:var(--warn)">hora extra</span><span class="tks-lr">1 dia de linha (${_fmtHM(UEP_MIN_DIA)} = média de ${n0(T.meta)} UEP entregues sem hora extra)</span></div></div>`
+    +`<div class="uep-leg"><span class="tks-lb">programado até 1 dia de linha</span><span class="tks-lx">programado acima de 1 dia</span>${T.dias.some(d=>d.adiUep>0) ? '<span class="tks-la">embalou antes (adiantado)</span>' : ''}<span style="--c:var(--tks-feito)">feito na jornada</span><span style="--c:var(--warn)">hora extra</span><span class="tks-lr">1 dia de linha (${_fmtHM(UEP_MIN_DIA)} = média de ${n0(T.meta)} UEP entregues sem hora extra)</span></div></div>`
     +_taktFaixaHtml(_taktFaixa(T, { G }), _taktPorCaixa(T), T)
     +(notas.length ? `<div class="uep-nota">${notas.join(' · ')}</div>` : '');
 }
@@ -11984,15 +11994,21 @@ function _taktExcessoHtml(T, P, largura, o){
 // `opt.fut` (a SEMANA QUE VEM e a AVALIAÇÃO): o SALDO de cada dia, uma barra
 // larga por dia, e a folga escrita. `opt.h`: a altura (o papel usa menos).
 function _taktSvg(T, largura, opt){
-  const FS=12, W=largura||760, H=(opt && opt.h)||240, pl=40, pr=10, pt=26, pb=34, fut=!!(opt && opt.fut);
+  const FS=12, W=largura||760, H=(opt && opt.h)||240, pl=40, pr=10, pt=26, fut=!!(opt && opt.fut);
   const k=UEP_MIN_DIA/T.meta, hm=v=>_fmtHM(Math.round(v));
   const val=d=>(fut ? d.saldoUep : d.uep)*k, qcx=d=>fut ? d.saldoCx : d.cx, fe=d=>(d.feito||0)*k, he=d=>(d.he||0)*k;
+  // v7.246.0: o que já foi EMBALADO ANTES do dia do lote (adiantado) — listrado no pé da barra do
+  // programado, com a frase embaixo do dia; o pé do gráfico ganha uma linha para ela
+  const ad=d=>fut ? 0 : Math.min(val(d), (d.adiUep||0)*k);
   const ds=T.dias.filter(d=>d.util || (d.feriado && d.dow>=1 && d.dow<=5) || val(d)>0 || fe(d)>0 || he(d)>0);
+  const temAd=ds.some(d=>ad(d)>=0.5), pb=temAd ? 48 : 34;
   const n=Math.max(ds.length, 1), cw=(W-pl-pr)/n, bw=fut ? Math.min(cw*.44, 150) : Math.min(cw*.32, 120);
   const mx=Math.max(UEP_MIN_DIA, ...ds.map(d=>Math.max(val(d), fe(d)+he(d))))*1.22, papel=!!(opt && opt.h);
   const y=v=>pt+(H-pt-pb)*(1-v/mx);
   const halo='stroke="var(--surface)" stroke-width="4" paint-order="stroke" stroke-linejoin="round"';
   let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block" role="img" aria-label="Horas de linha programadas e feitas por dia, contra 1 dia de linha">`;
+  const pid='tks-adi-'+(_taktSvg.n=(_taktSvg.n||0)+1);   // id único: a tela e o papel podem ter mais de um gráfico
+  if(temAd) s+=`<defs><pattern id="${pid}" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="var(--tks-base)"/><rect width="3.5" height="7" fill="var(--tks-feito)"/></pattern></defs>`;
   for(let g=0; g<mx; g+=120) s+=`<line x1="${pl}" x2="${W-pr}" y1="${y(g).toFixed(1)}" y2="${y(g).toFixed(1)}" stroke="var(--border)"/><text x="${pl-6}" y="${(y(g)+4).toFixed(1)}" text-anchor="end" font-size="${FS-2}" fill="var(--txt2)" font-family="IBM Plex Mono">${g/60}h</text>`;
   const rot=[], rotF=[];
   ds.forEach((d, i)=>{
@@ -12023,6 +12039,16 @@ function _taktSvg(T, largura, opt){
       s+=`<rect x="${xP.toFixed(1)}" y="${y(base).toFixed(1)}" width="${bw.toFixed(1)}" height="${(y(0)-y(base)).toFixed(1)}" rx="2" fill="var(--tks-base)"><title>${tip}</title></rect>`;
       if(exc>0) s+=`<rect x="${xP.toFixed(1)}" y="${y(v).toFixed(1)}" width="${bw.toFixed(1)}" height="${(y(UEP_MIN_DIA)-y(v)).toFixed(1)}" rx="2" fill="var(--red)"><title>${tip}</title></rect>`;
       const dentro=y(0)-y(base)>FS+12 && !papel;
+      const a=ad(d);
+      if(a>=0.5){
+        const tipA=_rpEsc(`${dd} · ${hm(a)} de linha deste dia já foram embaladas ANTES de ${dd} (${fmtN(Math.round(d.adiCx))} cx, ${fmtN(Math.round(d.adiUep))} UEP — adiantado): estão no programado e fora do que falta`);
+        s+=`<rect x="${xP.toFixed(1)}" y="${y(a).toFixed(1)}" width="${bw.toFixed(1)}" height="${(y(0)-y(a)).toFixed(1)}" rx="2" fill="url(#${pid})"><title>${tipA}</title></rect>`;
+        // as horas dentro do trecho, se cabem na LARGURA da barra (no papel ela é estreita e o número
+        // encostava no "até agora" do feito, ao lado) e sem encostar no total da barra
+        const yH=(y(a)+y(0))/2+FS/2-1;
+        if(bw>=hm(a).length*FS*0.62+4 && y(0)-y(a)>FS+10 && (!dentro || yH-FS>y(base)+FS+12)) s+=`<text x="${(xP+bw/2).toFixed(1)}" y="${yH.toFixed(1)}" text-anchor="middle" font-size="${FS}" font-weight="600" fill="var(--txt)" font-family="IBM Plex Mono" ${halo}>${hm(a)}</text>`;
+        s+=`<text x="${cx.toFixed(1)}" y="${H-pb+33}" text-anchor="middle" font-size="${FS-2}" font-weight="600" fill="var(--tks-feito)" font-family="IBM Plex Mono"><title>${tipA}</title>${papel || cw<150 ? `embalou ${hm(a)}` : `embalou ${hm(a)} antes`}</text>`;
+      }
       if(dentro) s+=`<text x="${(xP+bw/2).toFixed(1)}" y="${(y(base)+FS+8).toFixed(1)}" text-anchor="middle" font-size="${FS}" fill="var(--tks-base-t)" font-family="IBM Plex Mono">${hm(v)}</text>`;
       if(exc>0) rotF.push({ x:xP+bw/2, topo:y(v), t:'+'+hm(exc), exc:true });
       else if(!dentro) rot.push({ x:xP+bw/2, topo:y(v), t:hm(v), cl:'var(--txt2)' });
@@ -12290,7 +12316,7 @@ function _taktDocHtml(A, ctx){
       +(T.exec.pct!=null ? `, e a linha rodou a <b>${fmtP(T.exec.pct)}</b> dessa média` : '')
       +(t2>=1 ? `. Do que não saiu: <b>${pc(C.carga)} excesso de programação</b>, <b>${pc(C.ritmo)} ritmo da linha</b>` : '')+'.</div>'
       +`<div class="td-t">Dia a dia · horas de linha</div>${_taktSvg(T, TKS_DOC_SVG_W, { h:TKS_DOC_SVG_H })}`
-      +`<div class="td-leg"><span><i style="background:#A0AEC0"></i>programado</span><span><i style="background:#C62828"></i>acima de 1 dia</span><span><i style="background:#3B7DD8"></i>feito</span><span><i style="background:#B26A00"></i>hora extra</span><span><i style="height:0;border-top:2px solid #1F2328"></i>1 dia de linha (${hm(UEP_MIN_DIA)})</span></div>`;
+      +`<div class="td-leg"><span><i style="background:#A0AEC0"></i>programado</span><span><i style="background:#C62828"></i>acima de 1 dia</span>${T.dias.some(d=>d.adiUep>0) ? '<span><i style="background:repeating-linear-gradient(135deg,#3B7DD8 0 2px,#A0AEC0 2px 4px);-webkit-print-color-adjust:exact;print-color-adjust:exact"></i>embalou antes</span>' : ''}<span><i style="background:#3B7DD8"></i>feito</span><span><i style="background:#B26A00"></i>hora extra</span><span><i style="height:0;border-top:2px solid #1F2328"></i>1 dia de linha (${hm(UEP_MIN_DIA)})</span></div>`;
   } else esq=`<div class="td-h">ESTA SEMANA</div><div class="tks-por">Sem programação lida desta semana.</div>`;
   // SEMANA QUE VEM
   let dir;

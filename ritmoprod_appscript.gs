@@ -1,5 +1,15 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.67 — O QUE JÁ FOI EMBALADO ANTES DO DIA DO LOTE (getProgramacaoSemana).
+//               PPCP, 16/11/2026, com o DIA A DIA do TAKT na tela: a barra de
+//               16/11 mostrava 9h06 programadas e o veredito contava 0h05 —
+//               5h20 do lote 25441 tinham sido embaladas na semana passada, e o
+//               gráfico não dizia → "sim com a mensagem que embalou antes". Cada
+//               linha da semana leva o `adiantadoCx`: a coluna ADIANTADO_CX que o
+//               write-back já grava (v5.23: caixas vindas de produção feita ANTES
+//               da data do lote). Só quando o SALDO da linha é dela (a mesma
+//               conferência do saldo); vazio → null, nunca 0.
+//               ⚠ re-deploy manual. Antes dele a barra não marca o embalado antes.
 // Versão: 5.66 — O LOTE DE HOJE ANTES DO 1º LANÇAMENTO (getProgramacaoSemana).
 //               PPCP, 16/11/2026 06:54, com o card ATRASO (6h04) e o TAKT DA
 //               SEMANA na tela: "6h04 não contempla o lote de hj?". A linha de
@@ -603,7 +613,7 @@
 
 // A versão deste arquivo, a mesma do cabeçalho (v5.58). Vai no getDados para o
 // rodapé do painel dizer qual .gs está implantado — o GitHub não sabe.
-const GS_VERSAO = '5.66';
+const GS_VERSAO = '5.67';
 
 const SHEET_DADOS     = 'HORA_A_HORA';
 const SHEET_HIST      = 'HISTORICO';
@@ -5981,6 +5991,8 @@ function _lerProgDaAba(sh, arquivada) {
   // LOTE INTERNO (v5.39): o lote da fábrica (ex. 203/26), opcional e só para
   // mostrar. Pelo nome com INTERNO — o "contém LOTE" acima acha o LOTE (col. A).
   const iLtInt = hdr.findIndex(function (h) { return h.indexOf('LOTE') >= 0 && h.indexOf('INTERNO') >= 0; });
+  // ADIANTADO_CX (v5.67 lê; o write-back grava desde a v5.23): caixas da linha vindas de produção ANTES da data dela
+  const iAdi  = hdr.indexOf('ADIANTADO_CX');
   const cData = iData >= 0 ? iData : 0;
   const cCod  = iCod  >= 0 ? iCod  : 2;
   const cQtd  = iQtd  >= 0 ? iQtd  : 4;
@@ -6018,6 +6030,7 @@ function _lerProgDaAba(sh, arquivada) {
                // v5.66: PRODUZIDO e SALDO vazios (ou sem as colunas) — a linha nunca passou
                // pelo write-back como lote aberto. A semana do takt lê; o FIFO não.
                saidaVazia: _celVazia(iProd >= 0 ? r[iProd] : '') && _celVazia(iSald >= 0 ? r[iSald] : ''),
+               adiCx: iAdi >= 0 && !_celVazia(r[iAdi]) && isFinite(_numBR(r[iAdi])) ? _numBR(r[iAdi]) : null,
                row: i });   // índice da linha na aba (o write-back casa a linha por ela)
   }
   return out;
@@ -6627,6 +6640,10 @@ function getProgramacaoSemana(p) {
       uepCx: cat && cat.uep > 0 ? cat.uep : null,
       uep: cat && cat.uep > 0 ? Math.round(qtde * cat.uep * 10) / 10 : null,
       saldo: saldo,
+      // v5.67: o que a linha recebeu de produção feita ANTES da data dela (a coluna
+      // ADIANTADO_CX), só quando o SALDO da linha é dela — senão a célula pode ser de
+      // outra linha (o extrato do ERP colado por cima). null = não calculado, nunca 0.
+      adiantadoCx: pr.saldo != null && pr.adiCx != null ? pr.adiCx : null,
       aba: pr.arquivada ? 'concluida' : 'aberta',
       encerrada: !!pr.encerrada && !futura && !pr.foraEsteira,
       foraEsteira: !!pr.foraEsteira
