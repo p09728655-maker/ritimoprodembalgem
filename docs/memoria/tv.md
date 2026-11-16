@@ -185,8 +185,10 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   - O **esperado da curva** anda pela régua do card (só hora com lançamento; a
     em andamento pelo `minSlotDecorrido`): o ponto de agora FECHA com o card.
   - **À frente em minutos** = (feito − esperado) ÷ (meta ÷ 527). **A meta sai
-    às** = anda só pelos minutos de jornada que restam (almoço fora); não
-    cabendo, mostra o ritmo que faltaria. Caixas = ⌈falta ÷ UEP/cx⌉, para cima.
+    às** = anda só pelos minutos de jornada que restam (almoço fora); ~~não
+    cabendo, mostra o ritmo que faltaria~~ (saiu na v7.256.0 — o horário só
+    aparece no gráfico, quando o pontilhado cruza a META). Caixas = ⌈falta ÷
+    UEP/cx⌉, para cima.
   - **UEP/cx do produto de agora**: o cadastro (`CAP_RAW`, ou o guardado no
     aparelho); sem ele, a média de hoje do MESMO produto e cor no
     `porHoraModelo` (o 501130 tem quatro mesas — nunca só pelos 6 dígitos).
@@ -341,11 +343,12 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   - **O sentido por extenso**: `2 min ATRÁS` / `54 min À FRENTE` (número e
     palavra em itens de flex — no texto corrido o "À" ficava numa linha e o
     "FRENTE" na outra). O `−2 min` ao lado do NO RITMO se lia como contradição.
-    Saiu a linha *"2.429 feitas · 2.441 esperadas"*: os dois números estão no
-    gráfico, na letra maior da tela.
+    ~~Saiu a linha *"2.429 feitas · 2.441 esperadas"*: os dois números estão no
+    gráfico~~ — **voltou na v7.256.1** (abaixo).
   - **A falta em CAIXAS no número grande** (*156 caixas*), com o produto e a
-    UEP no apoio (*de PENTEADEIRA PRINCESA · 332 UEP*). Sem UEP no cadastro
-    para o produto de agora, o número grande volta a ser a UEP.
+    UEP no apoio. Sem UEP no cadastro para o produto de agora, o número grande
+    volta a ser a UEP. ~~*de PENTEADEIRA PRINCESA · 332 UEP* numa linha só~~ —
+    corrigido na v7.256.1 (abaixo).
   - A legenda do pontilhado diz **RITMO DA META · 314/h** (era *ATÉ A META, A
     314/h*: com a linha atrás do esperado ele não chega na meta).
   - Com dois cartões, a escala `--tvu-k` não precisa encolher: medido no
@@ -360,6 +363,24 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     *"não cabe até 17:00 no ritmo da meta"* — o mesmo critério de tolerância
     zero, em letra pequena e com o "no ritmo da meta" escrito. Não mexido nesta
     versão.
+  - **v7.256.1 — o que a revisão achou depois do merge da v7.256.0** (revisor
+    do projeto, 16/11/2026):
+    - **Número cortado no meio**: a UEP ia no FIM da linha `.tvu-nome`, que
+      corta com "…". Com *KIT 2 MESA CABECEIRA SLEEP* às 09:20 a TV mostrava
+      *"· 2.05…"* (a linha pedia 661 px num cartão de 607); *PENTEADEIRA
+      PRINCESA* cabia com 0 px de folga. ⚠ **Número nunca na linha do nome**:
+      ela tem só *de NOME*, e a conta vai em linha própria, *= 332 UEP · 2,14
+      UEP/cx* (a UEP/cx tinha saído na v7.256.0 — número não sai da tela).
+    - **A rede dos dois números**: sem a linha *feitas · esperadas*, nas
+      janelas pequenas do gerencial (gráfico de 747×268 e 700×307) o gráfico
+      deixava um dos dois de fora em 46 de 29.780 desenhos sorteados (0 na
+      TV), e o número sumia da tela. A linha voltou ao 1º cartão.
+    - A legenda RITMO DA META só com o pontilhado desenhado
+      (`m.proj.length > 1`): com a jornada encerrada ela aparecia sem linha.
+    - CSS da linha mexida com escopo (`#tv-slide-g .tvg-min`, `.tvg-dir`).
+    - Medido de novo (15:58, 09:20, 15:02, 16:34 e o nome comprido): TV
+      1920×1080 e 1366×768, janelas 1920×975, 1366×560 e 1280×600 — escala
+      1,00 em todas, nada corta, o nome comprido inteiro.
 - Mexeu em texto ou tamanho? Renderizar de novo na TV e no gerencial, nas
   duas resoluções, medindo ALTURA e largura.
 

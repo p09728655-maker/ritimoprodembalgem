@@ -202,7 +202,7 @@ via Google Apps Script (JSONP).
 - G com UM veredito (v7.256.0): nenhum cartão diz se a meta sai — o "A META
   NÃO SAI" tinha tolerância zero e brigava com o NO RITMO; a hora da meta mora
   só no gráfico. Minutos com o sentido por extenso (`2 min ATRÁS`), a falta em
-  caixas.
+  caixas. ⚠ Número nunca na linha `.tvu-nome` (corta com "…": v7.256.1).
 - Tela cheia de PARADA: poll de 15 s só na TV (`_paradaNaTV`); a parada sem FIM
   é a aberta; o START é no celular. PAROU AGORA, motivo depois: TIPO
   `A INFORMAR`.

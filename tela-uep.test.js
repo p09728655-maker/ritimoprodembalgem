@@ -108,6 +108,7 @@ const Mt = _tvUepMontar(tarde, { agoraMin: 990, prod: PROD, cat: CAT });
 ok('não chega na jornada no ritmo da meta: sem hora (o gráfico não marca horário)', [Mt.chega, Mt.minRest], [null, 29]);
 const fimDia = _tvUepMontar(montarD(1030, { '07:00': 100 }, { '07:00': 60 }), { agoraMin: 1030 });
 ok('jornada encerrada: nada resta, nada a projetar', [fimDia.minRest, fimDia.chega, fimDia.agora], [0, null, 1019]);
+ok('jornada encerrada: sem pontilhado no gráfico, sem a legenda dele', /RITMO DA META/.test(_tvGHtml(fimDia, false)), false);
 const batida = _tvUepMontar(montarD(960, Object.assign({}, UEP_H, { '15:00': 400 }), Object.assign({}, CX_H, { '15:00': 300 })), { agoraMin: 960 });
 ok('meta batida: falta 0 e nenhuma projeção', [batida.falta, batida.proj, batida.faltaCx], [0, null, null]);
 
@@ -195,7 +196,7 @@ ok('Tela F traz o produto, a UEP da caixa e o peso contra o normal',
    [true, true, true, true]);
 ok('Tela F: hora em andamento diz "até HH:MM", a futura sai "—"', [F0.includes('até 15:02'), /tvf-col fut">[\s\S]*?class="tvf-val"[^>]*>—</.test(F0)], [true, true]);
 ok('Tela G fala em tempo e em caixas: o sentido por extenso, a falta em caixas do produto de agora, a hora da meta no gráfico',
-   [G0.includes('<span>1h05</span><span class="tvg-dir">À FRENTE</span>'), G0.includes('<b>250</b> caixas') && G0.includes('de BANQUETA VERSATIL · 259 UEP'),
+   [G0.includes('<span>1h05</span><span class="tvg-dir">À FRENTE</span>'), G0.includes('<b>250</b> caixas') && G0.includes('>de BANQUETA VERSATIL<') && G0.includes('>= 259 UEP · 1,04 UEP/cx<'),
     G0.includes('class="tvg-t0">15:56</text>'), G0.includes('RITMO DA META · 288/h')],
    [true, true, true, true]);
 // O print de 16/11/2026 15:58: 2.429 feitas × 2.441 esperadas (−12 UEP, 99,5%)
@@ -217,6 +218,18 @@ ok('Tela G fala em tempo e em caixas: o sentido por extenso, a falta em caixas d
      [M1558, M0920, M, Mt, fimDia, batida].map(mm => [false, true].map(s => /SAI ÀS|NÃO SAI|NÃO CABE|tvu-card[^]*tvu-card[^]*tvu-card/i.test(_tvGHtml(mm, s)))).flat()
        .filter(Boolean).length, 0);
   ok('o sentido vai por extenso, nunca por sinal ("−2 min" ao lado do NO RITMO)', /[−+]\d/.test(G1558.replace(/<svg[\s\S]*<\/svg>/, '')), false);
+  // Revisão de 16/11/2026 (v7.256.1): na v7.256.0 a UEP ia no FIM da linha do
+  // nome, que corta com "…" — "KIT 2 MESA CABECEIRA SLEEP · 2.05…" na TV. E a
+  // linha "feitas · esperadas" tinha saído: na janela pequena o gráfico pode
+  // não pôr um dos dois, e o número sumia da tela.
+  const MK = _tvUepMontar(montarD(560, { '07:00': 300, '08:00': 290, '09:00': 120 }, { '07:00': 150, '08:00': 145, '09:00': 60 }),
+                          { agoraMin: 560, prod: { cod: '502200001', desc: 'VOL 1/1 KIT 2 MESA CABECEIRA SLEEP', cor: 'BRANCO' }, cat: [{ codigo: '502.200.001', uep: 1.3 }] });
+  const GK = _tvGHtml(MK, true);
+  ok('nome comprido: a linha que corta (.tvu-nome) só tem o nome — nenhum número nela',
+     [...GK.matchAll(/class="[^"]*tvu-nome[^"]*">([^<]*)</g)].map(x => /\d{2}|UEP/.test(x[1].replace('KIT 2', ''))), [false]);
+  ok('a falta em UEP e a UEP/cx em linha própria, que não corta', GK.includes('<div class="tvu-sub">= ' + fmtN(Math.round(MK.falta)) + ' UEP · 1,30 UEP/cx</div>'), true);
+  ok('número nunca sai: feitas · esperadas continuam no 1º cartão (a rede do gráfico na janela pequena)',
+     [G1558.includes('>2.429 feitas · 2.441 esperadas<'), GK.includes(fmtN(Math.round(MK.feito)) + ' feitas · ' + fmtN(Math.round(MK.esp)) + ' esperadas')], [true, true]);
 }
 ok('o rodapé diz o que é 1 UEP', F0.includes('1 UEP = 1 caixa de MESA CABECEIRA MADERO'), true);
 ok('desenho sem conta: nenhuma régua de UEP dentro dos três',
@@ -276,7 +289,7 @@ Object.entries(CASOS_G).forEach(([nome, mm]) => {
 const S1502 = _tvGSvg(M, false);
 ok('a DISTÂNCIA feito × esperado é uma faixa desenhada (tinta neutra sem o selo)', /<polygon points="[^"]+" fill="var\(--txt\)" opacity=".2"\/>/.test(S1502), true);
 ok('com o selo, a faixa pega a cor do veredito', /<polygon points="[^"]+" fill="var\(--(ok|warn|red)\)" opacity=".2"\/>/.test(_tvGSvg(M, true)), true);
-ok('traço de TV de 65": FEITO 12, ESPERADO 7 tracejado, ATÉ A META 7 em pontos',
+ok('traço de TV de 65": FEITO 12, ESPERADO 7 tracejado, RITMO DA META 7 em pontos',
    [/stroke="var\(--txt\)" stroke-width="12"/.test(S1502), /stroke="var\(--txt2\)" stroke-width="7" stroke-dasharray="24 14"/.test(S1502),
     /stroke-width="7" stroke-dasharray="0 16" stroke-linecap="round"/.test(S1502)], [true, true, true]);
 ok('letra do gráfico para 65": números do agora 54/42, eixo 34 em Barlow Condensed 600 (o mono 400 cinza era fino demais)',
@@ -319,10 +332,10 @@ Object.entries(CAIXAS_G).forEach(([cn, d]) => {
 console.log('\n── as linhas: só o ESPERADO é tracejado, e o que anda colado não se desenha duas vezes ──');
 ok('a META é linha cheia (o tracejado 6 10 sumiu)', [/stroke-dasharray="6 10"/.test(S1502), /stroke="var\(--txt3\)" stroke-width="3"\/><text [^>]*class="tvg-t1">META DO DIA/.test(S1502)], [false, true]);
 const espPts = svg => svg.match(/stroke="var\(--txt2\)" stroke-width="7" stroke-dasharray="24 14" stroke-linejoin="round" points="([^"]+)"/)[1].split(' ').length;
-ok('o print de 27/10 (14:49, 1.906 feitas = 1.906 esperadas): o esperado PARA no agora — daqui para a frente fica só o ATÉ A META',
+ok('o print de 27/10 (14:49, 1.906 feitas = 1.906 esperadas): o esperado PARA no agora — daqui para a frente fica só o RITMO DA META',
    [Math.round(noTempo.difUep), espPts(_tvGSvg(noTempo, false)), noTempo.pts.length], [0, noTempo.pts.length, noTempo.pts.length]);
 ok('com distância (15:02, +312 UEP), o esperado segue até o fim da jornada', espPts(S1502) > M.pts.length, true);
-ok('meta batida (sem ATÉ A META): o esperado segue até o fim', espPts(_tvGSvg(batida, false)) > batida.pts.length, true);
+ok('meta batida (sem RITMO DA META): o esperado segue até o fim', espPts(_tvGSvg(batida, false)) > batida.pts.length, true);
 ok('grade de no máximo 4 passos: com a meta de 2.530, só 1.000 e 2.000',
    [...S1502.matchAll(/text-anchor="end" class="tvg-t2">([\d.]+)</g)].map(m => m[1]), ['1.000', '2.000']);
 ok('o ALMOÇO mora no pé da faixa', /y="(\d+)" text-anchor="middle" class="tvg-t2">ALMOÇO/.test(S1502) && +S1502.match(/y="(\d+)" text-anchor="middle" class="tvg-t2">ALMOÇO/)[1] > 700, true);

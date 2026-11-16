@@ -11,6 +11,25 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.256.1 — 16/11/2026 · Tela G: correções da revisão
+
+O revisor do projeto achou três problemas na v7.256.0, depois do merge.
+
+- **Número cortado no meio**: com nome de produto comprido, a linha *de KIT 2
+  MESA CABECEIRA SLEEP · 2.051 UEP* cortava em *"· 2.05…"*. O nome agora fica
+  sozinho na linha (só ele pode cortar com "…") e a conta vai na linha de baixo.
+- **Voltam ao 1º cartão** os dois números *2.429 feitas · 2.441 esperadas*: na
+  janela pequena do gerencial o gráfico às vezes não tem lugar para um deles.
+- **Volta a UEP por caixa** do produto de agora no cartão FALTA.
+- A legenda RITMO DA META só aparece quando o pontilhado está no gráfico.
+
+**Atenção** (antes → depois, cartão FALTA PARA A META da Tela G):
+- `de PENTEADEIRA PRINCESA · 332 UEP` → `de PENTEADEIRA PRINCESA` e, embaixo,
+  `= 332 UEP · 2,14 UEP/cx` (a UEP/cx tinha saído na v7.256.0).
+- 1º cartão: volta `2.429 feitas · 2.441 esperadas` (tinha saído na v7.256.0).
+
+---
+
 ## v7.256.0 — 16/11/2026 · Tela G da TV: um veredito só
 
 O PPCP, com o print da TV às 15:58: *"essa tela na tv ainda está ruim de ver"* e

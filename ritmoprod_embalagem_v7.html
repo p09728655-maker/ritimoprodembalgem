@@ -1675,8 +1675,8 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvg-sw.e{border-top:7px dashed var(--txt2)}
 .tvg-sw.p{border-top:7px dotted var(--txt)}
 .tvg-cards{display:flex;flex-direction:column;gap:calc(var(--tvu-k,1)*clamp(10px,2vh,22px));min-width:0;min-height:0}
-.tvg-min{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:.22em;font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(60px,min(7.6vw,13vh),150px));line-height:.9;color:var(--txt);font-variant-numeric:tabular-nums}
-.tvg-dir{white-space:nowrap;font-size:calc(var(--tvu-k,1)*clamp(30px,min(3.8vw,6.6vh),76px));letter-spacing:2px}
+#tv-slide-g .tvg-min{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:.22em;font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(60px,min(7.6vw,13vh),150px));line-height:.9;color:var(--txt);font-variant-numeric:tabular-nums}
+#tv-slide-g .tvg-dir{white-space:nowrap;font-size:calc(var(--tvu-k,1)*clamp(30px,min(3.8vw,6.6vh),76px));letter-spacing:2px}
 #tv-slide-c .tvb-hero-num{font-size:clamp(90px,11vw,200px)}
 /* .tv-table/td/th têm fonte gigante (feita pra Tela A, 5 colunas curtas) —
    ajusta pro tamanho certo da Tela C (só CÓDIGO/FALTA, conteúdo curto). */
@@ -4181,7 +4181,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.256.0';
+const APP_VER = '7.256.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -27750,10 +27750,10 @@ function _tvGDesenho(m, selo, W, H){
     s += '<polygon points="' + pl(ida.concat(volta)) + '" fill="' + (selo ? 'var(--' + sc(m.ef) + ')' : 'var(--txt)') + '" opacity=".2"/>';
   }
   // esperado: o que já passou + o que falta da jornada, a mesma linha tracejada.
-  // Daqui para a frente ele e o ATÉ A META andam juntos (os dois no ritmo da
+  // Daqui para a frente ele e o RITMO DA META andam juntos (os dois no ritmo da
   // meta, separados pela distância de agora): com o dia no tempo os dois ficam
   // colados e o tracejado por baixo dos pontos virava uma terceira textura (o
-  // print de 27/10). Colados, fica só o ATÉ A META.
+  // print de 27/10). Colados, fica só o RITMO DA META.
   const colados = !!(m.proj && m.proj.length > 1) && Math.abs(y(m.feito) - y(m.esp)) < 12;
   const xChega = m.chega != null ? Math.min(x(m.chega), W - 70) : null;
   const espLinha = m.pts.map(p => [p.t, p.e]).concat(colados ? [] : m.espFut.slice(1).map(p => [p.t, p.v]));
@@ -27895,12 +27895,14 @@ function _tvGHtml(m, selo){
   const cap = noTempo ? 'no tempo do esperado' : 'do esperado · ' + fmtN(Math.round(Math.abs(m.difUep))) + ' UEP';
   let card2;
   if(m.falta > 0 && m.minRest > 0){
-    // Em CAIXAS do produto de agora, a unidade que a linha conta; a UEP fica
-    // no apoio. Nome comprido corta com "…" (leva a UEP junto): a conta que
-    // importa está no número grande.
+    // Em CAIXAS do produto de agora, a unidade que a linha conta; a UEP e a
+    // UEP/cx no apoio. ⚠ Número nunca na linha .tvu-nome, que corta com "…":
+    // na v7.256.0 a UEP ia no fim dela e "KIT 2 MESA CABECEIRA SLEEP" saía
+    // "· 2.05…" na TV (revisão de 16/11/2026). O nome mora sozinho na linha.
     card2 = '<div class="tvu-lbl">FALTA PARA A META DO DIA</div>'
       + (m.faltaCx ? '<div class="tvu-mid"><b>' + fmtN(m.faltaCx) + '</b> caixas</div>'
-                     + '<div class="tvu-sub tvu-nome">de ' + _rpEsc(m.prod.nome) + ' · ' + fmtN(Math.round(m.falta)) + ' UEP</div>'
+                     + '<div class="tvu-sub tvu-nome">de ' + _rpEsc(m.prod.nome) + '</div>'
+                     + '<div class="tvu-sub">= ' + fmtN(Math.round(m.falta)) + ' UEP · ' + _tvF2(m.prod.uepCx) + ' UEP/cx</div>'
                    : '<div class="tvu-mid"><b>' + fmtN(Math.round(m.falta)) + '</b> UEP</div>'
                      + '<div class="tvu-sub">' + (m.prod ? 'sem UEP no cadastro para o produto de agora' : 'nenhum produto selecionado no app') + '</div>');
   } else if(m.falta > 0){
@@ -27916,10 +27918,14 @@ function _tvGHtml(m, selo){
   // ele nem sempre chega nela.
   return '<div class="tvg-corpo"><figure class="tvg-graf">'
     + '<div class="tvu-leg tvg-leg"><span><i class="tvg-sw f"></i>FEITO</span><span><i class="tvg-sw e"></i>ESPERADO</span>'
-    + (m.proj ? '<span><i class="tvg-sw p"></i>RITMO DA META · ' + fmtN(Math.round(m.porMin * 60)) + '/h</span>' : '') + '</div>'
+    + (m.proj && m.proj.length > 1 ? '<span><i class="tvg-sw p"></i>RITMO DA META · ' + fmtN(Math.round(m.porMin * 60)) + '/h</span>' : '') + '</div>'
     + _tvGSvg(m, selo) + '</figure><div class="tvg-cards">'
     + '<div class="tvu-card">' + (selo ? '<span class="tvu-selo ' + sc(m.ef) + '">' + slRitmo(m.ef) + '</span>' : '')
-    + '<div class="tvg-min">' + minTxt + '</div><div class="tvu-sub">' + cap + '</div></div>'
+    + '<div class="tvg-min">' + minTxt + '</div><div class="tvu-sub">' + cap + '</div>'
+    // Os dois números também aqui: na janela pequena do gerencial o gráfico
+    // pode não achar lugar para um deles (sorteio da revisão de 16/11/2026: 46
+    // de 29.780 desenhos, nenhum na TV) — e número nunca sai da tela.
+    + '<div class="tvu-sub">' + fmtN(Math.round(m.feito)) + ' feitas · ' + fmtN(Math.round(m.esp)) + ' esperadas</div></div>'
     + '<div class="tvu-card">' + card2 + '</div>'
     + '</div></div>' + _tvUepRodHtml(m);
 }
