@@ -11,6 +11,23 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.252.0 — 16/11/2026 · um % da meta só: o da UEP
+
+O PPCP, vendo a semana com a UEP na frente: *"dois vereditos está confuso"* —
+o % da meta em caixas ao lado do % da UEP parecia um segundo veredito.
+
+- **Bloco FECHAMENTO DA SEMANA PASSADA (gerencial):** a coluna CAIXAS diz só a
+  quantidade (*7.616 na jornada · 2.263 em hora extra*); nos dias, *2.441 cx*
+  sem o % da meta de caixas.
+- **🖨 IMPRIMIR SEMANA, anexo das caixas:** saem as colunas EFICIÊNCIA e EF.
+  S/ HE e o *gap* em caixas. Ficam as quantidades, a META e a META/H (a régua
+  do MELHOR H. e do PIOR H.).
+- Semana sem UEP gravada: nada muda (as caixas continuam julgando).
+- **Atenção:** sai um número de cada dia na tela (*87,2% da meta*) e as duas
+  colunas de eficiência do anexo do papel.
+
+---
+
 ## v7.251.0 — 16/11/2026 · o relatório semanal vai direto a onde perdemos
 
 O PPCP perguntou se a impressão tinha mudado junto com o bloco da semana

@@ -509,6 +509,11 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   caixas (125,3%) e é âmbar em UEP (86,2% na jornada — mix leve, muita caixa
   e pouca UEP); o 10/11 era vermelho em caixas (96,7%) e é verde em UEP
   (103,8%). É o motivo de a UEP julgar: ela desconta o peso de cada caixa.
+- **Um % da meta só, o da UEP** (v7.252.0, PPCP: *"dois vereditos está
+  confuso"*): o % da meta de CAIXAS ao lado do da UEP lia como um 2º veredito.
+  Saiu da coluna CAIXAS e dos dias (ficam as quantidades); no papel, saíram do
+  anexo as colunas EFICIÊNCIA e EF. S/ HE e o gap em caixas. A montagem não tem
+  mais `cxPct`/`cxMeta`. ⚠ Não devolver o % de caixas onde a UEP julga.
 - **Layout**: no gerencial o texto das colunas quebra linha
   (`#ger-semana .tvd-split-txt span{white-space:normal}`) em vez de cortar com
   "…" — o *faltaram 1.434 cx · 287 cx/dia* já saía pela metade a 1366. A

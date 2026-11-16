@@ -323,7 +323,8 @@ via Google Apps Script (JSONP).
   celular) e o ATRASO — CONFERÊNCIA dizem também os PONTOS (cadastro de hoje;
   `atrasoPtsTxt`): valor, não tempo; código sem pontos fora e dito, nunca 0.
 - FECHAMENTO DA SEMANA PASSADA no gerencial (v7.250.0): a UEP na frente
-  (`_gsemUepMontar` → `_pintarUep`), as caixas como fato; semana sem UEP fica em
+  (`_gsemUepMontar` → `_pintarUep`), as caixas só em quantidade (sem o % da meta
+  de caixas: um % só, o da UEP — v7.252.0); semana sem UEP fica em
   caixas. A Tela D da TV segue em caixas; o 🖨 IMPRIMIR SEMANA, desde a
   v7.251.0, vai em UEP (ONDE PERDEMOS, em `relatorios.md`).
 - Diretoria: um veredito só (a UEP); retrato guardado no aparelho; sem o
