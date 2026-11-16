@@ -4258,6 +4258,21 @@ feito e dá ar de verdade ao que sobrou.
     `calcKPIs` do PC e do celular e o `renderTV` reais num contexto isolado com
     o relógio fixo (o dia sem hora extra, a madrugada, o modal ⚙, 06:45), e o
     `_paradasStats` e o `_phTotaisPeriodo` reais — 6 de 6 mutações pegas.
+- **Linhas de 07/11 e 14/11 do HISTORICO corrigidas pela API em 16/11/2026**
+  (PPCP: *"CORRIGIR"*), como o `.gs` v5.68 grava. Conferido antes na
+  HISTORICO_HORA: 07/11 = 465 cx de 07–11 h + 225 de madrugada = 690; 14/11 =
+  872 + 273 = 1.145.
+  - **14/11 (linha 123), inteira**: META 820 → 0, EF 139,6 → 0, MELHOR 276 → 0,
+    PIOR 146 → 0, HE 2 → 6 (as horas com produção), MEDIA 286 → 0, HE CX 273 →
+    1.145, UEP 893,5 → 0, UEP HE 546 → 1.439,5, META UEP 1.257 → 0, META DIA 820
+    → 0.
+  - **07/11 (linha 117), só J:P**: MEDIA 173 → 0, HE CX 225 → 690, UEP 950,9 →
+    0, UEP HE 393,8 → 1.344,7, META UEP 1.257 → 0, META DIA 524 → 0. ⚠ **C117:G117
+    NÃO foi gravada** (a escrita foi recusada pelo controle de permissões da
+    sessão): continuam META 524, EF 131,7, MELHOR 135, PIOR 92, HE 2. O certo é
+    0 · 0 · 0 · 0 · 6 — digitar à mão. O painel novo (`histDiaFds`) lê o sábado
+    como hora extra de qualquer jeito; o que fica errado é a planilha (e quem a
+    lê direto, como o Power BI).
 - **Junção com a #530 (mobile 1.50.0 / v7.247.0 / rp-core 1.18.0, o gerencial do
   celular com a UEP na frente, publicada no mesmo dia)**: esta versão subiu para
   **v7.248.0 / mobile 1.51.0 / rp-core 1.19.0 / cache v60** (os números da #530
