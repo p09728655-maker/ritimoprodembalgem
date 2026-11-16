@@ -4157,7 +4157,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.246.0';
+const APP_VER = '7.246.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -10748,7 +10748,7 @@ function _taktMontar(S, hist, H, pts, est){
       if(e>0){ g.cxEst+=q; g.estSoma+=q*e; }
       if(u){ g.cxUep+=q; g.uepSoma+=q*u; g.uMin=g.uMin==null ? u : Math.min(g.uMin, u); g.uMax=g.uMax==null ? u : Math.max(g.uMax, u); }
     }
-    // v7.246.0 (PPCP, 16/11/2026: a barra de 16/11 mostrava 9h06 programadas e o veredito 0h05 — 5h20
+    // v7.246.0 (PPCP, 16/11/2026: a barra de 16/11 mostrava 9h06 programadas e o veredito contava 3h46 do dia — 5h20
     // tinham sido embaladas na semana passada → "sim com a mensagem que embalou antes"): o que a linha
     // recebeu de produção feita ANTES da data dela (a coluna ADIANTADO_CX, .gs v5.67). Só desenho: o
     // saldo já não conta isso.
@@ -11138,7 +11138,7 @@ function _taktHtml(T, G, opt){
     T.semDado.length ? `Sem UEP no histórico: ${T.semDado.map(x=>e(x.slice(0, 5))).join(', ')} — fora do executado e da conta do porquê.` : '',
     F.semSaldo>0 ? `${plural(F.semSaldo, 'linha', 'linhas')} sem saldo confiável na planilha ficaram fora da falta.` : '',
     F.cxSemUep>0 ? `${fmtN(F.cxSemUep)} cx de saldo sem UEP ficaram fora da falta.` : '',
-    T.adiCampo===false ? 'O que já foi embalado antes do dia do lote aparece na barra depois de colar o ritmoprod_appscript.gs v5.67.' : '',
+    T.adiCampo===false && T.progCx>0 ? 'O que já foi embalado antes do dia do lote aparece na barra depois de colar o ritmoprod_appscript.gs v5.67.' : '',
     o.escala || ''
   ].filter(Boolean);
   // a ordem: o veredito e o que fazer, o dia a dia (onde e por quê), o número da linha e do app.
@@ -11150,7 +11150,7 @@ function _taktHtml(T, G, opt){
   return tit+_taktHeroHtml(o.V, { semana:'esta', ate:F.ate, partes:_taktPrecisaPartes(T, o.V) })+_taktAntesAviso(T)
     +_taktFecharHtml(_taktFecharDados(o.V, { semana:'esta', ate:F.ate }))
     +`<div class="uep-sec"><b>DIA A DIA</b> horas de linha · programado × feito<span class="tks-sec-r" title="${e(porT)}">${porR}</span></div><div class="uep-card" id="tks-g-box">${svg}`
-    +`<div class="uep-leg"><span class="tks-lb">programado até 1 dia de linha</span><span class="tks-lx">programado acima de 1 dia</span>${T.dias.some(d=>d.adiUep>0) ? '<span class="tks-la">embalou antes (adiantado)</span>' : ''}<span style="--c:var(--tks-feito)">feito na jornada</span><span style="--c:var(--warn)">hora extra</span><span class="tks-lr">1 dia de linha (${_fmtHM(UEP_MIN_DIA)} = média de ${n0(T.meta)} UEP entregues sem hora extra)</span></div></div>`
+    +`<div class="uep-leg"><span class="tks-lb">programado até 1 dia de linha</span><span class="tks-lx">programado acima de 1 dia</span>${T.dias.some(d=>d.adiUep*UEP_MIN_DIA/T.meta>=0.5) ? '<span class="tks-la">embalou antes (adiantado)</span>' : ''}<span style="--c:var(--tks-feito)">feito na jornada</span><span style="--c:var(--warn)">hora extra</span><span class="tks-lr">1 dia de linha (${_fmtHM(UEP_MIN_DIA)} = média de ${n0(T.meta)} UEP entregues sem hora extra)</span></div></div>`
     +_taktFaixaHtml(_taktFaixa(T, { G }), _taktPorCaixa(T), T)
     +(notas.length ? `<div class="uep-nota">${notas.join(' · ')}</div>` : '');
 }
@@ -12316,7 +12316,7 @@ function _taktDocHtml(A, ctx){
       +(T.exec.pct!=null ? `, e a linha rodou a <b>${fmtP(T.exec.pct)}</b> dessa média` : '')
       +(t2>=1 ? `. Do que não saiu: <b>${pc(C.carga)} excesso de programação</b>, <b>${pc(C.ritmo)} ritmo da linha</b>` : '')+'.</div>'
       +`<div class="td-t">Dia a dia · horas de linha</div>${_taktSvg(T, TKS_DOC_SVG_W, { h:TKS_DOC_SVG_H })}`
-      +`<div class="td-leg"><span><i style="background:#A0AEC0"></i>programado</span><span><i style="background:#C62828"></i>acima de 1 dia</span>${T.dias.some(d=>d.adiUep>0) ? '<span><i style="background:repeating-linear-gradient(135deg,#3B7DD8 0 2px,#A0AEC0 2px 4px);-webkit-print-color-adjust:exact;print-color-adjust:exact"></i>embalou antes</span>' : ''}<span><i style="background:#3B7DD8"></i>feito</span><span><i style="background:#B26A00"></i>hora extra</span><span><i style="height:0;border-top:2px solid #1F2328"></i>1 dia de linha (${hm(UEP_MIN_DIA)})</span></div>`;
+      +`<div class="td-leg"><span><i style="background:#A0AEC0"></i>programado</span><span><i style="background:#C62828"></i>acima de 1 dia</span><span><i style="background:#3B7DD8"></i>feito</span><span><i style="background:#B26A00"></i>hora extra</span><span><i style="height:0;border-top:2px solid #1F2328"></i>1 dia de linha (${hm(UEP_MIN_DIA)})</span></div>`;
   } else esq=`<div class="td-h">ESTA SEMANA</div><div class="tks-por">Sem programação lida desta semana.</div>`;
   // SEMANA QUE VEM
   let dir;

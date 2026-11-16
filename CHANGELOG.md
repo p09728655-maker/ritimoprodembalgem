@@ -11,6 +11,21 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.246.1 — 16/11/2026 · correções da revisão da v7.246.0
+
+- **O 🖨 TAKT DA SEMANA voltou a ter uma folha só.** O item *embalou antes* na
+  legenda do papel fazia a legenda quebrar em duas linhas. Com os pontos e a
+  linha do ritmo atual, a folha ia de 703 para 725 px, numa folha útil de 718,
+  e o relatório saía em **duas folhas**. O item saiu da legenda do papel,
+  porque cada dia já tem *"embalou Xh"* escrito embaixo.
+  - Medido com as fontes: 669, 703 e 716 px (o pior caso, quarta-feira com 4
+    partes no PRECISA), sempre uma folha.
+- **Na tela, a legenda *embalou antes* só aparece quando algum dia tem o
+  trecho listrado.** O listrado começa em meio minuto de linha. Antes, 1 cx
+  adiantada já acendia a legenda sem nenhum listrado no gráfico.
+- **A nota *"colar o .gs v5.67"* não aparece mais em semana sem programação.**
+  Semana vazia não prova que o `.gs` é o antigo.
+
 ## v7.246.0 · `.gs` v5.67 — 16/11/2026 · TAKT DA SEMANA: o que já foi embalado antes, na barra do dia
 
 O PPCP viu, com a v7.245.0 na tela, a barra de 16/11 no DIA A DIA mostrando

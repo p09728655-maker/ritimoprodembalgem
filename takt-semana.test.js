@@ -1480,7 +1480,7 @@ console.log('\n── v7.245.0: o vencido de antes da segunda e o lote de hoje n
      [true, false, false, true, true, true, true, true, true]);
 }
 // v7.246.0 / .gs v5.67 (PPCP 16/11/2026, com o DIA A DIA na tela: a barra de 16/11 mostrava 9h06 programadas e o
-// veredito 0h05 — o 25441 tinha sido embalado na semana passada → "sim com a mensagem que embalou antes"): o
+// veredito contava 3h46 do dia — o 25441 tinha sido embalado na semana passada → "sim com a mensagem que embalou antes"): o
 // listrado no pé da barra do programado, as horas dentro dele e "embalou … antes" embaixo do dia.
 console.log('\n── v7.246.0: o que já foi embalado antes do dia do lote, na barra do DIA A DIA ──');
 {
@@ -1505,10 +1505,17 @@ console.log('\n── v7.246.0: o que já foi embalado antes do dia do lote, na 
   ok('sem o embalado antes (o .gs sem o campo), na semana que vem (o saldo já não tem o adiantado) e no dia sem adiantado: nada listrado, o pé do gráfico como antes',
      [/tks-adi/.test(g0), /tks-adi/.test(gf), (g.match(/embalou/g) || []).length], [false, false, 1]);
   const h = _taktHtml(T, null, { largura:900, botoes:'', V:_taktVeredito(T, null, null) }), h0 = _taktHtml(T0, null, { largura:900, botoes:'', V:_taktVeredito(T0, null, null) });
-  ok('a legenda "embalou antes (adiantado)" só com o adiantado; sem o campo, a nota manda colar o .gs v5.67; a pele da legenda (tela) e o item do papel',
+  // revisão da v7.246.0: a nota só com programação na semana (semana vazia não prova .gs antigo); a legenda pela régua do
+  // desenho (meio minuto de linha — 1 cx adiantada não acende a legenda sem listrado); o papel SEM o item na legenda (ela
+  // quebrava em 2 linhas e a 🖨 TAKT ia a 2 folhas, medido 703 → 725 px numa folha de 718) — cada dia já diz "embalou Xh"
+  const Tv = _taktMontar({ de:'16/11/2026', ate:'22/11/2026', hoje:'16/11/2026', feriados:[], linhas:[] }, [], H);
+  const T1 = _taktMontar(Object.assign(S(true), { linhas:[L('16/11', '501089001', 130, 2, 129, 1)] }), [], H);
+  ok('a legenda "embalou antes (adiantado)" só com o listrado; sem o campo (e com programação), a nota manda colar o .gs v5.67; o papel sem o item na legenda',
      [h.includes('<span class="tks-la">embalou antes (adiantado)</span>'), h0.includes('tks-la'), /depois de colar o ritmoprod_appscript\.gs v5\.67/.test(h0), /v5\.67/.test(h),
-      /#sec-uep \.uep-leg \.tks-la::before\{background:repeating-linear-gradient/.test(html), /embalou antes<\/span>' : ''\}<span><i style="background:#3B7DD8"><\/i>feito/.test(html)],
-     [true, false, true, false, true, true]);
+      /#sec-uep \.uep-leg \.tks-la::before\{background:repeating-linear-gradient/.test(html), /embalou antes<\/span>/.test(pega('function _taktDocHtml(')),
+      Tv.adiCampo, /v5\.67/.test(_taktHtml(Object.assign(Tv, { takt:1 }), null, { largura:900, botoes:'', V:null }) || ''),
+      _taktHtml(T1, null, { largura:900, botoes:'', V:_taktVeredito(T1, null, null) }).includes('tks-la')],
+     [true, false, true, false, true, false, false, false, false]);
 }
 // AS LEITURAS DE VERDADE (revisão: o regex acima passava com a retentativa sem fim).
 // O bloco 4 SEMANAS do renderUep REAL, com relógio virtual, leituras de mentira de
