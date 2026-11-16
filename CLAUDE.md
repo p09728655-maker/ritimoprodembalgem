@@ -4206,7 +4206,8 @@ feito e dá ar de verdade ao que sobrou.
   Tela B não mostra META DO DIA; o *programado* do fim de semana é o
   `programadoHoje` (`_progHojeCx` — sem o atraso que o SOMAR ATRASO põe na META
   DO DIA); a cascata do 🖨 do dia não sai no fim de semana; a eficiência do
-  período no celular voltou a total ÷ meta (a régua do `_relMetaHE.efTotal`); o
+  período no celular voltou a total ÷ meta (~~a régua do `_relMetaHE.efTotal`~~
+  — corrigido na 2ª revisão: só os dias com meta, ver abaixo); o
   *cx/dia* da Tela D divide pelos dias com meta; a diretoria diz *TODO HORA
   EXTRA · SEM META* (sem barra); as paradas do fim de semana são valoradas pela
   **mediana das metas dos dias úteis** do histórico (`metaDiasParadas`,
@@ -4245,7 +4246,11 @@ feito e dá ar de verdade ao que sobrou.
     entram; hoje no fim de semana não soma) e a cascata passa ao
     `_paradasStats` só as paradas desses dias.
   - Celular: EFICIÊNCIA MÉDIA do histórico = Σ real dos dias com meta ÷ Σ meta
-    (sem meta no período: '—'); o `abrirLanc` decide o *SEM META* pelo flag `he`
+    (sem meta no período: '—') — a base da EFICIÊNCIA MÉDIA da aba HISTÓRICO do
+    PC (lá, média dos % dos mesmos dias). ⚠ **NÃO é o `efTotal` do relatório
+    semanal**: aquele soma as caixas do fim de semana e diz *META BATIDA COM
+    HORA EXTRA* ao lado (7.000 de 7.500 + 690 no sábado: celular 93,3%, semanal
+    102,5% com o aviso; os dois rótulos dizem o que medem); o `abrirLanc` decide o *SEM META* pelo flag `he`
     (6º parâmetro); a linha da madrugada não repete "hora extra"; o `metaH` sem
     hora lançada divide pelas horas de jornada.
   - Diretoria no fim de semana: UEP, caixas e pontos grandes = o dia inteiro
@@ -4258,6 +4263,34 @@ feito e dá ar de verdade ao que sobrou.
     `calcKPIs` do PC e do celular e o `renderTV` reais num contexto isolado com
     o relógio fixo (o dia sem hora extra, a madrugada, o modal ⚙, 06:45), e o
     `_paradasStats` e o `_phTotaisPeriodo` reais — 6 de 6 mutações pegas.
+- **Da 3ª revisão (mesma versão)**:
+  - **PONTOS sem HE da diretoria** (`_dirSomaPts`): o item do fim de semana
+    entra inteiro no `ptsHe` — o `.gs` antes da v5.68 só põe em `pontosHe` as
+    horas fora de 07–17, e o quadro dizia CAIXAS e UEP sem HE sem o sábado e
+    PONTOS sem HE com ele. A soma guardada (`rpe_dir_pts`, até 6 h) leva a
+    regra (`r: DIR_PTS_REGRA` = 2); a da regra antiga não é reaproveitada.
+  - **As médias por dia têm UMA base: os dias com meta** (`_relSemanalKPIs`:
+    `mediaReal`/`mediaNormal`/`mediaHE`/`mediaMeta`/`nBase`; o 🖨 do histórico;
+    a linha da média do `_svgBarChart`). O realizado/dia dividia por todos os
+    dias e a meta/dia só pelos com meta: *1.282 cx/dia · meta 1.500* ao lado de
+    uma eficiência de 93,3%. O fim de semana fica só no TOTAL (a nota da tabela
+    e o card dizem *sem o fim de semana*). Sem dia com meta, a média é de todos
+    os dias.
+  - **Sem nenhum dia com meta** (período só de fim de semana): `efMedia`,
+    `efMediaSemHE`, `mediaMeta` null e `_relDiaExtremo` null — o semanal, o 🖨
+    do histórico e a aba HISTÓRICO mostram *—* (era *0,0% · ABAIXO* e um
+    sábado de MELHOR DIA).
+  - `uepGerMontar` no fim de semana devolve `falta` 0 (era a meta inteira).
+  - Celular, sábado com a última leitura falhada (`G.velha`): o card diz *UEP de
+    HH:MM — a última leitura não veio* (o ramo `c.fds` vinha antes e calava).
+  - **`_phTotaisPeriodo` (cascata do período; defeito de antes da branch)**:
+    depois do FECHAR DIA o dia de hoje estava no histórico E no ao vivo — meta,
+    realizado e cobertura dobrados (16–17/11: 4.700/4.400 em vez de
+    3.100/2.900). Hoje, no período, vale só o ao vivo.
+  - ⚠ Ficou como está: num sábado, antes de o histórico chegar (ou com a
+    leitura falhada), a mediana dos úteis não existe e a parada de hoje é
+    valorada pela meta da HORA_A_HORA; muda quando o histórico chega.
+  - 8 de 8 mutações pegas; suíte inteira com o relógio em 14/11, 15/11 e 17/11.
 - **Linhas de 07/11 e 14/11 do HISTORICO corrigidas pela API em 16/11/2026**
   (PPCP: *"CORRIGIR"*), como o `.gs` v5.68 grava. Conferido antes na
   HISTORICO_HORA: 07/11 = 465 cx de 07–11 h + 225 de madrugada = 690; 14/11 =

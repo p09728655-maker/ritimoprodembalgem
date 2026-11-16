@@ -4115,7 +4115,9 @@ function _gerUepCardsM(G, k, atrKpi){
     // A META: os três são contra a meta. A régua do PC (_gerUepCards).
     const [dd, mm, aa] = hojeStr().split('/').map(Number);   // o dia de HOJE do app, não o relógio cru
     L.push({ l: 'UEP DO DIA · ' + (new Date(aa, mm - 1, dd).getDay() === 0 ? 'DOMINGO' : 'SÁBADO'), v: fmtN(Math.round(G.he)) + '<small>UEP</small>', c: 'acc larga hero',
-             sub: '<b>TODO HORA EXTRA</b> · sem meta' + (G.cxSem > 0 ? ` · ${fmtN(G.cxSem)} cx sem UEP` : '') });
+             sub: '<b>TODO HORA EXTRA</b> · sem meta' + (G.cxSem > 0 ? ` · ${fmtN(G.cxSem)} cx sem UEP` : '')
+               // a leitura que não veio também se diz no fim de semana: sem ela, um número velho sem aviso
+               + (G.velha ? `<i>UEP de ${lidoTxt || '—'} — a última leitura não veio</i>` : '') });
     if(atrKpi) L.push(atrKpi);
     return L;
   }
@@ -4313,10 +4315,12 @@ function _renderHistoricoComDados(dias){
   // ── Resumo do período ──
   const totReal=lista.reduce((s,d)=>s+(parseFloat(d.real)||0),0);
   const totMeta=lista.reduce((s,d)=>s+(parseFloat(d.meta)||0),0);
-  // total ÷ meta, a hora extra dos dias úteis dentro — a régua do PC
-  // (_relMetaHE.efTotal). SÓ DIAS COM META: o sábado e o domingo (todo hora
-  // extra, sem meta) somavam caixas no numerador sem meta no denominador — uma
-  // semana de 7.000 de 7.500 com 690 no sábado saía 102,5% verde (1.51.0).
+  // Σ realizado ÷ Σ meta dos DIAS COM META (a hora extra dos dias úteis dentro)
+  // — a base da EFICIÊNCIA MÉDIA da aba HISTÓRICO do PC (lá, média dos % dos
+  // mesmos dias). NÃO é o efTotal do relatório semanal: aquele soma as caixas do
+  // fim de semana e diz "META BATIDA COM HORA EXTRA" ao lado. O sábado e o domingo
+  // (todo hora extra, sem meta) somavam caixas sem meta no denominador — 7.000 de
+  // 7.500 com 690 no sábado saía 102,5% verde aqui, sem aviso nenhum (1.51.0).
   const comMeta=lista.filter(d=>(parseFloat(d.meta)||0)>0);
   const totRealM=comMeta.reduce((s,d)=>s+(parseFloat(d.real)||0),0);
   const efMed=totMeta>0?(totRealM/totMeta)*100:0;

@@ -358,6 +358,26 @@ ok('dia sem horário lançado não vira "undefined"',
      [Math.round(kS.efMedia * 10) / 10, Math.round(kS.mediaMeta), kS.comMeta, kS.nComMeta, kS.piorDia.data !== '15/08/2026', kS.totReal - k.totReal, kS.totHE - k.totHE],
      [Math.round(k.efMedia * 10) / 10, Math.round(k.mediaMeta), k.comMeta, dias.length, true, 690, 690]);
 }
+// revisão da v7.248.0: as médias por dia têm UMA base (os dias com meta). O
+// realizado/dia dividia por todos os dias e a meta só pelos com meta: 1.282 cx/dia
+// × meta 1.500 ao lado de uma eficiência de 93,3%.
+{ const U = ['09/11/2026','10/11/2026','11/11/2026','12/11/2026','13/11/2026'].map(d => ({ data:d, real:1400, meta:1500, ef:93.33, ok:false, heCx:0, fechado:true }));
+  const SAB = { data:'14/11/2026', real:690, meta:0, ef:0, ok:false, melhor:0, pior:0, heCx:690, heCount:6, fechado:true, fds:true };
+  const kU = _relSemanalKPIs(U.concat([SAB]));
+  ok('semana com sábado: MÉDIA / DIA (realizado, normal, HE, meta) na base dos 5 dias com meta; o sábado só no total',
+     [Math.round(kU.mediaReal), Math.round(kU.mediaNormal), Math.round(kU.mediaHE), Math.round(kU.mediaMeta), kU.nBase, kU.totReal, kU.totHE],
+     [1400, 1400, 0, 1500, 5, 7690, 690]);
+  const kF = _relSemanalKPIs([SAB]);
+  ok('só fim de semana: sem eficiência, meta por dia nem melhor/pior dia (null — nunca 0,0% ABAIXO); o realizado continua',
+     [kF.efMedia, kF.efMediaSemHE, kF.mediaMeta, kF.melhorDia, kF.piorDia, kF.mediaReal, kF.nComMeta], [null, null, null, null, null, 690, 0]);
+}
+ok('semanal: a linha MÉDIA / DIA e o card MÉDIA DIÁRIA leem a base única (mediaNormal/mediaHE/nBase) e mostram — sem dia com meta',
+   /Math\.round\(mediaNormal\)/.test(src) && /Math\.round\(mediaHE\)/.test(src) && /base: \$\{plural\(nBase,'dia','dias'\)\}/.test(src)
+   && !/\(totReal-totHE\)\/diasSem\.length/.test(src) && /efMedia!=null\?fmtP\(efMedia\):'—'/.test(src), true);
+ok('o gráfico de barras desenha a média dos dias com meta (a do card)', /const _bM=dias\.filter\(_diaComMeta\)/.test(src), true);
+ok('🖨 histórico: média na base dos dias com meta; sem dia com meta, eficiência e melhor/pior dia em —',
+   /const mediaReal=baseM\.reduce/.test(src) && /const melhorDia=nM\?diasM\.reduce/.test(src) && /totMeta\?fmtP\(mhe\.efTotal\):'—'/.test(src), true);
+ok('aba HISTÓRICO: sem dia com meta, EFICIÊNCIA MÉDIA "—" (não 0,0% ABAIXO)', /nenhum dia com meta no período<\/div><\/div>`\}/.test(src), true);
 const umDia = _relSemanalKPIs([dias[0]]);
 ok('um único dia: média = o próprio dia', umDia.mediaReal, 1106);
 ok('um único dia é melhor e pior ao mesmo tempo',
@@ -2871,7 +2891,7 @@ ok('TV: quem julga é o selo, e ele fala de ritmo',
   ok('fim de semana (revisão): o celular sem NEC. P/ META; a Tela B sem META DO DIA; a cascata do 🖨 do dia não sai; a Tela D divide o que faltou pelos dias com meta',
      // o celular (1.51.0, sobre o gerencial com a UEP na frente): no fim de semana o
      // 1º card é a UEP toda em hora extra e saem o ritmo, a projeção e o PARA A META
-     [/else if\(c\.fds\)\{[\s\S]{0,700}if\(atrKpi\) L\.push\(atrKpi\);\s*return L;\s*\}/.test(_mob),
+     [/else if\(c\.fds\)\{[\s\S]{0,1000}G\.velha \? `<i>UEP de [\s\S]{0,200}if\(atrKpi\) L\.push\(atrKpi\);\s*return L;\s*\}/.test(_mob),
       /if\(uepFimDeSemana\(hojeStr\(\)\)\)\{\s*const pr = Number\(\(PONTOS_DIA\.programacao \|\| \{\}\)\.programadoHoje\) \|\| 0;/.test(_mob),
       /md\.textContent=fds\?'—':fmtN\(k\.meta\)/.test(_v7), /if\(CFG\.sheetsUrl && _rpOk\(\) && !uepFimDeSemana\(hojeStr\(\)\)\)\{/.test(_v7),
       /const nJorn = d\.dias\.filter\(_diaComMeta\)\.length;/.test(_v7)],
@@ -3030,6 +3050,11 @@ console.log('\n── a parada de sábado vale o mesmo em toda tela, ao vivo e d
   ok('cascata do período: o sábado de hoje (programado 1.800) NÃO soma meta; ele e as paradas dele ficam fora (semMeta, comMeta) — a parada de sábado tirava caixas de uma meta que não estava lá',
      [tp.metaTot, tp.realTot, tp.semMeta, tp.semMetaFds, Object.keys(tp.comMeta), tp.realTotAll],
      [4800, 4400, 1, 1, ['09/11/2026', '10/11/2026', '13/11/2026'], 5090]);
+  // depois do FECHAR DIA (17:05) hoje também está no histórico: entra UMA vez, pelo ao vivo
+  C2.hojeStr = () => '17/11/2026'; C2.calcKPIs = () => ({ real:1500, meta:1600 });
+  const tp2 = C2._phTotaisPeriodo([{ data:'16/11/2026', meta:1500, real:1400 }, { data:'17/11/2026', meta:1600, real:1500 }], '16/11/2026', '17/11/2026');
+  ok('cascata do período: hoje fechado no histórico E ao vivo conta UMA vez (era meta 4.700 e realizado 4.400 — o certo é 3.100 e 2.900)',
+     [tp2.metaTot, tp2.realTot, tp2.realTotAll, Object.keys(tp2.comMeta)], [3100, 2900, 2900, ['16/11/2026', '17/11/2026']]);
   ok('a cascata do período passa ao RP_PARADAS só as paradas dos dias com meta',
      /const parCasc=paradas\.filter\(p=>_tp\.comMeta\[p\.data\]\);\s*\n\s*const st=_paradasStats\(parCasc,mBD/.test(_v7), true);
 }
@@ -5790,6 +5815,13 @@ console.log('\n── estudo de UEP ──');
       /PONTOS <i>sem HE<\/i><\/span>\$\{_dirComHe\(S\.pts\)\}<\/div><div class="dir-kv">\$\{f\(S\.pts - S\.ptsHe\)\}/.test(pega('function _dirSemanaHtml(')),
       /if \(_ehHoraExtraCaixas\(hora, map\[key\]\.data\)\) \{ map\[key\]\.pontosHe \+= ptsL;/.test(fs.readFileSync(path.join(__dirname, 'ritmoprod_appscript.gs'), 'utf8'))],
      [4, true, true]);
+  // revisão da v7.248.0: o item do fim de semana entra INTEIRO no ptsHe — o .gs antes
+  // da v5.68 só põe em pontosHe as horas fora de 07–17, e o PONTOS sem HE da diretoria
+  // contava o sábado que CAIXAS e UEP sem HE já tiram
+  ok('pontos da semana: o sábado todo em ptsHe (o .gs v5.67 só mandava a madrugada); dia útil pelo pontosHe',
+     _dirSomaPts([{ data:'13/11/2026', pontos:100, caixas:10, pontosHe:20 }, { data:'14/11/2026', pontos:80, caixas:8, pontosHe:15 }]), { pts:180, cx:18, ptsHe:100 });
+  ok('a soma guardada pela regra antiga (rpe_dir_pts sem r:2) não é reaproveitada',
+     /x\.r === DIR_PTS_REGRA/.test(src) && /ts:DIR_PTS\.ts, r:DIR_PTS_REGRA \}/.test(src), true);
   // UM VEREDITO: só a UEP tem selo; caixas e pontos são número
   const HH = _dirHojeHtml(H), SH = _dirSemanaHtml(S, [], false, null);
   ok('um veredito só: o selo e a cor são da UEP; caixas e pontos saem sem classe de status',

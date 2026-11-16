@@ -529,7 +529,9 @@ function uepGerMontar(o){
   const rest = [];
   horas.forEach(h => { if (h.he) return; const i0 = toMin(h.inicio), f0 = i0 + h.min; if (f0 > ag) rest.push([Math.max(i0, ag), f0]); });
   const minRest = rest.reduce((t, r) => t + r[1] - r[0], 0);
-  const falta = Math.max(0, meta - feito);
+  // no fim de semana não há meta: nada falta para ela (quem lesse G.falta diria
+  // "faltam 2.761 UEP" num sábado)
+  const falta = card.fds ? 0 : Math.max(0, meta - feito);
   let m = null;
   // Protegido como o PC era (try em volta do _tvUepMontar): um item torto no
   // porHoraModelo ou no cadastro não derruba o gerencial — fica sem os minutos,

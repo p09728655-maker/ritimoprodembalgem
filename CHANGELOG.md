@@ -89,6 +89,22 @@ foi: *"aos sábados é horas extra total"*.
     (UEP, caixas e pontos), e não *0 sem HE*.
   - O cabeçalho da impressão do gerencial, num sábado sem a UEP lida, não diz
     mais meta nem eficiência.
+- **Correções da 3ª revisão:**
+  - **Diretoria, PONTOS sem HE:** o sábado entra inteiro na hora extra, como
+    CAIXAS e UEP sem HE no mesmo quadro já faziam. O `.gs` antes da v5.68 só
+    separa a madrugada. A soma guardada pela regra antiga (até 6 h no
+    aparelho) é descartada.
+  - **Relatório semanal e 🖨 do histórico:** as médias por dia têm uma base
+    só, os dias com meta. O fim de semana fica só no TOTAL, e a nota da tabela
+    diz isso. O gráfico desenha a linha da média nessa mesma base.
+  - **HISTÓRICO, 🖨 do histórico e semanal com só fim de semana:** a
+    EFICIÊNCIA e o MELHOR/PIOR DIA saem *—*. Antes saía *0,0% · ABAIXO*.
+  - **Celular, sábado com a última leitura falhada:** o card da UEP diz de
+    que hora é a UEP. No dia útil isso já acontecia.
+  - **Cascata do 🖨 PRODUÇÃO/HORA do período, depois do FECHAR DIA:** o dia de
+    hoje entra uma vez só, pelo ao vivo. Antes entrava também pelo histórico, e
+    meta, realizado e cobertura saíam dobrados. Esse defeito existia antes
+    desta versão.
 - **As linhas já gravadas também mudam na tela.** O `rp-core` (`histDiaFds`)
   lê o sábado gravado pelo `.gs` anterior (07/11 e 14/11) da mesma forma que o
   `.gs` v5.68 grava.
@@ -116,11 +132,22 @@ foi: *"aos sábados é horas extra total"*.
     sábado.
   - CAIXAS × PONTOS × UEP e 📏 RÉGUAS: o sábado sai dos dias comparados (só
     entram dias com meta), e a oscilação muda junto.
+  - **MÉDIA DIÁRIA e linha MÉDIA / DIA do relatório semanal** (e a média do 🖨
+    do histórico e do gráfico): semana com 5 dias de 1.400 de 1.500 cx e 690
+    cx no sábado. Era *1.282 cx/dia · meta 1.500*, com a eficiência dizendo
+    93,3% ao lado. Passa a **1.400 cx/dia · meta 1.500 · sem o fim de semana**.
+  - **PONTOS sem HE da diretoria** na semana com sábado: caem os pontos das
+    horas de 07–17 do sábado (até o re-deploy, eles contavam como jornada).
+  - **Cascata do período com hoje já fechado:** 16–17/11 com 1.400 de 1.500 e
+    1.500 de 1.600 cx. Era meta 4.700 e realizado 4.400, passa a **3.100 e
+    2.900**. A COBERTURA da aba PRODUÇÃO/HORA sobe junto, porque o
+    denominador deixa de dobrar.
 - **Revoga a `.gs` v5.60 / v7.222.0**, que dava ao sábado uma meta pelas
   horas de jornada trabalhadas. Feriado trabalhado **não** entra nesta regra:
   só sábado e domingo.
 - ⚠ **re-deploy** do `ritmoprod_appscript.gs` (v5.68). Antes dele, os painéis
-  já mostram o fim de semana como hora extra, mas o próximo sábado será
+  já mostram o fim de semana como hora extra (os pontos da diretoria inclusive),
+  mas o próximo sábado será
   gravado no HISTORICO com a meta pelas horas (v5.67). A tela relê a linha
   como hora extra, mas a planilha fica com o número antigo.
 ## mobile 1.50.0 · v7.247.0 · rp-core 1.18.0 — 16/11/2026 · GERENCIAL DO CELULAR: a UEP na frente

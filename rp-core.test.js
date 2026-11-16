@@ -291,6 +291,12 @@ ok('sem meta do dia também não',
   ok('uepCard no sábado: 1.440 UEP, "TODO HORA EXTRA · sem meta", sem cor de veredito; na sexta, o card de sempre',
      [cs.fds, cs.v, cs.sub, cs.c, cs.he, cs.ef, /RITMO/.test(cs.sub), cu.fds, /RITMO/.test(cu.sub), uepCard(U14, 2761, 240).fds],
      [true, '1.440', 'TODO HORA EXTRA · sem meta · 12 cx sem UEP', 'acc', 1440, null, false, undefined, true, undefined]);
+  // o modelo do gerencial no sábado: nada "feito" contra a meta, nada falta para ela
+  // (revisão: devolvia falta = 2.761 — quem lesse diria "faltam 2.761 UEP" no sábado)
+  const Gs = uepGerMontar({ uep: U14, metaUep: 2761, minNorm: 240, data: '14/11/2026', slots: [], allHoje: [], phm: [], agoraMin: 600 });
+  const Gu = uepGerMontar({ uep: U14, metaUep: 2761, minNorm: 240, data: '13/11/2026', slots: [], allHoje: [], phm: [], agoraMin: 600 });
+  ok('uepGerMontar no sábado: feito 0, a UEP toda em he, falta 0; na sexta, a falta contra a meta',
+     [Gs.card.fds, Gs.feito, Gs.he, Gs.falta, Gu.falta], [true, 0, 1440, 0, 2761 - 894]);
 }
 
 // ── A meta de cada dia para valorar paradas (metaDiasParadas, v7.248.0) ──────
