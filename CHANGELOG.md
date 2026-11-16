@@ -11,6 +11,33 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.248.3 — 16/11/2026 · o PC atualiza na hora certa; dado velho sem veredito
+
+O PPCP comparou a diretoria com o gerencial do PC e viu números diferentes
+(*"não bate as ueps"*):
+
+| Tela | Dados de | UEP | Selo |
+|---|---|---|---|
+| Diretoria | 13:35 | 1.639 | NO RITMO |
+| Gerencial do PC | 13:24 | 1.445 | ATENÇÃO |
+
+A conta estava certa nas duas. O PC é que ficou 12 minutos sem ler e não tinha
+a hora das 13:00.
+
+- **O PC não atrasa mais a atualização com a janela escondida.** O contador
+  descia por segundo, e com a janela atrás de outra ou minimizada o Windows
+  segura esses segundos: os 5 minutos viravam horas. Agora a próxima leitura tem
+  hora marcada. Quando a janela volta para a frente com a hora vencida, ela lê
+  na mesma hora.
+- **Dado velho fica à vista.** Leitura com mais de dois intervalos de
+  atualização é dado velho:
+  - o cabeçalho diz *dados de HH:MM — sem leitura nova*, em âmbar;
+  - o card UEP DO DIA mostra *DADOS DE HH:MM*, sem selo;
+  - se as caixas também estão velhas, ninguém dá veredito.
+- **Atenção:** com o dado velho, o selo do gerencial do PC some (antes
+  continuava NO RITMO, ATENÇÃO ou ABAIXO com o dado de minutos atrás). Os números
+  não mudam.
+
 ## Deploy — 16/11/2026 · o site publica só o painel
 
 - **O site deixa de publicar o resto do repositório.** Até aqui, quem tinha o

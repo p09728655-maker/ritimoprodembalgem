@@ -68,6 +68,7 @@ de tema entra aqui também.
 - GERENCIAL DO PC: A UEP NA FRENTE (v7.243.0 / rp-core 1.17.0; revisão na v7.244.0 / rp-core 1.17.1)
 - GERENCIAL DO CELULAR: A UEP NA FRENTE (mobile 1.50.0 / v7.247.0 / rp-core 1.18.0)
 - TELA DA DIRETORIA — `/diretoria` (v7.116.0)
+- DADO VELHO NO GERENCIAL DO PC E A ATUALIZAÇÃO PELA HORA MARCADA (v7.248.3)
 
 ## UEP — `uep.md`
 - CAIXAS × PONTOS × UEP — a régua que mede o esforço (v7.184.0)

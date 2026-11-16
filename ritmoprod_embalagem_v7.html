@@ -4173,7 +4173,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.248.2';
+const APP_VER = '7.248.3';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -4333,8 +4333,9 @@ let CFG = {
 };
 let fileHandle    = null;
 let isLive        = false;
-let countdownSec  = 0;
 let countdownTimer= null;
+let _proxCiclo    = 0;      // a HORA MARCADA da próxima leitura (Date.now() em ms) — ver _tickCountdown
+let _ultSheetsOk  = 0;      // quando o getDados respondeu por último (o selo do cabeçalho e o dado velho)
 let CHARTS        = {};
 
 // ════════════════════════════════════════════════
@@ -5039,6 +5040,7 @@ function processarRespostaSheets(json){
   META_HORA_A_HORA = Number(json.metaDia) || META_HORA_A_HORA;
   aplicarMetaDiaAutomatica();
   const agora = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  _ultSheetsOk = Date.now();
   setStatusBadge('live','Google Sheets · '+agora);
   document.getElementById('ftr-fonte').textContent =
     `📊 ${json.planilha||'Google Sheets'} · ${novos.length} slots · Meta: ${json.metaDia} cx · ${agora}`;
@@ -5300,7 +5302,7 @@ async function testarSheets(){
   btn.disabled = false;
   setTimeout(()=>{ btn.textContent='🔗 TESTAR URL'; btn.style.color='var(--acc)'; },5000);
 }
-// (fileHandle, isLive, countdownSec, countdownTimer declarados no topo)
+// (fileHandle, isLive, countdownTimer e _proxCiclo declarados no topo)
 
 // ── IndexedDB: persist fileHandle entre sessões ──
 function idbSet(key,val){ return new Promise((res,rej)=>{
@@ -5408,27 +5410,63 @@ function setStatusBadge(estado, msg){
 }
 
 // ── Countdown ──
+// ⚠ PELO RELÓGIO, NÃO POR TIQUE (v7.248.3). O contador descia 1 a cada tique de
+// 1 s — e com a janela atrás de outra ou minimizada, o Windows e o Chrome a
+// tratam como escondida e seguram os timers (~1 por minuto): os 5 min viravam
+// horas. Caso real, 16/11/2026: o gerencial do PC atrás da janela da diretoria
+// ficou das 13:24 às 13:36 sem ler — 1.445 UEP na tela com a diretoria em
+// 1.639 (a hora das 13:00 inteira). Agora a próxima leitura é uma HORA MARCADA
+// (_proxCiclo): o tique só confere se ela passou, e a janela que volta para a
+// frente com a hora vencida lê na hora (visibilitychange/focus, mais abaixo).
+const _marcaProxCiclo = agora => { _proxCiclo = agora + (window._intervaloMin||5)*60000; };
 function iniciarAutoRefresh(){
   if(countdownTimer) clearInterval(countdownTimer);
   document.getElementById('countdown-badge').style.display='flex';
   const salvo=parseInt(localStorage.getItem('rpe_intervalo')||'5');
   window._intervaloMin=salvo>=1&&salvo<=60?salvo:5;
-  countdownSec=window._intervaloMin*60;
+  _marcaProxCiclo(Date.now());
   _atualizarLabelIntervalo();
   _tickCountdown();
   countdownTimer=setInterval(_tickCountdown,1000);
 }
 function _tickCountdown(){
-  const m=Math.floor(countdownSec/60),s=countdownSec%60;
-  document.getElementById('countdown-txt').textContent=m+':'+String(s).padStart(2,'0');
-  if(countdownSec===0){
-    countdownSec=(window._intervaloMin||5)*60;
+  const agora=Date.now();
+  if(_proxCiclo>0 && agora>=_proxCiclo){
+    _marcaProxCiclo(agora);
     // Aba PARADAS aberta também atualiza no intervalo configurado.
     // silent: mesmo período → mantém os KPIs na tela enquanto busca.
     // Vai DEPOIS do lerSheets: disparada junto, disputava o Apps Script (uma
     // execução por vez) e as duas chegavam perto do timeout de 25 s.
     _cicloLeitura();
-  } else countdownSec--;
+  }
+  const rest=Math.max(0, Math.ceil((_proxCiclo-agora)/1000));
+  document.getElementById('countdown-txt').textContent=Math.floor(rest/60)+':'+String(rest%60).padStart(2,'0');
+  _dadoVelhoPintar(agora);
+}
+// A janela que volta para a frente confere a hora marcada na hora (sem esperar o
+// próximo tique, que escondida podia levar um minuto).
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && countdownTimer) _tickCountdown(); });
+window.addEventListener('focus', ()=>{ if(countdownTimer) _tickCountdown(); });
+// DADO VELHO À VISTA (v7.248.3): leitura com mais de dois intervalos (mín. 3 min)
+// é dado velho. O selo do cabeçalho diz de quando ele é, e o gerencial tira o
+// veredito do card que depende dele (_gerUepCards/_gerCxCards) — um ABAIXO DO
+// RITMO de 12 min atrás, com a linha no ritmo, é pior que nenhum.
+function _dadoVelho(ts, agora, intervaloMin){
+  if(!(ts>0)) return false;
+  return agora-ts > Math.max(2*(intervaloMin||5), 3)*60000;
+}
+const _horaDe = ts => new Date(ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+let _dadoVelhoSig='';
+function _dadoVelhoPintar(agora){
+  if(!isSheets) return;
+  const vC=_dadoVelho(_ultSheetsOk, agora, window._intervaloMin), vU=_dadoVelho(PONTOS_DIA_TS, agora, window._intervaloMin);
+  const txt=document.getElementById('rtxt');
+  // só troca o selo "Google Sheets · hora" (verde): o "Buscando…" e o erro vermelho dizem mais
+  if(vC && txt && /^Google Sheets · /.test(txt.textContent))
+    setStatusBadge('warn','Google Sheets · dados de '+_horaDe(_ultSheetsOk)+' — sem leitura nova');
+  // o gerencial ao vivo redesenha quando o dado vira velho (ou volta): sem leitura nova, nada mais o redesenharia
+  const sig=vC+'|'+vU;
+  if(sig!==_dadoVelhoSig){ _dadoVelhoSig=sig; if(_abaOn('gerencial') && !GER_DATA && !_modoDir()) try{ renderGerencial(); }catch(e){} }
 }
 function _atualizarLabelIntervalo(){
   const el=document.getElementById('countdown-intervalo');
@@ -5438,7 +5476,7 @@ function forcarRefresh(){
   const badge=document.getElementById('countdown-badge');
   badge.style.borderColor='var(--acc)'; badge.style.color='var(--acc)';
   setTimeout(()=>{ badge.style.borderColor=''; badge.style.color='var(--txt2)'; },700);
-  countdownSec=(window._intervaloMin||5)*60;
+  _marcaProxCiclo(Date.now());
   invalidarHistoricoCache();   // refresh manual = quero dado fresco, ignora o cache do histórico
   _cicloLeitura();
 }
@@ -5472,7 +5510,7 @@ function alterarIntervalo(){
   if(isNaN(novo)||novo<1||novo>60){ alert('Valor inválido. Use 1–60.'); return; }
   window._intervaloMin=novo;
   localStorage.setItem('rpe_intervalo',novo);
-  countdownSec=novo*60;
+  _marcaProxCiclo(Date.now());
   _atualizarLabelIntervalo();
 }
 
@@ -13258,8 +13296,13 @@ function renderGerencial(){
   // Sem a UEP do dia (lendo, a leitura falhou, backend antigo ou cadastro sem
   // UEP), as caixas voltam a dar o veredito — nunca uma tela sem veredito
   // nenhum. Quando a UEP chega, o selo passa para ela.
-  const semUep=!G.ok;
-  _gerKpiPinta(_gerUepCards(G, k), _gerCxCards(k, semUep));
+  // DADO VELHO (v7.248.3): leitura com mais de dois intervalos não dá veredito —
+  // a UEP velha passa o selo às caixas; com as caixas velhas também, ninguém julga.
+  const _ag=Date.now();
+  const velhoU=_dadoVelho(PONTOS_DIA_TS, _ag, window._intervaloMin)?PONTOS_DIA_TS:0;
+  const velhoC=_dadoVelho(_ultSheetsOk, _ag, window._intervaloMin)?_ultSheetsOk:0;
+  const semUep=!G.ok || !!velhoU;
+  _gerKpiPinta(_gerUepCards(G, k, velhoU), _gerCxCards(k, semUep, velhoC));
   renderGerProdutosDia(k.real);   // produtos embalados hoje (v7.201.0)
   // A aba UEP lê o mesmo PONTOS_DIA: redesenha junto no refresh.
   if(_abaOn('uep')) renderUep();
@@ -13330,7 +13373,7 @@ function _gerHoraJulga(h, cx, cxCom){ return uepHoraJulga(h, cx, cxCom); }   // 
 // "28 min atrás do ritmo": a diferença para o esperado, em minutos de meta.
 function _gerMinTxt(difMin){ return uepMinTxt(difMin); }   // rp-core 1.18.0
 // 1ª linha: o veredito (UEP) e o que está vencido. Só o 1º card tem selo.
-function _gerUepCards(G, k){
+function _gerUepCards(G, k, velho){
   const c=G.card, L=[];
   if(!G.ok){
     L.push({ l:c.l, v:c.v, sub:c.sub, t:c.t, c:(c.c||'')+' ger-hero' });
@@ -13343,6 +13386,12 @@ function _gerUepCards(G, k){
     const atr=_gerAtrasoKpi();
     if(atr) L.push(atr);
     return L;
+  } else if(velho){
+    // a última leitura da produção do dia é velha: o número fica, o selo sai (v7.248.3)
+    L.push({ l:'UEP DO DIA · META '+fmtN(G.meta), v:fmtN(Math.round(G.feito))+' <small>UEP</small>',
+             sub:`<b>DADOS DE ${_horaDe(velho)}</b> · sem leitura nova da produção do dia — sem veredito até a próxima`,
+             t:'A última leitura da produção do dia é de '+_horaDe(velho)+'. Com mais de dois intervalos de atualização, o selo sai: o ritmo julgado com o dado velho dava um veredito que a linha já não tinha (16/11/2026).',
+             c:'acc ger-hero' });
   } else {
     const m=G.m, temJ=k.minNorm>0&&c.ef!=null;
     const sub=temJ
@@ -13395,7 +13444,7 @@ function _gerAtrasoKpi(){
 }
 // 2ª linha: as caixas, os pontos e o peso — fatos, SEM cor e sem selo. Só sem
 // UEP nenhuma (backend ou cadastro) o card das caixas volta a julgar.
-function _gerCxCards(k, semUep){
+function _gerCxCards(k, semUep, velho){
   const p=_metaPartes(k.meta, _metaDiaAba());
   // sábado e domingo (v7.248.0): todo hora extra — as caixas sem veredito, o programado como fato
   if(uepFimDeSemana(hojeStr())) return [
@@ -13410,8 +13459,8 @@ function _gerCxCards(k, semUep){
     { l:'CAIXAS', v:fmtN(k.real), c:'', sub:k.nHE?`${fmtN(k.realNormal)} normal + ${fmtN(k.realHE)} em hora extra`:'no turno',
       t:k.nHE?`${plural(k.nHE,'hora','horas')} de hora extra lançada${k.nHE>1?'s':''}`:'' },
     // o selo em caixas julga só a jornada; sem minuto dela lançado, AGUARDANDO (v7.248.0)
-    { l:'CAIXAS PROGRAMADAS', v:fmtN(k.meta), c:semUep&&k.metaAteAgora>0?sc(k.efRitmo):'',
-      sub:(semUep?`<b>${k.metaAteAgora>0?slRitmo(k.efRitmo):'AGUARDANDO A JORNADA'}</b> · `:'')+`${fmtP(k.efDia)} feito · `+_metaPartesTxt(p, k.gap, false),
+    { l:'CAIXAS PROGRAMADAS', v:fmtN(k.meta), c:semUep&&!velho&&k.metaAteAgora>0?sc(k.efRitmo):'',
+      sub:(semUep?`<b>${velho?'DADOS DE '+_horaDe(velho):k.metaAteAgora>0?slRitmo(k.efRitmo):'AGUARDANDO A JORNADA'}</b> · `:'')+`${fmtP(k.efDia)} feito · `+_metaPartesTxt(p, k.gap, false),
       t:'A META DO DIA em caixas — a que o FECHAR DIA grava no histórico.'
         +(p.metaDia==null?'':' META DIA (soma das metas por hora da HORA_A_HORA): '+fmtN(p.metaDia)+' cx · ATRASO META: '+fmtN(p.atraso)+' cx'+(p.atraso>0?(CFG.metaComAtraso?' (SOMAR ATRASO ligado).':' (meta ajustada neste computador).'):'.'))
         +(semUep?'':' Sem cor: o veredito do dia é o da UEP (1º card), que desconta o peso de cada caixa.') },

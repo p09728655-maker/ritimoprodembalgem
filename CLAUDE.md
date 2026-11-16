@@ -306,8 +306,11 @@ via Google Apps Script (JSONP).
   em ZERO ainda na tolerância (AINDA ACEITA, 15 min) não; a fechada em zero
   depois disso, sim; parte das caixas sem UEP →
   o % com `*`, sem cor.
-- Sem a UEP do dia (lendo, falhou, UEP velha no celular), quem julga são as
-  caixas programadas: nunca tela sem veredito, nunca dois.
+- Sem a UEP do dia (lendo, falhou, UEP velha), quem julga são as caixas
+  programadas: nunca tela sem veredito, nunca dois. **Dado velho** (leitura com
+  mais de dois intervalos, `_dadoVelho`; PC desde a v7.248.3): o card diz
+  "DADOS DE HH:MM", sem selo; com as caixas velhas também, ninguém julga; o
+  selo do cabeçalho diz de quando é o dado.
 - PRODUTOS EMBALADOS HOJE (PC e celular): conta `pdiaMontar` no rp-core, sem
   veredito por produto, as paradas na faixa (`pdiaParMontar`); a barra é a
   parte da UEP do dia COM a hora extra.
@@ -411,8 +414,12 @@ via Google Apps Script (JSONP).
   (`lerEmbaladoPorProduto`) lê a produção INTEIRA, e deve — recortar faz a
   produção antiga creditar outro lote do mesmo código; e o recorte nunca entra
   no `_valoresMemo`.
-- O ciclo do PC é sequencial (`_cicloLeitura`); o do celular é escalonado (90 s
-  as paradas, 3 min os dados e a UEP do dia, 6 min o histórico).
+- O ciclo do PC é sequencial (`_cicloLeitura`) e anda pela HORA MARCADA
+  (`_proxCiclo`, v7.248.3), nunca por tique: escondida (atrás de outra janela,
+  minimizada) a janela recebe ~1 tique por minuto, e o contador por tique fazia
+  os 5 min virarem horas. A janela que volta para a frente lê na hora se a hora
+  passou. O do celular é escalonado (90 s as paradas, 3 min os dados e a UEP do
+  dia, 6 min o histórico).
 - Versões: PC `APP_VER` (barra de atualização; sem service worker de
   propósito — a TV mostraria produção velha); celular `APP_VER` + o `CACHE` do
   `sw-mobile.js`. As CDN do PC são `defer`, com a fila do `mkChart`; o celular
