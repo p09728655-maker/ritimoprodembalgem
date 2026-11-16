@@ -13,9 +13,9 @@ via Google Apps Script (JSONP).
   (`hojeStr`/`dtToStr`), `mergeMedias`, `calcAtrasoHoras`, `sc`,
   `atrasoVencido` (o card ATRASO do celular, 1.14.0), `pdiaParMontar` (as
   paradas na faixa do PRODUTOS EMBALADOS HOJE, 1.16.0), `histDiaFds` /
-  `uepDiaHe` (sábado e domingo todo hora extra, 1.18.0), `metaDiasParadas` /
+  `uepDiaHe` (sábado e domingo todo hora extra, 1.19.0), `metaDiasParadas` /
   `metaMedianaUteis` (a parada de fim de semana pela mediana dos dias úteis,
-  1.18.0). Só função
+  1.19.0). Só função
   **pura** entra aqui — nada que leia `DADOS`/`CFG` ou toque no DOM.
   `node rp-core.test.js` cobre a regra e falha se algum HTML voltar a declarar
   a própria cópia.
@@ -3711,7 +3711,7 @@ feito e dá ar de verdade ao que sobrou.
     isso o vale do dia era sempre a última hora fechada (2ª revisão).
   - **Dia passado: `_gerHorasHist(horas, metaDia, uepHH, data)`** — dia útil: a
     meta da hora = META UEP gravada × minutos ÷ 527 (o 16:00-16:59 vale 59); em
-    sábado e domingo toda hora é hora extra, sem meta (v7.247.0). A
+    sábado e domingo toda hora é hora extra, sem meta (v7.248.0). A
     célula de UEP diz *pelo cadastro de hoje* (o total do card é o gravado).
     Só horas com produção chegam aqui (o `arquivarHorasDoDia` grava `real > 0`).
   - **`GER_CAT_FALHA`**: a leitura do cadastro que falhou faz o ATRASO dizer
@@ -3742,7 +3742,7 @@ feito e dá ar de verdade ao que sobrou.
     contá-lo como hora cheia cobraria meta de 12 minutos que não existem.
   - **Só entra hora COM LANÇAMENTO** — hora que ninguém apontou ainda não é hora
     atrasada (mesma regra do `calcAtrasoHoras`).
-  - **Só a JORNADA** (v7.247.0 / mobile 1.50.0): as caixas e os minutos da hora
+  - **Só a JORNADA** (v7.248.0 / mobile 1.51.0): as caixas e os minutos da hora
     extra ficam fora (`realNormal`, minutos de jornada) — a hora extra não tem
     meta. Sem minuto de jornada lançado não há o que julgar: AGUARDANDO, sem cor
     (nunca ABAIXO DO RITMO).
@@ -3826,7 +3826,7 @@ feito e dá ar de verdade ao que sobrou.
   EFICIÊNCIA do card, RITMO ATUAL, PROJEÇÃO e RITMO NECESSÁRIO. As caixas da HE
   contam para a meta do dia como sempre contaram.
 - ~~**A TV OPERACIONAL ficou fora, de propósito** (decisão do usuário,
-  01/09/2026)~~ — **revogado na v7.247.0** (PPCP, 16/11/2026: *"no meio da semana
+  01/09/2026)~~ — **revogado na v7.248.0** (PPCP, 16/11/2026: *"no meio da semana
   meta 0 em horas extra"*): a hora extra não tem meta em DIA NENHUM, também na
   TV. Tabela `tv-tbl-body`: HE com meta '—', status *HE*, linha `r-he` (âmbar),
   sem atraso; Tela A (`tva-meta`/`tva-pct`/`tva-status`): *HORA EXTRA*,
@@ -4024,7 +4024,7 @@ feito e dá ar de verdade ao que sobrou.
 - Dias fechados com a v5.48–v5.54 publicada ficaram com a META da aba (e a EF
   por ela); não foram regravados.
 
-## SÁBADO E DOMINGO SÃO HORA EXTRA O DIA INTEIRO (`.gs` v5.68 / v7.247.0 / mobile 1.50.0 / rp-core 1.18.0)
+## SÁBADO E DOMINGO SÃO HORA EXTRA O DIA INTEIRO (`.gs` v5.68 / v7.248.0 / mobile 1.51.0 / rp-core 1.19.0)
 - PPCP, 16/11/2026, com o PERÍODO da aba ⚖ UEP na tela (7 dias, 08:41): o
   sábado 14/11 em vermelho (*894 UEP · meta 1.257 (71,1%) · +546 em HE*) e
   *"1 de 6"* → *"aos sábados é horas extra total"*. **Revoga a v5.60 / v7.222.0**
@@ -4049,7 +4049,7 @@ feito e dá ar de verdade ao que sobrou.
   - ⚠ Feriado trabalhado NÃO entra (só sábado e domingo).
   - ⚠ **re-deploy manual**. Antes dele, o sábado ainda é gravado com a meta
     pelas horas (v5.67) — o painel relê como hora extra (abaixo), a planilha não.
-- **Painel — UMA regra no rp-core 1.18.0**: `uepDiaMeta(d)` = 0 no fim de semana
+- **Painel — UMA regra no rp-core 1.19.0**: `uepDiaMeta(d)` = 0 no fim de semana
   (pela data, mesmo com META UEP gravada); `uepDiaHe(d)` = UEP HE + (no fim de
   semana) a UEP de "jornada"; `uepHistResumo` não julga o fim de semana (fora do
   n, bateu, média, meta somada) e soma a UEP dele na `he`; `uepCustoPeriodo` o
@@ -5120,7 +5120,7 @@ feito e dá ar de verdade ao que sobrou.
   - Cards: desvio escrito no UEP ATÉ AGORA (do mesmo `esperado`), projeção "na
     média da jornada até agora · só jornada normal", HE "fora do UEP até agora,
     da projeção e da meta". Barras do mix neutras.
-  - ~~**Sábado na UEP fica como está**~~ — desde o `.gs` v5.68 / v7.247.0 o
+  - ~~**Sábado na UEP fica como está**~~ — desde o `.gs` v5.68 / v7.248.0 o
     sábado e o domingo são hora extra o dia inteiro, sem meta (ver *SÁBADO E
     DOMINGO SÃO HORA EXTRA O DIA INTEIRO*; a v5.60 tinha dado a eles a meta das
     horas de jornada).

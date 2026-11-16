@@ -202,7 +202,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .hc-track{position:relative;width:100%;flex:1;display:flex;align-items:flex-end;min-height:0}
 .hc-fill{width:100%;border-radius:3px 3px 0 0;min-height:3px;transition:height .2s}
 .hc-fill.ok{background:var(--ok)}.hc-fill.warn{background:var(--warn)}.hc-fill.red{background:var(--red)}
-/* sábado e domingo: todo hora extra, sem meta (1.50.0) — âmbar listrado, sem veredito */
+/* sábado e domingo: todo hora extra, sem meta (1.51.0) — âmbar listrado, sem veredito */
 .hc-fill.acc{background:repeating-linear-gradient(45deg,var(--warn) 0 3px,rgba(255,152,0,.4) 3px 6px)}
 .hc-meta{position:absolute;left:0;right:0;height:0;border-top:1px dashed rgba(255,255,255,.35)}
 .hc-day{font-family:var(--font-d);font-size:8px;color:var(--txt2);letter-spacing:.3px;white-space:nowrap}
@@ -1073,7 +1073,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 (function(){
   if (window.RP_CORE) {
     try{ sessionStorage.removeItem('rp_core_try'); }catch(e){}
-    // rp-core ANTIGO em cache com o painel novo (v7.247.0 / 1.50.0): as funções
+    // rp-core ANTIGO em cache com o painel novo (v7.248.0 / 1.51.0): as funções
     // novas viram rede — sem elas o histórico inteiro cairia num ReferenceError.
     // O fim de semana fica com a leitura antiga até o cache renovar.
     if (typeof window.histDiaFds !== 'function') window.histDiaFds = function(d){ return d; };
@@ -1110,7 +1110,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.50.0';
+const APP_VER   = '1.51.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -1381,7 +1381,7 @@ function processarResposta(json){
       // com prefixo "HE " OU horário fora da jornada 07:00–17:00 (as 05:00 e
       // 06:00 de um dia com C3=5 entram por aqui). É o que separa caixa de hora
       // normal de caixa de hora extra nos KPIs do dia. Sábado e domingo: TODO
-      // slot (1.50.0 / .gs v5.68 — a mesma regra; aqui também para o .gs anterior).
+      // slot (1.51.0 / .gs v5.68 — a mesma regra; aqui também para o .gs anterior).
       he: s.he===true || uepFimDeSemana(hoje),
       producaoHora: s.producaoHora!=null ? Number(s.producaoHora) : null,
       lotes: Array.isArray(s.lotes) ? s.lotes.map(Number) : [],
@@ -2089,7 +2089,7 @@ function _fmtMin2(m){
 // 3.897 no mesmo período.
 function _metaByDayMob(){
   // o fim de semana (sem meta, todo hora extra) pela mediana dos dias úteis — a
-  // mesma régua do PC (metaDiasParadas, rp-core; 1.50.0)
+  // mesma régua do PC (metaDiasParadas, rp-core; 1.51.0)
   if(typeof metaDiasParadas==='function') return metaDiasParadas(HIST_DIAS_ALL||[]);
   const m={};
   (HIST_DIAS_ALL||[]).forEach(d=>{ const v=parseFloat(d.meta)||0; if(d.data&&v>0) m[d.data]=v; });
@@ -2641,7 +2641,7 @@ async function lerHistorico(){
       const json = await jsonpFetch(url);
       if(json.erro) throw new Error(json.erro);
       // sábado e domingo saem como o .gs v5.68 grava: sem meta, todo hora extra
-      // (também a linha gravada antes — histDiaFds, rp-core; 1.50.0)
+      // (também a linha gravada antes — histDiaFds, rp-core; 1.51.0)
       HIST_DIAS_ALL = (json.dias||[]).map(histDiaFds);   // usado p/ contar dias trabalhados
       return HIST_DIAS_ALL;
     }catch(e){
@@ -2678,7 +2678,7 @@ function calcKPIs(){
   // CFG.metaDia vem da PROGRAMAÇÃO (metaEfetiva, ver aplicarMetaDiaAutomatica)
   // e não pode ser sobrescrito pelo metaDia da aba HORA_A_HORA (dh[0].metaDia).
   const meta = CFG.metaDia || (dh.length>0 ? dh[0].metaDia : 0);
-  // hora extra não tem meta (1.50.0): a meta das horas lançadas é só da jornada
+  // hora extra não tem meta (1.51.0): a meta das horas lançadas é só da jornada
   const dhJ = dh.filter(r=>!r.he);
   const metaReal = dhJ.reduce((s,r)=>s+(r.metaHora||0), 0);
   const ef = metaReal>0 ? (real/metaReal)*100 : 0;
@@ -2724,7 +2724,7 @@ function calcKPIs(){
      este projeto mais pagou caro.
      O rateio é por MINUTOS (o slot pós-almoço vale 48), e só entra hora COM
      LANÇAMENTO — hora que ninguém apontou ainda não é hora atrasada. */
-  // O SELO JULGA SÓ A JORNADA (1.50.0, a mesma régua do v7): a hora extra não
+  // O SELO JULGA SÓ A JORNADA (1.51.0, a mesma régua do v7): a hora extra não
   // tem meta, então nem os minutos nem as caixas dela entram no ritmo. Contando
   // a madrugada, às 06:45 o card dizia ABAIXO DO RITMO antes de a jornada
   // começar. Sem minuto de jornada lançado: metaAteAgora 0 → AGUARDANDO.
@@ -2988,7 +2988,7 @@ function renderLancamentos(){
     fim: s.slotFim||'',
     label: s.slotLabel||s.horario,
     metaHora: s.metaHora||metaH,
-    he: s.he===true,                // hora extra: sem meta, em dia nenhum (1.50.0)
+    he: s.he===true,                // hora extra: sem meta, em dia nenhum (1.51.0)
     producaoHora: s.producaoHora,
     lotes: s.lotes||[],
     operador: s.operador||''
@@ -3781,7 +3781,7 @@ function renderGerencial(){
   const k = calcKPIs();
   // Verde/vermelho pela META DO DIA (efRitmo), a MESMA régua da TV e do
   // gerencial do desktop.
-  // sábado e domingo (1.50.0, PPCP: "sábado todas horas são extras"): sem meta e sem veredito
+  // sábado e domingo (1.51.0, PPCP: "sábado todas horas são extras"): sem meta e sem veredito
   const fds = uepFimDeSemana(hojeStr());
   // o selo julga só a jornada; sem minuto dela lançado (antes das 07:00, só a
   // madrugada): AGUARDANDO, sem cor — nunca ABAIXO DO RITMO
@@ -3790,7 +3790,7 @@ function renderGerencial(){
   // NEC. P/ META: nas horas restantes mostra o ritmo (cx/h) necessário.
   // Na última hora (sem horas futuras) não repete o GAP — mostra que o
   // turno encerrou (ou META OK se já atingida).
-  // sábado e domingo: sem meta, sem "necessário para a meta" (revisão da 1.50.0)
+  // sábado e domingo: sem meta, sem "necessário para a meta" (revisão da 1.51.0)
   const necKpi = fds ? null : k.slotsRest>0
     ? {l:'NEC. P/ META', v:fmtN(k.nec), sub:`cx/h — ${plural(k.slotsRest,'slot','slots')}`, c:k.nec<=k.ritmo?'ok':'warn'}
     : (k.gap>0
@@ -4054,7 +4054,7 @@ function renderGerProdutosDia(real){
       const a = new Date();
       M = pdiaMontar(phm, PONTOS_DIA.porHora || [], PRODUTOS, PROD_ATUAL, a.getHours()*60 + a.getMinutes(), {
         turnoIni: toMin(CFG.turnoInicio), turnoFim: toMin(CFG.turnoFim),
-        almIni: toMin(CFG.almocoInicio), almFim: toMin(CFG.almocoFim), real: PDIA_REAL, todoHE: uepFimDeSemana(hojeStr()) });   // sábado/domingo: todo hora extra (1.50.0)
+        almIni: toMin(CFG.almocoInicio), almFim: toMin(CFG.almocoFim), real: PDIA_REAL, todoHE: uepFimDeSemana(hojeStr()) });   // sábado/domingo: todo hora extra (1.51.0)
       // As paradas na faixa (1.49.0). Falhar aqui não derruba o quadro: sai sem a faixa.
       try{
         const w = (Number(el.clientWidth) || 0) - 24;   // a faixa = o quadro − o recuo de 12 px de cada lado
@@ -4224,7 +4224,7 @@ function _renderHistoricoComDados(dias){
   // total ÷ meta, a hora extra dos dias úteis dentro — a régua do PC
   // (_relMetaHE.efTotal). SÓ DIAS COM META: o sábado e o domingo (todo hora
   // extra, sem meta) somavam caixas no numerador sem meta no denominador — uma
-  // semana de 7.000 de 7.500 com 690 no sábado saía 102,5% verde (1.50.0).
+  // semana de 7.000 de 7.500 com 690 no sábado saía 102,5% verde (1.51.0).
   const comMeta=lista.filter(d=>(parseFloat(d.meta)||0)>0);
   const totRealM=comMeta.reduce((s,d)=>s+(parseFloat(d.real)||0),0);
   const efMed=totMeta>0?(totRealM/totMeta)*100:0;
@@ -4279,7 +4279,7 @@ function abrirDia(data){
   const ef=d.ef!=null&&meta>0?parseFloat(d.ef):null;
   const cls=ef!=null?sc(ef):'';
   const gap=meta-real;
-  // sábado e domingo (1.50.0 / .gs v5.68): todo hora extra, sem meta — sem
+  // sábado e domingo (1.51.0 / .gs v5.68): todo hora extra, sem meta — sem
   // eficiência, sem gap, sem melhor/pior hora de jornada
   const linhas=d.fds?[
     ['REALIZADO', fmtN(real)+' CX', ''],

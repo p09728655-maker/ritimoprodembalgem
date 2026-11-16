@@ -11,7 +11,7 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
-## v7.247.0 · mobile 1.50.0 · rp-core 1.18.0 · `.gs` v5.68 — 16/11/2026 · sábado e domingo são hora extra o dia inteiro
+## v7.248.0 · mobile 1.51.0 · rp-core 1.19.0 · `.gs` v5.68 — 16/11/2026 · sábado e domingo são hora extra o dia inteiro
 
 O PPCP olhou o PERÍODO da aba ⚖ UEP: o sábado 14/11 aparecia em vermelho
 (*894 UEP · meta 1.257 · 71,1%*) e o card dizia *"1 de 6"*. A orientação dele

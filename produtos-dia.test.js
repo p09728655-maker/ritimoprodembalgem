@@ -87,7 +87,7 @@ ok('596 cx, 1.441 UEP, 244 cx em HE (05h e 06h), 596 da HORA_A_HORA',
 ok('3 produtos, 2 trocas de produto (PRISM → HOME ANGEL → LIVREIRO)',
    [M.produtos.length, M.trocas], [3, 2]);
 
-// v7.247.0 / mobile 1.50.0: num sábado ou domingo (todoHE) o dia inteiro é hora extra
+// v7.248.0 / mobile 1.51.0: num sábado ou domingo (todoHE) o dia inteiro é hora extra
 { const MS = monta(PHM, PH, '501136001', AGORA, Object.assign({}, O, { todoHE: true }));
   ok('fim de semana (todoHE): as 596 cx em HE, a faixa toda marcada como HE, cada produto com a HE = as caixas; a UEP do dia não muda',
      [MS.heCx, MS.faixa.he.length === 1 && MS.faixa.he[0][0] === MS.faixa.ini && MS.faixa.he[0][1] === MS.faixa.fim,
@@ -309,7 +309,7 @@ ok('rp-core antigo (sem uepHe): o EM HE volta às caixas, escrito "cx"',
    grun('_pdiaPcHtml(_M, "")', { _M: Object.assign({}, MP, { produtos: MP.produtos.map(p => Object.assign({}, p, { uepHe: undefined })) }) }).includes('title="184 cx em hora extra">184 cx</span>'), true);
 ok('menos de meio UEP em hora extra: "<1", nunca "sem UEP" (o uepHe vem sem arredondar)',
    grun('_pdiaPcHtml(_M, "")', { _M: Object.assign({}, MP, { produtos: MP.produtos.map((p, i) => i ? p : Object.assign({}, p, { uepHe: 0.4 })) }) }).includes('title="184 cx em hora extra">&lt;1</span>'), true);
-ok('o render do PC passa o porUep e o todoHE do fim de semana (v7.247.0)',
+ok('o render do PC passa o porUep e o todoHE do fim de semana (v7.248.0)',
    /porUep: true, todoHE: uepFimDeSemana\(hojeStr\(\)\) \}\);/.test(pega(PC_JS, 'function renderGerProdutosDia(')), true);
 ok('AGORA no horário do produto de agora', HP.includes('desde 09:00 · <span class="ag">AGORA</span>'), true);
 ok('% numa coluna fixa (as barras alinham)', (HP.match(/<span class="pdpc-pc">\d+%<\/span>/g) || []).length, 3);

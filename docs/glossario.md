@@ -11,7 +11,7 @@ Unidade padrão: **caixa (cx)**. Não existe "peça" no vocabulário do produto.
 | Termo | Fórmula | Unidade | Onde está |
 |---|---|---|---|
 | **PRODUÇÃO REAL** | soma do realizado das horas já lançadas | cx | `v7:3609` |
-| **META DO DIA** | meta da PROGRAMAÇÃO (ou ajuste manual). A hora extra não tem meta: a do ⚙ HORA EXTRA não soma (v7.247.0) | cx | `v7:calcKPIs` (`meta=metaBase`) |
+| **META DO DIA** | meta da PROGRAMAÇÃO (ou ajuste manual). A hora extra não tem meta: a do ⚙ HORA EXTRA não soma (v7.248.0) | cx | `v7:calcKPIs` (`meta=metaBase`) |
 | **RITMO ATUAL** | realizado ÷ nº de horas já lançadas | cx/h | `v7:3644` |
 | **RITMO NECESSÁRIO** | (meta − realizado) ÷ horas restantes, nunca negativo | cx/h | `v7:3652` |
 | **META/HORA** | média da meta das horas **de jornada** já lançadas (a hora extra não tem meta) | cx/h | `v7:calcKPIs` |
@@ -39,7 +39,7 @@ cor. A TV e o celular ainda julgam em caixas (a seção abaixo vale para eles).
 | **CAIXAS PROGRAMADAS** | a META DO DIA em caixas (a do FECHAR DIA); o % feito é fato, sem cor | cx | `v7:_gerCxCards` |
 | **% DA META** (hora a hora) | UEP da hora ÷ (meta × minutos da hora ÷ 527) — a cor da linha | % | `v7:_gerHoraLinha` |
 | **a hora é julgada?** | não: hora extra, a hora de agora, sem lançamento, sem meta, só caixas sem UEP; **fechada em 0 caixas: sim (0%)**; parte das caixas sem UEP: o % com `*`, PARTE SEM UEP, sem cor (v7.244.0) | — | `v7:_gerHoraJulga` |
-| **META UEP da hora no dia passado** | META UEP gravada × minutos da hora ÷ 527; em sábado e domingo **não há** (todo hora extra, v7.247.0) | UEP | `v7:_gerHorasHist` |
+| **META UEP da hora no dia passado** | META UEP gravada × minutos da hora ÷ 527; em sábado e domingo **não há** (todo hora extra, v7.248.0) | UEP | `v7:_gerHorasHist` |
 | **META EM CX** (hora a hora) | meta de UEP da hora × caixas com UEP ÷ UEP da hora (a hora de agora sem caixa: ÷ UEP por caixa do produto de agora) | cx | `v7:_gerHoraLinha` |
 | **PICO / VALE** | a hora de jornada fechada com o maior / menor % da meta da hora | — | `v7:_gerAnaliseUep` |
 | **RITMO NECESSÁRIO** | (meta − UEP feita) ÷ minutos de jornada que restam a partir de agora × 60 (antes do 1º lançamento da jornada: a meta inteira ÷ 527 min) | UEP/h | `v7:_gerAnaliseUep` + `v7:_gerUepModelo` (`minRest`) |
@@ -54,7 +54,7 @@ julgado em caixas.
 | Termo | Fórmula | Unidade | Onde está |
 |---|---|---|---|
 | **% DA META DO DIA** (o número grande) | realizado ÷ meta do **dia inteiro** × 100 | % | `v7:3637` |
-| **META ATÉ AGORA** (a linha de apoio) | meta do dia × (minutos **de jornada** já lançados ÷ minutos de jornada do turno). A hora extra fica fora (v7.247.0) | cx | `rp-core.js:efNoRitmo` |
+| **META ATÉ AGORA** (a linha de apoio) | meta do dia × (minutos **de jornada** já lançados ÷ minutos de jornada do turno). A hora extra fica fora (v7.248.0) | cx | `rp-core.js:efNoRitmo` |
 | **RITMO** (o selo e a cor) | caixas **da jornada** ÷ meta até agora × 100 → `NO RITMO` · `ATENÇÃO` · `ABAIXO DO RITMO`. Sem minuto de jornada lançado: `AGUARDANDO`, sem cor | % | `rp-core.js:slRitmo` |
 
 **Como ler:** o número diz **quanto do dia já saiu** — 780 de 2.700 é 28,9%, e
@@ -92,7 +92,7 @@ com caixas feitas fora do turno.
 | Termo | Regra | Onde está |
 |---|---|---|
 | **JORNADA NORMAL** | 07:00–17:00 (o almoço 11:00–12:12 fica dentro dela) | `.gs` `HE_JORNADA_*_MIN` |
-| **HORA EXTRA (caixas)** | linha com rótulo `HE ` **ou** horário fora da jornada **ou** (com a data, `.gs` v5.68 / v7.247.0) **sábado e domingo, o dia inteiro** | `.gs:_ehHoraExtraCaixas` · `v7:_horaEhHE` |
+| **HORA EXTRA (caixas)** | linha com rótulo `HE ` **ou** horário fora da jornada **ou** (com a data, `.gs` v5.68 / v7.248.0) **sábado e domingo, o dia inteiro** | `.gs:_ehHoraExtraCaixas` · `v7:_horaEhHE` |
 | **HORA EXTRA (identidade da linha)** | só o prefixo `HE ` no rótulo | `.gs:_ehHoraExtra` |
 | **HE CX** | caixas das horas classificadas como extra, por dia (11ª coluna do `HISTORICO`) | `.gs:arquivarDiaAtual` |
 
@@ -110,7 +110,7 @@ porque o de identidade governa a limpeza diária, que **apaga** a linha marcada.
 | **ATRASO acumulado** | fora, nos dois sentidos |
 | **PRODUÇÃO REAL, META DO DIA, CAIXAS EM HORA EXTRA** | as caixas contam normalmente |
 
-⚠ Vale no **gerencial** (desktop e celular) e, desde a v7.247.0, também na
+⚠ Vale no **gerencial** (desktop e celular) e, desde a v7.248.0, também na
 **TV OPERACIONAL** e na lista do operador: a hora extra não tem meta em dia
 nenhum (PPCP, 16/11/2026: *"no meio da semana meta 0 em horas extra"*).
 Revoga a regra de 01/09/2026, em que a TV mostrava a meta da hora na HE.
@@ -265,7 +265,7 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 | **DIAS NA META** (mesmo relatório e cartão da ⚖ UEP · RÉGUAS) | dias em que o realizado ≥ a meta (ou a referência) daquele dia — 100%, não a régua do selo da TV (96%) | dias | `v7:_cxUepMontar` (`reguas.*.diasMeta`) |
 | **REFERÊNCIA DE UEP** (relatório e ⚖ UEP · RÉGUAS, v7.188.0) | a META UEP gravada no fechamento de cada dia (o campo META DIA (UEP) do ⚙). **Em avaliação: ainda não é a meta oficial da embalagem** (`UEP_REF_STATUS`). Cada dia é julgado contra a da sua data; o histórico sai em trechos (`refUep`) com o motivo de cada troca (`UEP_REF_MOTIVO`) | UEP | `v7:_cxUepMontar` · `v7:_cxuRefHtml` |
 | **CAPACIDADE ESTIMADA × LIMITE FÍSICO × REALIZADO** (página 2 e ⚖ UEP · RÉGUAS) | capacidade estimada = ⌊referência de UEP ÷ UEP do produto⌋, o produto sozinho na linha o dia inteiro; limite físico = velocidade ÷ (caixa + vão) em 527 min, sem parada; realizado = caixas do produto no período. Nenhum dos dois primeiros é produção garantida | produtos/dia · cx | `v7:_capDia` · `v7:_regMontar` |
-| **UEP / DIA (JORNADA)** (HISTÓRICO) | média da coluna UEP do HISTORICO nos **dias úteis** com UEP; bateu = UEP ≥ META UEP daquele dia. Sábado e domingo **não são julgados** (sem meta, todo hora extra — v7.247.0 / `.gs` v5.68): ficam fora da média, do bateu e da meta somada, e a UEP deles entra na hora extra do período (`uepDiaHe`) | UEP | `rp-core:uepHistResumo` |
+| **UEP / DIA (JORNADA)** (HISTÓRICO) | média da coluna UEP do HISTORICO nos **dias úteis** com UEP; bateu = UEP ≥ META UEP daquele dia. Sábado e domingo **não são julgados** (sem meta, todo hora extra — v7.248.0 / `.gs` v5.68): ficam fora da média, do bateu e da meta somada, e a UEP deles entra na hora extra do período (`uepDiaHe`) | UEP | `rp-core:uepHistResumo` |
 | **UEP/cx do grupo** (comparativo) | Σ(caixas × UEP/cx do produto) ÷ Σ caixas dos produtos com UEP no grupo | UEP/cx | `v7:_phUepPorGrupo` |
 | **UEP EM 8 H** | UEP/h da linha (UEP do dia ÷ horas da linha) × 8 — a capacidade num dia padrão | UEP | `v7:_uepEstudo` |
 | **VALIDAÇÃO FORA DA AMOSTRA** | oscilação cx/h → UEP/h na 2ª metade dos dias, com a UEP calculada só na 1ª | % | `v7:_uepValidacao` |
@@ -283,7 +283,7 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 | **UEP NA HORA** (gráfico) | Σ caixas × UEP do código na hora (pelo início, HH:MM); meta da hora = meta do dia × minutos do slot ÷ 527; HE sem meta; a hora em andamento aparece sem cor ("até HH:MM"), não é julgada | UEP | `rp-core:uepPorHora` + `v7:_uepAbaHoras` |
 | **MIX DE HOJE** | por produto (modelo + nome), só jornada normal: caixas, UEP, UEP/cx = UEP ÷ caixas com UEP, % = UEP do produto ÷ UEP do dia | UEP | `v7:_uepAbaMix` |
 | **ORIGEM DA UEP** (era CONFIABILIDADE) | caixas de hoje por código: UEP medida — estudo ou digitada, **não é cronoanálise** (vigência sem `EST`) · estimada (vigência termina em `EST`) · sem UEP, ÷ caixas apontadas | % | `v7:_uepAbaConf` |
-| **MÉDIA POR DIA** (período) | Σ UEP de jornada gravada nos **dias úteis** fechados com UEP ÷ nº desses dias; % = Σ UEP ÷ Σ META UEP dos mesmos dias. Sábado e domingo (todo hora extra, sem meta — v7.247.0) ficam fora da média, do %, do DIAS QUE BATERAM e da OSCILAÇÃO; no gráfico, barra listrada âmbar com a UEP do dia inteira, sem meta | UEP | `rp-core:uepHistResumo` + `v7:_uepAbaPeriodo` |
+| **MÉDIA POR DIA** (período) | Σ UEP de jornada gravada nos **dias úteis** fechados com UEP ÷ nº desses dias; % = Σ UEP ÷ Σ META UEP dos mesmos dias. Sábado e domingo (todo hora extra, sem meta — v7.248.0) ficam fora da média, do %, do DIAS QUE BATERAM e da OSCILAÇÃO; no gráfico, barra listrada âmbar com a UEP do dia inteira, sem meta | UEP | `rp-core:uepHistResumo` + `v7:_uepAbaPeriodo` |
 | **DIAS QUE BATERAM** (período) | dias com UEP ≥ META UEP daquele dia | dias | `rp-core:uepHistResumo` |
 | **OSCILAÇÃO DIA A DIA** (período) | desvio padrão ÷ média, dia a dia, em UEP e em caixas de jornada (realizado − HE) dos mesmos dias | % | `v7:_qpOscilacao` + `v7:_uepAbaPeriodo` |
 | **UEP PADRÃO** (bloco 7) | a UEP por caixa do código **vigente na data**: a última versão da aba `UEP_VERSOES` com vigência ≤ dia; sem a aba, o cadastro de hoje. A semente (1ª mudança) é o cadastro como estava, valendo desde sempre | UEP/cx | `.gs:_uepVigente` + `.gs:getProducaoModeloPeriodo` (`?uepVer=1`) |
@@ -380,7 +380,7 @@ diferentes num dia com HE.
 | **COBERTURA** (linha da faixa) | caixas com produto contra a PRODUÇÃO REAL da HORA_A_HORA; a diferença é "fora da lista". Diz de que horas é a lista (`lidoEm` no celular, `PONTOS_DIA_TS` no PC) | cx | `mobile:_pdiaHtml` · `v7:_pdiaPcHtml` |
 | **FAIXA DA SEQUÊNCIA** | cada hora da planilha repartida pelas caixas de cada produto, na ordem em que entraram; a hora em andamento só até agora. A planilha não guarda o minuto da troca: o ponto dentro da hora é aproximado | — | `rp-core:pdiaMontar` |
 | **HORÁRIO** (linha do produto) | início da 1ª hora em que teve caixa → fim da última hora (a hora acaba na próxima hora cheia: 12:12 → 13:00); o produto de agora diz "desde" | hh:mm | `rp-core:pdiaMontar` |
-| **EM HE** | caixas do produto lançadas fora de 07:00–17:00 (a janela do `_ehHoraExtraCaixas`); no sábado e no domingo, todas (`todoHE`, v7.247.0) | cx | `rp-core:pdiaMontar` |
+| **EM HE** | caixas do produto lançadas fora de 07:00–17:00 (a janela do `_ehHoraExtraCaixas`); no sábado e no domingo, todas (`todoHE`, v7.248.0) | cx | `rp-core:pdiaMontar` |
 | **% (barra)** | UEP do produto ÷ UEP do dia; produto sem UEP → "—", nunca 0 | % | `rp-core:pdiaMontar` |
 | **POR COR E VOLUME** (detalhe) | caixas do log por cor × volume, só com 2+ volumes embalados hoje | cx | `rp-core:pdiaMontar` |
 | **PARADAS** (faixa fina abaixo da sequência, PC v7.236.0 · celular 1.49.0) | cada parada de hoje da aba PARADAS (`getParadas`) no mesmo eixo de tempo: não programada em vermelho, programada (coluna CLASSE da `TIPOS_PARADA`, `ehPlanejada`) em cinza, aberta listrada até agora. O almoço sai da marca. Total = nº de paradas **encerradas** e Σ `durProdutiva` (fora do almoço) — o mesmo **TEMPO TOTAL PARADO** da aba PARADAS em HOJE; entre parênteses, só as não programadas. A aberta fica fora do total (sem FIM não há duração) e aparece à parte, até agora. Sem perda em caixas aqui | paradas · min | `rp-core:pdiaParMontar` |
@@ -474,7 +474,7 @@ o payback) e o **ano** tem linha própria logo abaixo — é o valor comparável
 orçamento de um equipamento. Vale na tela (aba GESTÃO DE PERDAS) e na PROPOSTA DE
 INVESTIMENTO em PDF, com os mesmos valores nos dois.
 
-## Sábado e domingo: todo hora extra, sem meta (`.gs` v5.68 / v7.247.0)
+## Sábado e domingo: todo hora extra, sem meta (`.gs` v5.68 / v7.248.0)
 
 Revoga a meta pelas horas trabalhadas da `.gs` v5.60 (PPCP, 16/11/2026: *"aos
 sábados é horas extra total"*).

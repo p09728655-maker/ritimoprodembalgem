@@ -263,7 +263,7 @@ ok('sem meta do dia também não',
   ok('dia sem meta gravada usa a padrão', uepDiaMeta({ uep: 1 }), 2530);
   ok('metaTot = soma das metas de cada dia COM UEP (não meta × dias do filtro)', r.metaTot, 6500);
   ok('período sem nenhum dia com UEP não inventa média', uepHistResumo([{ uep: null }]).media, null);
-  // v7.247.0 (PPCP, 16/11/2026: "aos sábados é horas extra total"): o PERÍODO de
+  // v7.248.0 (PPCP, 16/11/2026: "aos sábados é horas extra total"): o PERÍODO de
   // 09–14/11 como na tela — o sábado 14/11 gravado pelo .gs v5.67 com 894 UEP de
   // "jornada", META UEP 1.257 (as horas) e 546 em HE. É TUDO hora extra: sem meta,
   // fora do bateu, da média e da meta somada; os 894 + 546 vão para a HE.
@@ -285,7 +285,7 @@ ok('sem meta do dia também não',
   ok('sábado gravado pelo .gs v5.68 (UEP 0, META UEP 0): igual — sem meta, a HE dele contada',
      [uepDiaMeta({ metaUep: 0 }), he.n, he.bateu, he.metaTot, he.he], [0, 1, 0, 2761, 400]);
   ok('dia útil com META UEP 0 gravada segue sem meta (como antes)', uepDiaMeta({ data: '13/11/2026', metaUep: 0 }), 0);
-  // o card do dia de HOJE (v7.247.0): com a data de um sábado, sem meta e sem selo — a UEP toda em hora extra
+  // o card do dia de HOJE (v7.248.0): com a data de um sábado, sem meta e sem selo — a UEP toda em hora extra
   const U14 = { normal: 894, he: 546, cxCom: 690, cxSem: 12, codigos: 429 };
   const cs = uepCard(U14, 2761, 240, '14/11/2026'), cu = uepCard(U14, 2761, 240, '13/11/2026');
   ok('uepCard no sábado: 1.440 UEP, "TODO HORA EXTRA · sem meta", sem cor de veredito; na sexta, o card de sempre',
@@ -293,7 +293,7 @@ ok('sem meta do dia também não',
      [true, '1.440', 'TODO HORA EXTRA · sem meta · 12 cx sem UEP', 'acc', 1440, null, false, undefined, true, undefined]);
 }
 
-// ── A meta de cada dia para valorar paradas (metaDiasParadas, v7.247.0) ──────
+// ── A meta de cada dia para valorar paradas (metaDiasParadas, v7.248.0) ──────
 {
   const D = [{ data: '09/11/2026', meta: 1500 }, { data: '10/11/2026', meta: 1700 }, { data: '11/11/2026', meta: 1600 },
              { data: '14/11/2026', meta: 0 }, { data: '15/11/2026', meta: 0 }, { data: '12/11/2026', meta: 0 }];
@@ -318,7 +318,7 @@ ok('sem meta do dia também não',
   ok('R$/UEP do período = custo ÷ UEP feita; meta = custo ÷ soma das metas',
      [Math.round(c.rsUep * 100) / 100, Math.round(c.rsMeta * 100) / 100], [1.38, 1.33]);
   ok('sem custo-hora ou sem dia com UEP não há conta', [uepCustoPeriodo(0, D), uepCustoPeriodo(10, [{ uep: null }])], [null, null]);
-  ok('v7.247.0: o sábado com UEP não paga a jornada (é todo hora extra)',
+  ok('v7.248.0: o sábado com UEP não paga a jornada (é todo hora extra)',
      uepCustoPeriodo(382.89, D.concat([{ data: '14/11/2026', uep: 894, metaUep: 1257 }])).n, 2);
 }
 
