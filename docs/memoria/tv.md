@@ -184,11 +184,12 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   `_ordemTelas` roda a cada segundo pela reconciliação do ciclo.
   - O **esperado da curva** anda pela régua do card (só hora com lançamento; a
     em andamento pelo `minSlotDecorrido`): o ponto de agora FECHA com o card.
-  - **À frente em minutos** = (feito − esperado) ÷ (meta ÷ 527). **A meta sai
-    às** = anda só pelos minutos de jornada que restam (almoço fora); ~~não
-    cabendo, mostra o ritmo que faltaria~~ (saiu na v7.256.0 — o horário só
-    aparece no gráfico, quando o pontilhado cruza a META). Caixas = ⌈falta ÷
-    UEP/cx⌉, para cima.
+  - **À frente em minutos** = (feito − esperado) ÷ (meta ÷ 527); abaixo de
+    0,5 min a tela diz *0 min · NO TEMPO*. ~~**A meta sai às** = anda só pelos
+    minutos de jornada que restam (almoço fora); não cabendo, mostra o ritmo
+    que faltaria~~ — revogado: o cartão saiu na v7.256.0 e o horário no
+    gráfico, na v7.257.0 (sem projeção; `proj`/`chega` fora do modelo).
+    Caixas = ⌈falta ÷ UEP/cx⌉, para cima.
   - **UEP/cx do produto de agora**: o cadastro (`CAP_RAW`, ou o guardado no
     aparelho); sem ele, a média de hoje do MESMO produto e cor no
     `porHoraModelo` (o 501130 tem quatro mesas — nunca só pelos 6 dígitos).
@@ -249,23 +250,26 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     (v7.257.0: FEITO 18, ESPERADO 10, META 7 laranja, sem pontilhado — abaixo.)
   - ~~**Letra** (`.tvg-t0/1/2`): números do agora **54/42**, eixo e ALMOÇO **32**;~~
     (v7.257.0: FEITO 80, META 52, eixo 40 — abaixo.)
-    legenda `.tvg-leg` pela escala `--tvu-k` (até 34 px) com amostras de 64 px.
-    Margens do viewBox foram junto (`L` 124, `B` 72) para o eixo maior caber.
+    ~~legenda `.tvg-leg` pela escala `--tvu-k` (até 34 px) com amostras de 64 px.
+    Margens do viewBox foram junto (`L` 124, `B` 72) para o eixo maior caber.~~
+    (v7.257.0: legenda até 50 px, amostras de 72 px, margens `L` 112, `T` 72,
+    `B` 80.)
   - **A distância FEITO × ESPERADO é uma FAIXA** (`<polygon>` entre as duas
     curvas até agora, opacidade .2): de longe é ela que mostra quem está em
     cima — a linha sozinha some quando a diferença é de poucas dezenas de UEP.
     **Tinta neutra sem o selo**; com o selo, a cor do `sc(ef)` (a regra do
     veredito da tela não mudou).
-  - ~~**Rótulos FEITO/ESPERADO SEMPRE**~~ (v7.257.0: só o FEITO tem número —
-    abaixo; a busca de lugar é a mesma), cada um com tarja da cor do fundo, na
-    1ª posição de uma lista de candidatas que **não encosta em curva nenhuma**,
-    no texto da META, no horário da meta nem no outro rótulo (a linha tracejada
-    da META pode passar atrás — a tarja cobre). Perto do ponto primeiro (o mais
-    alto para cima, o mais baixo para baixo, depois mais longe e a coluna da
-    direita); sem lugar para os dois assim, **EMPILHADOS** acima dos pontos (o
-    começo do dia), com UMA guia pontilhada até eles. Longe do ponto, guia fina.
-    Nem empilhados: fica o que coube perto do ponto (um número é melhor que
-    nenhum — os dois estão no 1º cartão).
+  - ~~**Rótulos FEITO/ESPERADO SEMPRE**, cada um com tarja da cor do fundo, na
+    1ª posição de uma lista de candidatas que não encosta em curva nenhuma, no
+    texto da META, no horário da meta nem no outro rótulo. Perto do ponto
+    primeiro; sem lugar para os dois assim, EMPILHADOS acima dos pontos, com
+    UMA guia pontilhada até eles. Nem empilhados: fica o que coube perto do
+    ponto — os dois estão no 1º cartão.~~ — **revogado na v7.257.0**: só o
+    FEITO tem número; a busca perto do ponto (candidatas que não encostam em
+    curva, na META nem no ALMOÇO; longe, guia fina) ficou, o EMPILHADO saiu, e
+    o último recurso é ENCOSTAR numa curva sobre a tarja (`dentro` × `livre`)
+    — o cartão não repete mais o número (ver *MENOS INFORMAÇÃO, MAIS
+    VISIBILIDADE*).
   - **Sorteio de 4.000 dias** (script fora do repositório; hora sem lançamento,
     zero, 900 UEP numa hora, meta de 2.000 a 4.000, com e sem selo): 7.856
     desenhos, 0 erro, 0 NaN, os dois números em TODOS, nenhum encostado em
@@ -297,7 +301,8 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     janela), abaixo encolhe junto até `TV_G_Z_MIN`=0,55, acima de 840 cresce
     até `TV_G_Z_MAX`=1,3. Sem `dim` (1º desenho, escondida, teste): 1000×840.
     O corpo do desenho é o `_tvGDesenho(m, selo, W, H)`, que devolve também
-    quantos números do agora couberam.
+    ~~quantos números do agora couberam~~ `n` = 1 quando o FEITO achou lugar
+    LIVRE (v7.257.0).
   - **`_tvGEncaixa(corpo)`** roda no fim do `_tvUepCabe` (depois do `--tvu-k`,
     que muda a altura da legenda) e redesenha o SVG com o tamanho medido. O
     SVG é `flex:1`: a caixa não depende do desenho, redesenhar não mexe no
@@ -435,19 +440,26 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     aparece com hora extra.
   - A tela usa mais área: padding lateral de 4vw para 2,5vw, o cabeçalho
     (setor e relógio) maior e as letras dos cartões pela escala `--tvu-k`.
-    Escala medida no Chromium (8 situações):
+    Escala medida no Chromium na v7.257.1 (10 situações: 15:58, 09:20, 15:02,
+    16:00, meta batida, jornada encerrada, produto sem UEP, hora extra, nome
+    comprido, 16:34), com e sem o selo:
 
-    | Tela | `--tvu-k` |
-    |---|---|
-    | TV 1920×1080 | 0,90 |
-    | TV 1366×768 | 0,85–0,90 |
-    | Janela 1920×975 | 0,80–0,95 |
-    | Janela 1366×560 | 0,75–0,80 |
-    | Janela 1280×600 | 0,80 |
+    | Tela | com o selo | sem o selo (o padrão) |
+    |---|---|---|
+    | TV 1920×1080 | 0,85–1,00 | 0,90–1,00 |
+    | TV 1366×768 | 0,85–1,00 | 0,85–1,00 |
+    | Janela 1920×975 | 0,80–0,95 | 0,85–1,00 |
+    | Janela 1366×560 | 0,70–0,80 | 0,85–0,95 |
+    | Janela 1280×600 | 0,75–0,80 | 0,80–0,95 |
 
-    Nada corta. O nome comprido (KIT 2 MESA CABECEIRA SLEEP) cortava com "…"
-    na TV de 1920 com o produto em 70 px; com 62 px, cabe inteiro em todas as
-    resoluções.
+    Os menores são a hora extra (a linha do rodapé tira altura) e, até a
+    v7.257.0, o produto sem UEP: o aviso em `nowrap` era a linha mais larga e
+    levava a TV a 0,70 — desde a v7.257.1 ele quebra linha
+    (`.tvg-uep.tvg-aviso`) e fica em 1,00. Nada corta. ~~O nome comprido cabe
+    inteiro com 62 px~~ — medido só com o selo: SEM o selo a escala fica em
+    1,00 e *KIT 2 MESA CABECEIRA SLEEP* corta com "…" na TV (648 > 631 px em
+    1920; 469 > 449 em 1366). Permitido (`.tvu-nome`); o número nunca está
+    nessa linha.
   - O teste (`tela-uep.test.js`) prende:
     - o print das 15:58 (selo NO RITMO, `2 min` / `ATRÁS`, 332 UEP e 156
       caixas);
@@ -460,6 +472,19 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     - o traço e a letra novos.
 
     Contra a v7.256.1, 26 falhas.
+  - **v7.257.1 — a revisão da v7.257.0** (depois do merge; nenhum BLOQUEIA):
+    o aviso do produto sem UEP quebra linha (acima); o texto ficou *PRODUTO DE
+    AGORA SEM UEP NO CADASTRO*; o *N UEP ACIMA DA META* vem pronto do modelo
+    (`acima`, D1); o `_tvUepRodHtml` é só da F (comentário); o teste usa as
+    caixas do gráfico MEDIDAS na v7.257.x (1085×883, 772×571, 1085×659,
+    772×307, 724×346 — ele ainda tinha as da v7.256.0) e prende o 2º cartão
+    (jornada encerrada, meta batida, sem UEP, sem produto) e o NO TEMPO.
+    Sorteio com as caixas reais (3.911 dias × 5 × com e sem selo): 0 sem
+    FEITO, 0 fora, 0 NaN; 0 encostado na TV, 20 de 7.822 na janela 1366×560.
+  - Ficou para o PPCP: a META em laranja (`--acc`) é vizinha do vermelho e do
+    âmbar do selo (com ABAIXO DO RITMO, o laranja e o vermelho se aproximam), e
+    sem o selo o *META DO DIA 2.761* é o único número em cor. Foi pedido dele
+    ("cores bem contrastantes"); trocar só com o print na mão.
 - Mexeu em texto ou tamanho? Renderizar de novo na TV e no gerencial, nas
   duas resoluções, medindo ALTURA e largura.
 
