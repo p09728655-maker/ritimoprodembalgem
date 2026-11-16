@@ -11,6 +11,20 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.255.0 · mobile 1.53.0 — 16/11/2026 · o ícone do app ganha a caixa
+
+O PPCP pediu uma embalagem dentro da estrela e escolheu a versão com a caixa
+vermelha e a fita amarela (*"c"*).
+
+- **Ícone do app** (instalação, Android, iPhone e a aba do navegador): a estrela
+  de sempre com uma caixa vermelha de fita amarela dentro.
+- **O logo da empresa não mudou** (login, TV, diretoria e relatórios).
+- Os endereços dos ícones ganharam `?v=2`, para o navegador trocar o ícone
+  guardado. No Android, o app instalado troca sozinho em alguns dias; no iPhone,
+  só reinstalando o atalho.
+
+---
+
 ## v7.254.0 · paradas-calc 1.4.0 — 16/11/2026 · o semanal mostra as paradas acima do normal
 
 Continuação do *"1 e 2"* do PPCP: a meta de 2.761 já tem as paradas normais

@@ -449,6 +449,9 @@ via Google Apps Script (JSONP).
   usa cor literal.
 - PWA: no celular o app é o `/mobile`; o PC instala sem service worker; o botão
   INSTALAR fica sempre visível.
+- Ícone do app = a estrela com a caixa vermelha (v7.255.0); o `patrimar-logo.png`
+  (logo da empresa) não muda. ⚠ Trocou o ícone: subir o `?v=` nas 2 páginas e
+  nos 4 manifests (o `deploy.test.js` confere).
 - ⚠ Gravar na planilha pela API (correções à mão): número vai como NÚMERO
   JSON, nunca texto (`"170.578"` vira milhar); fórmula em pt-BR (`;` e
   vírgula); e a API não passa pelo `onEdit` (não versiona UEP nem desfaz edição
