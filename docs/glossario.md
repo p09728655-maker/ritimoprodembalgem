@@ -38,9 +38,11 @@ cor. A TV e o celular ainda julgam em caixas (a seção abaixo vale para eles).
 | **PARA A META** | meta − UEP feita; em caixas: ÷ UEP por caixa do produto de agora (para cima) | UEP / cx | `v7:_tvUepMontar` |
 | **CAIXAS PROGRAMADAS** | a META DO DIA em caixas (a do FECHAR DIA); o % feito é fato, sem cor | cx | `v7:_gerCxCards` |
 | **% DA META** (hora a hora) | UEP da hora ÷ (meta × minutos da hora ÷ 527) — a cor da linha | % | `v7:_gerHoraLinha` |
+| **a hora é julgada?** | não: hora extra, a hora de agora, sem lançamento, sem meta, só caixas sem UEP; **fechada em 0 caixas: sim (0%)**; parte das caixas sem UEP: o % com `*`, PARTE SEM UEP, sem cor (v7.244.0) | — | `v7:_gerHoraJulga` |
+| **META UEP da hora no dia passado** | META UEP gravada × minutos da hora ÷ 527; em sábado e domingo, ÷ os minutos de jornada com produção (a gravada já é a das horas trabalhadas) | UEP | `v7:_gerHorasHist` |
 | **META EM CX** (hora a hora) | meta de UEP da hora × caixas com UEP ÷ UEP da hora (a hora de agora sem caixa: ÷ UEP por caixa do produto de agora) | cx | `v7:_gerHoraLinha` |
 | **PICO / VALE** | a hora de jornada fechada com o maior / menor % da meta da hora | — | `v7:_gerAnaliseUep` |
-| **RITMO NECESSÁRIO** | (meta − UEP feita) ÷ minutos de jornada que restam × 60 | UEP/h | `v7:_gerAnaliseUep` |
+| **RITMO NECESSÁRIO** | (meta − UEP feita) ÷ minutos de jornada que restam a partir de agora × 60 (antes do 1º lançamento da jornada: a meta inteira ÷ 527 min) | UEP/h | `v7:_gerAnaliseUep` + `v7:_gerUepModelo` (`minRest`) |
 
 ⚠ Sem a UEP no backend ou no cadastro, as caixas programadas voltam a dar o
 selo — nunca uma tela sem veredito. No dia passado, o veredito é a UEP gravada

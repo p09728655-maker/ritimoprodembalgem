@@ -239,7 +239,7 @@ const MPcx = grun('pdiaMontar(_phm, _ph, _cat, "501136001", _ag, Object.assign({
   { _phm: PHM, _ph: PH, _cat: CAT, _ag: AGORA, _o: O });
 console.log('\n── A UEP NA FRENTE (v7.243.0): a UEP em hora extra e a faixa pela UEP ──');
 ok('a UEP feita em hora extra, por produto e no total (a PRISM toda de madrugada; 60 cx da HOME ANGEL)',
-   [MP.produtos.map(p => [p.he, p.uepHe]), Math.round(MP.uepHe), Math.round(MP.uep - MP.uepHe)], [[[184, 438], [60, 149], [0, 0]], 587, 855]);
+   [MP.produtos.map(p => [p.he, Math.round(p.uepHe)]), Math.round(MP.uepHe), Math.round(MP.uep - MP.uepHe)], [[[184, 438], [60, 149], [0, 0]], 587, 855]);
 ok('sem o porUep (o celular) a faixa é a de antes, pelas caixas: troca às 06:31',
    [Math.round(MPcx.faixa.segs[0].fim * 10) / 10, Math.round(M.faixa.segs[0].fim * 10) / 10], [391, 391]);
 ok('com o porUep a hora das 06:00 é repartida pela UEP: a HOME ANGEL (2,48/cx) pesa mais que a PRISM (2,38/cx) → troca às 06:30',
@@ -300,6 +300,8 @@ ok('EM HE em UEP e em âmbar (as caixas no title); sem hora extra, "—" neutro 
    ['<span class="pdpc-u he" title="184 cx em hora extra">438</span>', '<span class="pdpc-u he" title="60 cx em hora extra">149</span>', '<span class="pdpc-u">—</span>'].every(t => HP.includes(t)), true);
 ok('rp-core antigo (sem uepHe): o EM HE volta às caixas, escrito "cx"',
    grun('_pdiaPcHtml(_M, "")', { _M: Object.assign({}, MP, { produtos: MP.produtos.map(p => Object.assign({}, p, { uepHe: undefined })) }) }).includes('title="184 cx em hora extra">184 cx</span>'), true);
+ok('menos de meio UEP em hora extra: "<1", nunca "sem UEP" (o uepHe vem sem arredondar)',
+   grun('_pdiaPcHtml(_M, "")', { _M: Object.assign({}, MP, { produtos: MP.produtos.map((p, i) => i ? p : Object.assign({}, p, { uepHe: 0.4 })) }) }).includes('title="184 cx em hora extra">&lt;1</span>'), true);
 ok('o render do PC passa o porUep', /porUep: true \}\);/.test(pega(PC_JS, 'function renderGerProdutosDia(')), true);
 ok('AGORA no horário do produto de agora', HP.includes('desde 09:00 · <span class="ag">AGORA</span>'), true);
 ok('% numa coluna fixa (as barras alinham)', (HP.match(/<span class="pdpc-pc">\d+%<\/span>/g) || []).length, 3);
