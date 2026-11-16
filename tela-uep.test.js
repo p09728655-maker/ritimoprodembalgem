@@ -47,7 +47,7 @@ for (const c of ['TV_UEP_PESO_DIAS', 'TV_UEP_PESO_MIN']) {
 }
 if (!/const UEP_ESCALAS = \[/.test(JS)) throw new Error('UEP_ESCALAS sumiu do painel');
 global.UEP_ESCALAS = [];        // o teste põe as trocas que quer; o painel nasce sem nenhuma
-['function _rpEsc(', 'function _cartNum(', 'function _qpRealDia(', 'function _uepAbaHoras(',
+['function _rpEsc(', 'function _cartNum(', 'function _qpRealDia(', 'function _uepAbaHoras(', 'function parseBR(', 'function _fdsNome(',
  'function _uepEscalaCorte(', 'function _uepEscalaSelo(', 'function _uepEscalaNota(', 'function _uepEscalaDesde(',
  'function _uepEscalaMarca(', 'function _uepAbaPerSvg(', 'function _dirSemSvg(',
  'function _tvF2(', 'function _tvMinTxt(', 'function _tvUepDoProduto(', 'function _tvUepPesoNormal(',

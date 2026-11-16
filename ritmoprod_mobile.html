@@ -215,6 +215,8 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .hc-track{position:relative;width:100%;flex:1;display:flex;align-items:flex-end;min-height:0}
 .hc-fill{width:100%;border-radius:3px 3px 0 0;min-height:3px;transition:height .2s}
 .hc-fill.ok{background:var(--ok)}.hc-fill.warn{background:var(--warn)}.hc-fill.red{background:var(--red)}
+/* sábado e domingo: todo hora extra, sem meta (1.51.0) — âmbar listrado, sem veredito */
+.hc-fill.acc{background:repeating-linear-gradient(45deg,var(--warn) 0 3px,rgba(255,152,0,.4) 3px 6px)}
 .hc-meta{position:absolute;left:0;right:0;height:0;border-top:1px dashed rgba(255,255,255,.35)}
 .hc-day{font-family:var(--font-d);font-size:8px;color:var(--txt2);letter-spacing:.3px;white-space:nowrap}
 .md-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:0.5px solid var(--border);font-family:var(--font-d);font-size:12px}
@@ -228,6 +230,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .hist-ef.ok{background:rgba(76,175,80,.15);color:var(--ok)}
 .hist-ef.warn{background:rgba(255,152,0,.15);color:var(--warn)}
 .hist-ef.red{background:rgba(244,67,54,.15);color:var(--red)}
+.hist-ef.acc{background:rgba(255,152,0,.12);color:var(--warn)}
 
 /* ═══ CARD CONTAINER ═══ */
 .card{background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:14px}
@@ -1089,7 +1092,15 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 // tentativa; o contador em sessionStorage evita ficar recarregando para sempre
 // quando o servidor está fora de verdade.
 (function(){
-  if (window.RP_CORE) { try{ sessionStorage.removeItem('rp_core_try'); }catch(e){} return; }
+  if (window.RP_CORE) {
+    try{ sessionStorage.removeItem('rp_core_try'); }catch(e){}
+    // rp-core ANTIGO em cache com o painel novo (v7.248.0 / 1.51.0): as funções
+    // novas viram rede — sem elas o histórico inteiro cairia num ReferenceError.
+    // O fim de semana fica com a leitura antiga até o cache renovar.
+    if (typeof window.histDiaFds !== 'function') window.histDiaFds = function(d){ return d; };
+    if (typeof window.uepDiaHe !== 'function') window.uepDiaHe = function(d){ return Number(d && d.uepHe) || 0; };
+    return;
+  }
   var n = 0;
   try { n = parseInt(sessionStorage.getItem('rp_core_try') || '0', 10) || 0; } catch(e){}
   var pode = n < 5;
@@ -1120,7 +1131,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.50.0';
+const APP_VER   = '1.51.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -1388,8 +1399,9 @@ function processarResposta(json){
       // he: quem marca é o backend, pelo `_ehHoraExtraCaixas` do .gs — rótulo
       // com prefixo "HE " OU horário fora da jornada 07:00–17:00 (as 05:00 e
       // 06:00 de um dia com C3=5 entram por aqui). É o que separa caixa de hora
-      // normal de caixa de hora extra nos KPIs do dia.
-      he: s.he===true,
+      // normal de caixa de hora extra nos KPIs do dia. Sábado e domingo: TODO
+      // slot (1.51.0 / .gs v5.68 — a mesma regra; aqui também para o .gs anterior).
+      he: s.he===true || uepFimDeSemana(hoje),
       producaoHora: s.producaoHora!=null ? Number(s.producaoHora) : null,
       lotes: Array.isArray(s.lotes) ? s.lotes.map(Number) : [],
       acumulado: s.producaoHora!=null ? acum : null,
@@ -1812,7 +1824,7 @@ function abrirLancSlotAtivo(){
     const fim = s.slotFim ? toMin(s.slotFim) : ini+60;
     if(nm>=ini && nm<fim){                        // hora corrente, aceita lançamento
       const prod = s.producaoHora;
-      abrirLanc(s.horario, s.slotFim||'', s.slotLabel||s.horario, s.metaHora||metaH, prod!==null?prod:null);
+      abrirLanc(s.horario, s.slotFim||'', s.slotLabel||s.horario, s.he?0:(s.metaHora||metaH), prod!==null?prod:null, !!s.he);
       return true;
     }
   }
@@ -2077,6 +2089,9 @@ function _fmtMin2(m){
 // de hoje. Usando só CFG.metaDia o mobile dava 3.780 cx onde o desktop dava
 // 3.897 no mesmo período.
 function _metaByDayMob(){
+  // o fim de semana (sem meta, todo hora extra) pela mediana dos dias úteis — a
+  // mesma régua do PC (metaDiasParadas, rp-core; 1.51.0)
+  if(typeof metaDiasParadas==='function') return metaDiasParadas(HIST_DIAS_ALL||[]);
   const m={};
   (HIST_DIAS_ALL||[]).forEach(d=>{ const v=parseFloat(d.meta)||0; if(d.data&&v>0) m[d.data]=v; });
   return m;
@@ -2085,6 +2100,11 @@ function _metaByDayMob(){
 // mesmo valor que o operador vê nos slots) — igual ao desktop.
 function _metaHojeMob(){
   const hj=hojeStr();
+  // sábado e domingo (sem meta): a MESMA mediana dos dias úteis que a parada terá
+  // no histórico (metaMedianaUteis, rp-core) — o número não muda na segunda
+  if(typeof uepFimDeSemana==='function'&&uepFimDeSemana(hj)&&typeof metaMedianaUteis==='function'){
+    const med=metaMedianaUteis(_metaByDayMob()); if(med) return med;
+  }
   return DADOS.filter(d=>d.data===hj).reduce((s,d)=>s+(d.metaHora||0),0) || CFG.metaDia || 0;
 }
 // realByDay para a base de dias trabalhados, no formato que o RP_PARADAS espera.
@@ -2621,8 +2641,10 @@ async function lerHistorico(){
     try{
       const json = await jsonpFetch(url);
       if(json.erro) throw new Error(json.erro);
-      HIST_DIAS_ALL = json.dias||[];   // usado p/ contar dias trabalhados
-      return json.dias||[];
+      // sábado e domingo saem como o .gs v5.68 grava: sem meta, todo hora extra
+      // (também a linha gravada antes — histDiaFds, rp-core; 1.51.0)
+      HIST_DIAS_ALL = (json.dias||[]).map(histDiaFds);   // usado p/ contar dias trabalhados
+      return HIST_DIAS_ALL;
     }catch(e){
       if(i===3) return [];
       await new Promise(r=>setTimeout(r, 1500*i));
@@ -2657,7 +2679,9 @@ function calcKPIs(){
   // CFG.metaDia vem da PROGRAMAÇÃO (metaEfetiva, ver aplicarMetaDiaAutomatica)
   // e não pode ser sobrescrito pelo metaDia da aba HORA_A_HORA (dh[0].metaDia).
   const meta = CFG.metaDia || (dh.length>0 ? dh[0].metaDia : 0);
-  const metaReal = dh.reduce((s,r)=>s+(r.metaHora||0), 0);
+  // hora extra não tem meta (1.51.0): a meta das horas lançadas é só da jornada
+  const dhJ = dh.filter(r=>!r.he);
+  const metaReal = dhJ.reduce((s,r)=>s+(r.metaHora||0), 0);
   const ef = metaReal>0 ? (real/metaReal)*100 : 0;
   // efDia = % da meta do dia já cumprido (real/meta), usado só para o NÚMERO
   // exibido de "EFICIÊNCIA". O status/badge continua usando "ef" (ritmo até
@@ -2687,8 +2711,10 @@ function calcKPIs(){
   // Hoje nenhuma tela do celular lê este campo — mas quem ler amanhã herdaria
   // a divergência, e divergência entre painéis é o defeito que este projeto
   // mais pagou caro. Sem hora lançada ainda, cai no rateio pelo turno.
-  const metaH = n>0 ? Math.round(metaReal/n)
-                    : (totalSlots>0 ? Math.round(meta/totalSlots) : 0);
+  // sem hora lançada: a meta pelas horas de JORNADA (a hora extra não tem meta)
+  const nJorn = allHoje.length>0 ? allHoje.filter(r=>!r.he).length : slots.length;
+  const metaH = dhJ.length>0 ? Math.round(metaReal/dhJ.length)
+                    : (nJorn>0 ? Math.round(meta/nJorn) : 0);
 
   /* ── A RÉGUA DO VERDE/VERMELHO: a META DO DIA repartida pelo turno já rodado ─
      Mesma conta do v7 (calcKPIs de lá), pelo mesmo motivo: o card EFICIÊNCIA
@@ -2699,6 +2725,10 @@ function calcKPIs(){
      este projeto mais pagou caro.
      O rateio é por MINUTOS (o slot pós-almoço vale 48), e só entra hora COM
      LANÇAMENTO — hora que ninguém apontou ainda não é hora atrasada. */
+  // O SELO JULGA SÓ A JORNADA (1.51.0, a mesma régua do v7): a hora extra não
+  // tem meta, então nem os minutos nem as caixas dela entram no ritmo. Contando
+  // a madrugada, às 06:45 o card dizia ABAIXO DO RITMO antes de a jornada
+  // começar. Sem minuto de jornada lançado: metaAteAgora 0 → AGUARDANDO.
   // Os minutos da hora pelo FIM que o backend manda (1.50.0): 16:00-16:59 vale 59,
   // como no PC (calcMin do slotFim) e no UEP_MIN_DIA (527). O getSlots daqui
   // fecha a última hora em 17:00 (60) — o esperado da UEP saía 1 min à frente do PC.
@@ -2707,10 +2737,10 @@ function calcKPIs(){
     if(f > 0) return f;
     const s0 = slots.find(x => x.inicio === h); return s0 ? s0.min : 60;
   };
-  const minTurno = (allHoje.length ? allHoje.map(r => r.horario) : slots.map(x => x.inicio))
+  const minTurno = (allHoje.length ? allHoje.filter(r => !r.he).map(r => r.horario) : slots.map(x => x.inicio))
                      .reduce((soma, h) => soma + minDoSlot(h), 0);
-  const minRodado = dh.reduce((soma, r) => soma + minDoSlot(r.horario), 0);
-  const {metaAteAgora, ef:efRitmo} = efNoRitmo(real, meta, minRodado, minTurno);
+  const minRodado = dhJ.reduce((soma, r) => soma + minDoSlot(r.horario), 0);
+  const {metaAteAgora, ef:efRitmo} = efNoRitmo(realNormal, meta, minRodado, minTurno);
   // Minutos de JORNADA NORMAL com lançamento — a régua do card UEP DO DIA (a
   // meta de UEP é de 8 h de jornada; a hora extra fica fora dela).
   // A hora EM ANDAMENTO conta só os minutos que já passaram (minSlotDecorrido,
@@ -2979,6 +3009,7 @@ function renderLancamentos(){
     fim: s.slotFim||'',
     label: s.slotLabel||s.horario,
     metaHora: s.metaHora||metaH,
+    he: s.he===true,                // hora extra: sem meta, em dia nenhum (1.51.0)
     producaoHora: s.producaoHora,
     lotes: s.lotes||[],
     operador: s.operador||''
@@ -3001,12 +3032,15 @@ function renderLancamentos(){
     const lc = slotLancavel(nm, ini, fim);    // regra única: hora corrente ou recém-fechada
     const ativo = lc.ativo;                   // hora corrente, vai acumulando
     const finalizado = nm>=fim && temValor;   // hora fechada com valor
-    const efSlot = temValor ? (prod/(slot.metaHora||metaH))*100 : null;
+    const efSlot = temValor && !slot.he ? (prod/(slot.metaHora||metaH))*100 : null;
     let cls='', badgeClass='badge-pendente', badgeText='PENDENTE', nome='PENDENTE';
     if(ativo){
       cls='andamento'; badgeClass='badge-andamento';
       badgeText = temValor ? 'PARCIAL · '+fmtN(prod)+' CX' : 'EM ANDAMENTO';
       nome = temValor ? fmtN(prod)+' CX (parcial)' : 'EM ANDAMENTO';
+    } else if(finalizado && slot.he){
+      badgeText=fmtN(prod)+' CX';             // hora extra: sem cor de veredito
+      nome = fmtN(prod)+' CX';
     } else if(finalizado){
       const c=sc(efSlot);
       cls=c; badgeClass='badge-'+c; badgeText=fmtN(prod)+' CX';
@@ -3026,15 +3060,15 @@ function renderLancamentos(){
     const disabled = bloqueado ? 'disabled'+(corrigivel?' corr':'') : '';
     const onclick = bloqueado
       ? (corrigivel ? `onclick="abrirCorrecao('${slot.inicio}','${slot.label}')"` : '')
-      : `onclick="abrirLanc('${slot.inicio}','${slot.fim||''}','${slot.label}',${slot.metaHora||metaH},${temValor?prod:'null'})"`;
+      : `onclick="abrirLanc('${slot.inicio}','${slot.fim||''}','${slot.label}',${slot.he?0:(slot.metaHora||metaH)},${temValor?prod:'null'},${slot.he?'true':'false'})"`;
     const lotesTxt = (slot.lotes&&slot.lotes.length) ? fmtLotes(slot.lotes) : '';
     const tolTxt = lc.tolerancia ? ` · aceita lançamento até ${fromMin(fim+LANC_TOLERANCIA_MIN)}`
-                 : lc.madrugada  ? ' · hora extra · aceita lançamento hoje' : '';
+                 : lc.madrugada  ? ' · aceita lançamento hoje' : '';   // o "HORA EXTRA" já vem antes
     return `<div class="slot-item ${cls} ${disabled}" ${onclick}>
       <div class="slot-hora">${slot.label}</div>
       <div class="slot-info">
         <div class="slot-nome">${nome}</div>
-        <div class="slot-meta">META: ${fmtN(slot.metaHora||metaH)} CX/H${efSlot!==null?' · '+fmtP(efSlot):''}${tolTxt}</div>
+        <div class="slot-meta">${slot.he?'HORA EXTRA · SEM META':`META: ${fmtN(slot.metaHora||metaH)} CX/H${efSlot!==null?' · '+fmtP(efSlot):''}`}${tolTxt}</div>
         ${lotesTxt?`<div class="slot-lotes">Lotes: ${lotesTxt}</div>`:''}
       </div>
       <span class="${badgeClass} slot-badge">${badgeText}</span>
@@ -3136,7 +3170,9 @@ async function toggleInicioTurno(){
 // ════════════════════════════════════════════════
 // MODAL LANÇAMENTO
 // ════════════════════════════════════════════════
-function abrirLanc(inicio, fim, label, meta, prodAtual){
+// he: a hora é hora extra (o flag da HORA_A_HORA) — é ele que diz SEM META, não
+// a meta 0 (com o CFG.metaDia ainda 0, uma hora de jornada sairia como hora extra)
+function abrirLanc(inicio, fim, label, meta, prodAtual, he){
   const acumAtual = (prodAtual!==null && prodAtual!==undefined) ? Number(prodAtual) : 0;
   // Hora da madrugada já fechada: o produto do app é o de AGORA — o salvarLanc
   // confere antes, e o prodAntes diz para onde voltar depois.
@@ -3144,7 +3180,7 @@ function abrirLanc(inicio, fim, label, meta, prodAtual){
   _slotAtivo = {inicio, fim, label, meta, prodAtual: acumAtual, mad, prodAntes: PROD_ATUAL};
   document.getElementById('ml-hora').textContent = label;
   document.getElementById('ml-nome').textContent = mad ? 'LANÇAR · HORA EXTRA DA MADRUGADA' : 'LANÇAR PRODUÇÃO';
-  document.getElementById('ml-meta').textContent = `META: ${fmtN(meta)} CX/HORA`;
+  document.getElementById('ml-meta').textContent = he ? 'HORA EXTRA · SEM META' : Number(meta)>0 ? `META: ${fmtN(meta)} CX/HORA` : 'META: —';
   document.getElementById('ml-acum').innerHTML = `ACUMULADO NA HORA: ${fmtN(acumAtual)} <span class="un">CX</span>`;
   _mlProdPintar();
   // Lotes já lançados nesta hora (busca em DADOS pelo horário de início)
@@ -3996,7 +4032,8 @@ function renderGerProdutosDia(real){
         // logo acima. A janela é a do PC e do .gs (HE_JORNADA_INI_MIN = LANC_MADRUGADA_FIM).
         // porUep: a hora da faixa repartida pela UEP, como no PC.
         turnoIni: Math.max(toMin(CFG.turnoInicio), LANC_MADRUGADA_FIM), turnoFim: toMin(CFG.turnoFim),
-        almIni: toMin(CFG.almocoInicio), almFim: toMin(CFG.almocoFim), real: PDIA_REAL, porUep: true });
+        almIni: toMin(CFG.almocoInicio), almFim: toMin(CFG.almocoFim), real: PDIA_REAL, porUep: true,
+        todoHE: uepFimDeSemana(hojeStr()) });   // sábado/domingo: todo hora extra (1.51.0)
       // As paradas na faixa (1.49.0). Falhar aqui não derruba o quadro: sai sem a faixa.
       try{
         const w = (Number(el.clientWidth) || 0) - 24;   // a faixa = o quadro − o recuo de 12 px de cada lado
@@ -4052,7 +4089,8 @@ function _gerUepModeloM(k, agoraMin){
     return { ok: false, lendo: false, agoraMin, card: { l: 'UEP DO DIA', v: '—', sub: 'o módulo base está desatualizado — feche e abra o app', c: '' } };
   const slots = _gerSlotsM(k.allHoje);
   const pa = (PRODUTOS || []).find(x => x.codigo === PROD_ATUAL) || {};
-  const G = uepGerMontar({ uep: PONTOS_DIA.uep, metaUep: PONTOS_DIA.metaUep, minNorm: k.minNorm, slots, allHoje: k.allHoje,
+  // data: sábado e domingo são todo hora extra, sem meta (1.51.0)
+  const G = uepGerMontar({ uep: PONTOS_DIA.uep, metaUep: PONTOS_DIA.metaUep, minNorm: k.minNorm, data: hojeStr(), slots, allHoje: k.allHoje,
     phm: PONTOS_DIA.porHoraModelo, agoraMin, tolMin: LANC_TOLERANCIA_MIN, cat: PRODUTOS,
     prod: { cod: PROD_ATUAL, desc: pa.desc || '', cor: corDeProduto(pa) } });
   // UEP VELHA (a última leitura do dia não veio e a que está na tela é de antes):
@@ -4071,6 +4109,18 @@ function _gerUepCardsM(G, k, atrKpi){
   // LIDA logo abaixo); a que é de antes da última que falhou diz de quando é.
   const lidoTxt = PONTOS_DIA.lidoEm ? (d => `${p2(d.getHours())}:${p2(d.getMinutes())}`)(new Date(PONTOS_DIA.lidoEm)) : '';
   if(!G.ok) L.push({ l: c.l, v: c.v, sub: G.lendo && PONTOS_DIA_FALHA ? 'a leitura do dia não veio — o app tenta de novo' : c.sub, c: (c.c || '') + ' larga hero' });
+  else if(c.fds){
+    // sábado e domingo (1.51.0, PPCP: "sábado todas horas são extras"): sem meta e
+    // sem selo — a UEP do dia é toda hora extra. Saem o ritmo, a projeção e o PARA
+    // A META: os três são contra a meta. A régua do PC (_gerUepCards).
+    const [dd, mm, aa] = hojeStr().split('/').map(Number);   // o dia de HOJE do app, não o relógio cru
+    L.push({ l: 'UEP DO DIA · ' + (new Date(aa, mm - 1, dd).getDay() === 0 ? 'DOMINGO' : 'SÁBADO'), v: fmtN(Math.round(G.he)) + '<small>UEP</small>', c: 'acc larga hero',
+             sub: '<b>TODO HORA EXTRA</b> · sem meta' + (G.cxSem > 0 ? ` · ${fmtN(G.cxSem)} cx sem UEP` : '')
+               // a leitura que não veio também se diz no fim de semana: sem ela, um número velho sem aviso
+               + (G.velha ? `<i>UEP de ${lidoTxt || '—'} — a última leitura não veio</i>` : '') });
+    if(atrKpi) L.push(atrKpi);
+    return L;
+  }
   else if(G.velha)
     L.push({ l: 'UEP DO DIA · META ' + fmtN(G.meta), v: fmtN(Math.round(G.feito)) + '<small>UEP</small>', c: 'acc larga hero',
              sub: `UEP de ${lidoTxt || '—'} — a última leitura não veio<i>sem selo até a leitura voltar: o ritmo do dia sai nas CAIXAS PROGRAMADAS</i>` });
@@ -4106,11 +4156,24 @@ function _gerUepCardsM(G, k, atrKpi){
 // dia (semUep) o card das caixas programadas volta a julgar. O ritmo em cx/h vai
 // no card das caixas (sem card próprio: quatro cards, nenhum sozinho na linha).
 function _gerCxCardsM(k, semUep){
+  // sábado e domingo (1.51.0): todo hora extra — as caixas sem veredito, o
+  // programado do dia (sem o atraso) como fato
+  if(uepFimDeSemana(hojeStr())){
+    const pr = Number((PONTOS_DIA.programacao || {}).programadoHoje) || 0;
+    return [
+      { l: 'CAIXAS', v: fmtN(k.real), c: '', sub: `todas em hora extra · ${fmtN(k.ritmo)} cx/h` },
+      { l: 'CAIXAS PROGRAMADAS', v: pr > 0 ? fmtN(pr) : '—', c: '', sub: (pr > 0 ? `${fmtP(k.real / pr * 100)} feito · ` : '') + 'sem meta — todo hora extra' },
+      { l: 'PONTOS', v: fmtN(PONTOS_DIA.pontos), sub: 'pts', c: '' },
+      { l: 'PESO', v: fmtN(Math.round(PONTOS_DIA.pesoKg)) + ' kg', sub: '', c: '' },
+    ];
+  }
+  // o selo em caixas julga só a jornada; sem minuto dela lançado, AGUARDANDO (1.51.0)
+  const julga = semUep && k.metaAteAgora > 0;
   return [
     { l: 'CAIXAS', v: fmtN(k.real), c: '',
       sub: (k.nHE ? `${fmtN(k.realNormal)} normal + ${fmtN(k.realHE)} HE` : 'no turno') + ` · ${fmtN(k.ritmo)} cx/h` },
-    { l: 'CAIXAS PROGRAMADAS', v: fmtN(k.meta), c: semUep ? sc(k.efRitmo) : '',
-      sub: (semUep ? `<b>${slRitmo(k.efRitmo)}</b> · ` : '') + `${fmtP(k.efDia)} feito · ` + (k.gap <= 0 ? 'programado feito' : 'faltam ' + fmtN(k.gap)) },
+    { l: 'CAIXAS PROGRAMADAS', v: fmtN(k.meta), c: julga ? sc(k.efRitmo) : '',
+      sub: (semUep ? `<b>${julga ? slRitmo(k.efRitmo) : 'AGUARDANDO A JORNADA'}</b> · ` : '') + `${fmtP(k.efDia)} feito · ` + (k.gap <= 0 ? 'programado feito' : 'faltam ' + fmtN(k.gap)) },
     { l: 'PONTOS', v: fmtN(PONTOS_DIA.pontos), sub: 'pts', c: '' },
     { l: 'PESO', v: fmtN(Math.round(PONTOS_DIA.pesoKg)) + ' kg', sub: '', c: '' },
   ];
@@ -4252,14 +4315,22 @@ function _renderHistoricoComDados(dias){
   // ── Resumo do período ──
   const totReal=lista.reduce((s,d)=>s+(parseFloat(d.real)||0),0);
   const totMeta=lista.reduce((s,d)=>s+(parseFloat(d.meta)||0),0);
-  const efMed=totMeta>0?(totReal/totMeta)*100:0;
+  // Σ realizado ÷ Σ meta dos DIAS COM META (a hora extra dos dias úteis dentro)
+  // — a base da EFICIÊNCIA MÉDIA da aba HISTÓRICO do PC (lá, média dos % dos
+  // mesmos dias). NÃO é o efTotal do relatório semanal: aquele soma as caixas do
+  // fim de semana e diz "META BATIDA COM HORA EXTRA" ao lado. O sábado e o domingo
+  // (todo hora extra, sem meta) somavam caixas sem meta no denominador — 7.000 de
+  // 7.500 com 690 no sábado saía 102,5% verde aqui, sem aviso nenhum (1.51.0).
+  const comMeta=lista.filter(d=>(parseFloat(d.meta)||0)>0);
+  const totRealM=comMeta.reduce((s,d)=>s+(parseFloat(d.real)||0),0);
+  const efMed=totMeta>0?(totRealM/totMeta)*100:0;
   const mediaDia=lista.length?Math.round(totReal/lista.length):0;
   if(elRes){
     elRes.innerHTML=`
       <div class="hist-rz"><div class="hist-rz-lbl">Produzido (${lista.length}d)</div><div class="hist-rz-val">${fmtN(totReal)}</div></div>
       <div class="hist-rz"><div class="hist-rz-lbl">Média / dia</div><div class="hist-rz-val">${fmtN(mediaDia)}</div></div>
       <div class="hist-rz"><div class="hist-rz-lbl">Meta período</div><div class="hist-rz-val">${fmtN(totMeta)}</div></div>
-      <div class="hist-rz"><div class="hist-rz-lbl">Eficiência média</div><div class="hist-rz-val ${sc(efMed)}">${fmtP(efMed)}</div></div>
+      <div class="hist-rz"><div class="hist-rz-lbl">Eficiência média</div><div class="hist-rz-val ${totMeta>0?sc(efMed):''}">${totMeta>0?fmtP(efMed):'—'}</div></div>
       <div class="hist-rz" id="hist-rz-perd" style="grid-column:1/-1"><div class="hist-rz-lbl">Caixas perdidas em paradas</div><div class="hist-rz-val" id="hist-rz-perd-val" style="font-size:15px;color:var(--txt2)">calculando…</div></div>`;
     // as caixas perdidas vêm da aba PARADAS (chamada à parte, com cache)
     carregarPerdasHistorico(periodo, lista.map(d=>d.data));
@@ -4270,8 +4341,8 @@ function _renderHistoricoComDados(dias){
     const maxReal=Math.max(1, ...cron.map(d=>parseFloat(d.real)||0));
     elChart.innerHTML=cron.map(d=>{
       const real=parseFloat(d.real)||0;
-      const ef=d.ef!=null?parseFloat(d.ef):null;
-      const cls=ef!=null?sc(ef):'';
+      const ef=d.ef!=null&&(parseFloat(d.meta)||0)>0?parseFloat(d.ef):null;   // sem meta (fim de semana): sem cor de veredito
+      const cls=ef!=null?sc(ef):(d.fds?'acc':'');
       const h=Math.max(3, Math.round((real/maxReal)*100));
       const meta=parseFloat(d.meta)||0;
       const metaPct=meta>0?Math.min(100, Math.round((meta/maxReal)*100)):0;
@@ -4285,13 +4356,13 @@ function _renderHistoricoComDados(dias){
   }
   // ── Lista de dias (toque para detalhe) ──
   el.innerHTML=lista.map(d=>{
-    const ef=d.ef!=null?parseFloat(d.ef):null;
+    const ef=d.ef!=null&&(parseFloat(d.meta)||0)>0?parseFloat(d.ef):null;
     const cls=ef!=null?sc(ef):'';
     return `<div class="hist-item" onclick="abrirDia('${d.data}')">
       <div class="hist-data">${d.data}</div>
       <div class="hist-real">${fmtN(d.real)}<span style="font-size:12px;color:var(--txt2)"> CX</span></div>
       <div class="hist-mh">${fmtN(mediaCxH(d))}<span class="u"> cx/h</span></div>
-      ${ef!=null?`<div class="hist-ef ${cls}">${fmtP(ef)}</div>`:'<div></div>'}
+      ${ef!=null?`<div class="hist-ef ${cls}">${fmtP(ef)}</div>`:d.fds?'<div class="hist-ef acc">HE</div>':'<div></div>'}
     </div>`;
   }).join('');
 }
@@ -4300,11 +4371,17 @@ function _renderHistoricoComDados(dias){
 function abrirDia(data){
   const d=_histDias.find(x=>x.data===data);
   if(!d) return;
-  const ef=d.ef!=null?parseFloat(d.ef):null;
-  const cls=ef!=null?sc(ef):'';
   const real=parseFloat(d.real)||0, meta=parseFloat(d.meta)||0;
+  const ef=d.ef!=null&&meta>0?parseFloat(d.ef):null;
+  const cls=ef!=null?sc(ef):'';
   const gap=meta-real;
-  const linhas=[
+  // sábado e domingo (1.51.0 / .gs v5.68): todo hora extra, sem meta — sem
+  // eficiência, sem gap, sem melhor/pior hora de jornada
+  const linhas=d.fds?[
+    ['REALIZADO', fmtN(real)+' CX', ''],
+    ['META', '— sem meta', ''],
+    ['STATUS', 'TODO HORA EXTRA', 'acc'],
+  ]:[
     ['REALIZADO', fmtN(real)+' CX', ''],
     ['MÉDIA CX/H', fmtN(mediaCxH(d))+' cx/h', ''],
     ['META', fmtN(meta)+' CX', ''],
@@ -4321,7 +4398,9 @@ function abrirDia(data){
   }
   if(d.heCount) linhas.push(['HORAS EXTRAS', d.heCount+'', '']);
   // UEP do dia fechado (.gs v5.14): gravada no fechamento, com a meta daquele dia.
-  if(d.uep!=null){
+  if(d.uep!=null && !(uepDiaMeta(d)>0)){
+    linhas.push(['UEP EM HORA EXTRA', fmtN(Math.round(uepDiaHe(d)))+(d.fds?' · todo o dia':''), 'acc']);
+  } else if(d.uep!=null){
     const _pu=Number(d.uep)/uepDiaMeta(d)*100;
     linhas.push(['UEP (JORNADA)', fmtN(Math.round(d.uep))+' de '+fmtN(uepDiaMeta(d))+' · '+fmtP(_pu), sc(_pu)]);
     if(Number(d.uepHe)>0) linhas.push(['UEP EM HORA EXTRA', fmtN(Math.round(d.uepHe)), 'acc']);

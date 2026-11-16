@@ -87,6 +87,13 @@ ok('596 cx, 1.441 UEP, 244 cx em HE (05h e 06h), 596 da HORA_A_HORA',
 ok('3 produtos, 2 trocas de produto (PRISM → HOME ANGEL → LIVREIRO)',
    [M.produtos.length, M.trocas], [3, 2]);
 
+// v7.248.0 / mobile 1.51.0: num sábado ou domingo (todoHE) o dia inteiro é hora extra
+{ const MS = monta(PHM, PH, '501136001', AGORA, Object.assign({}, O, { todoHE: true }));
+  ok('fim de semana (todoHE): as 596 cx em HE, a faixa toda marcada como HE, cada produto com a HE = as caixas; a UEP do dia não muda',
+     [MS.heCx, MS.faixa.he.length === 1 && MS.faixa.he[0][0] === MS.faixa.ini && MS.faixa.he[0][1] === MS.faixa.fim,
+      MS.produtos.every(p => p.he === p.cx), Math.round(MS.uep), MS.faixa.ticks.every(t => t.he)],
+     [596, true, true, Math.round(M.uep), true]); }
+
 console.log('\n── a linha de cada produto, na ordem em que rodou ──');
 ok('ordem do dia', M.produtos.map(p => p.nome), ['BUFFET 4 PT PRISM', 'HOME ANGEL 1.8', 'LIVREIRO ENCANTO']);
 ok('caixas e UEP (arredondada)', M.produtos.map(p => [p.cx, p.uep]), [[184, 438], [382, 947], [30, 56]]);
@@ -302,7 +309,8 @@ ok('rp-core antigo (sem uepHe): o EM HE volta às caixas, escrito "cx"',
    grun('_pdiaPcHtml(_M, "")', { _M: Object.assign({}, MP, { produtos: MP.produtos.map(p => Object.assign({}, p, { uepHe: undefined })) }) }).includes('title="184 cx em hora extra">184 cx</span>'), true);
 ok('menos de meio UEP em hora extra: "<1", nunca "sem UEP" (o uepHe vem sem arredondar)',
    grun('_pdiaPcHtml(_M, "")', { _M: Object.assign({}, MP, { produtos: MP.produtos.map((p, i) => i ? p : Object.assign({}, p, { uepHe: 0.4 })) }) }).includes('title="184 cx em hora extra">&lt;1</span>'), true);
-ok('o render do PC passa o porUep', /porUep: true \}\);/.test(pega(PC_JS, 'function renderGerProdutosDia(')), true);
+ok('o render do PC passa o porUep e o todoHE do fim de semana (v7.248.0)',
+   /porUep: true, todoHE: uepFimDeSemana\(hojeStr\(\)\) \}\);/.test(pega(PC_JS, 'function renderGerProdutosDia(')), true);
 ok('AGORA no horário do produto de agora', HP.includes('desde 09:00 · <span class="ag">AGORA</span>'), true);
 ok('% numa coluna fixa (as barras alinham)', (HP.match(/<span class="pdpc-pc">\d+%<\/span>/g) || []).length, 3);
 ok('fechado: sem detalhe; aberto: tabela e hora a hora só do aberto',
@@ -564,7 +572,7 @@ run('_pdiaToggle(0)');
      [H7.indexOf('<b>1.441</b><i>UEP') >= 0, H7.indexOf('<b>1.441</b><i>UEP') < H7.indexOf('<b>596</b><i>CAIXAS'), H7.includes('pdia-res-n sec"><b>596</b>')], [true, true, true]);
   ok('celular 1.50.0: cada produto com a UEP em destaque e as caixas embaixo',
      /<div class="pdia-num"><b>[\d.]+<i> UEP<\/i><\/b><span>[\d.]+ cx<\/span><\/div>/.test(H7), true);
-  ok('celular 1.50.0: o render passa o porUep (a faixa pela UEP, como no PC)', /porUep: true \}\);/.test(pega(MJS, 'function renderGerProdutosDia(')), true);
+  ok('celular 1.50.0: o render passa o porUep (a faixa pela UEP, como no PC)', /porUep: true,\s*todoHE: uepFimDeSemana\(hojeStr\(\)\) \}\);/.test(pega(MJS, 'function renderGerProdutosDia(')), true);
   run('CFG.turnoInicio = "05:00"; renderGerProdutosDia(596)');
   const H5 = run('_ELM.innerHTML');
   ok('celular 1.50.0: com a C3 em 5 (turno às 05:00), a madrugada sai em hora extra no quadro — 244 cx (PRISM 05–06h + HOME ANGEL 06h), 587 UEP, o eixo marcado HE',
