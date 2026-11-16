@@ -11,22 +11,42 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
-## v7.256.1 — 16/11/2026 · Tela G: correções da revisão
+## v7.257.0 — 16/11/2026 · Tela G da TV: menos informação, mais visibilidade
 
-O revisor do projeto achou três problemas na v7.256.0, depois do merge.
+O PPCP mandou uma maquete com o pedido *"menos informação, mais visibilidade"*:
+o operador precisa responder em 3 s, a 10–15 m, se a linha está à frente ou
+atrás, quanto já fez e quanto falta. Depois veio *"1 UEP = 1 caixa de MESA
+CABECEIRA MADERO, pode tirar"* e *"aumenta o que puder"*. Entre as duas
+variantes mostradas, ele escolheu a **A**: o selo de sempre, com À FRENTE /
+ATRÁS por extenso. Ficou de fora o ADIANTADO / ATRASADO por minutos fixos,
+porque às 16:00, com 17 min atrás (96,3%), ele diria ATRASADO em vermelho
+enquanto o gerencial diz NO RITMO. Entram aqui também as três correções que a
+revisão da v7.256.0 pediu.
 
-- **Número cortado no meio**: com nome de produto comprido, a linha *de KIT 2
-  MESA CABECEIRA SLEEP · 2.051 UEP* cortava em *"· 2.05…"*. O nome agora fica
-  sozinho na linha (só ele pode cortar com "…") e a conta vai na linha de baixo.
-- **Voltam ao 1º cartão** os dois números *2.429 feitas · 2.441 esperadas*: na
-  janela pequena do gerencial o gráfico às vezes não tem lugar para um deles.
-- **Volta a UEP por caixa** do produto de agora no cartão FALTA.
-- A legenda RITMO DA META só aparece quando o pontilhado está no gráfico.
+- **1º cartão**: o selo cheio e maior (NO RITMO · ATENÇÃO · ABAIXO DO RITMO,
+  a mesma regra de sempre), a borda na cor dele, os **minutos enormes** e o
+  sentido logo abaixo, também grande: **À FRENTE / ATRÁS**.
+- **FALTA PARA A META**: **UEP e caixas, as duas no número grande**, e o nome
+  do produto sozinho na linha. Com nome comprido, só o nome corta com "…".
+  Na v7.256.0 o número ia no fim dessa linha e saía cortado: *"· 2.05…"*.
+- **Gráfico**:
+  - Linhas mais grossas: FEITO de 12 para 18, ESPERADO de 7 para 10.
+  - A **META é uma linha laranja contínua**, com o rótulo em laranja.
+  - Só o **FEITO** tem número no gráfico, e maior (de 54 para 80).
+  - O eixo e as horas foram de 34 para 40, e a legenda ficou branca e maior.
+- **Sem projeção**: o pontilhado e a hora em que a meta sai saíram. O
+  esperado vai sempre até o fim da jornada.
+- **Saiu o rodapé** "1 UEP = 1 caixa de MESA CABECEIRA MADERO" desta tela (a
+  Tela F continua com ele). A linha de hora extra aparece só quando houver.
+- O cabeçalho da tela ficou maior e as margens laterais, menores.
 
-**Atenção** (antes → depois, cartão FALTA PARA A META da Tela G):
-- `de PENTEADEIRA PRINCESA · 332 UEP` → `de PENTEADEIRA PRINCESA` e, embaixo,
-  `= 332 UEP · 2,14 UEP/cx` (a UEP/cx tinha saído na v7.256.0).
-- 1º cartão: volta `2.429 feitas · 2.441 esperadas` (tinha saído na v7.256.0).
+**Atenção** (antes → depois, Tela G, em relação à v7.256.0):
+- `−2 min` → `2 min` e, embaixo, `ATRÁS` em letra grande.
+- FALTA: `156 caixas` grande e `de PENTEADEIRA PRINCESA · 332 UEP` → `332 UEP`
+  e `156 caixas`, os dois grandes, e `PENTEADEIRA PRINCESA` na linha de baixo.
+- Saíram da tela: o número do ESPERADO no gráfico (a distância está no cartão,
+  em minutos e UEP), a linha `2.429 feitas · 2.441 esperadas`, a UEP/cx do
+  produto, a hora em que a meta sai e o pontilhado RITMO DA META.
 
 ---
 
