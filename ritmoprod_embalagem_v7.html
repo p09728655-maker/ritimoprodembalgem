@@ -2718,12 +2718,11 @@ if (_v7Instalado()) _v7EscondeBotao();
       <!-- Divulgar a semana é o que se faz com este bloco, e era a única coisa
            que não dava para fazer daqui: o relatório morava na aba HISTÓRICO e
            saía pela data do filtro DE LÁ — numa segunda-feira, quando a semana
-           é divulgada, ele nem abria. Os dois botões mandam a semana que está
-           na tela; a conta e o desenho continuam sendo os mesmos. -->
+           é divulgada, ele nem abria. O botão manda a semana que está na tela;
+           a conta e o desenho continuam sendo os mesmos. (O botão do WhatsApp saiu
+           na v7.248.1, a pedido do PPCP.) -->
       <button class="btn btn-ghost" style="margin-left:12px;padding:4px 10px;font-size:10px;color:var(--acc);border-color:rgba(245,166,35,.4)"
               onclick="imprimirSemanaGer()" title="Abre o RELATÓRIO SEMANAL desta semana para imprimir ou salvar em PDF">🖨 IMPRIMIR SEMANA</button>
-      <button class="btn btn-ghost" style="margin-left:6px;padding:4px 10px;font-size:10px;color:var(--ok);border-color:rgba(76,175,80,.4)"
-              onclick="zapSemanaGer()" title="Monta o resumo desta semana em texto e abre o WhatsApp">📲 WHATSAPP</button>
     </div>
 
     <div class="tvd-wrap">
@@ -3643,7 +3642,6 @@ if (_v7Instalado()) _v7EscondeBotao();
     <div class="export-row">
       <button class="btn btn-ghost" onclick="imprimir()">🖨 IMPRIMIR / PDF</button>
       <button class="btn btn-acc"   onclick="gerarRelatorioSemanal()" style="background:rgba(245,166,35,.15);color:var(--acc);border:0.5px solid rgba(245,166,35,.5)">📋 RELATÓRIO SEMANAL</button>
-      <button class="btn btn-acc"   onclick="enviarResumoZap()" style="background:rgba(76,175,80,.15);color:var(--ok);border:0.5px solid rgba(76,175,80,.5)">📲 RESUMO NO WHATSAPP</button>
       <button class="btn btn-acc"   onclick="gerarRelatorioParadas()" style="background:rgba(229,115,115,.15);color:#e57373;border:0.5px solid rgba(229,115,115,.5)">⏸ RELATÓRIO DE PARADAS</button>
       <button class="btn btn-ghost" style="color:var(--red);border-color:rgba(244,67,54,.3)" onclick="limparHistorico()">🗑 LIMPAR</button>
     </div>
@@ -4175,7 +4173,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.248.0';
+const APP_VER = '7.248.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -4185,8 +4183,8 @@ const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 const GS_REPO   = '5.68';
 let GS_IMPL;   // undefined = ainda não leu · null = o .gs implantado não informa (antes da v5.57)
 
-// Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
-// resumo do WhatsApp e a notificação leem DAQUI — trocar o nome é trocar esta
+// Nome do produto. Os rodapés de relatório, o título do popup do histórico e a
+// notificação leem DAQUI — trocar o nome é trocar esta
 // linha. Os pontos estáticos (title, meta do iOS, <h1> dos cabeçalhos de
 // impressão e o rodapé da tela) continuam literais: nascem antes do script.
 const APP_NOME    = 'RitmoPatrimar';
@@ -13684,13 +13682,6 @@ function imprimirSemanaGer(){
   gerarRelatorioSemanal(s.ate);
 }
 
-// 📲 do bloco: o mesmo resumo em texto do WhatsApp, da mesma semana em cartaz.
-function zapSemanaGer(){
-  const s=RP_SEMANA.semana();
-  if(!s){ alert('A semana passada ainda não carregou. Tente de novo em alguns segundos.'); return; }
-  enviarResumoZap(s.ate);
-}
-
 // ════════════════════════════════════════════════
 // PRODUÇÃO POR MODELO — TELA DEDICADA (total do dia, soma as variantes de cor
 // e as horas: um modelo por linha, não repete o mesmo modelo em várias horas)
@@ -14570,14 +14561,16 @@ function _phTotaisPeriodo(diasH, deStr, ateStr){
   // Hoje no período vale pelo AO VIVO (calcKPIs, abaixo). Depois do FECHAR DIA
   // (17:05) o dia de hoje também está no histórico e entrava duas vezes: meta,
   // realizado e cobertura dobrados (revisão da v7.248.0; existia desde antes).
+  // Mas só quando o ao vivo TEM o dia: entre o resetDiario (~23:44–00:00) e a
+  // meia-noite, ou no DEMO, a HORA_A_HORA vem vazia e o histórico é quem cobre hoje.
   const hj=hojeStr(), tHoje=_phParseData(hj), hojeNoPer=tHoje>=rDe&&tHoje<=rAte;
+  const kH=hojeNoPer?calcKPIs(getDadosHoje()):null, aoVivo=!!(kH&&kH.real>0);
   (diasH||[]).forEach(d=>{ const t=_phParseData(d.data); if(!t||t<rDe||t>rAte) return;
-    if(hojeNoPer&&d.data===hj) return;
+    if(aoVivo&&t.getTime()===tHoje.getTime()) return;
     realTotAll+=d.real||0;
     if(d.meta>0){ metaTot+=d.meta; realTot+=d.real||0; comMeta[d.data]=1; }
     else { semMeta++; if(_fds(d.data)) semMetaFds++; } });
-  if(hojeNoPer){
-    const kH=calcKPIs(getDadosHoje());
+  if(aoVivo){
     realTotAll+=kH.real||0;
     // hoje no fim de semana: sem meta (a META DO DIA ali é o programado), fora
     const fds=_fds(hj);
@@ -17874,6 +17867,20 @@ function _mergeDias(diasSheets){
 // eficiência, não entra na média da eficiência, no "dias com meta" nem no
 // melhor/pior dia. O total e a hora extra o contam.
 function _diaComMeta(d){ return !!d && Number(d.meta)>0; }
+// Os dias SEM META de uma lista, separados pelo DIA: o fim de semana (todo hora
+// extra) e o dia útil sem meta gravada. O rótulo nunca sai da conta "dias − dias
+// com meta" — uma sexta sem meta gravada não é fim de semana (revisão da v7.248.0).
+function _relSemMeta(dias){
+  const sem=(dias||[]).filter(d=>!_diaComMeta(d));
+  const fds=sem.filter(d=>d.fds||uepFimDeSemana(d.data)).length;
+  return { n:sem.length, fds, util:sem.length-fds };
+}
+function _relSemMetaTxt(S){
+  return [S.fds?`${plural(S.fds,'dia','dias')} de fim de semana, todo hora extra`:'',
+          S.util?`${S.util} ${S.util===1?'dia útil':'dias úteis'} sem meta gravada`:''].filter(Boolean).join(' · ');
+}
+// o que fica fora da MÉDIA por dia (que é só dos dias com meta)
+function _relSemMetaFora(S){ return S.util?'sem os dias sem meta':'sem o fim de semana'; }
 
 // Dia em que NÃO dá para separar hora normal × hora extra: heCx nulo. Acontece
 // com dia fechado antes de a coluna HE CX existir (ou backend ainda na 4.9) e
@@ -17990,7 +17997,7 @@ async function renderHist(){
     <div class="kpi-card ${semBackend?'red':totHE>0?'acc':''}"><div class="kpi-lbl">CAIXAS EM HORA EXTRA</div><div class="kpi-val">${semBackend?'—':fmtN(totHE)}</div><div class="kpi-sub">${heSub}</div></div>
     ${diasM.length?`<div class="kpi-card ${sc(efM)}"><div class="kpi-lbl">EFICIÊNCIA MÉDIA</div><div class="kpi-val">${fmtP(efM)}</div><div class="kpi-sub">${sl(efM)}</div></div>`
       :`<div class="kpi-card"><div class="kpi-lbl">EFICIÊNCIA MÉDIA</div><div class="kpi-val">—</div><div class="kpi-sub">nenhum dia com meta no período</div></div>`}
-    <div class="kpi-card ok"><div class="kpi-lbl">DIAS COM META</div><div class="kpi-val">${comMeta}</div><div class="kpi-sub">de ${diasM.length} (${diasM.length?((comMeta/diasM.length)*100).toFixed(0):0}%)${nFdsH?` · ${plural(nFdsH,'dia','dias')} de fim de semana, todo hora extra`:''}</div></div>
+    <div class="kpi-card ok"><div class="kpi-lbl">DIAS COM META</div><div class="kpi-val">${comMeta}</div><div class="kpi-sub">de ${diasM.length} (${diasM.length?((comMeta/diasM.length)*100).toFixed(0):0}%)${nFdsH?` · ${_relSemMetaTxt(_relSemMeta(dias))}`:''}</div></div>
     <div class="kpi-card"><div class="kpi-lbl">MELHOR DIA</div><div class="kpi-val">${melhorDia?fmtP(melhorDia.ef):'—'}</div><div class="kpi-sub">${melhorDia?melhorDia.data:'—'}</div></div>
     ${temUepHist?`<div class="kpi-card ${uR.media>=uR.metaMedia?'ok':'acc'}" title="UEP em jornada normal, gravada no fechamento de cada dia. A meta é a de cada dia (META UEP do HISTORICO). Sábado e domingo são todo hora extra: fora da média e do bateu.${_rpEsc(_uepEscalaNota(uEsc)?' '+_uepEscalaNota(uEsc):'')}"><div class="kpi-lbl">UEP / DIA (JORNADA)</div><div class="kpi-val">${fmtN(Math.round(uR.media))}</div><div class="kpi-sub">meta ${fmtN(Math.round(uR.metaMedia||uR.meta))} · bateu em ${uR.bateu} de ${uR.n} dia(s)${uR.nFds?` · fim de semana em hora extra`:''}${uR.semUep?` · ${uR.semUep} sem UEP`:''}${_uepEscalaSelo(uEsc)?`<br><span style="color:var(--warn)">${_uepEscalaSelo(uEsc)}</span>`:''}</div></div>`:''}`;
 
@@ -18014,8 +18021,9 @@ async function renderHist(){
       if(!(uepDiaMeta(d)>0)) return `<td class="mono" style="color:var(--acc)" title="${d.fds?'todo hora extra, sem meta':'dia sem meta'}">${fmtN(Math.round(uepDiaHe(d)))} HE</td>`;
       const pu=d.uep/uepDiaMeta(d)*100;
       return `<td class="mono" style="color:var(--${sc(pu)})" title="${fmtN(Math.round(d.uep))} UEP de ${fmtN(uepDiaMeta(d))} (${fmtP(pu)})${d.uepHe>0?' · +'+fmtN(Math.round(d.uepHe))+' em HE':''}">${fmtN(Math.round(d.uep))}</td>`; })():''}
-    <td class="mono" style="color:var(--ok)">${fmtN(d.melhor)}</td>
-    <td class="mono" style="color:var(--red)">${fmtN(d.pior)}</td>
+    ${d.fds?'<td class="mono" style="color:var(--txt3)" title="sábado e domingo: todo hora extra, sem melhor/pior hora de jornada">—</td><td class="mono" style="color:var(--txt3)">—</td>'
+      :`<td class="mono" style="color:var(--ok)">${fmtN(d.melhor)}</td>
+    <td class="mono" style="color:var(--red)">${fmtN(d.pior)}</td>`}
     <td>${_diaComMeta(d)?`<span class="badge b-${d.ef>=96?'ok':d.ef>=90?'warn':'red'}">${d.ef>=96?'✓ META':d.ef>=90?'ATENÇÃO':'ABAIXO'}</span>`:`<span class="badge b-acc">${d.fds?'HORA EXTRA':'SEM META'}</span>`}${d.heCount?` <span class="badge b-he">${d.heCount}HE</span>`:''}</td>
     <td>${d.fechado?(()=>{const f=fmtFechadoEm(d.fechadoEm,d.data);return `<span class="badge b-ok" title="${f}">${f==='SIM'?'✓':'✓ '+f.substring(0,5)}</span>`;})():'<span class="badge b-mute">—</span>'}</td>
     <td><span class="badge b-mute" style="font-size:8px">${d.fonte==='sheets'?'☁ SHEETS':d.fonte==='local'?'💾 LOCAL':'📊 MEM'}</span></td>
@@ -21299,7 +21307,7 @@ async function _imprimirHistoricoFormatado(){
   const diasM=dias.filter(_diaComMeta), nM=diasM.length, baseM=nM?diasM:dias;
   const mediaReal=baseM.reduce((s,d)=>s+d.real,0)/baseM.length;   // média diária realizada (base: dias com meta)
   const mediaMeta=nM?totMeta/nM:null;
-  const nFdsP=dias.length-nM;
+  const nFdsP=dias.length-nM, SMp=_relSemMeta(dias);
   // Hora normal × hora extra (coluna condicional, como no relatório semanal)
   const totHEp=dias.reduce((s2,d)=>s2+(_heIndef(d)?0:d.heCx),0);
   const temHEp=dias.some(d=>!_heIndef(d)&&d.heCx>0);
@@ -21396,22 +21404,22 @@ ${_rpCabecalho('HISTÓRICO',
   <div class="kpi-card" style="border-left-color:#FF5C1F">
     <div class="kpi-lbl">TOTAL PRODUZIDO</div>
     <div class="kpi-val">${totReal.toLocaleString('pt-BR')}</div>
-    <div class="kpi-sub">média ${Math.round(mediaReal).toLocaleString('pt-BR')}/dia${nM&&nFdsP?' sem o fim de semana':''}${temHEp?` · ${totHEp.toLocaleString('pt-BR')} em HE${totHorasP>0?` (${totHorasP}h)`:''}`:' · caixas'}</div>
+    <div class="kpi-sub">média ${Math.round(mediaReal).toLocaleString('pt-BR')}/dia${nM&&nFdsP?' '+_relSemMetaFora(SMp):''}${temHEp?` · ${totHEp.toLocaleString('pt-BR')} em HE${totHorasP>0?` (${totHorasP}h)`:''}`:' · caixas'}</div>
   </div>
-  <div class="kpi-card" style="border-left-color:${corEfP}">
+  <div class="kpi-card" style="border-left-color:${totMeta?corEfP:'#888'}">
     <div class="kpi-lbl">EFICIÊNCIA DO PERÍODO</div>
     <div class="kpi-val" style="color:${totMeta?corEfP:'#5B6470'}">${totMeta?fmtP(mhe.efTotal):'—'}</div>
     <div class="kpi-sub">${!totMeta?'nenhum dia com meta no período':temHEp?`${bdgEfP} · sem HE ${fmtP(mhe.efTotalSemHE)}`:bdgEfP}</div>
   </div>
-  <div class="kpi-card" style="border-left-color:${comMeta>0?'#4CAF50':'#F44336'}">
+  <div class="kpi-card" style="border-left-color:${!diasM.length?'#888':comMeta>0?'#4CAF50':'#F44336'}">
     <div class="kpi-lbl">DIAS COM META</div>
     <div class="kpi-val">${comMeta}</div>
-    <div class="kpi-sub">de ${diasM.length} (${diasM.length?Math.round(comMeta/diasM.length*100):0}%)${dias.length>diasM.length?` · ${plural(dias.length-diasM.length,'dia','dias')} sem meta (fim de semana)`:''}</div>
+    <div class="kpi-sub">de ${diasM.length} (${diasM.length?Math.round(comMeta/diasM.length*100):0}%)${SMp.n?` · ${_relSemMetaTxt(SMp)}`:''}</div>
   </div>
   <div class="kpi-card" style="border-left-color:${mhe.soComHE?'#FF9800':'#888'}">
     <div class="kpi-lbl">TOTAL META</div>
     <div class="kpi-val">${totMeta.toLocaleString('pt-BR')}</div>
-    <div class="kpi-sub">gap: ${(totReal-totMeta).toLocaleString('pt-BR')}${temHEp?` · sem HE: ${(mhe.realNormal-totMeta).toLocaleString('pt-BR')}`:''} · méd ${mediaMeta!=null?Math.round(mediaMeta).toLocaleString('pt-BR'):'—'}/dia</div>
+    <div class="kpi-sub">${!totMeta?'sem meta no período':`gap: ${(totReal-totMeta).toLocaleString('pt-BR')}${temHEp?` · sem HE: ${(mhe.realNormal-totMeta).toLocaleString('pt-BR')}`:''} · méd ${Math.round(mediaMeta).toLocaleString('pt-BR')}/dia`}</div>
   </div>
   <div class="kpi-card" style="border-left-color:#4CAF50">
     <div class="kpi-lbl">🏆 MELHOR DIA</div>
@@ -21731,9 +21739,9 @@ function _relParadasSemanaHtml(st, totMeta){
 // Divulgar a semana é sempre a mesma pergunta: a semana do filtro; e, quando
 // ela ainda não tem dia fechado — segunda-feira de manhã, que é justamente
 // quando o resultado é divulgado —, a SEMANA PASSADA, que é a que fechou.
-// A regra estava escrita dentro do botão do WhatsApp, e o PDF era o único que
-// não a tinha: numa segunda ele abria um alerta mandando ajustar um filtro de
-// data em vez do relatório. Agora os dois leem a mesma função.
+// A regra estava escrita dentro do botão do WhatsApp (que saiu na v7.248.1), e
+// o PDF era o único que não a tinha: numa segunda ele abria um alerta mandando
+// ajustar um filtro de data em vez do relatório.
 // `fixa` = quem chamou JÁ SABE qual semana quer (o 🖨 do bloco FECHAMENTO DA
 // SEMANA PASSADA manda a semana que está na tela): aí não há queda para outra
 // semana — o papel tem de sair com a semana que o gestor está vendo. Foi por
@@ -21802,10 +21810,9 @@ function _relMetaHE(totReal, totHE, totMeta){
 }
 
 // ── KPIs da semana ──────────────────────────────────────────────────────────
-// Conta pura: entra a lista de dias, sai o resumo. A base de TODA média aqui
-// são os dias COM PRODUÇÃO no período (os mesmos que o relatório lista), nunca
-// dias corridos — sábado, domingo e feriado não têm produção lançada e ficariam
-// puxando a média para baixo.
+// Conta pura: entra a lista de dias, sai o resumo. A base das médias por dia são
+// os dias COM META (v7.248.0; sem nenhum, os dias com produção), nunca dias
+// corridos — o fim de semana (todo hora extra) e o dia sem meta ficam só no TOTAL.
 /* ── Dia fechado × dia em curso ──────────────────────────────────────────────
    O dia que ainda está correndo tem a produção de algumas horas contra a meta
    do dia INTEIRO. Não é um dia fraco: é um dia pela metade. Como piorDia pega
@@ -22051,97 +22058,6 @@ const RP_SEMANA = (function() {
 // redesenha sozinho (a Tela D da TV faz o mesmo, pelo _cicloTV).
 RP_SEMANA.aoCarregar(() => { try { renderSemanaGer(); } catch (e) { console.warn('[SEMANA] gerencial:', e.message); } });
 
-// ── Resumo da semana em TEXTO de WhatsApp ────────────────────────────────────
-// O pessoal recebe a divulgação no grupo do zap; PDF exige abrir anexo, texto
-// todo mundo lê na hora. A conta é a MESMA do relatório e da Tela D
-// (_relSemanalKPIs), então o zap, o PDF e a TV nunca contam histórias
-// diferentes.
-//
-// ⚠ NADA DE EMOJI AQUI. Em 31/08/2026 o resumo chegou ao WhatsApp com TODOS os
-// marcadores virados losango — o 📦 do título, o ⚠️ do veredito, o ▪ das linhas
-// e o 🏆 do melhor dia, todos como "◆". Emoji depende da fonte de quem recebe
-// (e do caminho wa.me → app no Windows); `·`, `—` e o *negrito* do WhatsApp
-// chegaram intactos na MESMA mensagem. Um resumo que a diretoria recebe não
-// pode depender disso: a hierarquia sai do negrito e das linhas em branco.
-//
-// A HORA EXTRA aparece em três alturas, de propósito (pedido do usuário,
-// 31/08/2026: "deixa claro as qtdes feitas nas horas extras"): no veredito, no
-// bloco de divisão da semana e em CADA DIA que teve — quem lê só o dia a dia
-// não pode achar que 1.509 cx de sexta saíram todas dentro do turno.
-function _zapResumoSemana(diasSem, semStr, numSem){
-  const k=_relSemanalKPIs(diasSem);
-  const DIA=['dom','seg','ter','qua','qui','sex','sáb'];
-  const ano=(parseBR(diasSem[0].data)||new Date()).getFullYear();
-  const heDoDia=d=>_heIndef(d)?0:(Number(d.heCx)||0);
-  const diasComHE=diasSem.filter(d=>heDoDia(d)>0).length;
-  const rotulo=d=>{ const dt=parseBR(d.data); return `${dt?DIA[dt.getDay()]+' ':''}${d.data.substring(0,5)}`; };
-  const L=[];
-
-  L.push(`*EMBALAGEM · SEMANA ${numSem}/${ano}*`);
-  L.push(semStr);
-  L.push('');
-  L.push(`*${fmtN(k.totReal)} caixas* — ${fmtP(k.efTotal)} da meta de ${fmtN(k.totMeta)} cx`);
-
-  /* Semana em aberto não recebe veredito, pelo mesmo motivo do selo do PDF:
-     "faltaram 2.108 cx" numa sexta de manhã é quase todo o dia que ainda não
-     aconteceu. Diz que está parcial e para por aí — quem recebe o resumo
-     encaminhado não tem a tabela ao lado para descontar isso de cabeça. */
-  if(k.abertos>0)                            L.push(`_Parcial: ${k.fechados} de ${diasSem.length} dias fechados._`);
-  else if(k.soComHE)                         L.push('*Meta batida com hora extra.*');
-  else if(k.totMeta&&k.totReal>=k.totMeta)   L.push('*Meta batida na jornada normal.*');
-  else if(k.totMeta)                         L.push(`*Faltaram ${fmtN(k.totMeta-k.totReal)} cx para a meta.*`);
-
-  if(k.temHE){
-    L.push('');
-    L.push(`Jornada normal: ${fmtN(k.totReal-k.totHE)} cx — ${fmtP(k.efTotalSemHE)} da meta`);
-    L.push(`Hora extra: ${fmtN(k.totHE)} cx${diasComHE?` em ${plural(diasComHE,'dia','dias')}`:''}${k.totHoras>0?` (${plural(k.totHoras,'hora','horas')})`:''}`);
-    if(k.faltouSemHE>0) L.push(`Sem a hora extra teriam faltado ${fmtN(k.faltouSemHE)} cx.`);
-  }
-
-  // UEP da semana (v7.87.0): a régua de esforço, em linha própria. Sem UEP
-  // gravada na semana, a linha não sai.
-  const ur=uepHistResumo(diasSem);
-  if(ur.n){
-    L.push('');
-    L.push(`*UEP (jornada normal): ${fmtN(Math.round(ur.total))}* — ${fmtP(ur.metaTot?ur.total/ur.metaTot*100:0)} da meta de ${fmtN(ur.metaTot)} · bateu em ${ur.bateu} de ${plural(ur.n,'dia','dias')}`);
-  }
-
-  L.push('');
-  L.push('*Dia a dia*');
-  diasSem.forEach(d=>{
-    const he=heDoDia(d);
-    // dia sem meta (sábado, domingo — v7.248.0): todo hora extra, sem % e com a UEP do dia inteira
-    if(d.fds||uepFimDeSemana(d.data)){
-      L.push(`${rotulo(d)} — ${fmtN(d.real)} cx · todo hora extra, sem meta${d.uep!=null?` · ${fmtN(Math.round(uepDiaHe(d)))} UEP em hora extra`:''}`);
-      return;
-    }
-    // dia útil sem meta gravada: as caixas como fato, sem % (não é hora extra)
-    if(!_diaComMeta(d)){
-      L.push(`${rotulo(d)} — ${fmtN(d.real)} cx · sem meta gravada${he>0?` · ${fmtN(he)} em hora extra`:''}${d.uep!=null?` · ${fmtN(Math.round(d.uep))} UEP`:''}`);
-      return;
-    }
-    L.push(`${rotulo(d)} — ${fmtN(d.real)} cx (${fmtP(d.ef)})${he>0?` · ${fmtN(he)} em hora extra`:''}${d.uep!=null?` · ${fmtN(Math.round(d.uep))} UEP`:''}`);
-  });
-
-  L.push('');
-  if(k.melhorDia) L.push(`Melhor dia: ${rotulo(k.melhorDia)} — ${fmtN(k.melhorDia.real)} cx (${fmtP(k.melhorDia.ef)})`);
-  L.push(`Dias na meta: ${k.comMeta} de ${k.nComMeta}`+(diasSem.length>k.nComMeta?` (${plural(diasSem.length-k.nComMeta,'dia','dias')} de fim de semana, todo hora extra)`:''));
-  L.push('');
-  L.push(APP_NOME+' · PPCP');
-  return L.join('\n');
-}
-
-// `ateArg`: dia dentro da semana pedida (o bloco do gerencial manda a semana
-// que está na tela). Sem ele, a semana do filtro do Histórico — e a queda para
-// a semana passada, que é a regra do _relSemanaParaDivulgar.
-async function enviarResumoZap(ateArg){
-  const todos=CFG.sheetsUrl?await buildDiasHistAsync():buildDiasHist();
-  const {semStr, numSem, dias}=_relSemanaParaDivulgar(todos, ateArg||dGet('hist-ate'), !!ateArg);
-  if(!dias.length){ alert('Nenhum dia fechado nesta semana nem na anterior.'); return; }
-  const texto=_zapResumoSemana(dias, semStr, numSem);
-  window.open('https://wa.me/?text='+encodeURIComponent(texto), '_blank');
-}
-
 // `ateArg`: a semana de QUEM CHAMOU — o 🖨 do bloco FECHAMENTO DA SEMANA
 // PASSADA manda a semana que está na tela, como o gerarRelatorioParadas já faz
 // com o período. Sem argumento (botão da aba HISTÓRICO), vale o filtro "Até".
@@ -22220,7 +22136,7 @@ async function gerarRelatorioSemanal(ateArg){
 
   // Semana: a de quem chamou, ou a do filtro — com a queda para a semana
   // passada quando a atual ainda não fechou nenhum dia. Mesmo recorte da TELA
-  // D da TV e do resumo do WhatsApp (_relSemanaParaDivulgar).
+  // D da TV (_relSemanaParaDivulgar).
   const {seg, sex, semStr, numSem, dias:diasSem} =
     _relSemanaParaDivulgar(todosDias, ateArg||dGet('hist-ate'), !!ateArg);
 
@@ -22239,6 +22155,7 @@ async function gerarRelatorioSemanal(ateArg){
          totHE, totHoras, temHE, semHE, comMeta, nComMeta, melhorDia, piorDia,
          fechados, abertos,
          efTotal, efTotalSemHE, soComHE, faltouSemHE} = _relSemanalKPIs(diasSem);
+  const SM=_relSemMeta(diasSem);   // os dias sem meta: fim de semana × dia útil sem meta gravada
 
   /* ── Paradas da semana ────────────────────────────────────────────────────
      O relatório contava quanto saiu e não contava o que ficou pelo caminho.
@@ -22300,8 +22217,9 @@ async function gerarRelatorioSemanal(ateArg){
   /* Semana com dia em aberto ainda traz a meta cheia do dia em curso, então o
      total sai abaixo do ritmo real. Dizer ABAIXO ali é veredito sobre tempo que
      não aconteceu: enquanto houver dia aberto, o cartão informa em vez de julgar. */
-  const corEf  = parcial ? '#5B6470' : (soComHE ? '#B4650A' : cor(efTotal));
-  const badgeEf= parcial
+  // sem nenhum dia com meta (só fim de semana): não há eficiência — "—", sem cor
+  const corEf  = (parcial || !totMeta) ? '#5B6470' : (soComHE ? '#B4650A' : cor(efTotal));
+  const badgeEf= !totMeta ? 'nenhum dia com meta' : parcial
     ? `PARCIAL · ${fechados} de ${diasSem.length} ${diasSem.length===1?'dia fechado':'dias fechados'}`
     : (soComHE ? '⚠ META BATIDA COM HORA EXTRA' : badge(efTotal));
 
@@ -22413,27 +22331,27 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
   <div class="kpi-card">
     <div class="kpi-lbl">MÉDIA DIÁRIA</div>
     <div class="kpi-val">${Math.round(mediaReal).toLocaleString('pt-BR')}</div>
-    <div class="kpi-sub">cx/dia · meta ${mediaMeta!=null?Math.round(mediaMeta).toLocaleString('pt-BR'):'—'}${nComMeta&&diasSem.length>nComMeta?' · sem o fim de semana':''}</div>
+    <div class="kpi-sub">cx/dia · meta ${mediaMeta!=null?Math.round(mediaMeta).toLocaleString('pt-BR'):'—'}${nComMeta&&SM.n?' · '+_relSemMetaFora(SM):''}</div>
   </div>
   <div class="kpi-card" style="border-left-color:${corEf}">
     <div class="kpi-lbl">EFICIÊNCIA</div>
-    <div class="kpi-val" style="color:${corEf}">${fmtP(efTotal)}</div>
+    <div class="kpi-val" style="color:${corEf}">${totMeta?fmtP(efTotal):'—'}</div>
     <div class="kpi-sub">${badgeEf}</div>
   </div>
-  ${temHE?`<div class="kpi-card" style="border-left-color:${cor(efTotalSemHE)}">
+  ${temHE?`<div class="kpi-card"${totMeta?` style="border-left-color:${cor(efTotalSemHE)}"`:''}>
     <div class="kpi-lbl">SEM HORA EXTRA</div>
-    <div class="kpi-val">${fmtP(efTotalSemHE)}</div>
-    <div class="kpi-sub">${faltouSemHE>0?`faltaram ${fmtN(faltouSemHE)} cx`:'só a jornada normal'}</div>
+    <div class="kpi-val">${totMeta?fmtP(efTotalSemHE):'—'}</div>
+    <div class="kpi-sub">${!totMeta?'sem meta na semana':faltouSemHE>0?`faltaram ${fmtN(faltouSemHE)} cx`:'só a jornada normal'}</div>
   </div>`:''}
   <div class="kpi-card">
     <div class="kpi-lbl">DIAS COM META</div>
     <div class="kpi-val">${comMeta}</div>
-    <div class="kpi-sub">de ${nComMeta} dias (${nComMeta?((comMeta/nComMeta)*100).toFixed(0):0}%)${diasSem.length>nComMeta?` · ${plural(diasSem.length-nComMeta,'dia','dias')} de fim de semana em HE`:''}</div>
+    <div class="kpi-sub">de ${nComMeta} dias (${nComMeta?((comMeta/nComMeta)*100).toFixed(0):0}%)${SM.n?` · ${_relSemMetaTxt(SM)}`:''}</div>
   </div>
   <div class="kpi-card"${soComHE?' style="border-left-color:#B4650A"':''}>
     <div class="kpi-lbl">TOTAL META</div>
     <div class="kpi-val">${totMeta.toLocaleString('pt-BR')}</div>
-    <div class="kpi-sub">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx${temHE?` · sem HE: ${((totReal-totHE)-totMeta).toLocaleString('pt-BR')} cx`:''}</div>
+    <div class="kpi-sub">${!totMeta?'sem meta na semana':`gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx${temHE?` · sem HE: ${((totReal-totHE)-totMeta).toLocaleString('pt-BR')} cx`:''}`}</div>
   </div>
 </div>
 ${soComHE?`<div class="rp-alerta">
@@ -22505,7 +22423,7 @@ ${_rpUepFaixaHtml(diasSem)}
       ${temHE?`<td class="td-bold">${efMediaSemHE!=null?fmtP(efMediaSemHE):'—'}</td>`:''}
       <td class="td-mono" style="color:${INK2}">${_slotMaisFreq(diasSem,'melhor')}</td>
       <td class="td-mono" style="color:${INK2}">${_slotMaisFreq(diasSem,'pior')}</td>
-      <td class="tf-lbl" colspan="2">base: ${plural(nBase,'dia','dias')} ${nComMeta?'com meta':'com produção'}${nComMeta&&diasSem.length>nComMeta?` · fim de semana só no total`:''}</td>
+      <td class="tf-lbl" colspan="2">base: ${plural(nBase,'dia','dias')} ${nComMeta?'com meta':'com produção'}${nComMeta&&SM.n?` · ${SM.util?'dias sem meta':'fim de semana'} só no total`:''}</td>
     </tr>
     <tr>
       <td class="tf-lbl">TOTAL DA SEMANA</td>
@@ -26473,7 +26391,7 @@ function _svgBarChart(dias){
   // Linha de MÉDIA do realizado no período (desenhada por cima das barras)
   // a média dos dias com meta — a do card MÉDIA DIÁRIA e da linha MÉDIA / DIA
   // (sábado e domingo, todo hora extra, só no total); sem nenhum, de todos
-  const _bM=dias.filter(_diaComMeta), _bMed=_bM.length?_bM:dias;
+  const _bM=dias.filter(_diaComMeta), _bMed=_bM.length?_bM:dias, _bFora=_bM.length&&_bM.length<dias.length;
   const mediaReal=_bMed.reduce((s,d)=>s+d.real,0)/_bMed.length;
   const yMed=sy(mediaReal);
   out+=`<line x1="${pad.l}" y1="${yMed}" x2="${W-pad.r}" y2="${yMed}" stroke="#1F2328" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.75"/>`;
@@ -26492,7 +26410,7 @@ function _svgBarChart(dias){
   if(temHE) out+=`<rect x="${Lg+144}" y="8" width="10" height="10" fill="url(#rpHeListra)" rx="2"/>
     <text x="${Lg+158}" y="17" font-size="8" fill="#5B6470" font-family="'IBM Plex Mono',monospace">Hora extra</text>`;
   out+=`<line x1="${Lg+(temHE?234:144)}" y1="13" x2="${Lg+(temHE?250:160)}" y2="13" stroke="#1F2328" stroke-width="1.2" stroke-dasharray="4,3" opacity="0.75"/>
-    <text x="${Lg+(temHE?254:164)}" y="17" font-size="8" fill="#5B6470" font-family="'IBM Plex Mono',monospace">Média ${Math.round(mediaReal).toLocaleString('pt-BR')} cx/dia</text>`;
+    <text x="${Lg+(temHE?254:164)}" y="17" font-size="8" fill="#5B6470" font-family="'IBM Plex Mono',monospace">Média ${Math.round(mediaReal).toLocaleString('pt-BR')} cx/dia${_bFora?' com meta':''}</text>`;
 
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">${out}</svg>`;
 }

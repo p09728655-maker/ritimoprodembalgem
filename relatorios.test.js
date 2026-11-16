@@ -189,48 +189,12 @@ ok('meta zerada não dispara alerta', semMeta.soComHE, false);
 ok('os KPIs da semana já trazem a leitura pronta', k.soComHE, true);
 ok('e o quanto faltava na jornada normal', k.faltouSemHE, 8325 - (8681 - 420));
 
-console.log('\n── resumo da semana para o WhatsApp ──');
-// Mesmo dado, mesma conta: o texto do zap sai de _relSemanalKPIs, como o PDF
-// e a Tela D. Aqui só se confere que o texto diz o que os números dizem.
-eval(pega('function _zapResumoSemana('));
-const zap=_zapResumoSemana(dias, '10/08/2026 a 16/08/2026', 33);
-ok('abre com a semana', zap.includes('SEMANA 33/2026'), true);
-ok('total com a eficiência do TOTAL (104,3%), não a média', zap.includes('*8.681 caixas* — 104,3%'), true);
-ok('o veredito honesto vai junto', zap.includes('*Meta batida com hora extra.*'), true);
-ok('divisão normal × extra', zap.includes('Jornada normal: 8.261 cx'), true);
-ok('os 5 dias entram, com dia da semana', (zap.match(/^\w{3} \d\d\/\d\d — /gm)||[]).length, 5);
-ok('o melhor dia sai nomeado, sem depender de ícone',
-   zap.includes('Melhor dia: ter 11/08 — 2.262 cx (188,5%)'), true);
-// 31/08/2026: o resumo chegou ao WhatsApp com TODOS os marcadores virados
-// losango (📦 ⚠️ ▪ 🏆 → ◆) enquanto `·`, `—` e o *negrito* chegaram intactos na
-// mesma mensagem. Emoji depende da fonte de quem recebe; a hierarquia aqui sai
-// do negrito e das linhas em branco.
-ok('nenhum emoji no resumo do zap',
-   [...zap].some(c => c.codePointAt(0) > 0x2500), false);
-// A hora extra tem de aparecer NO DIA: quem lê só o dia a dia não pode achar
-// que as caixas de terça saíram todas dentro do turno.
-ok('o dia que teve hora extra diz quanto foi',
-   /ter 11\/08 — 2\.262 cx \(188,5%\) · 180 em hora extra/.test(zap), true);
-ok('e o dia sem hora extra não ganha sobra nenhuma',
-   /seg 10\/08 — 1\.106 cx \(67,0%\)\n/.test(zap), true);
-ok('dia sem separação de HE não inventa número',
-   /sex 14\/08 — 1\.598 cx \(79,9%\)\n/.test(zap), true);
-ok('e o buraco da jornada normal vai escrito',
-   /Sem a hora extra teriam faltado 64 cx\./.test(zap), true);
-// v7.248.0 (revisão): o sábado (todo hora extra, sem meta — como o histDiaFds o
-// entrega) sai "todo hora extra" com a UEP do dia inteira, nunca "(0,0%) · 0 UEP"
-{ const zS = _zapResumoSemana(dias.concat([histDiaFds({ data:'15/08/2026', real:690, meta:524, ef:131.7, ok:true, melhor:135, pior:92,
-    heCx:225, heCount:6, fechado:true, uep:894, uepHe:546, metaUep:1257 })]), 'x', 33);
-  ok('zap: o sábado é "todo hora extra, sem meta · 1.440 UEP em hora extra", e "dias na meta" diz quantos dias de fim de semana ficaram fora',
-     [/sáb 15\/08 — 690 cx · todo hora extra, sem meta · 1\.440 UEP em hora extra\n/.test(zS), /0,0%|· 0 UEP/.test(zS),
-      /Dias na meta: \d+ de 5 \(1 dia de fim de semana, todo hora extra\)/.test(zS)], [true, false, true]); }
-const zapForte=_zapResumoSemana(dias.map(d=>({...d,real:d.real+400,heCx:0,ef:d.ef})), 'x', 33);
-ok('semana que bateu sem HE diz isso', zapForte.includes('*Meta batida na jornada normal.*'), true);
-// Semana em aberto não recebe veredito, pelo mesmo motivo do selo do PDF: o
-// buraco de uma sexta de manhã é quase todo dia que ainda não aconteceu.
-const zapParcial=_zapResumoSemana(dias.map((d,i)=>({...d,fechado:i<3})), 'x', 33);
-ok('semana parcial avisa em vez de julgar',
-   [/Parcial: 3 de 5 dias fechados/.test(zapParcial), /Meta batida/.test(zapParcial)], [true, false]);
+console.log('\n── o resumo da semana para o WhatsApp SAIU (v7.248.1) ──');
+// PPCP, 16/11/2026: "watsap esqueça, pode tirar". Saíram os dois botões (bloco
+// FECHAMENTO DA SEMANA PASSADA e aba HISTÓRICO), o _zapResumoSemana, o
+// enviarResumoZap e o zapSemanaGer. A divulgação da semana é o 🖨 IMPRIMIR SEMANA.
+ok('nenhum botão, função ou link do WhatsApp no painel',
+   [/zapSemanaGer|enviarResumoZap|_zapResumoSemana|wa\.me|📲|WHATSAPP<\/button>/.test(src)], [false]);
 
 console.log('\n── gráfico do relatório: a barra diz o que veio de hora extra ──');
 // O gráfico mostrava só o total do dia: sexta com 100,6% parecia dia que bateu
@@ -374,6 +338,22 @@ ok('dia sem horário lançado não vira "undefined"',
 ok('semanal: a linha MÉDIA / DIA e o card MÉDIA DIÁRIA leem a base única (mediaNormal/mediaHE/nBase) e mostram — sem dia com meta',
    /Math\.round\(mediaNormal\)/.test(src) && /Math\.round\(mediaHE\)/.test(src) && /base: \$\{plural\(nBase,'dia','dias'\)\}/.test(src)
    && !/\(totReal-totHE\)\/diasSem\.length/.test(src) && /efMedia!=null\?fmtP\(efMedia\):'—'/.test(src), true);
+eval(pega('function _relSemMeta(')); eval(pega('function _relSemMetaTxt(')); eval(pega('function _relSemMetaFora('));
+{ const SB = { data:'14/11/2026', real:690, meta:0, fds:true }, SX = { data:'13/11/2026', real:1000, meta:0 }, UT = { data:'12/11/2026', real:1400, meta:1500 };
+  const S1 = _relSemMeta([UT, SX, SB]);
+  ok('o rótulo dos dias sem meta sai do DIA: a sexta sem meta não é "fim de semana" (4ª revisão)',
+     [S1.n, S1.fds, S1.util, _relSemMetaTxt(S1), _relSemMetaFora(S1), _relSemMetaFora(_relSemMeta([UT, SB]))],
+     [2, 1, 1, '1 dia de fim de semana, todo hora extra · 1 dia útil sem meta gravada', 'sem os dias sem meta', 'sem o fim de semana']);
+}
+ok('semanal só com fim de semana: EFICIÊNCIA e SEM HORA EXTRA "—" sem cor, TOTAL META "sem meta na semana" (era 0,0% · ABAIXO)',
+   /const corEf  = \(parcial \|\| !totMeta\) \? '#5B6470'/.test(src) && /\$\{totMeta\?fmtP\(efTotal\):'—'\}/.test(src)
+   && /\$\{totMeta\?fmtP\(efTotalSemHE\):'—'\}/.test(src) && /!totMeta\?'sem meta na semana':`gap:/.test(src), true);
+ok('semanal, 🖨 do histórico e aba HISTÓRICO dizem os dias sem meta pelo _relSemMetaTxt (não "dias − dias com meta = fim de semana")',
+   [(src.match(/_relSemMetaTxt\(/g) || []).length >= 4, /de fim de semana em HE/.test(src), /sem meta \(fim de semana\)`/.test(src)], [true, false, false]);
+ok('aba HISTÓRICO: o sábado sai — em MELHOR H./PIOR H. (o histDiaFds zera os dois)',
+   /\$\{d\.fds\?'<td class="mono" style="color:var\(--txt3\)" title="sábado e domingo: todo hora extra, sem melhor\/pior hora de jornada">—<\/td>/.test(src), true);
+ok('celular: Média / dia do histórico na base dos dias com meta (a do PC)',
+   /const baseMed=comMeta\.length\?comMeta:lista;/.test(fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8')), true);
 ok('o gráfico de barras desenha a média dos dias com meta (a do card)', /const _bM=dias\.filter\(_diaComMeta\)/.test(src), true);
 ok('🖨 histórico: média na base dos dias com meta; sem dia com meta, eficiência e melhor/pior dia em —',
    /const mediaReal=baseM\.reduce/.test(src) && /const melhorDia=nM\?diasM\.reduce/.test(src) && /totMeta\?fmtP\(mhe\.efTotal\):'—'/.test(src), true);
@@ -1078,13 +1058,13 @@ ok('TV e gerencial chamam o mesmo desenho',
 ok('cada tela tem o seu bloco no HTML',
    [(src.match(/id="tvd-total"/g) || []).length, (src.match(/id="gsem-total"/g) || []).length], [1, 1]);
 
-// Divulgar a semana (PDF e zap) é UMA regra: a semana do filtro, com queda para
+// Divulgar a semana (PDF; até a v7.248.0 também o zap) é UMA regra: a semana do filtro, com queda para
 // a semana passada quando a atual ainda não fechou nenhum dia. Escrita dentro
 // de cada botão, ela já vivia em dois lugares e faltava no terceiro.
 ok('a regra da semana que se divulga é uma só',
    (JS.match(/function _relSemanaParaDivulgar\(/g) || []).length, 1);
-ok('e os dois que divulgam chamam ela',
-   (JS.match(/_relSemanaParaDivulgar\(/g) || []).length, 3);
+ok('e quem divulga chama ela (o relatório semanal; o zap saiu na v7.248.1)',
+   (JS.match(/_relSemanaParaDivulgar\(/g) || []).length, 2);
 ok('nenhum deles remonta o recorte por fora',
    /_relSemanaPassada\(\)\);\s*\n\s*dias=_relDiasDaSemana/.test(JS), false);
 
@@ -1098,11 +1078,8 @@ ok('e só cai no filtro do Histórico quando não recebe semana',
 ok('o bloco do gerencial imprime e manda a semana em cartaz',
    [/onclick="imprimirSemanaGer\(\)"/.test(src),
     /function imprimirSemanaGer\(\)[\s\S]{0,220}gerarRelatorioSemanal\(s\.ate\)/.test(JS)], [true, true]);
-ok('e o zap do bloco sai da mesma semana',
-   [/onclick="zapSemanaGer\(\)"/.test(src),
-    /function zapSemanaGer\(\)[\s\S]{0,220}enviarResumoZap\(s\.ate\)/.test(JS)], [true, true]);
 ok('quem diz qual semana está em cartaz é o RP_SEMANA',
-   (JS.match(/RP_SEMANA\.semana\(\)/g) || []).length, 2);
+   (JS.match(/RP_SEMANA\.semana\(\)/g) || []).length, 1);
 
 // PUBLICAR NO MURAL saiu do painel (a função não existe mais do outro lado):
 // botão, campo de configuração, chave do CFG e resumo próprio vão junto — sobra
@@ -3055,6 +3032,10 @@ console.log('\n── a parada de sábado vale o mesmo em toda tela, ao vivo e d
   const tp2 = C2._phTotaisPeriodo([{ data:'16/11/2026', meta:1500, real:1400 }, { data:'17/11/2026', meta:1600, real:1500 }], '16/11/2026', '17/11/2026');
   ok('cascata do período: hoje fechado no histórico E ao vivo conta UMA vez (era meta 4.700 e realizado 4.400 — o certo é 3.100 e 2.900)',
      [tp2.metaTot, tp2.realTot, tp2.realTotAll, Object.keys(tp2.comMeta)], [3100, 2900, 2900, ['16/11/2026', '17/11/2026']]);
+  C2.calcKPIs = () => ({ real:0, meta:1600 });   // depois do resetDiario (~23:44) ou no DEMO: a HORA_A_HORA vazia
+  const tp3 = C2._phTotaisPeriodo([{ data:'16/11/2026', meta:1500, real:1400 }, { data:'17/11/2026', meta:1600, real:1500 }], '16/11/2026', '17/11/2026');
+  ok('cascata do período: com o ao vivo vazio, o hoje do histórico NÃO some (4ª revisão)',
+     [tp3.metaTot, tp3.realTot, Object.keys(tp3.comMeta)], [3100, 2900, ['16/11/2026', '17/11/2026']]);
   ok('a cascata do período passa ao RP_PARADAS só as paradas dos dias com meta',
      /const parCasc=paradas\.filter\(p=>_tp\.comMeta\[p\.data\]\);\s*\n\s*const st=_paradasStats\(parCasc,mBD/.test(_v7), true);
 }
@@ -3109,10 +3090,6 @@ ok('os rodapés de relatório leem a constante',
    (_v7.match(/<span>\$\{APP_NOME\} · \$\{CFG\.empresa\}/g) || []).length, 5);
 ok('os rodapés de PDF de paradas leem a constante',
    (_v7.match(/<span>\$\{APP_NOME_CX\} · Embalagem/g) || []).length, 18);   // + estudo de UEP + capacidade em UEP (2) + UEP executiva + padrão × realizado + fila de cronoanálise + caixas × UEP + cronoanálise → UEP + programação × capacidade + estudos do dia + onde o tempo vai + takt da semana + 4 semanas
-ok('o resumo do WhatsApp assina com a constante',
-   /L\.push\(APP_NOME\+' · PPCP'\);/.test(_v7), true);
-ok('e o resumo continua sem emoji depois da troca',
-   [...zap].every(c => c.charCodeAt(0) < 0x2500), true);
 console.log('\n── o slogan vai em TODA impressão ──');
 // Pedido do usuário (08/09/2026): "colocar slogan em todas impressões".
 // O slogan já existia na tela (login e rodapé) e a forma canônica é dele: o
@@ -4523,9 +4500,9 @@ console.log('\n── estudo de UEP ──');
     ok('sem o mapa do backend, sem card de UEP no período', _phUepTotal([{ caixas: 1 }]), null);
     ok('o relatório do período leva o card UEP APONTADA',
        /const uepPer=_phUepTotal\(itensView\)/.test(pega('async function gerarRelatorioProducaoHora(')), true);
-    ok('o resumo do WhatsApp e o bloco da semana levam a UEP; a TV não (ids só no gerencial)',
-       [/UEP \(jornada normal\)/.test(pega('function _zapResumoSemana(')), /id="gsem-linha-uep"/.test(src), /id="tvd-linha-uep"/.test(src),
-        /const comUep = pfx === 'gsem-';/.test(JS)], [true, true, false, true]);
+    ok('o bloco da semana leva a UEP; a TV não (ids só no gerencial)',
+       [/id="gsem-linha-uep"/.test(src), /id="tvd-linha-uep"/.test(src),
+        /const comUep = pfx === 'gsem-';/.test(JS)], [true, false, true]);
     // PPCP, 25/09/2026: "pode tirar esse valor em reais daí". O uepCusto
     // continua no núcleo (testado) até o R$/UEP ganhar lugar próprio.
     ok('R$/UEP mora na aba SIMULADOR: desenho sobre o uepCustoPeriodo, sem conta própria',
