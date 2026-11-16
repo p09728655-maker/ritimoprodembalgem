@@ -1016,7 +1016,7 @@ console.log('\n── v5.66: o lote de hoje antes do 1º lançamento ──');
 }
 
 // v5.67 — O QUE JÁ FOI EMBALADO ANTES DO DIA DO LOTE. PPCP, 16/11/2026: a barra de 16/11 do DIA A DIA
-// mostrava 9h06 programadas e o veredito 0h05 — o 25441 tinha sido embalado na semana passada → "sim com
+// mostrava 9h06 programadas e o veredito contava 3h46 do dia — o 25441 tinha sido embalado na semana passada → "sim com
 // a mensagem que embalou antes". Cada linha da semana leva a coluna ADIANTADO_CX (o write-back grava desde
 // a v5.23), só quando o SALDO da linha é dela.
 console.log('\n── v5.67: o embalado antes (ADIANTADO_CX) na programação da semana ──');

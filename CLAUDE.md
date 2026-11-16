@@ -7711,8 +7711,18 @@ feito e dá ar de verdade ao que sobrou.
     data do lote; as horas dentro do trecho só quando cabem na LARGURA da barra
     (no papel encostavam no *até agora* do feito) e embaixo do dia *"embalou
     5h20 antes"* (papel e barra estreita: *"embalou 5h20"*); `title` com caixas
-    e UEP; legenda *embalou antes (adiantado)* (`.tks-la`) só com algum. A
-    SEMANA QUE VEM não marca (o saldo já não tem o adiantado).
+    e UEP; legenda *embalou antes (adiantado)* (`.tks-la`) só com algum trecho
+    desenhado (meio minuto de linha, a régua do listrado). A SEMANA QUE VEM não
+    marca (o saldo já não tem o adiantado).
+    - ⚠ **O papel NÃO tem o item na legenda** (v7.246.1, revisão): ele fazia a
+      `.td-leg` quebrar em 2 linhas e o 🖨 TAKT ia a 2 folhas (703 → 725 px
+      numa folha de 718, com pontos e ritmo). Cada dia já diz *"embalou Xh"*.
+      Medido depois: 669 · 703 · 716 px (quarta com 4 partes), uma folha. Item
+      novo na legenda do papel? Medir o pior caso de novo.
+    - A nota *"colar o .gs v5.67"* só com programação na semana (`T.progCx>0`).
+    - Observado e não mexido: com lote no sábado E no domingo (7 dias), no
+      papel os *"embalou Xh"* de dias vizinhos se encostam; o listrado de um
+      dia com adiantado acima de 1 dia de linha cobre o vermelho do excesso.
     - Fonte: a coluna **ADIANTADO_CX** da PROGRAMACAO (o write-back grava desde
       o `.gs` v5.23); o `.gs` v5.67 lê no `_lerProgDaAba` (`adiCx`) e o
       `getProgramacaoSemana` manda `adiantadoCx` por linha — só quando o SALDO
