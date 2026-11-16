@@ -120,3 +120,4 @@ de tema entra aqui também.
 - Cores do painel — azul-marinho, TV preta (v7.115.0 / mobile 1.29.0)
 - Notas de versão e glossário
 - Notas / armadilhas conhecidas
+- Padrão do código (v7.248.2) — o que saiu do código

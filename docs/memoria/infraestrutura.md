@@ -438,7 +438,8 @@ feito e dá ar de verdade ao que sobrou.
 - ⚠ **Não tirar o `defer`, e não trazer CDN para o mobile.**
   `relatorios.test.js` falha nos dois casos e também se a fila do `mkChart`
   sumir.
-- **O XLSX é ~1 MB para um botão de exportar**, e a TV recarrega sozinha a cada
+- **O XLSX é ~1 MB** (o Excel do FECHAR DIA e a importação — o Exportar Excel
+  do HISTÓRICO saiu na v7.248.2), e a TV recarrega sozinha a cada
   28 min. Com `defer` ele sai do caminho da pintura, mas continua sendo baixado
   em toda abertura — carregar sob demanda é a melhoria seguinte, ainda não feita.
 - **Quando alguém disser que "não tem animação" no PC, a ordem de investigação
@@ -623,3 +624,26 @@ feito e dá ar de verdade ao que sobrou.
   - Na **TV** o marcador é **só `⚠`** (sem texto `<méd>`): o texto longo quebrava a
     linha, aumentava a altura e empurrava o último horário para fora da tela.
     Na **gerencial** também é só `⚠` (média no tooltip).
+
+## Padrão do código (v7.248.2) — o que saiu do código
+Trecho da seção *Padrão do código e revisão* do CLAUDE.md, que ficou só com as
+regras.
+
+- **O Exportar Excel do HISTÓRICO saiu** (`exportarExcel`): nenhum botão o
+  chamava desde antes de 06/11/2026 — a correção do cabeçalho da v7.202.0 foi
+  feita numa função que ninguém podia usar. PPCP, 16/11/2026: o botão não volta.
+  A biblioteca XLSX fica: o fechamento do dia e a importação ainda a usam.
+- Saiu na v7.248.2, sem uso: `exportarExcelHist`, `toISO`,
+  `updateRefreshBadge`, `_gerCxComHora`, `_phTrocaTxt`, `_durMinPar`,
+  `_diasTrabalhadosPar`, `_svgDiaHora`, as constantes `TKS_N_SEM` e
+  `PAR_PLANEJADA` (cópia do `PLANEJADA_RE` do `paradas-calc.js`), e a amostra
+  da FILA antiga (`_filaAmostra`, `_filaAmostraDeItens`, `FILA_AMOSTRA_DE`,
+  `FILA_LS*` — sem leitor desde a v7.216.0; o GRAVAR UEP nunca a leu) no PC;
+  `produtoPorEan`, `_horasProdMob`, `_durMin2` no celular; e 21 variáveis
+  locais calculadas e nunca usadas (conferidas uma a uma: sobras, nenhuma
+  escondia defeito).
+- ⚠ **A XLSX não é só do exportar**: o botão FECHAR DIA chama o
+  `exportarExcelDia` (o Excel do fechamento) antes do `salvarDiaSheets`. Até a
+  v7.248.1, sem a biblioteca (cdnjs barrado), o erro parava o fechamento antes
+  da planilha; desde a v7.248.2 o Excel que falha só avisa. Não tirar o
+  `<script>` da XLSX sem tirar esse Excel junto.

@@ -9,8 +9,9 @@ via Google Apps Script (JSONP).
 - Aqui fica **o que vale hoje** e as armadilhas que já custaram caro, em
   resumo, com o mapa dos temas. **O detalhe de cada tema mora em
   `docs/memoria/<tema>.md`**: o porquê de cada regra, os casos reais, as
-  medições e o histórico — o texto que estava neste arquivo até 16/11/2026,
-  sem cortes (regra riscada é revogada).
+  medições e o histórico — as seções que estavam neste arquivo até
+  16/11/2026, movidas inteiras (regra riscada é revogada). A única reescrita foi
+  a do *Padrão do código*; o que saiu dela está em `infraestrutura.md`.
 - ⚠ **Antes de mexer numa área, leia o arquivo dela.** O resumo daqui não basta
   para mudar código: as regras nasceram de defeitos, e o porquê está lá. O
   revisor (`/revisor-codigo`) cobra isso.
@@ -43,7 +44,9 @@ via Google Apps Script (JSONP).
   `lint-js.js`, com o porquê. Hoje: o Excel local (`selecionarPasta`,
   `triggerImport`), as rotinas de editor do `.gs` e o `_soLetras` (sem uso; sai
   na próxima versão do `.gs` — mexer no `.gs` pede re-deploy).
-- O código morto que saiu na v7.248.2 está no CHANGELOG.
+- O código morto que saiu na v7.248.2, nome a nome, está em
+  `docs/memoria/infraestrutura.md`. ⚠ A biblioteca XLSX fica: o botão FECHAR
+  DIA (`exportarExcelDia`) e a importação a usam.
 
 ## ⚠️ NÃO ALTERAR sem pedido explícito
 - **Horário do turno / rótulos dos slots.** O slot pós-almoço é **`12:12-13:00`**
@@ -96,7 +99,10 @@ via Google Apps Script (JSONP).
   falam: **o repositório é a fonte** (editar só no editor e colar depois o
   arquivo do GitHub desfaz a edição). Mudou o `.gs` → o cabeçalho `Versão:`, o
   `GS_VERSAO` e o `GS_REPO` do painel, os três juntos; o rodapé do painel
-  (`#ftr-gs`) fica âmbar até o re-deploy.
+  (`#ftr-gs`) fica âmbar até o re-deploy. ⚠ Nova implantação (URL `/exec`
+  nova): trocar nos dois HTMLs **e** na `PAINEL_APPS_SCRIPT_URL` da Vercel do
+  app de cronoanálise (`crono-analise`), senão as medições param de chegar
+  caladas.
 - 20 suítes `*.test.js` — `node testes.js` roda todas e o `lint-js.js`. O que
   cada suíte cobre está no arquivo da memória.
 - `CHANGELOG.md` (uma entrada por publicação; **Atenção** com antes → depois
@@ -121,9 +127,9 @@ via Google Apps Script (JSONP).
   o mesmo valor.
 - ⚠ Excluir vale para qualquer hora de hoje; lançar, não. Produto errado é
   TROCAR — excluir e relançar numa hora fechada perde as caixas.
-- ⚠ Chamada à mão no `/exec`: o código vai SÓ COM DÍGITOS (`501106005`), senão
-  a linha entra sem descrição, pontos e peso — e ela troca o produto atual do
-  turno.
+- ⚠ Chamada à mão no `/exec` (`saveRealizado`) troca o produto atual do turno:
+  o operador tem de bipar o produto que está rodando depois. Desde o `.gs` v5.48
+  o código é normalizado pelo cadastro (`501.106.005` ou `501106005`).
 - Bipe: o volume da etiqueta `(8006)` escolhe o código (`eanAchar`); na dúvida
   não escolhe, nunca o 1º da lista. A leitura fecha com Enter, Tab ou pausa
   (`scanTecla`, `scanPausa`).
@@ -149,8 +155,9 @@ via Google Apps Script (JSONP).
   em caixas julga só a jornada (`efNoRitmo(realNormal, …)`; sem minuto de
   jornada lançado, AGUARDANDO); o % DA META DO DIA (`efDia`) conta todas as
   caixas.
-- EFICIÊNCIA: o número grande é o % da META DO DIA, em tinta; o veredito é o
-  selo (`slRitmo`: NO RITMO · ATENÇÃO · ABAIXO DO RITMO), pela `efNoRitmo` em
+- EFICIÊNCIA na TV (telas A e B; nos gerenciais o selo é a UEP e o % é fato
+  no card CAIXAS PROGRAMADAS): o número grande é o % da META DO DIA, em tinta; o
+  veredito é o selo (`slRitmo`: NO RITMO · ATENÇÃO · ABAIXO DO RITMO), pela `efNoRitmo` em
   minutos e só com hora lançada. A projeção não julga.
 - Fim de semana no painel: `histDiaFds` relê as linhas antigas, `uepDiaMeta` 0,
   `_diaComMeta`; médias por dia na base dos dias com meta; parada de sábado
@@ -160,6 +167,9 @@ via Google Apps Script (JSONP).
   painel e, ao lado, META DIA (col. 15) e ATRASO META (col. 16). EF = REALIZADO ÷
   a META da própria linha. SOMAR ATRASO é da `CONFIG_PAINEL`
   (`META_COM_ATRASO`); a meta digitada à mão ainda é deste computador.
+- ⚠ O ⚙ só envia à `CONFIG_PAINEL` o que o gestor MUDOU (`_metaUepNova`,
+  `_atrasoEnviar`, `_setupEnviar`). Mandar sempre deixa um PC que abriu antes de
+  ler a config desfazer a escolha da fábrica inteira.
 - `HE CX` (col. 11) e UEP, UEP HE e META UEP (col. 12–14, congeladas no
   fechamento). Sem a separação da hora extra: "—", nunca 0.
 - ⚠ A planilha reparte a meta do dia pelas horas a partir do C3 (dilui a
@@ -178,7 +188,9 @@ via Google Apps Script (JSONP).
   TV).
 - ⚠ "NO RITMO" é palavra do selo, nunca de rótulo. Chave nova de tela na
   `CONFIG_PAINEL`: o `aplicarConfigPainel` preserva a marcação local quando o
-  `.gs` antigo não manda a chave.
+  `.gs` antigo não manda a chave; tela desligada por padrão só liga com
+  `=== true` (com `!== false`, a config salva antes ligaria a tela na TV da
+  fábrica no primeiro deploy).
 - F e G: escala medida (`_tvUepCabe`, `--tvu-k`) e o gráfico da G no tamanho
   da caixa (`_tvGSvg(m, selo, dim)`); os dois números do agora sempre. Mexeu
   em texto ou tamanho: medir na TV e no gerencial, ALTURA e largura.
@@ -197,12 +209,16 @@ via Google Apps Script (JSONP).
   produção), nunca os dias com parada.
 - Segundos: `HH:mm:ss` e `DURACAO_SEG`; `toMin` lê a fração; `fmtMin` é o
   formato único. O `_horaSegStr` é só da PARADAS (não trocar o `_horaStr`).
-- Gravar parada retenta (`jsonpEscritaParada`; `saveParadas` é upsert por ID);
-  sem resposta ≠ não gravou (relê antes de acusar). Linha sem ID vira
-  `'L'+linha`.
+- Gravar parada retenta (`jsonpEscritaParada`); sem resposta ≠ não gravou
+  (relê antes de acusar). ⚠ O `saveParadas` é upsert que regrava a linha
+  INTEIRA, FIM incluído: editar (SALVAR MOTIVO) relê antes e manda o FIM do
+  servidor, senão desfaz um START dado em outro aparelho; linha sem ID
+  (`'L'+linha`) não se edita pelo app. Detalhe em `tv.md` (*Tela cheia de
+  PARADA*).
 - Telas divergiram? Compare o RITMO primeiro (`diag`, `diagTexto`).
-- Leituras em sequência com retry, nunca `Promise.all`; `getParadasPeriodo` lê a
-  aba inteira → cache de 5 min por período e voo compartilhado
+- Leituras em sequência com retry, nunca `Promise.all`; `getParadasPeriodo` é
+  das leituras caras (varre a coluna de data, `_valoresPorData`) → cache de 5
+  min por período e voo compartilhado
   (`_paradasPeriodoBusca`, `PG_TELA_CACHE`, `PG_VOO`); pedido no meio de uma
   leitura fica pendente, nunca é engolido.
 - GESTÃO DE PERDAS: o quadro 2×2 e as seções saem de UMA conta (`_pgContexto`)
@@ -281,8 +297,9 @@ via Google Apps Script (JSONP).
   ATRASO em horas; as caixas são fato, sem cor — só julgam sem a UEP do dia. A
   conta é do rp-core (`uepGerMontar`, `uepHorasDia`, `uepHoraJulga`…), uma para
   os dois.
-- Hora julgada: a hora extra, a de agora, a sem lançamento e a que AINDA ACEITA
-  lançamento (15 min) não; a fechada em zero, sim; parte das caixas sem UEP →
+- Hora julgada: a hora extra, a de agora, a sem lançamento e a recém-fechada
+  em ZERO ainda na tolerância (AINDA ACEITA, 15 min) não; a fechada em zero
+  depois disso, sim; parte das caixas sem UEP →
   o % com `*`, sem cor.
 - Sem a UEP do dia (lendo, falhou, UEP velha no celular), quem julga são as
   caixas programadas: nunca tela sem veredito, nunca dois.
@@ -299,13 +316,15 @@ via Google Apps Script (JSONP).
   é a do ⚙ (`META_UEP` na `CONFIG_PAINEL`; hoje 2.761, a referência) na jornada
   de 527 min; sem ela, `UEP_META_PADRAO` 2.530. **O padrão foi fechado em
   21/10/2026: a UEP só muda por cronoanálise, na TRAVA DA UEP.**
-- UEP por CÓDIGO na `PRODUTO_CODIGO` (`UEP`, `UEP_VIGENCIA`); a `UEP_VERSOES`
-  registra toda mudança. O GRAVAR UEP está travado desde 16/10/2026
-  (`UEP_TRAVADA_DESDE`).
-- ⚠ Trocar a base ou a escala = cadastro, META_UEP, HISTORICO, versões e
-  constantes juntos, e o passado não é regravado (`UEP_ESCALAS` marca a troca).
-  A base SLEEP (v7.143) foi desfeita na v7.152: notas na escala antiga se leem
-  × 1/0,83.
+- UEP por CÓDIGO na `PRODUTO_CODIGO` (`UEP`, `UEP_VIGENCIA`). A `UEP_VERSOES`
+  registra a digitação de UMA célula (e as gravações do painel); colar a coluna
+  ou gravar pela API não registra o valor antigo. O GRAVAR UEP está travado
+  desde 16/10/2026 (`UEP_TRAVADA_DESDE`).
+- ⚠ Trocar a escala = no mesmo dia, cadastro × fator, META UEP do ⚙,
+  `UEP_META_PADRAO`/`UEP_META_PADRAO_GS`, a `UEP_VERSOES` com o valor antigo e o
+  novo, e uma entrada no `UEP_ESCALAS`. O HISTORICO **não** é regravado: não
+  rodar o `regravarUepPassada`. Notas da época da base SLEEP (19–21/10: 3.048,
+  10,4 s) se leem × 0,83; as de 2.530, 12,5 s e 288 já estão na escala de hoje.
 - Desde 13/11/2026 o 2.761 é a META oficial (PPCP); ela só é revista quando a
   cronoanálise cobrir os principais. O relatório CAIXAS × PONTOS × UEP, a 📏
   RÉGUAS e o `UEP_REF_STATUS` ainda dizem *referência* — trocar é a fase
@@ -325,7 +344,9 @@ via Google Apps Script (JSONP).
 - A medição vai para a aba `CRONOANALISE` (`registrarCrono`, REG_ID pelo
   conteúdo). Chega sozinha do app de cronoanálise (`origem=app`; a mesma medição
   do app e do PDF não duplica); o 📄 PDF é contingência; EXCLUIR copia para a
-  `CRONO_EXCLUIDOS` antes de apagar.
+  `CRONO_EXCLUIDOS` antes de apagar. ⚠ O app chega pela
+  `PAINEL_APPS_SCRIPT_URL` da Vercel dele: implantação nova do `.gs`, trocar lá
+  também.
 - **A TRAVA DA UEP**: medição válida (30+ volumes, lacunas até 15%); 2 válidas
   somando 100 volumes cumprem a regra; dentro de 90–110% FICA, fora TROCA.
   **Quem decide e trava é o PPCP**, com o código dele (`PPCP_CODIGO` nas
@@ -362,12 +383,14 @@ via Google Apps Script (JSONP).
 - Sub-aba da ⚖ UEP: ESTA SEMANA, SEMANA QUE VEM, 4 SEMANAS e AVALIAR
   PROGRAMAÇÃO. A leitura é o `getProgramacaoSemana` (as duas abas, o saldo da
   própria linha, o `vencidoAntes`, o `adiantadoCx`).
-- O veredito é em HORAS DE LINHA (UEP × 527 ÷ META UEP): PRECISA × TEM, com o
-  setup do ⚙. FALTAM e SOBRAM por extenso, nunca por sinal; a sobra não vira
-  crédito para outra semana.
+- O veredito é em HORAS DE LINHA (UEP × 527 ÷ META UEP), PRECISA × TEM, SEM
+  descontar o setup. FALTAM e SOBRAM por extenso, nunca por sinal; a sobra não
+  vira crédito para outra semana.
 - O porquê é dia a dia (carga × ritmo), nunca a semana somada. O setup do ⚙
-  (`SETUPS_DIA`, `SETUP_MIN`) é o mesmo do app de cronoanálise; a faixa NA LINHA
-  E NO APP dá os volumes e o takt para o app.
+  (`SETUPS_DIA`, `SETUP_MIN`, no domínio do app: trocas inteiras, minutos com 1
+  casa) só entra nos SEGUNDOS (takt, TEMPO-ALVO, AGORA). O PPCP digita o mesmo
+  no app de cronoanálise — o painel não lê o setup do app; a faixa NA LINHA E NO
+  APP dá os volumes e o takt para levar ao app.
 - 4 SEMANAS: dia útil sem lote fica fora; lote em sábado ou feriado é hora
   extra já programada; a sugestão de hora extra vai semana a semana (sábado e
   feriado das 05:00 às 11:00, dia útil até 2h, feriado religioso fora).
@@ -379,7 +402,10 @@ via Google Apps Script (JSONP).
 - Apps Script: uma chamada por vez; leitura cara com cache, voo compartilhado e
   retry em sequência. O `.gs` tem cache por geração (`rp_gen`) e memo por
   execução (só leitura usa; escrita lê direto); a leitura recortada por data
-  (`_valoresPorData`) usa a conversão de data do CHAMADOR.
+  (`_valoresPorData`) usa a conversão de data do CHAMADOR. ⚠ O FIFO
+  (`lerEmbaladoPorProduto`) lê a produção INTEIRA, e deve — recortar faz a
+  produção antiga creditar outro lote do mesmo código; e o recorte nunca entra
+  no `_valoresMemo`.
 - O ciclo do PC é sequencial (`_cicloLeitura`); o do celular é escalonado (90 s
   as paradas, 3 min os dados e a UEP do dia, 6 min o histórico).
 - Versões: PC `APP_VER` (barra de atualização; sem service worker de
@@ -394,6 +420,10 @@ via Google Apps Script (JSONP).
   usa cor literal.
 - PWA: no celular o app é o `/mobile`; o PC instala sem service worker; o botão
   INSTALAR fica sempre visível.
+- ⚠ Gravar na planilha pela API (correções à mão): número vai como NÚMERO
+  JSON, nunca texto (`"170.578"` vira milhar); fórmula em pt-BR (`;` e
+  vírgula); e a API não passa pelo `onEdit` (não versiona UEP nem desfaz edição
+  de UEP travada).
 - ⚠ `localStorage['rpe_cfg']` vence a URL do código. As colunas de lançamento
   são `LANÇ 1…10`: o `startsWith('L')` é o que faz o lançamento funcionar — não
   endurecer.

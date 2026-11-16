@@ -6106,6 +6106,33 @@ _assincronos.push(async () => {
   ok('a carteira devolve o mapa e as preparações da PRODUÇÃO/HORA', vm.runInContext('[PH_UEP_PROD, PREP_PERIODO]', C), [{A:1.5}, ['p-aba']]);
 });
 
+// ── v7.248.2: o FECHAR DIA grava no Sheets mesmo sem o Excel. A XLSX vem do
+// cdnjs; sem ela (firewall, rede), o exportarExcelDia lançava ANTES do
+// salvarDiaSheets e o dia ficava fechado só no navegador. Achado na revisão
+// dos resumos da memória (16/11/2026).
+console.log('\n── FECHAR DIA: o Excel que falha não impede a gravação no Sheets ──');
+{
+  const vm = require('vm');
+  const C = vm.createContext({ console, Date });
+  vm.runInContext(`var enviou=[], avisos=[], local=[], CFG={sheetsUrl:'https://x/exec'};
+    function hojeStr(){ return '16/11/2026'; } function getDadosHoje(){ return [{}]; }
+    function confirm(){ return true; } function alert(m){ avisos.push(m); }
+    function calcKPIs(){ return { meta:1500, allHoje:[{ horario:'07:00', producaoHora:100, metaHora:150 }] }; }
+    function salvarDiaLocal(d){ local.push(d); }
+    var exportarExcelDia = function(){ throw new ReferenceError('XLSX is not defined'); };
+    function salvarDiaSheets(d){ enviou.push(d); }
+    function invalidarHistoricoCache(){} function renderAll(){} function renderHist(){}`, C);
+  vm.runInContext(pega('function fecharDia('), C);
+  let erro = null;
+  try { vm.runInContext('fecharDia()', C); } catch (e) { erro = e.message; }
+  ok('sem a XLSX: não lança, grava local e no Sheets, e avisa que o Excel não saiu',
+     [erro, vm.runInContext('local', C), vm.runInContext('enviou', C), vm.runInContext('avisos.length===1 && /Excel não foi gerado/.test(avisos[0])', C)],
+     [null, ['16/11/2026'], ['16/11/2026'], true]);
+  vm.runInContext(`enviou=[]; avisos=[]; exportarExcelDia=function(){};`, C);
+  vm.runInContext('fecharDia()', C);
+  ok('com a XLSX: grava no Sheets e não avisa nada', [vm.runInContext('enviou', C), vm.runInContext('avisos', C)], [['16/11/2026'], []]);
+}
+
 // Se um teste assíncrono não terminar (promessa que nunca resolve), o processo
 // sai sozinho com a fila pela metade — e sairia 0 com falha na tela.
 process.exitCode = 1;

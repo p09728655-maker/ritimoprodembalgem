@@ -42,11 +42,18 @@ nos números nem no `.gs`** (não precisa re-deploy).
   - 3 funções no celular;
   - 21 variáveis calculadas e nunca usadas.
 - **A memória do projeto foi reorganizada.**
-  - O `CLAUDE.md` caiu de 641 KB para uns 26 KB: ficou o que vale hoje, as
+  - O `CLAUDE.md` caiu de 641 KB para uns 28 KB: ficou o que vale hoje, as
     armadilhas e o mapa dos temas.
-  - O detalhe de cada tema foi para `docs/memoria/<tema>.md`, sem cortes: 14
-    arquivos, com um índice das seções.
+  - O detalhe de cada tema foi para `docs/memoria/<tema>.md`: 14 arquivos, 86
+    seções movidas inteiras, mais um índice. Os resumos foram conferidos por
+    uma revisão independente contra o detalhe e o código (13 correções).
   - O padrão do código e o revisor mandam ler o arquivo da área antes de mexer.
+- **Corrigido — FECHAR DIA sem o Excel não ia para a planilha.** O botão gera
+  o Excel do fechamento antes de gravar no Google Sheets, e a biblioteca do
+  Excel vem da internet (cdnjs). Sem ela (firewall, rede), o erro parava o
+  fechamento: o dia ficava fechado só naquele navegador. Agora o Excel que falha
+  só avisa, e a gravação segue. O fechamento automático das 17:05 não passava
+  por ali.
 - **O Exportar Excel do HISTÓRICO saiu.** A função existia, mas nenhum botão a
   chamava desde antes de 06/11/2026. PPCP: o botão não volta.
 - **Corrigido — PRODUÇÃO/HORA com a UEP de outro período.** A leitura da

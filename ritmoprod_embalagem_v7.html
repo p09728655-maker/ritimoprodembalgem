@@ -4380,8 +4380,13 @@ function fecharDia(){
   const agora=new Date().toLocaleString('pt-BR');
   // 1. Salvar local
   salvarDiaLocal(hoje,slots,k.meta,true,agora);
-  // 2. Exportar Excel
-  exportarExcelDia(hoje,slots,k.meta);
+  // 2. Exportar Excel. O arquivo é uma CÓPIA: ele falhar não pode impedir a
+  // gravação no Sheets logo abaixo. A XLSX vem do cdnjs (`defer`); com a rede ou
+  // o firewall da fábrica barrando, ela não existe, e até a v7.248.1 o
+  // ReferenceError parava o fechamento aqui — o dia ficava fechado só neste
+  // navegador e não ia para a planilha.
+  let excelFalhou=null;
+  try{ exportarExcelDia(hoje,slots,k.meta); }catch(e){ excelFalhou=e; }
   // 3. Salvar no Google Sheets (se configurado)
   if(CFG.sheetsUrl) salvarDiaSheets(hoje,k,agora);
   // O histórico fica em cache de 2 min e o merge dá prioridade ao registro
@@ -4392,6 +4397,8 @@ function fecharDia(){
   invalidarHistoricoCache();
   renderAll();
   renderHist();
+  if(excelFalhou) alert('Dia fechado'+(CFG.sheetsUrl?' e enviado ao Google Sheets':'')+
+    ', mas o Excel não foi gerado (a biblioteca não carregou — rede ou firewall).');
 }
 
 
