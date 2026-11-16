@@ -1131,7 +1131,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.51.1';
+const APP_VER   = '1.51.2';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -1784,7 +1784,6 @@ function eanFalhaTxt(r){
   if(r.motivo==='ambiguo') return 'Etiqueta sem volume: o EAN '+r.core+' serve para '+r.n+' códigos — escolha na lista';
   return 'EAN não cadastrado no catálogo'+(r.core?': '+r.core:'');
 }
-function produtoPorEan(raw){ return eanAchar(raw, PRODUTOS).p; }
 
 let _toastTimer=null;
 function bipeToast(msg, ok){
@@ -2070,13 +2069,6 @@ function _rpRecarregar(){
   document.head.appendChild(s);
 }
 // Fallbacks locais SÓ de formatação/parse (não é a conta de perdas):
-function _horasProdMob(){ return _rpOk()?RP_PARADAS.horasProdutivas(CFG):8.8; }
-function _durMin2(ini,fim){
-  if(_rpOk()) return RP_PARADAS.durMin(ini,fim);
-  const re=/^\d{1,2}:\d{2}(:\d{2})?$/;
-  if(!re.test(String(ini))||!re.test(String(fim))) return null;
-  const d=toMin(fim)-toMin(ini); return d>=0?d:null;   // toMin do rp-core lê segundos
-}
 function _fmtMin2(m){
   if(_rpOk()) return RP_PARADAS.fmtMin(m);
   if(m==null)return'—';
@@ -2815,7 +2807,6 @@ function fecharModalSenha(){
 
 function confirmarSenha(){
   const val = document.getElementById('senha-inp').value;
-  const btn = PERFIL ? CFG.senhaGerencial : (document.getElementById('senha-titulo').textContent.includes('GERENCIAL')?CFG.senhaGerencial:CFG.senhaOperador);
   const senhaCorreta = document.getElementById('senha-titulo').textContent.includes('GERENCIAL') ? CFG.senhaGerencial : CFG.senhaOperador;
   if(val.trim()===senhaCorreta){
     fecharModalSenha();
@@ -3003,7 +2994,6 @@ function renderLancamentos(){
   const allHoje = DADOS.filter(d=>d.data===hoje).sort((a,b)=>a.horario.localeCompare(b.horario));
   const metaH = allHoje.length>0 ? (allHoje[0].metaHora||Math.round(CFG.metaDia/slots.length)) : Math.round(CFG.metaDia/slots.length);
 
-  const sourceFim = allHoje.length>0 ? allHoje[allHoje.length-1].slotFim : null;
   const listSlots = allHoje.length>0 ? allHoje.map(s=>({
     inicio: s.horario,
     fim: s.slotFim||'',

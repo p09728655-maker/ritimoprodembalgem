@@ -5,6 +5,37 @@ Slogan: **Medimos o pulso da·linha.**
 Front-end estático (HTML/JS) publicado na Vercel; dados vêm de um Google Sheets
 via Google Apps Script (JSONP).
 
+## Padrão do código e revisão (v7.248.2)
+- **`docs/padrao-codigo.md` é a régua** (regras A1…J; o porquê de cada uma
+  está na seção do assunto, neste arquivo). Código novo segue o padrão; o que
+  está diferente se corrige só na linha que se está mexendo.
+- **`node testes.js` antes de todo commit**: as suítes (`*.test.js`, achadas
+  sozinhas — suíte nova não se cadastra) e o `lint-js.js`. Sai com 1 se algo
+  falhar; `node testes.js uep` roda só as suítes com "uep" no nome.
+- **O revisor do projeto é o `/revisor-codigo`**
+  (`.claude/skills/revisor-codigo/SKILL.md`): roda o `testes.js`, confere o
+  diff contra o padrão e relata BLOQUEIA · AJUSTE com arquivo:linha, regra e
+  cenário. PPCP, 16/11/2026: *"deixar o revisor com padrão nesse projeto"*. O
+  `anthropic-skills:revisor-codigo` é de React + Vite (o app de cronoanálise)
+  e não vale aqui.
+- ⚠ **Não rodar formatador automático (Prettier e afins) em arquivo inteiro**.
+  Medido em 16/11/2026: o painel do PC iria de 28 mil para 52 mil linhas e 17
+  das 20 suítes quebrariam (os testes leem o código como texto), além de
+  apagar o histórico linha a linha do git.
+- **Função sem uso que fica de propósito** entra no `SEM_USO_OK` do
+  `lint-js.js`, com o porquê. Hoje: o Excel local (`selecionarPasta`,
+  `triggerImport`) e o Exportar Excel do HISTÓRICO (`exportarExcel` — sem botão
+  desde antes de 06/11/2026; **decisão do PPCP pendente**: o botão volta ou a
+  função sai), as rotinas de editor do `.gs` e o `_soLetras` (sem uso; sai na
+  próxima versão do `.gs` — mexer no `.gs` pede re-deploy).
+- Saiu na v7.248.2, sem uso: `exportarExcelHist`, `toISO`,
+  `updateRefreshBadge`, `_gerCxComHora`, `_phTrocaTxt`, `_durMinPar`,
+  `_diasTrabalhadosPar`, `_svgDiaHora`, a amostra do GRAVAR UEP
+  (`_filaAmostra`, `_filaAmostraDeItens`, `FILA_AMOSTRA_DE`, `FILA_LS*`) no PC;
+  `produtoPorEan`, `_horasProdMob`, `_durMin2` no celular; e 21 variáveis
+  locais calculadas e nunca usadas (conferidas uma a uma: sobras, nenhuma
+  escondia defeito).
+
 ## Arquivos
 - `ritmoprod_embalagem_v7.html` — painel desktop (telas **GERENCIAL** e **TV OPERACIONAL**).
 - `ritmoprod_mobile.html` — painel mobile.
@@ -194,15 +225,27 @@ via Google Apps Script (JSONP).
   mutações — a 10ª é equivalente); e (v7.246.0) o EMBALOU ANTES na barra do
   dia (o 25441 de 16/11: 838 cx, 5h20; tela, papel, legenda, sem o campo):
   `node takt-semana.test.js`.
-- `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
-  dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
-  um identificador que não existe, e o painel só quebra em runtime: o relatório
-  do período morreu duas vezes no *"Carregando relatório…"* por isso — `ehCor`
-  fora do `const {...}=_phAgrup()` daquela função e `_fonteHoje` usado no render
-  mas declarado dentro do `calcPorModelo`. Extrai o JS e roda o eslint só com
-  `no-undef`; o npx baixa o eslint (precisa de rede na 1ª vez) e sem npx ele
-  avisa e sai sem falhar. **Nome novo na lista `GLOBAIS` só depois de conferir
-  que ele existe mesmo** — senão a guarda vira enfeite.
+- `testes.js` — **`node testes.js`: todas as suítes + o lint**, uma de cada vez,
+  com o resumo; sai com 1 se algo falhar (v7.248.2).
+- `lint-js.js` — **a parte automática do padrão** (v7.248.2; até a v7.248.1 era
+  só o `no-undef` dos dois HTMLs). Confere os dois HTMLs, o `rp-core.js`, o
+  `paradas-calc.js`, o `sw-mobile.js` e o `.gs`, e diz a linha do PRÓPRIO
+  arquivo (fora dos `<script>` tudo vira espaço):
+  - **função sem uso** no nível de cima (comentário não conta como uso; roda
+    sem rede). Fica de propósito → `SEM_USO_OK`, com o porquê;
+  - **eslint** (o npx baixa na 1ª vez; sem npx ou sem rede, avisa e roda só a
+    de cima): `no-undef`, `no-redeclare`, `no-dupe-keys`, `no-duplicate-case`,
+    `no-dupe-else-if`, `no-self-assign`, `no-unreachable`, `no-const-assign`,
+    `no-unused-vars` (só locais).
+  - Por que existe: nenhum teste de conta vê um identificador que não existe, e
+    o painel só quebra em runtime — o relatório do período morreu duas vezes no
+    *"Carregando relatório…"* (`ehCor` fora do `const {...}=_phAgrup()`,
+    `_fonteHoje` declarado dentro do `calcPorModelo`).
+  - **Nome novo nas listas de globais (`G_MODULOS`, `G_APPS_SCRIPT`…) só
+    depois de conferir que ele existe mesmo** — senão a guarda vira enfeite.
+  - Conferido por mutação (7 de 7 erros plantados pegos, na linha certa).
+- `docs/padrao-codigo.md` — o padrão do código (a régua do revisor).
+- `.claude/skills/revisor-codigo/SKILL.md` — o revisor do projeto (`/revisor-codigo`).
 - `ritmoprod_appscript.gs` — backend (Apps Script). **Mudanças aqui NÃO sobem pela
   Vercel**: precisam ser coladas no editor do Apps Script e **re-deployadas** manualmente.
   - ⚠ **O GitHub e o editor do Apps Script não se falam** (PPCP, 05/11/2026:
@@ -1116,7 +1159,7 @@ via Google Apps Script (JSONP).
   `_cxuSvg` e `_cxUepHtml`, sem conta (o teste prende).
 - **Leitura**: `_cxuPtsLer` = `getProducaoModeloPeriodo` da janela
   (`_cxuJanela`), DEPOIS do histórico, cache 5 min; devolve `PREP_PERIODO` e
-  `PH_UEP_PROD` (a régua do `_filaAmostra`). Falhou → sem os pontos, com o motivo
+  `PH_UEP_PROD` (a régua da carteira). Falhou → sem os pontos, com o motivo
   na linha da régua.
 - **Meta de pontos**: a do ⚙ (`_metaPtsDia`: CONFIG_PAINEL `META_PTS`, `.gs`
   v5.42; sem ela, a deste computador `rpe_cap_pts` — ver *ABA 📏 RÉGUAS*). Com
@@ -1332,9 +1375,10 @@ via Google Apps Script (JSONP).
 - ⚠ **A FILA DE CRONOANÁLISE abaixo SAIU na v7.216.0**: a 🖨 é a AGENDA DA
   CRONOANÁLISE (ver *O QUE MEDIR: A AGENDA*). `_filaCronoMontar`,
   `_filaCronoHtml`, `_FILA_DOC_SKIN`, `FILA_MOTIVOS`, `FILA_FAM_RAZAO`,
-  `FILA_TETO_FOLGA`, `FILA_MAX_SEM` e `_filaUteis` foram apagados; ficou a
-  amostra (`_filaAmostra`, `_filaAmostraDeItens`, `FILA_AMOSTRA_DE`), que a
-  régua usa, e o `_filaN2br`. O texto abaixo é histórico.
+  `FILA_TETO_FOLGA`, `FILA_MAX_SEM` e `_filaUteis` foram apagados; ficou o
+  `_filaN2br`. A amostra (`_filaAmostra`, `_filaAmostraDeItens`,
+  `FILA_AMOSTRA_DE`) saiu na v7.248.2: só o GRAVAR UEP a lia, e ele está
+  travado. O texto abaixo é histórico.
 - **FILA DE CRONOANÁLISE** (`_filaCronoMontar` conta, `_filaCronoHtml`
   desenho). Produto (modelo + `_capNome`) entra por: SEM UEP · ESTIMADA (EST)
   · PROVISÓRIA (< `UEP_MIN_DIAS` dias distintos na amostra) · NO LIMITE DA
@@ -1439,8 +1483,9 @@ via Google Apps Script (JSONP).
   ~500 pontos de chamada seguem recebendo o inteiro. `RP_PARADAS.durMin`
   aceita `HH:mm(:ss)?` e devolve minuto com fração; **`fmtMin`** é o formato
   único (*45 s* · *3m15s* · *3 min* · *1h05m*), e o `tMed` do `stats` deixou
-  de ser inteiro (era "0 min em média" com paradas de 40 s). Os `_fmtMin2` /
-  `_durMin2` do mobile são fallback sem o módulo e espelham isso.
+  de ser inteiro (era "0 min em média" com paradas de 40 s). O `_fmtMin2` do
+  mobile é fallback sem o módulo e espelha isso (o `_durMin2` saiu sem uso na
+  v7.248.2).
 - **Cronômetro da TV (`_segDesde`) e banner do celular** partem do segundo
   certo; abaixo de 1 min o banner mostra segundos. As regexes `^\d{1,2}:\d{2}$`
   de parada nos dois HTMLs viraram `(:\d{2})?` — a sobreposição, o corte do
@@ -1455,10 +1500,8 @@ via Google Apps Script (JSONP).
   `const _base`/`_relPlano` repetidos → `SyntaxError`, e quatro guardas que
   não acompanharam o 🖨 CARTEIRA: contagens 5→6 e 10→11, e dois textos que
   moram na marcação HTML mas eram procurados só nos `<script>`). Consertado no
-  teste, sem tocar no painel. Suíte que não roda não guarda nada — rodar as
-  sete (hoje quinze, com o `crono-registro.test.js`, o `tela-e.test.js`, o `programacao.test.js`, o
-  `uep-padrao.test.js`, o `exclusao.test.js`, o `tela-uep.test.js`, o
-  `uep-relatorios.test.js` e o `fechamento.test.js`) antes de publicar.
+  teste, sem tocar no painel. Suíte que não roda não guarda nada — rodar
+  todas antes de publicar: hoje é o `node testes.js` (v7.248.2).
 
 ## Tela cheia de PARADA (ao vivo)
 - O operador **registra a parada e dá o START no mobile** (`ritmoprod_mobile.html`,
@@ -2013,7 +2056,7 @@ via Google Apps Script (JSONP).
     227 cx/dia na base errada.
   - No **HISTÓRICO** a base são os próprios dias da lista (dias com turno
     fechado), a mesma do "Média / dia" de produção logo acima.
-  - **No desktop é a mesma coisa** (`_diasTrabalhadosPar`, a partir do
+  - **No desktop é a mesma coisa** (`RP_PARADAS.diasTrabalhados`, a partir do
     `realByDay`): a aba PARADAS mostrava 82,2% de disponibilidade em 30 dias
     dividindo por 14 dias com parada; com os 22 dias trabalhados dá 90%, igual
     ao mobile. Os rótulos dizem "dia(s) trabalhados" ou "dia(s) com parada" para
@@ -3506,7 +3549,7 @@ ficou registrado abaixo; o que **não** foi está no fim da seção.
 - **`_rpOk()` foi para o `rp-core.js`** (função pura, estava copiada igual nos
   dois HTMLs). O `_rpRecarregar` continua local em cada painel — esse toca o DOM
   e avisa diferente em cada tela. ⚠ Nome novo no `rp-core.js` exige entrar na
-  lista `GLOBAIS` do `lint-js.js`, senão o lint acusa `no-undef`.
+  lista `G_MODULOS` do `lint-js.js`, senão o lint acusa `no-undef`.
 - **`aria-label` nos botões cujo rótulo é só um símbolo**: ⚙, ‹, ›, ◀, ▶, ↺, ✕
   no v7 e o ⌫ dos dois teclados numéricos do mobile. Os demais botões já têm
   texto, que é o nome acessível — não foi feita varredura cega de ARIA.
@@ -3667,7 +3710,7 @@ feito e dá ar de verdade ao que sobrou.
 - **Tabela** (`_gerHoraLinha`, a MESMA no dia de hoje e no dia passado; o thead é
   refeito, `_gerTheadUep`/`_gerTheadCx`): HORÁRIO · UEP · META UEP · % DA META
   (cor `sc`) · CAIXAS · **META EM CX** (meta da hora × caixas COM UEP ÷ UEP da
-  hora — `_gerCxComHora`; a hora de agora sem caixa: ÷ UEP/cx do produto de agora)
+  hora — `uepCxComHora` do rp-core; a hora de agora sem caixa: ÷ UEP/cx do produto de agora)
   · STATUS. Hora extra e hora em andamento (`ATÉ HH:MM`) não são julgadas; hora
   só com código sem UEP = *SEM UEP* (`0*`), nunca ABAIXO. As horas são as do
   `_uepAbaHoras` (a régua da aba ⚖ UEP).
@@ -6578,7 +6621,8 @@ feito e dá ar de verdade ao que sobrou.
 - Os botões **"SELECIONAR PASTA/Google Sheets"** e **"arquivo avulso"** (📄)
   saíram do cabeçalho do v7 — os dados vêm sempre do Sheets e eles só
   confundiam. As funções de Excel local (`selecionarPasta`/`triggerImport`/
-  `handleFileInput`) continuam no código, sem botão; os `getElementById`
+  `handleFileInput`) continuam no código, sem botão (no `SEM_USO_OK` do
+  `lint-js.js`); os `getElementById`
   de `btn-pasta` têm guarda de null (o de `processarResposta` roda a cada
   `lerSheets` — sem guarda, quebraria o painel inteiro).
 - **Modo DEMO** (produção zerada, horários genéricos

@@ -11,6 +11,37 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.248.2 · mobile 1.51.2 — 16/11/2026 · código no padrão; revisor do projeto
+
+PPCP: *"precisamos fazer um alinhamento no código, deixa padrão"* →
+*"deixar o revisor com padrão nesse projeto"*. **Nada muda na tela, no papel,
+nos números nem no `.gs`** (não precisa re-deploy).
+
+- **O padrão do código está escrito** em `docs/padrao-codigo.md`. São as
+  regras que o código já segue: onde cada coisa mora, nomes, a conta separada
+  do desenho, zero diferente de vazio, uma chamada por vez ao Apps Script,
+  escape do HTML, versões e testes. Cada regra tem um código (A1, E2…).
+- **O revisor deste projeto é o `/revisor-codigo`.** Ele roda os testes,
+  confere o que mudou contra o padrão e devolve o que bloqueia e o que ajustar,
+  com arquivo, linha e o caso que quebra. O revisor de código que existia era
+  de React, do app de cronoanálise, e não servia para este painel.
+- **`node testes.js`** roda as 20 suítes e a verificação automática de uma vez.
+- **A verificação automática (`lint-js.js`) cobre mais**:
+  - antes ela olhava só os dois HTMLs, e só procurava nome que não existe;
+  - agora olha também o `rp-core.js`, o `paradas-calc.js`, o `sw-mobile.js` e
+    o `.gs`;
+  - acusa ainda função sem uso, declaração repetida, chave repetida e variável
+    calculada e nunca usada;
+  - diz a linha do próprio arquivo.
+- **Código morto removido** (nenhum uso, conferido um a um):
+  - 9 funções no PC;
+  - a amostra do GRAVAR UEP, que só o GRAVAR lia, e ele está travado;
+  - 3 funções no celular;
+  - 21 variáveis calculadas e nunca usadas.
+- **Pendente, decisão do PPCP**: o **Exportar Excel do HISTÓRICO** existe no
+  código, mas **nenhum botão chama** (sumiu antes de 06/11/2026). Fica até a
+  decisão: o botão volta ou a função sai.
+
 ## v7.248.1 · mobile 1.51.1 — 16/11/2026 · WhatsApp sai; correções da 4ª revisão
 
 - **O resumo do WhatsApp saiu** (PPCP: *"watsap esqueça, pode tirar"*): os botões

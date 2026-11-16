@@ -4173,7 +4173,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.248.1';
+const APP_VER = '7.248.2';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -4502,22 +4502,6 @@ function exportarExcelDia(data,slots,metaDia){
   XLSX.writeFile(wb2,`ritmoprod_${dd}${mm}${yy}_fechamento.xlsx`);
 }
 
-function exportarExcelHist(){
-  const rows=[['DATA','REALIZADO','META','EFICIÊNCIA %','MELHOR H.','PIOR H.','HE','FECHADO','FECHADO EM']];
-  const diasHist=buildDiasHist();
-  const all=loadHistAll();
-  diasHist.forEach(d=>{
-    const h=all[d.data];
-    rows.push([d.data,d.real,d.meta,+d.ef.toFixed(1),d.melhor,d.pior,d.heCount||0,
-      h&&h.fechado?'SIM':'NÃO', h&&h.fechadoEm||'']);
-  });
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:12},{wch:12},{wch:10},{wch:14},{wch:12},{wch:10},{wch:5},{wch:10},{wch:20}];
-  const wb2=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb2,ws,'Histórico');
-  XLSX.writeFile(wb2,`ritmoprod_historico_${hojeStr().replace(/\//g,'_')}.xlsx`);
-}
-
 // ════════════════════════════════════════════════
 // HORAS EXTRAS — armazenadas por data em localStorage
 // Estrutura: { "23/05/2026": [ {ini, fim, label, metaHora, producaoHora} ] }
@@ -4765,7 +4749,6 @@ function parseDataBR(s){
   if(m) return new Date(+m[3]<100?2000+ +m[3]:+m[3], +m[2]-1, +m[1]);
   return new Date(s);
 }
-function toISO(d){ return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`; }
 
 // ════════════════════════════════════════════════
 // SLOTS DE TURNO
@@ -5488,9 +5471,6 @@ function alterarIntervalo(){
 
 // ── Fallbacks ──
 function triggerImport(){ document.getElementById('file-input').click(); }
-function updateRefreshBadge(){
-  if(!isLive) setStatusBadge('demo','DEMO');
-}
 function handleFileInput(inp){
   const f=inp.files[0]; if(!f) return;
   const r=new FileReader();
@@ -6527,47 +6507,14 @@ function gerarRelatorioUepPadrao(){
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// A AMOSTRA DO GRAVAR e a 🖨 AGENDA DA CRONOANÁLISE (era a FILA, v7.139.0)
+// A 🖨 AGENDA DA CRONOANÁLISE (era a FILA, v7.139.0)
 // ════════════════════════════════════════════════════════════════════════════
-// A AMOSTRA DO GRAVAR (01/07 → dia da trava): a régua do _filaAmostra (📏 RÉGUAS).
 // v7.216.0: a 🖨 FILA DE CRONOANÁLISE antiga (UEP provisória, estimada, no limite
 // da esteira, família incoerente) saiu — a impressão é a AGENDA DA CRONOANÁLISE, a
-// mesma lista da sub-aba O QUE MEDIR (_ucvPrincipais). Desta parte ficou a amostra.
-const FILA_AMOSTRA_DE = '01/07/2026';   // começo do log de produto: a amostra do GRAVAR de 16/10
-const FILA_LS         = 'rpe_fila_amostra';
-const FILA_LS_TTL     = 24 * 60 * 60 * 1000;   // a amostra é um período fechado: 1 leitura por dia
+// mesma lista da sub-aba O QUE MEDIR (_ucvPrincipais). v7.248.2: a amostra do
+// GRAVAR UEP (01/07 → trava) saiu também — só o GRAVAR a lia, e ele está TRAVADO.
+// dd/mm/aaaa a partir do número aaaammdd.
 const _filaN2br = n => p2(n % 100) + '/' + p2(Math.floor(n / 100) % 100) + '/' + Math.floor(n / 10000);
-// A amostra (dias e caixas por produto) a partir dos itens do getProducaoModeloPeriodo.
-function _filaAmostraDeItens(itens){
-  const G = {};
-  (itens || []).forEach(it => {
-    const k = String(it.modelo || '') + '|' + String(it.nome || '').toUpperCase().trim();
-    const g = G[k] = G[k] || { dias:{}, cx:0 };
-    g.dias[it.data] = 1; g.cx += Number(it.caixas) || 0;
-  });
-  const o = {};
-  Object.keys(G).forEach(k => { o[k] = { dias:Object.keys(G[k].dias).length, cx:G[k].cx }; });
-  return o;
-}
-// A amostra do GRAVAR (01/07 → dia da trava), uma leitura por dia: é um período
-// FECHADO, e o getProducaoModeloPeriodo de ~3 meses é das leituras mais caras.
-// Guarda e devolve o PREP_PERIODO e o PH_UEP_PROD (a leitura publica os da aba
-// PRODUÇÃO/HORA, de outro período — a mesma regra da carteira).
-async function _filaAmostra(){
-  const ate = UEP_TRAVADA_DESDE || hojeStr();
-  const key = FILA_AMOSTRA_DE + '|' + ate;
-  try{ const o = JSON.parse(localStorage.getItem(FILA_LS) || 'null');
-       if(o && o.key === key && Date.now() - o.ts < FILA_LS_TTL && o.a) return { a:o.a, de:FILA_AMOSTRA_DE, ate }; }catch(e){}
-  const prep = PREP_PERIODO, uepProd = PH_UEP_PROD;
-  let itens = null;
-  try{ itens = await lerProducaoModeloPeriodo(FILA_AMOSTRA_DE, ate, null, { ms:60000 }); }
-  catch(e){ itens = null; }
-  finally{ PREP_PERIODO = prep; PH_UEP_PROD = uepProd; }
-  if(itens == null) return null;
-  const a = _filaAmostraDeItens(itens);
-  try{ localStorage.setItem(FILA_LS, JSON.stringify({ key, ts:Date.now(), a })); }catch(e){}
-  return { a, de:FILA_AMOSTRA_DE, ate };
-}
 // 🖨 AGENDA DA CRONOANÁLISE (v7.216.0): a MESMA lista da sub-aba O QUE MEDIR
 // (_ucvPrincipais, guardada em UCV_PRINC_M), para o cronoanalista levar à linha:
 // o que falta medir, na ordem da programação, com uma coluna para anotar. O botão
@@ -9898,8 +9845,8 @@ function _cxUepHtml(R, ctx){
 // Os pontos de jornada do período, para a 3ª régua (v7.184.0). A leitura é o
 // getProducaoModeloPeriodo dos mesmos dias (das caras: cache de 5 min por
 // janela, para o 2º clique não pagar de novo). Ela publica PREP_PERIODO e
-// PH_UEP_PROD, que são da aba PRODUÇÃO/HORA: guarda e devolve (a régua do
-// _filaAmostra). Falhou → o relatório sai sem os pontos, dizendo por quê.
+// PH_UEP_PROD, que são da aba PRODUÇÃO/HORA: guarda e devolve (a régua da
+// carteira). Falhou → o relatório sai sem os pontos, dizendo por quê.
 // `forcar` (o ↻ da aba 📏 RÉGUAS) passa por cima do cache. Devolve também as
 // caixas por produto (`prod`), a pergunta da aba RÉGUAS — a mesma leitura.
 let _CXU_PTS = { key:null, ts:0, m:null };
@@ -10042,7 +9989,6 @@ const _REG_SIT = { chega:['CHEGA NA REFERÊNCIA', 'ok'], acima:['SÓ ACIMA DA RE
 // todos, ptsFalha, origem ('planilha'|'computador'), capFalha, capLendo }.
 function _regHtml(R, D, ctx){
   const G = R.reguas, nomes = { cx:'CAIXAS', pts:'PONTOS', uep:'UEP' }, un = { cx:'cx', pts:'pontos', uep:'UEP' };
-  const mil = v => fmtN(Math.round(v / 1000)) + ' mil';
   const S0 = R.serie || [];
   const per = S0.length ? `${_rpEsc(S0[0].data.slice(0, 5))} a ${_rpEsc(S0[S0.length - 1].data.slice(0, 5))}` : '';
   let s = `<div class="reg-sub">${G.n} dias fechados · ${per} · só a jornada normal${R.ptsTabela === 'hoje' ? ' · pontos na tabela de hoje' : ''}</div>`;
@@ -10344,7 +10290,7 @@ function renderUep(){
     el.innerHTML=`<div class="empty-msg">${D.msg}${tentar}</div>`;
     _uepSubPintar(_uepSubMontar({ D })); return;
   }
-  const {k, card, meta, feito, he, proj, horas, mix, conf, avisos, cards, fimTxt}=D;
+  const {k, meta, horas, mix, conf, avisos, cards}=D;
   const alerta=avisos.length?`<div class="uep-alerta"><b>ATENÇÃO AO DADO</b> · ${avisos.join(' · ')} — o número de UEP de hoje é indicação, não medição.</div>`:'';
   const kpis=`<div class="kpi-grid c4">${cards.map(c=>`<div class="kpi-card ${c.c||''}"${c.t?` title="${_rpEsc(c.t)}"`:''}><div class="kpi-lbl">${c.l}</div><div class="kpi-val">${c.v}</div><div class="kpi-sub">${c.sub}</div></div>`).join('')}</div>`;
 
@@ -13374,8 +13320,6 @@ function _gerUepModelo(k, agoraMin){
 // a UEP dela está incompleta e a hora sairia ABAIXO sem ser.
 const GER_TOL_MIN=UEP_HORA_TOL_MIN;   // rp-core: = o LANC_TOLERANCIA_MIN do celular (a hora recém-fechada ainda aceita lançamento)
 function _gerHoraJulga(h, cx, cxCom){ return uepHoraJulga(h, cx, cxCom); }   // rp-core 1.18.0 (a regra é a mesma do celular)
-// Caixas COM UEP de cada hora (HH:MM): a META EM CX da hora sai do peso delas.
-function _gerCxComHora(phm){ return uepCxComHora(phm); }   // rp-core 1.18.0
 // "28 min atrás do ritmo": a diferença para o esperado, em minutos de meta.
 function _gerMinTxt(difMin){ return uepMinTxt(difMin); }   // rp-core 1.18.0
 // 1ª linha: o veredito (UEP) e o que está vencido. Só o 1º card tem selo.
@@ -14313,13 +14257,6 @@ async function carregarTrocaObs(){
     return _trocaObsC.obs;
   })();
   return _trocaObsC.pend;
-}
-// Como a troca entrou na conta, em uma linha — é o que a tela e o PDF mostram
-// para ninguém precisar abrir o código para saber de onde saiu o número.
-function _phTrocaTxt(obs){
-  return (obs&&obs.n>0&&obs.min>0)
-    ? `${fmtN(obs.min)} min por troca (média aparada de ${obs.n} parada${obs.n===1?'':'s'} de troca apontada${obs.n===1?'':'s'} em ${TROCA_OBS_DIAS} dias)`
-    : `tempo de troca da planilha (TEMPO DE TROCA MIN — sem paradas de troca apontadas para medir)`;
 }
 // COR da MÉD.PERÍODO (ritmo): aproveitamento do próprio melhor dia, com os dois
 // cuidados que a tela cobrava. VERDE exige as DUAS coisas — ser regular E estar
@@ -17895,10 +17832,8 @@ function fmtDataPtBR(dateOrStr, formato){
     const[dd,mm,yy]=dateOrStr.split('/').map(Number);
     dt=new Date(yy,mm-1,dd);
   } else { dt=dateOrStr; }
-  const dias=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
   const diasAbrev=['dom','seg','ter','qua','qui','sex','sáb'];
   const meses=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-  const mesesAbrev=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
   const d=dt.getDate(), m=dt.getMonth(), y=dt.getFullYear();
   const dow=dt.getDay();
   if(formato==='longo') return `${d} de ${meses[m]} de ${y}`;
@@ -17974,7 +17909,6 @@ async function renderHist(){
   const comMeta=diasM.filter(d=>d.ok).length;
   const melhorDia=diasM.length?diasM.reduce((a,b)=>a.ef>b.ef?a:b):null;
   const nFdsH=dias.length-diasM.length;
-  const fechados=dias.filter(d=>d.fechado).length;
   const totHE=dias.reduce((s2,d)=>s2+(_heIndef(d)?0:d.heCx),0);
   const semHE=dias.filter(_heIndef).length;   // dias sem como separar
   const semBackend=dias.some(d=>d.heCxAusente)||HE_BACKEND_OK===false; // Apps Script ainda sem a marca de HE
@@ -19555,7 +19489,6 @@ function _cartHtml(a, regua, larg){
   const _cargaTxt = 'A CARGA DEVERIA FICAR AQUI';
   // Um rótulo de linha: escolhe o lado livre, desenha a tarja e o texto, e a
   // seta aponta para dentro do gráfico a partir do lado escolhido.
-  const _qtds = a.linhas.map(l => l.qtde);
   // ⚠ A COLISÃO DA TARJA OLHA O QUE ESTÁ DESENHADO, e com o mix o topo do dia é
   // o FANTASMA tracejado (o programado cru) quando ele é maior que a carga. Só
   // com `qtde` a tarja passava por cima do contorno do 01/10 e do número dele.
@@ -20333,7 +20266,6 @@ async function gerarRelatorioCarteira(){
     const ac = (blocos.find(b => b.a) || {}).a || null;
     if(!ac){ win.close(); alert('Não há lote com data futura na PROGRAMACAO — nada a imprimir.'); return; }
     const fMin = ac.faixa[0], fMax = ac.faixa[1];
-    const reguaTxt = QP_REGUA > 0 ? ('últimos ' + QP_REGUA + ' dias') : (dias.length + ' dias de histórico');
     metaCab = _rpEsc(ac.de) + ' → ' + _rpEsc(ac.ate) + ' · régua ' + (QP_REGUA > 0 ? QP_REGUA + ' dias' : 'todo o histórico') + ' s/ hora extra · p' + fMin + '–p' + fMax
       + (blocos.length > 1 ? ' · carga pelo mix E caixas cruas' : (ac.mix ? ' · carga pelo mix' : ' · caixas cruas'));
     corpo = '<div class="plano-doc cart-doc">'
@@ -21247,7 +21179,6 @@ async function imprimir(){
     return;
   }
   // Demais abas → print normal
-  const hoje=hojeStr();
   const dh=getDadosHoje();
   const k=dh.length?calcKPIs(dh):null;
   const agora=new Date().toLocaleString('pt-BR');
@@ -22204,7 +22135,7 @@ async function gerarRelatorioSemanal(ateArg){
   // Cor de status do DOCUMENTO: tons de impressão, não os do painel escuro.
   // Aparece só onde há veredito; o resto do relatório é grafite.
   const cor=ef=>ef>=96?'#2E7D32':ef>=90?'#B4650A':'#B3261E';
-  const INK2='#5B6470', HEC='#B4650A';
+  const INK2='#5B6470';
   const badge=ef=>ef>=96?'DENTRO DA META':ef>=90?'ATENÇÃO':'ABAIXO';
   // Meta batida só por causa da hora extra: o verde vira âmbar e o texto diz
   // por quê. Sem isso o relatório afirma "dentro da meta" para uma semana que,
@@ -23523,8 +23454,8 @@ ${_pgCausasJanelaHtml(ctx, grao)}`;
 // em outro relatório. Usa as MESMAS classes do relatório antigo (kpi-card,
 // rp-sec-ttl, table) — a identidade visual não muda.
 function _pgSecaoHtml(ctx){
-  const {st, dias, semanas, top, outros, smedProd, smedPlas, rec, fluxo, anom, plano,
-         diag, minPor1000, trR, tiR, temMotivo, tend, foco, soZinho} = ctx;
+  const {dias, semanas, top, outros, smedProd, smedPlas, rec, fluxo, anom, plano,
+         diag, temMotivo, tend, foco, soZinho} = ctx;
   const sobre=(anom&&anom.sobrepostas)||[];
   const e=_rpEsc;
   const pct=v=>fmtP(v);
@@ -25849,7 +25780,6 @@ function _parRotuloPeriodo(de, ate){
   el.textContent = de===ate ? '· '+de : `· ${curto(de)} – ${curto(ate)} (${nd} dias)`;
 }
 // Duração/formatação/classificação: implementação ÚNICA no paradas-calc.js
-function _durMinPar(ini,fim){ return RP_PARADAS.durMin(ini,fim); }
 function _fmtMinPar(m){ return RP_PARADAS.fmtMin(m); }
 
 // TAKT REAL (rodando) medido dos apontamentos, no período: caixas ÷ tempo em que a
@@ -25882,13 +25812,6 @@ function _taktRealPeriodo(porDia, horasProd, dDe, dAte, realByDay){
 // Fonte ÚNICA de cálculo das estatísticas de parada (usada pela aba E pelo
 // relatório, p/ ficarem idênticos). Peças perdidas = duração × (meta do dia ÷
 // horas produtivas). Refeição/intervalo/almoço = planejada (não conta perda).
-// Dias TRABALHADOS no período: os que têm produção lançada (realByDay vem do
-// HISTORICO + hoje). É a base honesta da disponibilidade — o dia trabalhado que
-// rodou SEM parada esteve 100% disponível e tem que entrar na conta. Dividindo
-// só pelos "dias que tiveram parada", esse dia sumia e a disponibilidade caía
-// sozinha (medido: 82,2% contra 90% em 30 dias). Devolve 0 sem histórico, e aí
-// quem chama cai na base antiga.
-function _diasTrabalhadosPar(realByDay, de, ate){ return RP_PARADAS.diasTrabalhados(realByDay, de, ate); }
 
 
 // A meta e o realizado de CADA dia para o RP_PARADAS, a partir do histórico. UM
@@ -26100,7 +26023,7 @@ async function _renderAnaliseParadasCore(opts){
     }).filter(Boolean);
   }
   const stPrev=_paradasStats(_filtClasse(prevCmp), Object.assign({}, metaByDay), {realByDay, de:_fdt(_pDe), ate:_fdt(_pAte)});
-  const {horasProd,pesoMedio,totMin,totMinNP,pecas,pesoPerd,nParadas,nDias,baseTrab,mediaPerd,dispon,pctPerd,tMed,ritmoHora,taktSeg,porTipo,porDia}=st;
+  const {horasProd,pesoMedio,totMin,totMinNP,pecas,pesoPerd,nParadas,nDias,baseTrab,mediaPerd,dispon,pctPerd,tMed,ritmoHora,porTipo,porDia}=st;
   const corDisp=dispon>=90?'ok':dispon>=80?'warn':'red';
   const _ti=_taktIdeal(horasProd);                 // takt IDEAL (referência)
   const _alvoRef=_ti.ritmoHora||ritmoHora;          // ritmo ideal p/ comparar o real
@@ -26334,9 +26257,6 @@ function _svgBarChart(dias){
     out+=`<text x="${pad.l-6}" y="${y+3.5}" text-anchor="end" font-size="8" fill="#97A0AC" font-family="'IBM Plex Mono',monospace">${v.toLocaleString('pt-BR')}</text>`;
   });
 
-  // Linha de meta
-  const yMetaRef=sy(dias[0]?.meta||0);
-
   let outTxt='';   // rótulos das barras: desenhados por último, sobre a linha de média
 
   dias.forEach((d,i)=>{
@@ -26413,132 +26333,6 @@ function _svgBarChart(dias){
     <text x="${Lg+(temHE?254:164)}" y="17" font-size="8" fill="#5B6470" font-family="'IBM Plex Mono',monospace">Média ${Math.round(mediaReal).toLocaleString('pt-BR')} cx/dia${_bFora?' com meta':''}</text>`;
 
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">${out}</svg>`;
-}
-
-// ── Gráfico hora a hora por dia ──
-function _svgDiaHora(dia){
-  // Tentar buscar slots do localStorage
-  const hist=loadHistAll();
-  const diaHist=hist[dia.data];
-  const slots=diaHist&&diaHist.slots&&diaHist.slots.length
-    ? diaHist.slots.filter(s=>s.prod!=null)
-    : null;
-
-  const cor=ef=>ef>=96?'#4CAF50':ef>=90?'#FF9800':'#F44336';
-  const badge=ef=>ef>=96?'DENTRO DA META':ef>=90?'ATENÇÃO':'ABAIXO';
-  const bdgCls=ef=>ef>=96?'s-ok':ef>=90?'s-warn':'s-red';
-  const dow=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
-  const[dd,mm,yy]=dia.data.split('/').map(Number);
-  const diaSem=new Date(yy,mm-1,dd).getDay();
-
-  const header=`
-  <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px">
-    <div>
-      <span style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#111">${dia.data}</span>
-      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#aaa;margin-left:8px">${dow[diaSem]}</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:12px">
-      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#888">Real: <strong style="color:#111">${dia.real.toLocaleString('pt-BR')}</strong> · Meta: <strong style="color:#888">${dia.meta.toLocaleString('pt-BR')}</strong></span>
-      <span class="sbadge ${bdgCls(dia.ef)}" style="font-size:9px">${fmtP(dia.ef)} — ${badge(dia.ef)}</span>
-    </div>
-  </div>`;
-
-  // Se tiver slots detalhados → gráfico hora a hora completo
-  if(slots&&slots.length>=2){
-    const W=680, H=130, pad={t:24,r:12,b:28,l:40};
-    const cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
-    const n=slots.length;
-    const bw=Math.max(8,Math.min(36,(cw/n)*0.65));
-    const slot=cw/n;
-    const maxP=Math.max(...slots.map(s=>s.prod),1);
-    const metaH=diaHist.metaDia/slots.length; // aprox metaHora
-    const maxV=Math.max(maxP,metaH*1.1);
-    const sy=v=>pad.t+ch-(v/maxV)*ch;
-    const cx=i=>pad.l+i*slot+slot/2;
-
-    const melhorIdx=slots.reduce((mi,s,i)=>s.prod>slots[mi].prod?i:mi,0);
-    const piorIdx=slots.reduce((mi,s,i)=>s.prod<slots[mi].prod?i:mi,0);
-
-    let bars='',labels='',annots='',grid='';
-
-    // Linha meta/hora
-    const yM=sy(metaH);
-    grid+=`<line x1="${pad.l}" y1="${yM}" x2="${W-pad.r}" y2="${yM}" stroke="#FF5C1F" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>`;
-    grid+=`<text x="${W-pad.r+2}" y="${yM+3}" font-size="7" fill="#FF5C1F" font-family="'IBM Plex Mono',monospace" opacity="0.8">META/H</text>`;
-
-    // Grade
-    [0,0.5,1].forEach(f=>{
-      const y=sy(maxV*f);
-      grid+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#eee" stroke-width="0.8"/>`;
-      grid+=`<text x="${pad.l-4}" y="${y+3}" text-anchor="end" font-size="7" fill="#ccc" font-family="'IBM Plex Mono',monospace">${Math.round(maxV*f)}</text>`;
-    });
-
-    slots.forEach((s,i)=>{
-      const x=cx(i);
-      const yR=sy(s.prod);
-      const isMelhor=i===melhorIdx;
-      const isPior=i===piorIdx;
-      const clr=isMelhor?'#4CAF50':isPior?'#F44336':s.prod>=metaH*0.9?'#4CAF50':s.prod>=metaH*0.7?'#FF9800':'#ef5350';
-
-      bars+=`<rect x="${x-bw/2}" y="${yR}" width="${bw}" height="${ch+pad.t-yR}" fill="${clr}" rx="2" opacity="${isMelhor||isPior?1:0.75}"/>`;
-
-      // Label valor nos destaques
-      if(isMelhor||isPior){
-        bars+=`<rect x="${x-bw/2-1}" y="${yR-1}" width="${bw+2}" height="${ch+pad.t-yR+1}" fill="none" stroke="${clr}" stroke-width="1.5" rx="2"/>`;
-        annots+=`<text x="${x}" y="${yR-6}" text-anchor="middle" font-size="8" font-weight="bold" fill="${clr}" font-family="'IBM Plex Mono',monospace">${s.prod}</text>`;
-        annots+=`<text x="${x}" y="${yR-16}" text-anchor="middle" font-size="7" fill="${clr}" font-family="'IBM Plex Mono',monospace">${isMelhor?'▲ MELHOR':'▼ PIOR'}</text>`;
-      }
-
-      // Label hora
-      const label=(s.label||s.horario||'').substring(0,5);
-      labels+=`<text x="${x}" y="${H-4}" text-anchor="middle" font-size="6.5" fill="#aaa" font-family="'IBM Plex Mono',monospace">${label}</text>`;
-    });
-
-    const svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">${grid}${bars}${annots}${labels}</svg>`;
-
-    return `${header}<div class="rp-chart-wrap" style="margin-bottom:4px;padding:10px 12px">${svg}
-      <div style="display:flex;gap:16px;margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#888">
-        <span><span style="color:#4CAF50">■</span> Melhor: ${slots[melhorIdx].prod} cx (${(slots[melhorIdx].label||slots[melhorIdx].horario||'').substring(0,5)})</span>
-        <span><span style="color:#F44336">■</span> Pior: ${slots[piorIdx].prod} cx (${(slots[piorIdx].label||slots[piorIdx].horario||'').substring(0,5)})</span>
-        <span><span style="color:#FF5C1F">— —</span> Meta/hora aprox.</span>
-      </div>
-    </div>`;
-  }
-
-  // Fallback: sem slots detalhados → visual com melhor/pior/real
-  const W=680, H=80, pad={t:16,r:12,b:20,l:40};
-  const ch=H-pad.t-pad.b, cw=W-pad.l-pad.r;
-  const maxV=Math.max(dia.melhor,dia.meta/8,1);
-  const sy=v=>pad.t+ch-(v/maxV)*ch;
-  const bw=40;
-
-  // 3 barras: Pior | Médio | Melhor
-  const medio=Math.round(dia.real/Math.max(dia.real>0?Math.ceil(dia.real/dia.melhor):1,1));
-  const pts=[
-    {v:dia.pior,  lbl:'PIOR',   clr:'#F44336', x:pad.l+cw*0.2},
-    {v:Math.round(dia.real/(dia.meta>0?Math.round(dia.meta/dia.melhor):8)), lbl:'MÉDIA/H', clr:'#FF9800', x:pad.l+cw*0.5},
-    {v:dia.melhor,lbl:'MELHOR', clr:'#4CAF50', x:pad.l+cw*0.8},
-  ];
-
-  let bars2='';
-  pts.forEach(p=>{
-    const y=sy(p.v);
-    bars2+=`<rect x="${p.x-bw/2}" y="${y}" width="${bw}" height="${ch+pad.t-y}" fill="${p.clr}" rx="2" opacity="0.8"/>`;
-    bars2+=`<text x="${p.x}" y="${y-5}" text-anchor="middle" font-size="9" font-weight="bold" fill="${p.clr}" font-family="'IBM Plex Mono',monospace">${p.v} cx</text>`;
-    bars2+=`<text x="${p.x}" y="${H-4}" text-anchor="middle" font-size="8" fill="#aaa" font-family="'IBM Plex Mono',monospace">${p.lbl}</text>`;
-  });
-
-  const svg2=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">
-    <line x1="${pad.l}" y1="${pad.t}" x2="${W-pad.r}" y2="${pad.t}" stroke="#eee" stroke-width="0.8"/>
-    ${bars2}
-  </svg>`;
-
-  return `${header}<div class="rp-chart-wrap" style="margin-bottom:4px;padding:10px 12px">
-    ${svg2}
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#bbb;margin-top:4px">
-      * Dados detalhados por hora não disponíveis para este dia
-    </div>
-  </div>`;
 }
 
 function _numSemana(d){
