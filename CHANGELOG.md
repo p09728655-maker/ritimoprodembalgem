@@ -34,9 +34,14 @@ prévia com os dados do dia e respondeu *"sim faz as duas"*.
 - **4 SEMANAS:** a 1ª semana soma o mesmo vencido. No dia a dia ele aparece
   como a linha *vencidos antes de dd/mm (o card ATRASO)*. A hora extra a
   programar sobe junto.
-- **Sem a programação detalhada de hoje**, o vencido fica fora e a tela avisa
-  logo abaixo do veredito. As duas impressões (🖨 TAKT e 🖨 4 SEMANAS) leem a
-  programação detalhada antes de montar.
+- **O vencido vem da mesma leitura da semana** (`.gs` v5.66: o
+  `getProgramacaoSemana` manda as linhas abertas com data antes da segunda, com
+  o saldo de cada uma). A 1ª versão tirava o vencido da programação detalhada,
+  lida em outra hora: um lançamento entre as duas leituras deixava o TAKT até
+  15 min atrás do card ATRASO (achado da revisão).
+- **Sem o vencido** (o `.gs` antigo, ou a semana não lida), ele fica fora e a
+  tela avisa logo abaixo do veredito. O card ATRASO diz *antes de dd/mm: fora
+  do TAKT*.
 
 **Atenção — o veredito da ESTA SEMANA e o atraso das 4 SEMANAS mudam de
 número.** Com os dados de 16/11 às 06:54:
@@ -54,12 +59,10 @@ número.** Com os dados de 16/11 às 06:54:
 
 O "pede 115,3%" é o mesmo nos dois casos.
 
-⚠ **re-deploy** do `.gs` v5.66. Antes dele:
-- o vencido já entra (é só painel);
-- o lote de hoje segue fora até o 1º lançamento, e a nota *"linhas sem saldo
-  confiável"* diz isso;
-- o código que tem vencido **e** lote hoje mostra o de hoje dentro da parte
-  "vencidos antes de dd/mm". O total fica certo.
+⚠ **re-deploy** do `.gs` v5.66. Antes dele nada muda no veredito: o vencido
+fica fora (a tela diz *"até colar o ritmoprod_appscript.gs v5.66"*) e o lote de
+hoje segue fora até o 1º lançamento (a nota *"linhas sem saldo confiável"* diz
+isso).
 
 ## v7.243.0 — 13/11/2026 · GERENCIAL DO PC: a UEP na frente
 

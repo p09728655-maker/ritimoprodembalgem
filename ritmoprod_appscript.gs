@@ -11,8 +11,13 @@
 //               Agora a linha de HOJE com as DUAS colunas vazias entra com a
 //               QTDE (nada foi lançado nela). Vencida com as colunas vazias, ou
 //               com o SALDO de outra linha (ERP colado por cima), segue null.
+//               E, na semana de hoje, o getProgramacaoSemana manda também o
+//               vencidoAntes: as linhas abertas com data ANTES da segunda, com o
+//               SALDO de cada uma — da MESMA leitura das linhas da semana (o card
+//               ATRASO menos o que venceu nesta semana). O painel soma no TAKT.
 //               ⚠ re-deploy manual. Antes dele o TAKT segue sem o lote de hoje
-//               até o 1º lançamento (a nota "linhas sem saldo confiável" diz).
+//               até o 1º lançamento e sem o vencido de antes da segunda (a tela
+//               diz que falta este .gs).
 // Versão: 5.65 — O TEMPO-ALVO PELA ESTEIRA (getTemposAlvo) e a EFICIÊNCIA DA
 //               EMBALAGEM na CONFIG_PAINEL (EFICIENCIA_EMB).
 //               PPCP, 12/11/2026, com o RACK MOVE 1.6 na tela do app (alvo
@@ -6598,7 +6603,8 @@ function getProgramacaoSemana(p) {
   const catByKey = {};
   lerCatalogoProdutos().forEach(function (pr) { catByKey[codKey(pr.codigo)] = pr; });
   const linhas = [];
-  lerProgramacao(true).forEach(function (pr) {
+  const prog = lerProgramacao(true);
+  prog.forEach(function (pr) {
     const dNum = dataParaNum(pr.data);
     if (!dNum || dNum < deNum || dNum > ateNum) return;
     const cat = catByKey[codKey(pr.codigo)];
@@ -6627,11 +6633,37 @@ function getProgramacaoSemana(p) {
     });
   });
   linhas.sort(function (a, b) { return (a.dataNum - b.dataNum) || ((a.ordem == null ? 1e9 : a.ordem) - (b.ordem == null ? 1e9 : b.ordem)); });
+  // v5.66 — O VENCIDO DE ANTES DA SEMANA (o card ATRASO menos o que venceu nesta
+  // semana), só quando a semana é a de hoje: as linhas ABERTAS da aba com data antes
+  // do "de", com o SALDO da própria linha (o _saldoConfiavel: null quando a célula não
+  // é dela). Vem da MESMA leitura das linhas da semana — o painel somava o `falta` da
+  // programação detalhada (lida a cada 15 min) menos o saldo desta leitura (a cada 5):
+  // um lançamento entre as duas punha caixa que já tinha saído no TAKT (revisão da
+  // v7.244.0). Arquivada, encerrada e fora da esteira não entram (saldo 0).
+  let vencidoAntes;
+  if (deNum <= hojeNum && hojeNum <= ateNum) {
+    vencidoAntes = [];
+    prog.forEach(function (pr) {
+      const dNum = dataParaNum(pr.data);
+      if (!dNum || dNum >= deNum || pr.arquivada || pr.foraEsteira || pr.encerrada) return;
+      const cat = catByKey[codKey(pr.codigo)];
+      const qtde = Number(pr.qtde) || 0;
+      vencidoAntes.push({
+        data: _numParaDataBR(dNum), dataNum: dNum, lote: pr.lote || '', ordem: pr.ordem == null ? null : pr.ordem,
+        codigo: cat ? cat.codigo : pr.codigo, desc: cat ? cat.desc : '', cor: produtoDoCodigo(cat ? cat.codigo : pr.codigo).cor,
+        qtde: qtde, uepCx: cat && cat.uep > 0 ? cat.uep : null, uep: cat && cat.uep > 0 ? Math.round(qtde * cat.uep * 10) / 10 : null,
+        saldo: pr.saldo, aba: 'aberta', encerrada: false, foraEsteira: false
+      });
+    });
+    vencidoAntes.sort(function (a, b) { return a.dataNum - b.dataNum; });
+  }
   const fer = _feriadosNums();
   const feriados = Object.keys(fer).map(Number).filter(function (n) { return n >= deNum && n <= ateNum; })
     .sort(function (a, b) { return a - b; }).map(function (n) { return { data: _numParaDataBR(n), desc: fer[n] }; });
-  return { ok: true, de: _numParaDataBR(deNum), ate: _numParaDataBR(ateNum), hoje: _numParaDataBR(hojeNum),
+  const out = { ok: true, de: _numParaDataBR(deNum), ate: _numParaDataBR(ateNum), hoje: _numParaDataBR(hojeNum),
            linhas: linhas, feriados: feriados };
+  if (vencidoAntes) out.vencidoAntes = vencidoAntes;
+  return out;
 }
 
 

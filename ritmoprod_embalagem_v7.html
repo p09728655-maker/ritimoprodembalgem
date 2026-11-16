@@ -5992,7 +5992,7 @@ async function _uepAbaCarregar(){
     await _uepAbaCatCarregar();
     // por último, a programação (a mais cara): só para apontar código sem UEP.
     // Reaproveita a leitura das outras abas se tiver menos de 15 min.
-    if(!PROG_DET_TS || Date.now()-PROG_DET_TS>GPX_TTL || !_progDetHoje()){ await carregarProgramacaoDetalhada(); if(_abaOn('uep')) renderUep(); }
+    if(!PROG_DET_TS || Date.now()-PROG_DET_TS>GPX_TTL){ await carregarProgramacaoDetalhada(); if(_abaOn('uep')) renderUep(); }
     // e o histórico por produto (bloco 7, o último da tela): o log do período com a hora.
     await _uepPadCarregar();
     // e a programação da semana (TAKT DA SEMANA, v7.209.0): a última, cache de 5 min.
@@ -10235,7 +10235,7 @@ function _uepSubProx(W, est){
 // ainda"). Horas só dos códigos com UEP: código sem UEP fica nas caixas e leva *.
 // est: 'lendo' | 'falha' | 'sem-uep' | 'sem-lista' (o .gs sem o atraso por código)
 // | 'vazia' (o dia lido, nada em aberto).
-function _uepSubAtr(P, A, est, hojeN){
+function _uepSubAtr(P, A, est, hojeN, antesFora){
   if(est) return est === 'vazia' ? { txt:'nada vencido', cls:'ok' }
     : { txt: est === 'falha' ? 'programação não lida' : est === 'sem-uep' ? 'sem UEP na programação' : est === 'sem-lista' ? '—' : '…', cls:'' };
   if(!A) return { txt:'…', cls:'' };
@@ -10244,7 +10244,7 @@ function _uepSubAtr(P, A, est, hojeN){
   // para 0 — tem UEP (uVenc > 0), então é "menos de 1 min", nunca "sem UEP"
   const k = P && P.conta, h = k && k.venc != null && k.uVenc > 0 ? (k.venc > 0 ? _fmtHM(k.venc) : 'menos de 1 min') + (A.semUep ? '*' : '') : null;
   const desde = (A.venc[0].desde || '').slice(0, 5);
-  const S = _uepAtrSub(A.venc, hojeN);
+  const S = _uepAtrSub(A.venc, hojeN, antesFora);
   return Object.assign({ txt:`${h ? h + ' · ' : ''}${fmtN(A.cxVenc)} cx${h ? '' : ' · sem UEP'}${desde ? ' · desde ' + desde : ''}`, cls:'red' },
     S ? { sub:S.sub, subT:S.t } : {});
 }
@@ -10252,17 +10252,24 @@ function _uepSubAtr(P, A, est, hojeN){
 // atraso já está na barra PRECISA do TAKT DA SEMANA — não é um 2º problema para
 // somar. Desde a v7.244.0 (PPCP, 16/11/2026: "6h04 não contempla o lote de hj?") o
 // TAKT soma TODO o vencido com UEP — o desta semana e o de antes da segunda, cada um
-// com a sua parte na legenda do PRECISA. Fica fora só o de código sem UEP (está só
-// nas caixas), e a linha diz. Curta de propósito (o card tem ~166 px a 1280); a
-// explicação vai no title. venc = A.venc (desde dd/MM/yyyy, uep null = sem UEP);
-// hojeN = aaaammdd (sem ele, sem a linha — o card de antes).
-function _uepAtrSub(venc, hojeN){
-  const L = (Array.isArray(venc) ? venc : []).filter(x => _cartNum(x && x.desde));
-  if(!Number(hojeN) || !L.length) return null;
-  const sem = L.some(v => v.uep == null), comUep = L.some(v => v.uep != null);
-  if(!sem) return { sub:'já está no PRECISA do TAKT', t:'Este atraso já está dentro da barra PRECISA do TAKT DA SEMANA — o vencido de antes da segunda e o desta semana, cada um com a sua parte na legenda: não some com o que falta da semana.' };
-  return { sub: comUep ? 'sem UEP (*): fora do TAKT' : 'sem UEP: fora do TAKT',
+// com a sua parte na legenda do PRECISA. Fora: o de código sem UEP (só nas caixas) e,
+// quando o TAKT ainda não tem o de antes da segunda (antesFora: 'gs' = o .gs antes da
+// v5.66; 'lendo' = a programação da semana não foi lida), esse. Curta de propósito (o
+// card tem ~166 px a 1280); a explicação vai no title. venc = A.venc (desde dd/MM/yyyy,
+// uep null = sem UEP); hojeN = aaaammdd (sem ele, sem a linha — o card de antes).
+function _uepAtrSub(venc, hojeN, antesFora){
+  const h = Number(hojeN) || 0, L = (Array.isArray(venc) ? venc : []).filter(x => _cartNum(x && x.desde));
+  if(!h || !L.length) return null;
+  const x = new Date(Math.floor(h / 10000), Math.floor(h / 100) % 100 - 1, h % 100);
+  x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+  const seg = x.getFullYear() * 10000 + (x.getMonth() + 1) * 100 + x.getDate(), sd = `${p2(x.getDate())}/${p2(x.getMonth() + 1)}`;
+  const antes = !!antesFora && L.some(v => _cartNum(v.desde) < seg && v.uep != null), sem = L.some(v => v.uep == null), comUep = L.some(v => v.uep != null);
+  const porq = antesFora === 'gs' ? 'falta colar o ritmoprod_appscript.gs v5.66 no Apps Script' : 'a programação da semana ainda não foi lida';
+  if(!sem && !antes) return { sub:'já está no PRECISA do TAKT', t:'Este atraso já está dentro da barra PRECISA do TAKT DA SEMANA — o vencido de antes da segunda e o desta semana, cada um com a sua parte na legenda: não some com o que falta da semana.' };
+  if(antes && !sem) return { sub:'antes de ' + sd + ': fora do TAKT', t:'O vencido de antes de ' + sd + ' ainda está fora do TAKT DA SEMANA (' + porq + '). O de ' + sd + ' em diante já está na barra PRECISA.' };
+  if(sem && !antes) return { sub: comUep ? 'sem UEP (*): fora do TAKT' : 'sem UEP: fora do TAKT',
     t:'O vencido de código sem UEP no cadastro fica fora do TAKT DA SEMANA (está só nas caixas).' + (comUep ? ' O resto já está na barra PRECISA.' : '') };
+  return { sub:'antes de ' + sd + ' e sem UEP: fora', t:'Ficam fora do TAKT DA SEMANA o vencido de código sem UEP (só nas caixas) e o de antes de ' + sd + ' (' + porq + ').' };
 }
 // O toque: PRÓXIMOS DIAS com o quadro aberto, rolado até ele.
 function _uepAtrAbrir(){
@@ -10755,13 +10762,14 @@ function _taktMontar(S, hist, H, pts, est){
   // contempla o lote de hj?" → o TAKT dizia FECHA com 6h04 de atraso fora). Só a esta semana
   // (h.antes vem do _taktHoje): undefined = quem chama não é a esta semana, nada muda;
   // null = a programação detalhada de hoje ainda não foi lida (a tela diz); objeto = somado
-  // ao saldo — horas, caixas e o que não tem UEP, como os lotes da semana.
+  // ao saldo — horas, caixas e o que não tem UEP, como os lotes da semana. false = o .gs não
+  // manda o vencido (antes da v5.66): fica fora e a tela diz que falta colar o arquivo.
   if(hojeN>=deN && hojeN<=ateN && h.antes!==undefined){
-    if(!h.antes) falta.antesLendo=true;
+    if(!h.antes) falta.antesFora=h.antes===false ? 'gs' : 'lendo';
     else {
       const a=h.antes, au=Math.max(0, Number(a.uep)||0), ac=Math.max(0, Number(a.cx)||0), as=Math.max(0, Number(a.cxSemUep)||0);
       falta.uepAntes=au; falta.cxAntes=ac+as; falta.cxAntesSemUep=as; falta.antesDesde=a.desde||null;
-      falta.uep+=au; falta.cx+=ac+as; falta.cxSemUep+=as;
+      falta.uep+=au; falta.cx+=ac+as; falta.cxSemUep+=as; falta.semSaldo+=Math.max(0, Number(a.semSaldo)||0);
     }
   }
   // o feito: dias fechados do histórico; hoje, o da ⚖ UEP
@@ -11390,7 +11398,10 @@ function _tkaPainel(fimN){
   const seg=new Date(); seg.setDate(seg.getDate()-((seg.getDay()+6)%7));
   const segN=seg.getFullYear()*10000+(seg.getMonth()+1)*100+seg.getDate();
   const falhou=Object.keys(TKF).filter(k=>TKF[k].falha && !TKF[k].S).map(k=>k.split('|')[0]);
-  if(_progDetHoje()) lin.push(..._tkaVencidoAntes(PROG_DETALHADA, TKS && _cartNum(TKS.hoje)===hojeN ? TKS.linhas : [], segN, hojeN));
+  // v7.244.0: o vencido de antes da segunda da MESMA leitura das linhas da semana (.gs v5.66);
+  // sem ele, o `falta` da programação detalhada menos o saldo da semana (as horas das duas leituras diferem)
+  if(TKS && _cartNum(TKS.hoje)===hojeN && Array.isArray(TKS.vencidoAntes)) lin.push(...TKS.vencidoAntes);
+  else if(_progDetHoje()) lin.push(..._tkaVencidoAntes(PROG_DETALHADA, TKS && _cartNum(TKS.hoje)===hojeN ? TKS.linhas : [], segN, hojeN));
   else { faltam.push('o vencido'); if(TKA_VENC_FALHA) falhou.push('o vencido'); }
   return { lin, faltam, fer, falhou };
 }
@@ -11421,30 +11432,35 @@ function _tkaVencidoAntes(prog, linSemana, segN, hojeN){
 }
 // O VENCIDO DE ANTES DESTA SEGUNDA no TAKT DA SEMANA e nas 4 SEMANAS (v7.244.0, PPCP
 // 16/11/2026: "6h04 não contempla o lote de hj?" → o TAKT dizia FECHA com o atraso fora).
-// As linhas são as do _tkaVencidoAntes (o AVALIAR já usa: por código, UMA vez, o falta do
-// FIFO menos o saldo desta semana até hoje) — é o card ATRASO menos o que venceu nesta
-// semana (que o TAKT já tem, linha a linha). Conta pura: { uep, cx (com UEP), cxSemUep,
-// desde (aaaammdd do mais antigo com saldo) }.
+// As linhas vêm da MESMA leitura das linhas da semana: o getProgramacaoSemana (.gs v5.66)
+// manda o `vencidoAntes` — as linhas abertas com data antes da segunda, com o SALDO de
+// cada uma. ⚠ Não do `falta` da programação detalhada menos o saldo da semana (a 1ª
+// versão): as duas leituras têm horas diferentes (15 min × 5 min) e um lançamento entre
+// elas punha no TAKT caixa que já tinha saído (revisão). Conta pura: { uep, cx (com UEP),
+// cxSemUep, semSaldo (linhas sem saldo confiável), desde (aaaammdd do mais antigo) }.
 function _taktAntesSoma(lin){
-  const a={ uep:0, cx:0, cxSemUep:0, desde:null };
+  const a={ uep:0, cx:0, cxSemUep:0, semSaldo:0, desde:null };
   (Array.isArray(lin) ? lin : []).forEach(l=>{
-    const s=Number(l && l.saldo)||0;
-    if(!(s>0) || l.foraEsteira) return;
+    if(!l || l.foraEsteira) return;
+    if(l.saldo==null){ a.semSaldo++; return; }
+    const s=Number(l.saldo)||0;
+    if(!(s>0)) return;
     const u=Number(l.uepCx)>0 ? Number(l.uepCx) : null;
     if(u){ a.uep+=s*u; a.cx+=s; } else a.cxSemUep+=s;
     const n=Number(l.dataNum)||0; if(n && (!a.desde || n<a.desde)) a.desde=n;
   });
   return a;
 }
-// Do painel: null = a programação detalhada DE HOJE ainda não foi lida (o `falta` dela é o
-// atraso do dia da leitura) — a tela diz, nunca soma 0 calada.
+// Do painel: a soma (objeto); null = a programação da semana DE HOJE ainda não foi lida;
+// false = o Apps Script não manda o vencido (.gs antes da v5.66). A tela diz os dois —
+// nunca soma 0 calada.
 function _taktAntesDoPainel(hojeN){
-  if(!_progDetHoje()) return null;
-  const x=new Date(Math.floor(hojeN/10000), Math.floor(hojeN/100)%100-1, hojeN%100);
-  x.setDate(x.getDate()-((x.getDay()+6)%7));
-  const segN=x.getFullYear()*10000+(x.getMonth()+1)*100+x.getDate();
-  return _taktAntesSoma(_tkaVencidoAntes(PROG_DETALHADA, TKS && _cartNum(TKS.hoje)===hojeN ? TKS.linhas : [], segN, hojeN));
+  if(!TKS || _cartNum(TKS.hoje)!==hojeN) return null;
+  if(!Array.isArray(TKS.vencidoAntes)) return false;
+  return _taktAntesSoma(TKS.vencidoAntes);
 }
+// Por que o vencido de antes da segunda está FORA do TAKT: 'gs' · 'lendo' · null (está dentro).
+function _taktAntesFora(hojeN){ const a=_taktAntesDoPainel(hojeN); return a===false ? 'gs' : !a ? 'lendo' : null; }
 // Lê o que faltar (na fila: uma leitura do Apps Script por vez) e redesenha.
 function _tkaPainelCarregar(fimN){
   if(TKA_VOO) return TKA_VOO;
@@ -11460,8 +11476,8 @@ function _tkaPainelCarregar(fimN){
         const r=await _taktLer('&de='+encodeURIComponent(f.de)+'&ate='+encodeURIComponent(f.ate));
         TKF[key]={ S:r.S||null, falha:r.falha||null, ts:Date.now() };
       }
-      if(!_progDetHoje()) await carregarProgramacaoDetalhada();   // o vencido de antes da segunda (a de ontem passou do TTL: relê)
-      TKA_VENC_FALHA=_progDetHoje() ? 0 : Date.now();
+      if(!Array.isArray(TKS && TKS.vencidoAntes) && !_progDetHoje()) await carregarProgramacaoDetalhada();   // o vencido de antes da segunda (.gs sem o vencidoAntes; a de ontem passou do TTL: relê)
+      TKA_VENC_FALHA=Array.isArray(TKS && TKS.vencidoAntes) || _progDetHoje() ? 0 : Date.now();
     }catch(e){ console.warn('[UEP] avaliar · painel:', e.message); }
   })().finally(()=>{ TKA_VOO=null; if(_abaOn('uep') && UEP_SUB==='takt' && TKS_SEM===2) renderUep(); });
   return TKA_VOO;
@@ -11758,7 +11774,7 @@ function _taktSemanasMontar(L, rit){
     if(ok && conta){ A=Math.max(0, A+precisa-tem); if(AR!=null) AR=Math.max(0, AR+precR-tem); }
     return { i, de:T.de, ate:T.ate, ini, fim:fimU, fimConta:ultConta, hoje:i===0, vazia, semUep, conta, precisa, tem, falta:precisa-tem,
              atraso:ok ? A : null, atrasoR:ok && AR!=null ? AR : null, antes:i===0 ? Math.round(uVenc*k) : 0,
-             antesSeg:Math.round(uAnt*k), antesDe:String(T.de||'').slice(0, 5), antesLendo:i===0 && !!(T.falta && T.falta.antesLendo),
+             antesSeg:Math.round(uAnt*k), antesDe:String(T.de||'').slice(0, 5), antesFora:i===0 && T.falta && T.falta.antesFora || null,
              cxAntesSemUep:i===0 ? Math.max(0, Number(T.falta && T.falta.cxAntesSemUep)||0) : 0,
              cxSemUep:T.cxSemUep, feriados:T.dias.filter(d=>d.feriado && d.dow>=1 && d.dow<=5).map(d=>d.data), fora, semUepD, he, dias:conta ? dias : [],   // semana sem conta: nada a abrir
              ext, nUtFut, uIniFut, uFimFut };
@@ -11772,7 +11788,7 @@ function _taktSemanasMontar(L, rit){
   // hora paga à toa). Duas formas: sábado primeiro, ou dia útil primeiro.
   const sug=ok && ult && ult.atraso>0 ? _taktHeSugestao(semanas, semanas.indexOf(ult)) : null;
   return { semanas, completo:ok, fim:ult ? (ult.fimConta || ult.fim) : null, atraso:ult ? ult.atraso : null, atrasoR:ult ? ult.atrasoR : null,
-           antesLendo:!!(semanas[0] && semanas[0].antesLendo), antesDe:semanas[0] ? semanas[0].antesDe : null,
+           antesFora:semanas[0] && semanas[0].antesFora || null, antesDe:semanas[0] ? semanas[0].antesDe : null,
            nFora:semanas.reduce((a, s)=>a+(s.conta ? s.fora.length+s.semUepD.length : 0), 0), ritPct:rf ? 100/rf : null,
            heProg:semanas.reduce((a, s)=>a.concat(s.he || []), []),   // a hora extra JÁ programada (lote em sábado ou feriado)
            sug };
@@ -11844,7 +11860,7 @@ function _taktSemanasHtml(C, o){
     +(rr && C.atrasoR!=null ? ` No ritmo atual (${fmtP(C.ritPct)} da média): ${C.atrasoR>0 ? `<b>${hm(C.atrasoR)}</b> a programar${_tkaDias(C.atrasoR)}` : '<b>nenhuma</b>'}.` : '')
     +(C.nFora ? ` <span class="mono">Dia útil sem programação fica fora (${plural(C.nFora, 'dia', 'dias')}).</span>` : '')
     +(C.completo ? '' : ' <span class="mono">(até onde foi lido)</span>')
-    +(C.antesLendo ? ` <span class="mono">O vencido de antes de ${e(dd(C.antesDe))} (o card ATRASO) não foi lido — está fora.</span>` : '')+'</div>';
+    +(C.antesFora ? ` <span class="mono">${_taktAntesForaTxt(C.antesFora, C.antesDe)}</span>` : '')+'</div>';
   // A SUGESTÃO, direta (PPCP: "essa frase deixa dúvida"): o dia e o horário. Sábado e feriado das 05:00
   // às 11:00; dia útil no máximo 2h por dia (a conta já corta), na madrugada terminando no início do
   // turno — com o turno começando antes das 07:00, o que não cabe nela vai para depois do fim do turno
@@ -12122,11 +12138,15 @@ function _taktHerancaHtml(V, S, per){
 // semana viraram blocos próprios (_taktFecharHtml, _taktHerancaHtml).
 // o: { semana:'esta'|'prox', ate, nUteis, unid, ritmo }
 const TKS_RITMO_DESVIO=5;
-// v7.244.0: sem a programação detalhada de hoje, o vencido de antes da segunda não entrou no
-// PRECISA — diz, logo abaixo do veredito (nunca soma 0 calado). papel: a pele da 🖨.
+// v7.244.0: sem o vencido de antes da segunda (o .gs antes da v5.66, ou a leitura da semana
+// de hoje que faltou) — diz, logo abaixo do veredito (nunca soma 0 calado). papel: a pele da 🖨.
+function _taktAntesForaTxt(fora, de){
+  const v=`O vencido de antes de ${_rpEsc(String(de||'').slice(0, 5))} (o card ATRASO)`;
+  return fora==='gs' ? `${v} fica fora do PRECISA até colar o ritmoprod_appscript.gs v5.66 no Apps Script.` : `${v} não foi lido — está fora do PRECISA.`;
+}
 function _taktAntesAviso(T, papel){
-  if(!T || !T.falta || !T.falta.antesLendo) return '';
-  const t=`O vencido de antes de ${_rpEsc(String(T.de||'').slice(0, 5))} (o card ATRASO) não foi lido — está fora do PRECISA.`;
+  if(!T || !T.falta || !T.falta.antesFora) return '';
+  const t=_taktAntesForaTxt(T.falta.antesFora, T.de);
   return papel ? `<div class="tks-por"><b>Atenção:</b> ${t}</div>` : `<div class="uep-nota" style="color:var(--warn);margin:0 0 8px">${t}</div>`;
 }
 function _taktHeroHtml(V, o){
@@ -12389,7 +12409,6 @@ async function gerarRelatorio4Semanas(){
     if(!TKS || _cartNum(TKS.hoje)!==hojeN || Date.now()-TKS_TS>TKS_TTL){ msg('Lendo a programação desta semana…'); await _taktCarregar(true); }
     if(!TKP || TKP.de!==w.de || Date.now()-TKP_TS>TKS_TTL){ msg('Lendo a programação da semana que vem…'); await _taktProxCarregar(true); }
     if(!TK4 || TK4.de!==f4.de || Date.now()-TK4_TS>TKS_TTL){ msg('Lendo a programação das semanas 3 e 4…'); await _taktSemanas4Carregar(true); }
-    if(!_progDetHoje()){ msg('Lendo o atraso (lotes vencidos)…'); await carregarProgramacaoDetalhada(); }   // v7.244.0: o vencido de antes da segunda
   }catch(e){}
   if(!UEP_HIST){ win.close(); alert('Não consegui ler o histórico (os dias fechados da semana).\nTente de novo em alguns segundos.'); return; }
   if(!TKS || _cartNum(TKS.hoje)!==hojeN){ win.close(); alert('Não consegui ler a programação desta semana'+(TKS_ERRO ? ': '+TKS_ERRO : '')+'.\nTente de novo em alguns segundos.'); return; }
@@ -12426,7 +12445,6 @@ async function gerarRelatorioTakt(){
     if(!UEP_HIST){ msg('Lendo o histórico (os dias fechados)…'); await _uepAbaHistCarregar(); }
     if(!TKS || _cartNum(TKS.hoje)!==hojeN || Date.now()-TKS_TS>TKS_TTL){ msg('Lendo a programação desta semana…'); await _taktCarregar(true); }
     if(!TKP || TKP.de!==w.de || Date.now()-TKP_TS>TKS_TTL){ msg('Lendo a programação da semana que vem…'); await _taktProxCarregar(true); }
-    if(!_progDetHoje()){ msg('Lendo o atraso (lotes vencidos)…'); await carregarProgramacaoDetalhada(); }   // v7.244.0: o vencido de antes da segunda
   }catch(e){}
   if(!UEP_HIST){ win.close(); alert('Não consegui ler o histórico (os dias fechados da semana).\nTente de novo em alguns segundos.'); return; }
   if(!TKS || _cartNum(TKS.hoje)!==hojeN){ win.close(); alert('Não consegui ler a programação desta semana'+(TKS_ERRO ? ': '+TKS_ERRO : '')+'.\nTente de novo em alguns segundos.'); return; }
@@ -20555,11 +20573,9 @@ function renderProxDias(){
   // aproveita). Em voo, o fim da leitura redesenha.
   // ⚠ Leitura que falhou não pode disparar outra no fim dela (o fim redesenha):
   // entre duas tentativas há pelo menos 1 min.
-  // v7.244.0: a de OUTRO dia também (o TAKT soma o vencido do `falta` dela, que é o atraso do
-  // dia da leitura), e o fim redesenha a aba inteira com o TAKT na tela (o veredito muda)
-  if((!PROG_DET_TS || Date.now() - PROG_DET_TS > GPX_TTL || !_progDetHoje()) && !GPX_CARREGANDO && !REG_RODANDO && Date.now() - GPX_TENT > 60000){
+  if((!PROG_DET_TS || Date.now() - PROG_DET_TS > GPX_TTL) && !GPX_CARREGANDO && !REG_RODANDO && Date.now() - GPX_TENT > 60000){
     GPX_CARREGANDO = true; GPX_TENT = Date.now();
-    carregarProgramacaoDetalhada().finally(() => { GPX_CARREGANDO = false; if(_abaOn('uep') && UEP_SUB === 'takt') renderUep(); else renderProxDias(); });
+    carregarProgramacaoDetalhada().finally(() => { GPX_CARREGANDO = false; renderProxDias(); });
   }
   box.style.display = '';
   const sb = o => _sbPinta(document.getElementById('uep-sb-prox'), o);   // o número do botão PRÓXIMOS DIAS (v7.198.0)
@@ -20579,7 +20595,7 @@ function renderProxDias(){
   sb(_uepSubProx(W));
   // sem a lista por código: o dia ainda não foi lido ('…'), nada em aberto, ou o .gs sem o atraso por código
   const lista = (PONTOS_DIA.programacao && PONTOS_DIA.programacao.lista) || [];
-  sbA(_uepSubAtr(P, A, A ? null : !PONTOS_DIA_TS ? 'lendo' : lista.length ? 'sem-lista' : 'vazia', _cartNum(hojeStr())));
+  sbA(_uepSubAtr(P, A, A ? null : !PONTOS_DIA_TS ? 'lendo' : lista.length ? 'sem-lista' : 'vazia', _cartNum(hojeStr()), _taktAntesFora(_cartNum(hojeStr()))));
   const sub = document.getElementById('gpx-sub');
   if(sub) sub.textContent = 'horas de linha · jornada ' + _fmtHM(UEP_MIN_DIA) + ' · programação de ' + new Date(PROG_DET_TS).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 }

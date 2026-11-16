@@ -5095,7 +5095,7 @@ console.log('\n── estudo de UEP ──');
     { const RPXa = pega('function renderProxDias(');
       ok('o cartão é pintado pelo renderProxDias em cada desfecho (o mesmo A do quadro); sem a lista: dia não lido "…", nada em aberto "nada vencido"',
          [/sbA\(_uepSubAtr\(null, null, f \? 'falha' : 'lendo'\)\)/.test(RPXa), /sbA\(_uepSubAtr\(null, null, 'sem-uep'\)\)/.test(RPXa),
-          /sbA\(_uepSubAtr\(P, A, A \? null : !PONTOS_DIA_TS \? 'lendo' : lista\.length \? 'sem-lista' : 'vazia', _cartNum\(hojeStr\(\)\)\)\)/.test(RPXa),
+          /sbA\(_uepSubAtr\(P, A, A \? null : !PONTOS_DIA_TS \? 'lendo' : lista\.length \? 'sem-lista' : 'vazia', _cartNum\(hojeStr\(\)\), _taktAntesFora\(_cartNum\(hojeStr\(\)\)\)\)\)/.test(RPXa),
           /_gpxMontar\(|_gpxDivida\(|uepCx|porMin/.test(pega('function _uepSubAtr('))], [true, true, true, false]);
       ok('o cartão mora na faixa, à vista em qualquer sub-aba, mas NÃO é sub-aba (sem data-sub e sem role=tab; o _uepSubMarca só acende as sub-abas); o toque abre o quadro',
          [/<button type="button" class="ucv-sb uep-sb-atr" onclick="_uepAtrAbrir\(\)"[^>]*><b>ATRASO<\/b><span id="uep-sb-atr">…<\/span><small id="uep-sb-atr-s" style="display:none"><\/small><\/button>/.test(src),
@@ -5117,10 +5117,18 @@ console.log('\n── estudo de UEP ──');
           sub([v('13/11/2026')], 20261116), sub([v('09/11/2026')], 20261115), sub([v('24/12/2026')], 20270101), sub([v('30/12/2026')], 20270101)],
          ['já está no PRECISA do TAKT', 'já está no PRECISA do TAKT', 'já está no PRECISA do TAKT', 'sem UEP: fora do TAKT', 'sem UEP (*): fora do TAKT',
           'sem UEP (*): fora do TAKT', 'já está no PRECISA do TAKT', 'já está no PRECISA do TAKT', 'já está no PRECISA do TAKT', 'já está no PRECISA do TAKT']);
+      // revisão da v7.244.0: o vencido de antes da segunda só está no TAKT quando a leitura da semana o traz (.gs v5.66) —
+      // sem ele (antesFora 'gs' ou 'lendo'), o card não pode dizer que já está
+      const subF = (L, h, f) => { const r = _uepAtrSub(L, h, f); return r && r.sub; };
+      ok('2ª linha com o TAKT SEM o vencido de antes da segunda (.gs antigo ou semana não lida): de antes, fora; desta semana, dentro; sem UEP, fora; os dois, os dois; e o title diz por quê',
+         [subF([v('06/11/2026'), v('10/11/2026')], 20261113, 'gs'), subF([v('10/11/2026'), v('12/11/2026')], 20261113, 'gs'), subF([v('10/11/2026', null)], 20261113, 'gs'),
+          subF([v('06/11/2026'), v('11/11/2026', null)], 20261113, 'lendo'), subF([v('13/11/2026')], 20261116, 'gs'), subF([v('06/11/2026', null)], 20261113, 'gs'),
+          /falta colar o ritmoprod_appscript\.gs v5\.66/.test(_uepAtrSub([v('06/11/2026')], 20261113, 'gs').t), /a programação da semana ainda não foi lida/.test(_uepAtrSub([v('06/11/2026')], 20261113, 'lendo').t)],
+         ['antes de 09/11: fora do TAKT', 'já está no PRECISA do TAKT', 'sem UEP: fora do TAKT', 'antes de 09/11 e sem UEP: fora', 'antes de 16/11: fora do TAKT', 'sem UEP: fora do TAKT', true, true]);
       ok('sem o dia, sem lista ou sem data: nada (o card de antes); toda frase cabe no card (até 30 caracteres) e o title explica a regra',
          [_uepAtrSub([v('10/11/2026')]), _uepAtrSub([], 20261113), _uepAtrSub([v('')], 20261113), _uepAtrSub(null, 20261113),
           [['10/11/2026'], ['06/11/2026'], ['10/11/2026', null], ['06/11/2026', null]].every(([d, u]) => (sub([v(d, u)], 20261113) || '').length <= 30)
-            && ['já está no PRECISA do TAKT', 'sem UEP (*): fora do TAKT'].every(t => t.length <= 30),
+            && ['já está no PRECISA do TAKT', 'sem UEP (*): fora do TAKT', 'antes de 09/11 e sem UEP: fora', 'antes de 16/11: fora do TAKT'].every(t => t.length <= 30),
           /o vencido de antes da segunda e o desta semana/.test(_uepAtrSub([v('06/11/2026')], 20261113).t) && /sem UEP no cadastro fica fora do TAKT DA SEMANA/.test(_uepAtrSub([v('06/11/2026', null)], 20261113).t),
           /FALTAM/.test(pega('function _uepAtrSub('))],
          [null, null, null, null, true, true, false]); }
@@ -5129,7 +5137,10 @@ console.log('\n── estudo de UEP ──');
       ok('o card com o dia: a 2ª linha (sub) e o title (subT) vêm juntos, o resto igual; o * de código sem UEP vira "sem UEP (*)"; sem o dia, sem vencido ou sem leitura, sem sub',
          [Rh.sub, /barra PRECISA/.test(Rh.subT), Rh.txt === _uepSubAtr(PA, AMh).txt, _uepSubAtr(PA, AM, null, 20261113).sub,
           'sub' in _uepSubAtr(PA, AMh), 'sub' in _uepSubAtr(PA, AM0, null, 20261113), 'sub' in _uepSubAtr(null, null, 'lendo', 20261113)],
-         ['já está no PRECISA do TAKT', true, true, 'sem UEP (*): fora do TAKT', false, false, false]); }
+         ['já está no PRECISA do TAKT', true, true, 'sem UEP (*): fora do TAKT', false, false, false]);
+      ok('o card passa adiante se o TAKT tem o vencido de antes da segunda (5º parâmetro)',
+         [_uepSubAtr(PA, AMh, null, 20261113, 'gs').sub, _uepSubAtr(PA, AM, null, 20261113, 'gs').sub, _uepSubAtr(PA, AMh, null, 20261113, null).sub],
+         ['já está no PRECISA do TAKT', 'antes de 09/11 e sem UEP: fora', 'já está no PRECISA do TAKT']); }   // o AMh é de 10/11: desta semana
     { // o efeito no DOM: o sbA real do renderProxDias pintando um <small> de mentira, nos estados que se seguem
       const RPXb = pega('function renderProxDias('), m = RPXb.match(/const sbA = o => \{[\s\S]*?\};/);
       const el = {}, sm = { style:{} }, docOrig = global.document;

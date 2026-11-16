@@ -980,17 +980,29 @@ console.log('\n── v5.66: o lote de hoje antes do 1º lançamento ──');
 {
   // hoje = segunda, 16/11/2026. Semana 16–22/11 (20/11 feriado).
   const prog = [
-    { lote: 'V1', data: '13/11', ordem: 1, cod: '501142004', qtde: 390, prod: 180 },   // semana passada: fora da semana
+    { lote: 'V1', data: '13/11', ordem: 1, cod: '501142004', qtde: 390, prod: 180 },   // semana passada: no vencidoAntes, saldo 210
+    { lote: 'V2', data: '10/11', ordem: 1, cod: '501071004', qtde: 100, prod: 0 },     // vencida mais antiga: 100
+    { lote: 'V3', data: '12/11', ordem: 1, cod: '501126002', qtde: 50, prod: 10, saldo: 99 },   // SALDO de outra linha (ERP colado): null
+    { lote: 'V4', data: '11/11', ordem: 1, cod: '501134001', qtde: 80, prod: 30, enc: 'X' },    // vencida encerrada: fora
     { lote: 'A1', data: '16/11', ordem: 1, cod: '501089001', qtde: 130, prod: 128 },   // hoje, adiantada: 2
     { lote: 'A2', data: '16/11', ordem: 2, cod: '501128002', qtde: 140 },              // hoje, PRODUZIDO e SALDO vazios: a QTDE
     { lote: 'A3', data: '16/11', ordem: 3, cod: '501140001', qtde: 380, saldo: 20 },   // hoje, só o SALDO (de outra linha): null
     { lote: 'A4', data: '16/11', ordem: 4, cod: '501140002', qtde: 400, enc: 'X' },    // hoje encerrada: 0
     { lote: 'A5', data: '17/11', ordem: 1, cod: '501134002', qtde: 450 },              // futura: a QTDE
   ];
-  const m = montar(prog, [], { hoje: '16/11/2026', fer: [['DATA', 'DESCRICAO'], ['20/11/2026', 'CONSCIÊNCIA NEGRA']] });
+  const arq = [['LOTE', 'DATA', 'ORDEM', 'CODIGO', 'DESCRICAO', 'QTD_CX', 'PRODUZIDO', 'SALDO', 'PERCENTUAL', 'STATUS', 'ATUALIZADO_EM', 'ARQUIVADO_EM'],
+    ['V0', '09/11/2026', 1, '501088001', 'X', 95, 95, 0, 100, 'CONCLUIDO', '', '']];   // arquivada: fora do vencido
+  const m = montar(prog, [], { hoje: '16/11/2026', arq: arq, fer: [['DATA', 'DESCRICAO'], ['20/11/2026', 'CONSCIÊNCIA NEGRA']] });
   const sem = (args) => vm.runInContext(`(function(){ _invalidarValores(); return getProgramacaoSemana(${JSON.stringify(args || {})}); })()`, m.ctx);
   const r = sem();
   const de = cod => (r.linhas.find(x => x.codigo === cod) || {}).saldo;
+  // o VENCIDO DE ANTES DA SEMANA, da MESMA leitura (revisão da v7.244.0: o painel somava o `falta` da
+  // programação detalhada, lida em outra hora, menos o saldo desta — um lançamento entre as duas errava)
+  ok('o vencidoAntes: as linhas ABERTAS com data antes da segunda, a mais antiga primeiro, com o SALDO da própria linha (o ERP colado por cima, null); encerrada e arquivada fora',
+     (r.vencidoAntes || []).map(x => [x.data, x.codigo, x.saldo]),
+     [['10/11/2026', '501071004', 100], ['12/11/2026', '501126002', null], ['13/11/2026', '501142004', 210]]);
+  ok('só na semana de hoje: lendo a semana que vem (ou a passada), não vem o vencidoAntes',
+     ['vencidoAntes' in sem({ de: '23/11/2026', ate: '29/11/2026' }), 'vencidoAntes' in sem({ de: '09/11/2026', ate: '15/11/2026' }), Array.isArray(r.vencidoAntes)], [false, false, true]);
   ok('hoje com PRODUZIDO e SALDO vazios: a QTDE; adiantada o que falta; só o SALDO (de outra linha) null; encerrada 0; futura a QTDE',
      ['501089001', '501128002', '501140001', '501140002', '501134002'].map(de), [2, 140, null, 0, 450]);
   // a mesma linha num dia que já passou (vencida, colunas vazias): continua null — só o lote de HOJE ganha a QTDE

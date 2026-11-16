@@ -43,7 +43,7 @@ global._rpEsc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/
  // v7.224.0: a faixa do takt (os volumes para o app de cronoanálise)
  'function _taktSetup(', 'function _setupLer(', 'function _setupCfgTxt(', 'function _setupErro(', 'function _setupEnviar(', 'function _setupDaConfig(', 'function _setupResposta(', 'function _taktApp(', 'function _taktFaixa(', 'function _taktFaixaHtml(',
  // v7.244.0: o vencido de antes da segunda no TAKT
- 'function _taktAntesAviso(', 'function _taktAntesSoma('].forEach(f => eval.call(global, pega(f)));
+ 'function _taktAntesAviso(', 'function _taktAntesForaTxt(', 'function _taktAntesSoma('].forEach(f => eval.call(global, pega(f)));
 ['EIXO_PASSOS', '_tkS', 'TKS_DOW', 'CRONO_APP_GRUPO', '_taktFProd', '_tkDec', '_tkM', 'TKS_DOC_SVG_W', 'UEP_REF_STATUS', 'TKS_RITMO_DESVIO', 'SETUP_TROCAS_MAX', 'SETUP_MIN_MAX', 'EF_EMB_PADRAO'].forEach(c => eval.call(global, pegaConst(c).replace(/^const /, 'global.').replace(/^global\.(\w+)\s*=/, 'global.$1 =')));
 
 let falhas = 0;
@@ -1351,7 +1351,7 @@ eval.call(global, pega('function _tkaVencidoAntes('));
      [false, true, false, false, 0]);
   ok('revisão: a 🖨 espera a fila da aba antes de ler; o AVALIAR só usa o vencido da programação detalhada DE HOJE (e lê de novo se for de outro dia)',
      [/if\(_uepLendo\(\)\)\{ msg\('Esperando a outra leitura terminar…'\); await new Promise\(ok=>_uepDepoisDe\(_uepLendo, ok\)\); \}/.test(G4),
-      /if\(_progDetHoje\(\)\) lin\.push\(\.\.\._tkaVencidoAntes\(/.test(pega('function _tkaPainel(')), /if\(!_progDetHoje\(\)\) await carregarProgramacaoDetalhada\(\);/.test(pega('function _tkaPainelCarregar('))],
+      /if\(_progDetHoje\(\)\) lin\.push\(\.\.\._tkaVencidoAntes\(/.test(pega('function _tkaPainel(')), /if\(!Array\.isArray\(TKS && TKS\.vencidoAntes\) && !_progDetHoje\(\)\) await carregarProgramacaoDetalhada\(\);/.test(pega('function _tkaPainelCarregar('))],   // v7.244.0: só sem o vencidoAntes da semana
      [true, true, true]);
   ok('🖨 a janela abre no clique, lê o que faltar (histórico, esta semana, a que vem, a faixa) e monta pela MESMA montagem da tela; no menu 🖨 IMPRIMIR ▾',
      [G4.indexOf('window.open(') < G4.indexOf('await '), /await _taktProxCarregar\(true\)/.test(G4) && /await _taktSemanas4Carregar\(true\)/.test(G4),
@@ -1395,12 +1395,13 @@ console.log('\n── v7.244.0: o vencido de antes da segunda e o lote de hoje n
     linhas:R.filter(r => num(r[1]) >= HOJE).map(([lote, d, cod, q, p, s, u]) => { const n = num(d), conf = p !== '' && s !== '' && Math.abs(p + s - q) < 0.5 ? s : null;
       return { data:d + '/2026', dataNum:n, lote, codigo:cod, desc:'X', qtde:q, uepCx:u, uep:Math.round(q * u * 10) / 10, foraEsteira:false,
         saldo:conf != null ? conf : n > HOJE || (v566 && n === HOJE && p === '' && s === '') ? q : null }; }) });
-  // o getProgramacaoDetalhada: o `falta` do FIFO por código nas linhas vencidas (aqui, um lote por código: o saldo dele)
-  const prog = R.filter(r => num(r[1]) < HOJE).map(([lote, d, cod, q, p, s, u]) => ({ dataNum:num(d), data:d + '/2026', lote, codigo:cod, desc:'X', cor:'', uepCx:u, falta:s, foraEsteira:false }));
+  // o vencidoAntes do getProgramacaoSemana (.gs v5.66): as linhas abertas antes da segunda, com o SALDO de cada uma —
+  // da MESMA leitura das linhas da semana (revisão: o `falta` da programação detalhada vinha de outra hora)
+  const venc = R.filter(r => num(r[1]) < HOJE).map(([lote, d, cod, q, p, s, u]) => ({ dataNum:num(d), data:d + '/2026', lote, codigo:cod, desc:'X', cor:'', qtde:q, uepCx:u, saldo:s, foraEsteira:false }));
   const H = antes => ({ num:HOJE, minNorm:0, restMin:527, uep:0, he:0, meta:2761, fim:'17:00', antes });
-  const S1 = semana(true), A = _taktAntesSoma(_tkaVencidoAntes(prog, S1.linhas, HOJE, HOJE));
-  ok('o vencido de antes da segunda = o card ATRASO de 16/11: 800 cx, 6h04 de linha, desde 10/11, nenhum sem UEP',
-     [A.cx, A.cxSemUep, Math.round(A.uep * 527 / 2761), A.desde], [800, 0, 364, 20261110]);
+  const S1 = Object.assign(semana(true), { vencidoAntes:venc }), A = _taktAntesSoma(venc);
+  ok('o vencido de antes da segunda = o card ATRASO de 16/11: 800 cx, 6h04 de linha, desde 10/11, nenhum sem UEP nem sem saldo',
+     [A.cx, A.cxSemUep, A.semSaldo, Math.round(A.uep * 527 / 2761), A.desde], [800, 0, 0, 364, 20261110]);
   const T0 = _taktMontar(semana(false), [], H(undefined)), V0 = _taktVeredito(T0, null, null);
   const T1 = _taktMontar(S1, [], H(A)), V1 = _taktVeredito(T1, null, null), P1 = _taktPrecisaPartes(T1, V1);
   ok('COMO ESTAVA (.gs v5.65, sem o vencido): os 7 códigos do lote de hoje sem saldo, fora; o veredito FECHA, sobram 3h39 — com 6h04 de atraso',
@@ -1422,27 +1423,29 @@ console.log('\n── v7.244.0: o vencido de antes da segunda e o lote de hoje n
   ok('no meio da semana, quatro partes: vencidos antes de 09/11 · desta semana · hoje · dias que vêm (p1..p4), e a soma é o PRECISA',
      [P4.map(p => p.k), P4.reduce((a, p) => a + p.min, 0) === V4.precisaMin, h4.includes('vencidos antes de 09/11'), h4.includes('vencidos desta semana'), /<i class="p4"/.test(h4)],
      [['antes', 'venc', 'hoje', 'vem'], true, true, true, true]);
-  // sem a programação detalhada de hoje (antes null): o vencido fica fora e a tela DIZ
-  const Tn = _taktMontar(S1, [], H(null)), Vn = _taktVeredito(Tn, null, null);
-  ok('sem a programação detalhada de hoje (antes null): o vencido fica fora e o aviso sai logo abaixo do veredito (tela e papel); com ele lido, nenhum aviso',
-     [Tn.falta.antesLendo, Vn.precisaMin, /O vencido de antes de 16\/11 \(o card ATRASO\) não foi lido — está fora do PRECISA\./.test(_taktAntesAviso(Tn)),
+  // sem o vencido (null: a semana de hoje não lida; false: o .gs antes da v5.66): fica fora e a tela DIZ por quê
+  const Tn = _taktMontar(S1, [], H(null)), Vn = _taktVeredito(Tn, null, null), Tg = _taktMontar(S1, [], H(false));
+  ok('sem o vencido: fica fora e o aviso sai logo abaixo do veredito (tela e papel) — "não foi lido" ou "até colar o .gs v5.66"; com ele, nenhum aviso',
+     [Tn.falta.antesFora, Tg.falta.antesFora, Vn.precisaMin, /O vencido de antes de 16\/11 \(o card ATRASO\) não foi lido — está fora do PRECISA\./.test(_taktAntesAviso(Tn)),
+      /fica fora do PRECISA até colar o ritmoprod_appscript\.gs v5\.66 no Apps Script\./.test(_taktAntesAviso(Tg)),
       /<b>Atenção:<\/b> O vencido de antes de 16\/11/.test(_taktAntesAviso(Tn, true)), _taktAntesAviso(T1), _taktAntesAviso(T0)],
-     [true, 2110, true, true, '', '']);   // 41h15 sem os 6h04, cada um arredondado sozinho (35h10)
+     ['lendo', 'gs', 2110, true, true, true, '', '']);   // 41h15 sem os 6h04, cada um arredondado sozinho (35h10)
   // quem não é a esta semana (antes undefined: a semana que vem, o AVALIAR) e hoje fora da semana: nada muda
   const Tf = _taktMontar(S1, [], Object.assign(H(A), { num:20261124 }));
   ok('quem não é a esta semana (antes undefined) e hoje fora da semana: o vencido não entra',
-     ['uepAntes' in T0.falta, 'antesLendo' in T0.falta, 'uepAntes' in Tf.falta], [false, false, false]);
-  // código com vencido E lote de hoje: o falta do FIFO (atraso + hoje) menos o saldo de hoje — sem contar o de hoje duas vezes
+     ['uepAntes' in T0.falta, 'antesFora' in T0.falta, 'uepAntes' in Tf.falta], [false, false, false]);
+  // o AVALIAR com o .gs antigo (sem o vencidoAntes): código com vencido E lote de hoje — o falta do FIFO (atraso + hoje)
+  // menos o saldo de hoje, sem contar o de hoje duas vezes
   const Am = _taktAntesSoma(_tkaVencidoAntes([{ dataNum:20261113, data:'13/11/2026', codigo:'501140001', uepCx:1.04, falta:150 }],
     [{ dataNum:20261116, codigo:'501140001', saldo:50, uepCx:1.04 }], 20261116, 20261116));
   ok('código com vencido e lote de hoje: o vencido é o falta do FIFO (150 = 100 de atraso + 50 de hoje) menos o saldo de hoje — 100 cx, sem o de hoje duas vezes',
      [Am.cx, Math.round(Am.uep * 10) / 10], [100, 104]);
   const As = _taktAntesSoma([{ dataNum:20261112, saldo:30, uepCx:null }, { dataNum:20261110, saldo:20, uepCx:2 }, { dataNum:20261109, saldo:0, uepCx:2 },
-    { dataNum:20261105, saldo:40, uepCx:2, foraEsteira:true }]);
+    { dataNum:20261105, saldo:40, uepCx:2, foraEsteira:true }, { dataNum:20261104, saldo:null, uepCx:2 }]);
   const Ts = _taktMontar(S1, [], H(As));
-  ok('vencido sem UEP só nas caixas (fora das horas, na nota de saldo sem UEP); saldo 0 e fora da esteira não entram; desde = o mais antigo com saldo',
-     [As, Ts.falta.cxSemUep, Math.round((Ts.falta.uep - (T1.falta.uep - T1.falta.uepAntes)) * 10) / 10, _taktAntesSoma(null)],
-     [{ uep:40, cx:20, cxSemUep:30, desde:20261110 }, 30, 40, { uep:0, cx:0, cxSemUep:0, desde:null }]);
+  ok('vencido sem UEP só nas caixas (fora das horas, na nota de saldo sem UEP); sem saldo confiável contado na nota de linhas sem saldo; saldo 0 e fora da esteira não entram; desde = o mais antigo com saldo',
+     [As, Ts.falta.cxSemUep, Ts.falta.semSaldo, Math.round((Ts.falta.uep - (T1.falta.uep - T1.falta.uepAntes)) * 10) / 10, _taktAntesSoma(null)],
+     [{ uep:40, cx:20, cxSemUep:30, semSaldo:1, desde:20261110 }, 30, 1, 40, { uep:0, cx:0, cxSemUep:0, semSaldo:0, desde:null }]);
   // 4 SEMANAS: a 1ª semana soma o MESMO vencido — com todo dia útil programado e sem lote no fim de semana, o MESMO número da tela
   const C = _taktSemanasMontar([{ T:T1 }], null), s0 = C.semanas[0], Hc = _taktSemanasHtml(C, { papel:true });
   ok('4 SEMANAS: a 1ª semana PRECISA 41h15 · TEM 35h08 · atraso 6h07 — o MESMO do veredito; o vencido de antes da segunda à parte (6h04)',
@@ -1452,26 +1455,29 @@ console.log('\n── v7.244.0: o vencido de antes da segunda e o lote de hoje n
      [true, false, true]);
   const Cn = _taktSemanasMontar([{ T:Tn }], null), Cs = _taktSemanasMontar([{ T:Ts }], null);
   ok('4 SEMANAS: sem o vencido lido, a frase diz que está fora; vencido sem UEP contado na semana',
-     [/O vencido de antes de 16\/11 \(o card ATRASO\) não foi lido — está fora\./.test(_taktSemanasHtml(Cn, { papel:true })), Cn.semanas[0].antesSeg,
+     [/O vencido de antes de 16\/11 \(o card ATRASO\) não foi lido — está fora do PRECISA\./.test(_taktSemanasHtml(Cn, { papel:true })), Cn.semanas[0].antesSeg,
       _taktSemanasHtml(Cs, { papel:true }).includes('30 cx vencidas sem UEP fora')],
      [true, 0, true]);
-  // a ligação no painel: o _taktHoje leva o vencido; null sem a programação detalhada DE HOJE
-  eval.call(global, pega('function _progDetHoje(')); eval.call(global, pega('function _taktAntesDoPainel('));
-  const hs = global.hojeStr, sv = [global.PROG_DETALHADA, global.PROG_DET_TS, global.TKS];
-  global.hojeStr = () => '16/11/2026'; global.PROG_DETALHADA = prog; global.TKS = S1;
-  global.PROG_DET_TS = new Date(2026, 10, 16, 6, 50).getTime(); const Ad = _taktAntesDoPainel(HOJE);
-  global.PROG_DET_TS = new Date(2026, 10, 15, 22, 0).getTime(); const Ao = _taktAntesDoPainel(HOJE);
-  global.hojeStr = hs; [global.PROG_DETALHADA, global.PROG_DET_TS, global.TKS] = sv;
-  ok('do painel: com a programação detalhada de hoje, o mesmo vencido; de ontem, null (o `falta` é o atraso do dia da leitura)', [Ad, Ao], [A, null]);
-  ok('a ligação: o _taktHoje leva o vencido; a programação de OUTRO dia é relida e o fim redesenha o TAKT; as duas 🖨 leem o atraso; a pele da 4ª parte (tela e papel)',
+  // a ligação no painel: o vencido sai da leitura da semana DE HOJE (TKS.vencidoAntes); sem ela null, sem o campo false
+  eval.call(global, pega('function _taktAntesDoPainel(')); eval.call(global, pega('function _taktAntesFora('));
+  const svT = global.TKS;
+  global.TKS = S1; const Ad = _taktAntesDoPainel(HOJE), Fd = _taktAntesFora(HOJE);
+  global.TKS = Object.assign({}, S1, { vencidoAntes:undefined }); const Ag = _taktAntesDoPainel(HOJE), Fg = _taktAntesFora(HOJE);
+  global.TKS = Object.assign({}, S1, { hoje:'15/11/2026' }); const Ao = _taktAntesDoPainel(HOJE), Fo = _taktAntesFora(HOJE);
+  global.TKS = null; const An = _taktAntesDoPainel(HOJE);
+  global.TKS = svT;
+  ok('do painel: a leitura da semana de hoje com o vencidoAntes → o vencido; sem o campo (.gs antigo) → false ("gs"); de outro dia ou sem leitura → null ("lendo")',
+     [Ad, Fd, Ag, Fg, Ao, Fo, An], [A, null, false, 'gs', null, 'lendo', null]);
+  ok('a ligação: o _taktHoje leva o vencido; ele NÃO sai da programação detalhada (outra hora de leitura) e as 🖨 não a leem para isso; o AVALIAR prefere o da semana; o card sabe se o TAKT tem o vencido; a pele da 4ª parte (tela e papel)',
      [/antes:_taktAntesDoPainel\(hojeN\)/.test(pega('function _taktHoje(')),
-      /\|\| !_progDetHoje\(\)\) && !GPX_CARREGANDO/.test(pega('function renderProxDias(')), /UEP_SUB === 'takt'\) renderUep\(\); else renderProxDias\(\);/.test(pega('function renderProxDias(')),
-      /\|\| !_progDetHoje\(\)\)\{ await carregarProgramacaoDetalhada\(\);/.test(html),
-      /if\(!_progDetHoje\(\)\)\{ msg\('Lendo o atraso/.test(pega('async function gerarRelatorioTakt(')), /if\(!_progDetHoje\(\)\)\{ msg\('Lendo o atraso/.test(pega('async function gerarRelatorio4Semanas(')),
+      /PROG_DETALHADA|_tkaVencidoAntes/.test(pega('function _taktAntesDoPainel(')),
+      /carregarProgramacaoDetalhada/.test(pega('async function gerarRelatorioTakt(')) || /carregarProgramacaoDetalhada/.test(pega('async function gerarRelatorio4Semanas(')),
+      /if\(TKS && _cartNum\(TKS\.hoje\)===hojeN && Array\.isArray\(TKS\.vencidoAntes\)\) lin\.push\(\.\.\.TKS\.vencidoAntes\);\s*else if\(_progDetHoje\(\)\) lin\.push\(\.\.\._tkaVencidoAntes\(/.test(pega('function _tkaPainel(')),
+      /_uepSubAtr\(P, A, [^;]*_taktAntesFora\(_cartNum\(hojeStr\(\)\)\)\)\);/.test(pega('function renderProxDias(')),
       /_taktAntesAviso\(T\)/.test(pega('function _taktHtml(')), /_taktAntesAviso\(T, true\)/.test(pega('function _taktDocHtml(')),
       /#sec-uep \.tks-tr i\.p4\{opacity:\.18\}/.test(html) && /#sec-uep \.tks-bpt \.p4::before\{opacity:\.18\}/.test(html),
       /\.tks-doc \.tks-br \.tks-tr i\.p4\{opacity:1;background:#fff;box-shadow:none;outline:1\.5px dashed #A0AEC0/.test(html) && /\.tks-doc \.tks-bpt \.p4::before\{background:#fff;outline:1\.5px dashed/.test(html)],
-     [true, true, true, true, true, true, true, true, true, true]);
+     [true, false, false, true, true, true, true, true, true]);
 }
 // AS LEITURAS DE VERDADE (revisão: o regex acima passava com a retentativa sem fim).
 // O bloco 4 SEMANAS do renderUep REAL, com relógio virtual, leituras de mentira de

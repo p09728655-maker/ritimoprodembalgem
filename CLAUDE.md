@@ -7618,16 +7618,24 @@ feito e dá ar de verdade ao que sobrou.
     → *"sim faz as duas"*). Duas coisas ficavam fora do PRECISA da ESTA SEMANA,
     e o veredito dizia **FECHA, sobram 3h39** quando era **NÃO FECHA, faltam
     6h07** (≈ 1.300 cx):
-    - **o vencido de antes da segunda** (o card ATRASO): `_taktHoje` leva
-      `antes:_taktAntesDoPainel(hojeN)` = `_taktAntesSoma(_tkaVencidoAntes(…))`
-      — a MESMA conta do AVALIAR (por código, o `falta` do FIFO menos o saldo
-      desta semana até hoje; sem contar o de hoje duas vezes). O `_taktMontar`
-      soma em `falta.uep`/`cx` (o sem UEP só em `cxSemUep`) e guarda
-      `falta.uepAntes`. `h.antes` undefined (semana que vem, AVALIAR) = nada
-      muda; **null** = a programação detalhada DE HOJE (`_progDetHoje`) não foi
-      lida: fica fora e o `_taktAntesAviso` diz logo abaixo do veredito (tela e
-      🖨). A de outro dia é relida (`renderProxDias` e `_uepAbaCarregar`) e o fim
-      redesenha o TAKT; as duas 🖨 (TAKT, 4 SEMANAS) leem antes de montar.
+    - **o vencido de antes da segunda** (o card ATRASO): o
+      `getProgramacaoSemana` da semana de hoje manda o **`vencidoAntes`** (`.gs`
+      v5.66): as linhas ABERTAS com data antes do "de", com o SALDO da própria
+      linha (`_saldoConfiavel`; arquivada, encerrada e fora da esteira fora). O
+      `_taktHoje` leva `antes:_taktAntesDoPainel(hojeN)` =
+      `_taktAntesSoma(TKS.vencidoAntes)`; o `_taktMontar` soma em
+      `falta.uep`/`cx` (o sem UEP só em `cxSemUep`, linha sem saldo em
+      `semSaldo`) e guarda `falta.uepAntes`. `h.antes` undefined (semana que
+      vem, AVALIAR) = nada muda; **false** = o `.gs` não manda o campo;
+      **null** = a semana de hoje não lida — os dois ficam fora e o
+      `_taktAntesAviso` diz por quê (tela e 🖨). ⚠ **Da MESMA leitura, nunca do
+      `falta` da programação detalhada**: a 1ª versão fazia `falta` (lida a cada
+      15 min) − saldo da semana (a cada 5) e um lançamento entre as duas punha
+      no TAKT caixa que já tinha saído (revisão: segunda de manhã o card caía
+      para 5h28 e o TAKT seguia 6h04). O AVALIAR (`_tkaPainel`) também prefere o
+      `vencidoAntes`; o `_tkaVencidoAntes` ficou só para o `.gs` antigo.
+      O card ATRASO recebe o `_taktAntesFora` e só diz *já está no PRECISA* com
+      o vencido no TAKT.
     - **o lote de hoje antes do 1º lançamento**: até ele a linha de hoje tem
       PRODUZIDO e SALDO vazios (ontem era futura) e o `getProgramacaoSemana`
       mandava `saldo` null — fora da falta (*"7 linhas sem saldo confiável"*).
@@ -7643,9 +7651,9 @@ feito e dá ar de verdade ao que sobrou.
       no dia a dia, aviso na frase sem a leitura). Com todo dia útil programado e
       sem lote no fim de semana, a 1ª semana dá o MESMO do veredito (o teste
       confere com o retrato de 16/11: 41h15 · 35h08 · 6h07).
-    - ⚠ Antes do re-deploy do v5.66: o vencido já entra (só painel), o lote de
-      hoje continua fora até o 1º lançamento, e o código com vencido **e** lote
-      hoje mostra o de hoje dentro de *vencidos antes de dd/mm* (o total certo).
+    - ⚠ Antes do re-deploy do v5.66 nada muda no veredito: o vencido fica fora
+      (aviso *"até colar o ritmoprod_appscript.gs v5.66"*, card *antes de dd/mm:
+      fora do TAKT*) e o lote de hoje continua fora até o 1º lançamento.
   - **4 SEMANAS (v7.237.0**, PPCP 13/11/2026: *"tem como colocar mais
     semanas?"* → o quadro, recomendado contra mais botões; *"sempre dias
     úteis"*): `TKS_SEM` = 3, botão entre SEMANA QUE VEM e AVALIAR. Esta semana +
