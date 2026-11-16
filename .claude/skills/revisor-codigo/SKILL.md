@@ -37,8 +37,9 @@ node testes.js
 ```
 
 - Suíte ou lint falhando → **BLOQUEIA**, com a linha que falhou.
-- `⚠ lint-js.js … (só função sem uso)` → o eslint não rodou (sem `npx` ou sem
-  rede). Diga no relatório que só a conferência de função sem uso valeu.
+- `⚠ lint-js.js … (só a conferência de sem uso …)` → o eslint não rodou por
+  falta de `npx` ou de rede. Diga no relatório que só a conferência de sem uso
+  valeu. Qualquer outro erro do eslint já sai como falha (❌).
 - Não repita como achado o que o lint já acusou.
 
 ## 3. O diff contra o padrão
@@ -59,6 +60,8 @@ que mais acham defeito neste projeto:
 - **Chamadas (F1–F5)**: leitura nova no ciclo do painel? Em paralelo? Sem
   cache, sem voo compartilhado? A falha diz a causa certa? Pedido no meio da
   leitura é engolido? Escrita sem id ou sem reler depois do "sem resposta"?
+- **`var` trocado (B1)**: alguém trocou um `var` existente por `let`/`const`?
+  Confira se o nome é usado antes da linha da declaração (a TV travava assim).
 - **Escape (G1)**: texto da planilha entra no HTML sem `_rpEsc`/`_escH`? Em
   atributo, com aspas sem escapar?
 - **Segredo (G2)**: algum valor sensível (custo-hora, meta de pontos, chave,

@@ -30,12 +30,15 @@ nos números nem no `.gs`** (não precisa re-deploy).
   - antes ela olhava só os dois HTMLs, e só procurava nome que não existe;
   - agora olha também o `rp-core.js`, o `paradas-calc.js`, o `sw-mobile.js` e
     o `.gs`;
-  - acusa ainda função sem uso, declaração repetida, chave repetida e variável
-    calculada e nunca usada;
+  - acusa ainda função e constante sem uso, declaração repetida, chave
+    repetida e variável calculada e nunca usada;
+  - erro do próprio eslint reprova; só a falta de rede pula;
   - diz a linha do próprio arquivo.
 - **Código morto removido** (nenhum uso, conferido um a um):
-  - 9 funções no PC;
-  - a amostra do GRAVAR UEP, que só o GRAVAR lia, e ele está travado;
+  - 8 funções no PC;
+  - a amostra da FILA de cronoanálise antiga (2 funções e 3 constantes), sem
+    leitor desde que a FILA saiu, na v7.216.0;
+  - 2 constantes de regra que não valiam mais (`TKS_N_SEM`, `PAR_PLANEJADA`);
   - 3 funções no celular;
   - 21 variáveis calculadas e nunca usadas.
 - **Pendente, decisão do PPCP**: o **Exportar Excel do HISTÓRICO** existe no

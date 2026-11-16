@@ -55,12 +55,12 @@ require('vm').runInThisContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'
   .forEach(f => eval.call(global, pegaJs(f)));
 
 // ════════════════════════════════════════════════════════════════════════════
-console.log('\n── a FILA antiga e a amostra do GRAVAR saíram ──');
+console.log('\n── a FILA antiga e a amostra dela saíram ──');
 // v7.216.0: a 🖨 FILA DE CRONOANÁLISE antiga (provisória, estimada, no limite da esteira,
 // família incoerente) saiu — a impressão é a AGENDA DA CRONOANÁLISE (o O QUE MEDIR, abaixo).
-// v7.248.2: a amostra do GRAVAR UEP saiu também (só o GRAVAR a lia, e ele está TRAVADO).
+// v7.248.2: a amostra (01/07 → trava) saiu também — o único leitor era a FILA antiga.
 ok('a FILA antiga saiu (a conta, o desenho e os motivos)', [/function _filaCronoMontar\(|function _filaCronoHtml\(|const FILA_MOTIVOS|function _filaUteis\(/.test(JS)], [false]);
-ok('e a amostra do GRAVAR saiu (sem chamador desde a trava da UEP)', /function _filaAmostra|FILA_AMOSTRA_DE|rpe_fila_amostra/.test(JS), false);
+ok('e a amostra saiu (sem chamador desde a FILA antiga, v7.216.0)', /function _filaAmostra|FILA_AMOSTRA_DE|rpe_fila_amostra/.test(JS), false);
 
 // ════════════════════════════════════════════════════════════════════════════
 console.log('\n── CAIXAS × UEP: os 18 dias reais de 21/09 a 16/10/2026 ──');

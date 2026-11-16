@@ -28,14 +28,20 @@ regra está no CLAUDE.md, na seção do assunto.
 O código já segue um padrão. Ele vale para o que se escreve; o que está
 diferente se corrige só na linha que você já está mexendo.
 
-- **B1.** 2 espaços, sem tabulação. `const`; `let` só quando reatribui; `var`
-  só no `paradas-calc.js` (legado, roda no navegador da TV).
-- **B2.** Siga o estilo do trecho em volta: no PC e no `.gs` é `if(`, `){`,
-  ponto e vírgula e aspas simples no JS (aspas duplas nos atributos do HTML
-  montado em texto).
+- **B1.** 2 espaços, sem tabulação. `const`; `let` só quando reatribui.
+  `var` só onde o comentário diz por quê: no `paradas-calc.js` (legado), nos
+  guardas inline do `<head>` e no estado do PC que é usado ANTES da linha que o
+  declara (`PARADA_TV`, `GER_DATA`, `PG_TELA_*`…: com `let`, a TV travava em
+  "AGUARDANDO" na abertura). **Nunca troque `var` existente por `let`/`const`**
+  sem conferir que ninguém usa o nome antes da declaração — nem o lint nem as
+  suítes pegam isso.
+- **B2.** Siga o estilo do arquivo: nos dois HTMLs é `if(`, `){`; no `.gs`, no
+  `paradas-calc.js` e no `sw-mobile.js` é `if (`, `) {`. Nos dois casos, ponto e
+  vírgula e aspas simples no JS (aspas duplas nos atributos do HTML montado em
+  texto).
 - **B3.** **Não rodar formatador automático (Prettier e afins) em arquivo
   inteiro.** Medido em 16/11/2026: o painel do PC iria de 28 mil para 52 mil
-  linhas, 17 das 20 suítes quebram (os testes leem o código como texto) e o
+  linhas (largura 120; no padrão do Prettier, ~59 mil), 17 das 20 suítes quebram (os testes leem o código como texto) e o
   histórico linha a linha do git se perde.
 - **B4.** Comentário diz o PORQUÊ, em português, com o caso e a data quando a
   regra nasceu de um incidente; ⚠ marca armadilha. Não comentar o óbvio.
@@ -46,8 +52,8 @@ diferente se corrige só na linha que você já está mexendo.
 
 ## C. Nomes
 
-- **C1.** Função interna leva o prefixo do módulo: `_ucv` cronoanálise, `_tks`
-  takt da semana, `_tka` avaliar programação, `_gpx` próximos dias, `_pg`
+- **C1.** Função interna leva o prefixo do módulo: `_ucv` cronoanálise, `_takt`
+  takt da semana (estado `TKS_*`, CSS `tks-`), `_tka` avaliar programação, `_gpx` próximos dias, `_pg`
   gestão de perdas, `_qp`/`_cart` plano, `_ph` produção/hora, `_uep` aba UEP,
   `_ger` gerencial, `_dir` diretoria, `_pdia` produtos do dia, `_cap`
   capacidade, `_cxu` caixas × UEP, `_reg` réguas. Antes de criar um nome (ou
@@ -56,8 +62,9 @@ diferente se corrige só na linha que você já está mexendo.
   `TKS_TTL`, `GPX_EXC_MAX`), declarados junto do bloco que os usa. Número que
   é regra (limite, tolerância, prazo) vira constante com nome e comentário,
   nunca número solto no meio da conta.
-- **C3.** Chave de `localStorage` (`rpe_*` no PC, `rp_*` no celular) **nunca é
-  renomeada**: o aparelho perde a configuração. Chave nova só quando o
+- **C3.** Chave de `localStorage` (prefixo `rpe_` ou `rp_` — os dois aparecem
+  nos dois painéis; o `rpe_cfg` do celular guarda a URL do Apps Script)
+  **nunca é renomeada**: o aparelho perde a configuração. Chave nova só quando o
   SENTIDO do dado muda, e a antiga é apagada na 1ª abertura.
 - **C4.** **Um nome por indicador**: o mesmo número tem o mesmo nome na tela, no
   papel, no CHANGELOG e no `docs/glossario.md`. A palavra do veredito ("NO
@@ -151,7 +158,8 @@ diferente se corrige só na linha que você já está mexendo.
   HTML ou do `.gs`), com um caso real do dia em que o problema apareceu.
 - **I2.** Correção de defeito: o teste falha com o defeito de volta. Confira
   desfazendo a correção (mutação) antes de dar por certo.
-- **I3.** Suíte nova: nome terminado em `.test.js` (o `testes.js` acha sozinho).
+- **I3.** Suíte nova: na raiz do repositório, com o nome terminado em
+  `.test.js` (o `testes.js` acha sozinha). Suíte que passa de 2 min reprova.
 - **I4.** Mexeu em layout: medir no Chromium a ALTURA e a largura. PC 1920,
   1366 e 1280; celular 360, 390 e 430; TV 1920×1080 e 1366×768; papel com a
   mídia de impressão e as fontes carregadas.
@@ -161,10 +169,14 @@ diferente se corrige só na linha que você já está mexendo.
 Nos dois HTMLs, no `rp-core.js`, no `paradas-calc.js`, no `sw-mobile.js` e no
 `.gs`, com a linha do próprio arquivo:
 
-- função do nível de cima sem nenhum uso (comentário não conta);
-- nome usado sem existir; função ou variável declarada duas vezes; chave
-  repetida no mesmo objeto; `case` ou `else if` repetido; `x = x`; código
-  depois do `return`; atribuição a `const`; variável local nunca usada.
-
-A conferência de função sem uso roda sem rede; as demais precisam do `npx`
-(baixa o eslint na 1ª vez).
+- **sem uso** (roda sem rede): função ou constante declarada no nível de cima
+  (coluna 0) que ninguém usa. Comentário de linha ou de bloco, em qualquer
+  ponto, não conta como uso; o nome dentro de texto conta (é o onclick montado)
+  e `obj.nome` também. No `paradas-calc.js` tudo mora numa IIFE: lá quem
+  confere é o `no-unused-vars` do eslint;
+- **eslint** (precisa do `npx`, que baixa o eslint na 1ª vez): nome usado sem
+  existir; função ou variável declarada duas vezes; chave repetida no mesmo
+  objeto; `case` ou `else if` repetido; `x = x`; código depois do `return`;
+  atribuição a `const`; variável local nunca usada. Sem `npx` ou sem rede, ele
+  avisa e só a conferência de sem uso vale; qualquer outro erro do eslint
+  reprova.

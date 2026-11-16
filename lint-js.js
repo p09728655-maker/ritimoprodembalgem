@@ -13,12 +13,15 @@
    o popup morria em ReferenceError com as suítes verdes.
 
    DUAS conferências:
-   1. FUNÇÃO SEM USO (sem rede, sempre roda): função declarada no nível de cima
-      de um arquivo que ninguém chama — nem no código, nem num onclick, nem num
-      HTML montado em texto. Código morto confunde quem lê (parece regra que
-      vale) e é onde a correção vai parar por engano: o Excel do histórico foi
-      "corrigido" na v7.202.0 numa função que nenhum botão chamava.
-      Comentário não conta como uso.
+   1. SEM USO (sem rede, sempre roda): função ou constante declarada no nível
+      de cima (coluna 0) que ninguém usa — nem no código, nem num onclick, nem
+      num HTML montado em texto. Código morto confunde quem lê (parece regra
+      que vale) e é onde a correção vai parar por engano: o Excel do histórico
+      foi "corrigido" na v7.202.0 numa função que nenhum botão chamava.
+      Comentário (de linha ou de bloco, em qualquer ponto) não conta como uso;
+      o nome dentro de texto conta (é o onclick montado), e `obj.nome` também.
+      No paradas-calc.js tudo mora dentro de uma IIFE: lá quem confere é o
+      no-unused-vars do eslint (item 2).
    2. ESLINT (precisa do npx; baixa o eslint na 1ª vez, com rede):
         no-undef ........... nome usado sem existir (o caso do relatório)
         no-redeclare ....... a mesma função/variável declarada duas vezes
@@ -29,7 +32,8 @@
         no-unreachable ..... código depois do return
         no-const-assign .... atribuir a const (quebra em runtime)
         no-unused-vars ..... variável LOCAL calculada e nunca usada
-      Sem o npx (ou sem rede), avisa e roda só a 1.
+      Sem o npx ou sem rede, avisa e roda só a 1. Qualquer OUTRO erro do
+      eslint (config, regra mal escrita) reprova — nunca "pulado".
 
    As linhas do erro são as do ARQUIVO (do HTML, não do JS extraído): fora dos
    <script>, tudo vira espaço, e a linha e a coluna batem com o editor.
@@ -48,7 +52,7 @@ const G_NAVEGADOR = [
   'setInterval','clearInterval','requestAnimationFrame','performance','screen','history',
   'URL','URLSearchParams','Blob','FileReader','Image','Notification','MouseEvent','Event',
   'CustomEvent','AbortController','matchMedia','getComputedStyle','indexedDB','btoa','atob',
-  'caches','serviceWorker','ResizeObserver',
+  'caches','ResizeObserver',   // serviceWorker solto NÃO existe na janela: é navigator.serviceWorker
 ];
 // bibliotecas por CDN (desktop)
 const G_CDN = ['Chart','XLSX'];
@@ -128,43 +132,108 @@ function jsDoHtml(txt) {
   return out + branco(txt.slice(pos));
 }
 
-// Texto sem comentário, para contar uso: linha que começa com //, bloco /* */
-// que começa no começo da linha e comentário de HTML. Comentário que menciona
-// uma função não faz dela uma função usada.
-function semComentario(txt) {
-  return txt
-    .replace(/<!--[\s\S]*?-->/g, ' ')
-    .replace(/^[ \t]*\/\*[\s\S]*?\*\//gm, ' ')
-    .replace(/^[ \t]*\/\/.*$/gm, ' ');
+// A marcação de um HTML (o que fica FORA dos <script>), sem comentário de
+// HTML: é onde moram os onclick="…" escritos à mão.
+function marcacaoDoHtml(txt) {
+  return txt.replace(/(<script(?![^>]*src=)[^>]*>)[\s\S]*?(<\/script>)/g, '$1$2').replace(/<!--[\s\S]*?-->/g, ' ');
 }
 
-// Quantas vezes cada identificador aparece (código, onclick, HTML em texto).
+// O JS sem os comentários — // e /* */ em qualquer ponto da linha —, sem mexer
+// em texto ('…', "…", `…${…}…`) nem em expressão regular. O comentário vira
+// espaço; texto e regex ficam (um nome dentro de texto CONTA como uso: é assim
+// que o onclick montado em texto chama a função).
+// O que decide se uma "/" abre regex é o que veio antes: operador, abre-
+// parêntese ou palavra como return → regex; nome, número, ")" ou "]" → divisão.
+const RE_ANTES_DE_REGEX = /[(,=:[!&|?{};+\-*%<>~^]/;
+const PALAVRA_ANTES_DE_REGEX = /^(return|typeof|case|in|of|new|delete|void|throw|else|do|yield|await|instanceof)$/;
+function semComentarioJs(src) {
+  const n = src.length, out = [], tpl = [];   // tpl: chaves abertas dentro de cada ${ … }
+  let i = 0, lc = '', lw = '';                  // último caractere e última palavra de código
+  const copia = (a, b) => out.push(src.slice(a, b));
+  const branco = (a, b) => out.push(src.slice(a, b).replace(/[^\n]/g, ' '));
+  const template = () => {   // a partir de i, dentro da crase: até a crase ou o próximo ${
+    for (let j = i; j < n; j++) {
+      if (src[j] === '\\') { j++; continue; }
+      if (src[j] === '`') { copia(i, j + 1); i = j + 1; lc = ')'; lw = ''; return; }
+      if (src[j] === '$' && src[j + 1] === '{') { copia(i, j + 2); i = j + 2; tpl.push(0); lc = '{'; lw = ''; return; }
+    }
+    copia(i, n); i = n;
+  };
+  while (i < n) {
+    const c = src[i], d = src[i + 1];
+    if (c === '/' && d === '/') { const j = src.indexOf('\n', i); const f = j < 0 ? n : j; branco(i, f); i = f; continue; }
+    if (c === '/' && d === '*') { const j = src.indexOf('*/', i + 2); const f = j < 0 ? n : j + 2; branco(i, f); i = f; continue; }
+    if (c === '\'' || c === '"') {
+      let j = i + 1;
+      while (j < n && src[j] !== c && src[j] !== '\n') j += src[j] === '\\' ? 2 : 1;
+      copia(i, j + 1); i = j + 1; lc = ')'; lw = ''; continue;
+    }
+    if (c === '`') { i++; out.push(c); template(); continue; }
+    if (c === '/' && (lw ? PALAVRA_ANTES_DE_REGEX.test(lw) : (!lc || RE_ANTES_DE_REGEX.test(lc)))) {
+      let j = i + 1, classe = false;
+      for (; j < n && src[j] !== '\n'; j++) {
+        const ch = src[j];
+        if (ch === '\\') { j++; continue; }
+        if (ch === '[') classe = true;
+        else if (ch === ']') classe = false;
+        else if (ch === '/' && !classe) break;
+      }
+      j++;
+      while (j < n && /[a-z]/i.test(src[j])) j++;
+      copia(i, j); i = j; lc = ')'; lw = ''; continue;
+    }
+    if (/[A-Za-z_$]/.test(c)) {
+      let j = i + 1;
+      while (j < n && /[\w$]/.test(src[j])) j++;
+      lw = src.slice(i, j); lc = 'a'; copia(i, j); i = j; continue;
+    }
+    if (c === '{' && tpl.length) tpl[tpl.length - 1]++;
+    if (c === '}' && tpl.length) {
+      if (tpl[tpl.length - 1] === 0) { tpl.pop(); out.push(c); i++; template(); continue; }
+      tpl[tpl.length - 1]--;
+    }
+    if (!/\s/.test(c)) { lc = /\d/.test(c) ? '0' : c; lw = ''; }
+    out.push(c); i++;
+  }
+  return out.join('');
+}
+
+// O texto onde se procura o uso: o JS sem comentário e, no HTML, a marcação.
+const textoDeUso = arq => {
+  const txt = ler(arq);
+  return arq.endsWith('.html') ? semComentarioJs(jsDoHtml(txt)) + '\n' + marcacaoDoHtml(txt) : semComentarioJs(txt);
+};
+
+// Quantas vezes cada identificador aparece.
 function contagem(txt) {
   const c = new Map();
   for (const m of txt.matchAll(/[A-Za-z_$][\w$]*/g)) c.set(m[0], (c.get(m[0]) || 0) + 1);
   return c;
 }
 
-// ── 1. Função sem uso ────────────────────────────────────────────────────────
-function funcoesSemUso() {
+// ── 1. Sem uso: função e constante do nível de cima ──────────────────────────
+// Nível de cima = declarada na coluna 0 (as locais são do eslint). Constante
+// de regra sem uso é pior que função morta: parece a regra que vale e não é.
+const DECL = /^(?:(?:async\s+)?function\s*\*?\s*([A-Za-z_$][\w$]*)\s*\(|(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=)/;
+function semUso() {
   const achados = [];
   for (const a of ALVOS) {
     if (a.funcoes === false || !existe(a.arq)) continue;
-    const txt = ler(a.arq);
-    const js = a.html ? jsDoHtml(txt) : txt;
-    const cont = contagem([txt, ...(a.usoEm || []).filter(existe).map(ler)].map(semComentario).join('\n'));
+    const js = a.html ? jsDoHtml(ler(a.arq)) : ler(a.arq);
+    const cont = contagem([a.arq, ...(a.usoEm || []).filter(existe)].map(textoDeUso).join('\n'));
     const ok = SEM_USO_OK[a.arq] || {};
-    const linhas = js.split('\n');
-    linhas.forEach((l, i) => {
-      // só o nível de cima do arquivo (coluna 0): as locais são do eslint
-      const m = l.match(/^(?:async\s+)?function\s*\*?\s*([A-Za-z_$][\w$]*)\s*\(/);
-      if (!m || ok[m[1]]) return;
-      if ((cont.get(m[1]) || 0) <= 1) achados.push(`${a.arq}:${i + 1}  função sem uso: ${m[1]}`);
+    const decl = new Set();
+    js.split('\n').forEach((l, i) => {
+      const m = l.match(DECL);
+      if (!m) return;
+      const nome = m[1] || m[2];
+      decl.add(nome);
+      if (!ok[nome] && (cont.get(nome) || 0) <= 1)
+        achados.push(`${a.arq}:${i + 1}  ${m[1] ? 'função' : 'constante'} sem uso: ${nome}`);
     });
-    // exceção que já não precisa: a função voltou a ser usada ou saiu
+    // exceção que já não precisa: saiu do arquivo ou voltou a ser usada
     for (const n of Object.keys(ok)) {
-      const decl = new RegExp('^(?:async\\s+)?function\\s*' + n.replace(/\$/g, '\\$') + '\\s*\\(', 'm');
-      if (!decl.test(js)) achados.push(`${a.arq}  SEM_USO_OK cita ${n}, que não existe mais — tire da lista`);
+      if (!decl.has(n)) achados.push(`${a.arq}  SEM_USO_OK cita ${n}, que não existe mais — tire da lista`);
       else if ((cont.get(n) || 0) > 1 && !a.arq.endsWith('.gs'))
         achados.push(`${a.arq}  SEM_USO_OK cita ${n}, que agora é usada — tire da lista`);
     }
@@ -202,7 +271,15 @@ function eslint() {
   } catch (e) {
     if (e.code === 'ENOENT') return { pulou: 'npx não encontrado' };
     saida = e.stdout;   // eslint sai com 1 quando acha erro: o JSON vem do mesmo jeito
-    if (!saida || !saida.trim().startsWith('[')) return { pulou: 'o eslint não rodou (sem rede para baixar?) — ' + String(e.stderr || e.message).trim().split('\n').pop() };
+    if (!saida || !saida.trim().startsWith('[')) {
+      // Só a falta de rede (o npx não baixou o eslint) é "pulado". Qualquer
+      // outro erro — config, regra mal escrita, arquivo que nem compila — é
+      // FALHA: pular calado deixaria a guarda inteira desligada com tudo verde.
+      const err = String(e.stderr || e.message).trim();
+      if (/npm (error|ERR!)|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ETIMEDOUT|ECONNRESET/.test(err))
+        return { pulou: 'sem rede para baixar o eslint — ' + err.split('\n').pop() };
+      return { erro: err.split('\n').slice(-12).join('\n') };
+    }
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -215,15 +292,16 @@ function eslint() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-const f1 = funcoesSemUso();
+const f1 = semUso();
 const f2 = eslint();
 f1.forEach(l => console.log('❌ ' + l));
-if (f2.pulou) console.log('⚠ eslint pulado: ' + f2.pulou + '. Só a conferência de função sem uso rodou.');
+if (f2.erro) console.log('❌ o eslint não rodou:\n' + f2.erro);
+else if (f2.pulou) console.log('⚠ eslint pulado: ' + f2.pulou + '. Só a conferência de sem uso rodou.');
 else f2.achados.forEach(l => console.log('❌ ' + l));
-const n = f1.length + (f2.achados ? f2.achados.length : 0);
+const n = f1.length + (f2.achados ? f2.achados.length : 0) + (f2.erro ? 1 : 0);
 if (n) {
   console.log(`\n❌ lint: ${n} achado(s). O padrão está em docs/padrao-codigo.md.`);
   process.exit(1);
 }
 console.log('✅ lint ok — ' + ALVOS.filter(a => existe(a.arq)).length + ' arquivos'
-  + (f2.pulou ? ' (só função sem uso)' : '') + '.');
+  + (f2.pulou ? ' (só sem uso)' : '') + '.');

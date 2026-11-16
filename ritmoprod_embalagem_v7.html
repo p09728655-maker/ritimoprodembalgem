@@ -6511,8 +6511,9 @@ function gerarRelatorioUepPadrao(){
 // ════════════════════════════════════════════════════════════════════════════
 // v7.216.0: a 🖨 FILA DE CRONOANÁLISE antiga (UEP provisória, estimada, no limite
 // da esteira, família incoerente) saiu — a impressão é a AGENDA DA CRONOANÁLISE, a
-// mesma lista da sub-aba O QUE MEDIR (_ucvPrincipais). v7.248.2: a amostra do
-// GRAVAR UEP (01/07 → trava) saiu também — só o GRAVAR a lia, e ele está TRAVADO.
+// mesma lista da sub-aba O QUE MEDIR (_ucvPrincipais). v7.248.2: saiu também a
+// amostra (01/07 → trava): o único leitor era a FILA antiga, sem chamador desde
+// a v7.216.0 (o GRAVAR UEP nunca a leu).
 // dd/mm/aaaa a partir do número aaaammdd.
 const _filaN2br = n => p2(n % 100) + '/' + p2(Math.floor(n / 100) % 100) + '/' + Math.floor(n / 10000);
 // 🖨 AGENDA DA CRONOANÁLISE (v7.216.0): a MESMA lista da sub-aba O QUE MEDIR
@@ -9845,8 +9846,8 @@ function _cxUepHtml(R, ctx){
 // Os pontos de jornada do período, para a 3ª régua (v7.184.0). A leitura é o
 // getProducaoModeloPeriodo dos mesmos dias (das caras: cache de 5 min por
 // janela, para o 2º clique não pagar de novo). Ela publica PREP_PERIODO e
-// PH_UEP_PROD, que são da aba PRODUÇÃO/HORA: guarda e devolve (a régua da
-// carteira). Falhou → o relatório sai sem os pontos, dizendo por quê.
+// PH_UEP_PROD, que são da aba PRODUÇÃO/HORA, de outro período: guarda e devolve
+// OS DOIS. Falhou → o relatório sai sem os pontos, dizendo por quê.
 // `forcar` (o ↻ da aba 📏 RÉGUAS) passa por cima do cache. Devolve também as
 // caixas por produto (`prod`), a pergunta da aba RÉGUAS — a mesma leitura.
 let _CXU_PTS = { key:null, ts:0, m:null };
@@ -11643,7 +11644,6 @@ function _taktSemBotoes(k){
 // Revisões: a 1ª versão (o _tkaCorrente) contava o vencido em dobro e tirava a
 // jornada de dia adiantado; a 2ª (o veredito de cada tela) contava dia útil ainda
 // sem programação como folga — o atraso sumia ("chega a 27/11 em dia").
-const TKS_N_SEM=4;
 let TKS4_AB={};   // semanas abertas (dia a dia): índice → true; só na sessão
 // A HORA EXTRA SUGERIDA (PPCP, 13/11/2026: "ajusta sábado das 05 às 11:00" e "dia 20/11 tbm
 // pode incluir na sugestão, só feriado santo que não pode"): sábado e feriado de dia útil das
@@ -25710,10 +25710,9 @@ ${pgHtml}
 // ════════════════════════════════════════════════
 // ABA PARADAS — análise (KPIs, Pareto, tendência, peças perdidas)
 // ════════════════════════════════════════════════
-// Paradas planejadas (não contam como peça perdida): refeição/intervalo/almoço.
-const PAR_PLANEJADA=/refei|interval|almo/i;
 // Classe por tipo vinda da aba TIPOS_PARADA (coluna CLASSE). Quando marcada na
-// planilha, ELA manda; se vazia, cai na heurística por nome (PAR_PLANEJADA).
+// planilha, ELA manda; se vazia, cai na heurística por nome do paradas-calc.js
+// (PLANEJADA_RE: refeição/intervalo/almoço não contam como perda).
 var PAR_CLASSE_MAP={}, PAR_CLASSE_LOADED=false;
 async function _carregarClassesPar(){
   if(PAR_CLASSE_LOADED || !CFG.sheetsUrl) return;

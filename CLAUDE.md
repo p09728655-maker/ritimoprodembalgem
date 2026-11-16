@@ -19,8 +19,8 @@ via Google Apps Script (JSONP).
   `anthropic-skills:revisor-codigo` é de React + Vite (o app de cronoanálise)
   e não vale aqui.
 - ⚠ **Não rodar formatador automático (Prettier e afins) em arquivo inteiro**.
-  Medido em 16/11/2026: o painel do PC iria de 28 mil para 52 mil linhas e 17
-  das 20 suítes quebrariam (os testes leem o código como texto), além de
+  Medido em 16/11/2026: o painel do PC iria de 28 mil para 52 mil linhas (com
+  largura 120; no padrão do Prettier, ~59 mil) e 17 das 20 suítes quebrariam (os testes leem o código como texto), além de
   apagar o histórico linha a linha do git.
 - **Função sem uso que fica de propósito** entra no `SEM_USO_OK` do
   `lint-js.js`, com o porquê. Hoje: o Excel local (`selecionarPasta`,
@@ -30,8 +30,10 @@ via Google Apps Script (JSONP).
   próxima versão do `.gs` — mexer no `.gs` pede re-deploy).
 - Saiu na v7.248.2, sem uso: `exportarExcelHist`, `toISO`,
   `updateRefreshBadge`, `_gerCxComHora`, `_phTrocaTxt`, `_durMinPar`,
-  `_diasTrabalhadosPar`, `_svgDiaHora`, a amostra do GRAVAR UEP
-  (`_filaAmostra`, `_filaAmostraDeItens`, `FILA_AMOSTRA_DE`, `FILA_LS*`) no PC;
+  `_diasTrabalhadosPar`, `_svgDiaHora`, as constantes `TKS_N_SEM` e
+  `PAR_PLANEJADA` (cópia do `PLANEJADA_RE` do `paradas-calc.js`), e a amostra
+  da FILA antiga (`_filaAmostra`, `_filaAmostraDeItens`, `FILA_AMOSTRA_DE`,
+  `FILA_LS*` — sem leitor desde a v7.216.0; o GRAVAR UEP nunca a leu) no PC;
   `produtoPorEan`, `_horasProdMob`, `_durMin2` no celular; e 21 variáveis
   locais calculadas e nunca usadas (conferidas uma a uma: sobras, nenhuma
   escondia defeito).
@@ -226,15 +228,18 @@ via Google Apps Script (JSONP).
   dia (o 25441 de 16/11: 838 cx, 5h20; tela, papel, legenda, sem o campo):
   `node takt-semana.test.js`.
 - `testes.js` — **`node testes.js`: todas as suítes + o lint**, uma de cada vez,
-  com o resumo; sai com 1 se algo falhar (v7.248.2).
+  com o resumo; sai com 1 se algo falhar; suíte que passa de 2 min reprova
+  (v7.248.2).
 - `lint-js.js` — **a parte automática do padrão** (v7.248.2; até a v7.248.1 era
   só o `no-undef` dos dois HTMLs). Confere os dois HTMLs, o `rp-core.js`, o
   `paradas-calc.js`, o `sw-mobile.js` e o `.gs`, e diz a linha do PRÓPRIO
   arquivo (fora dos `<script>` tudo vira espaço):
-  - **função sem uso** no nível de cima (comentário não conta como uso; roda
-    sem rede). Fica de propósito → `SEM_USO_OK`, com o porquê;
+  - **função e constante sem uso** no nível de cima (coluna 0). Comentário de
+    linha ou de bloco, em qualquer ponto, não conta como uso; nome em texto
+    conta (o onclick montado). Roda sem rede. Fica de propósito → `SEM_USO_OK`,
+    com o porquê;
   - **eslint** (o npx baixa na 1ª vez; sem npx ou sem rede, avisa e roda só a
-    de cima): `no-undef`, `no-redeclare`, `no-dupe-keys`, `no-duplicate-case`,
+    de cima; qualquer outro erro do eslint REPROVA, nunca "pulado"): `no-undef`, `no-redeclare`, `no-dupe-keys`, `no-duplicate-case`,
     `no-dupe-else-if`, `no-self-assign`, `no-unreachable`, `no-const-assign`,
     `no-unused-vars` (só locais).
   - Por que existe: nenhum teste de conta vê um identificador que não existe, e
@@ -243,7 +248,11 @@ via Google Apps Script (JSONP).
     `_fonteHoje` declarado dentro do `calcPorModelo`).
   - **Nome novo nas listas de globais (`G_MODULOS`, `G_APPS_SCRIPT`…) só
     depois de conferir que ele existe mesmo** — senão a guarda vira enfeite.
-  - Conferido por mutação (7 de 7 erros plantados pegos, na linha certa).
+  - Conferido por mutação: 7 de 7 erros plantados pegos, na linha certa; a
+    função citada só num comentário de fim de linha; a regra do eslint mal
+    escrita reprova. A 1ª versão (revisão do `/revisor-codigo` na própria
+    estreia) só tirava comentário de linha inteira e pulava calado qualquer
+    erro do eslint.
 - `docs/padrao-codigo.md` — o padrão do código (a régua do revisor).
 - `.claude/skills/revisor-codigo/SKILL.md` — o revisor do projeto (`/revisor-codigo`).
 - `ritmoprod_appscript.gs` — backend (Apps Script). **Mudanças aqui NÃO sobem pela
@@ -1159,7 +1168,7 @@ via Google Apps Script (JSONP).
   `_cxuSvg` e `_cxUepHtml`, sem conta (o teste prende).
 - **Leitura**: `_cxuPtsLer` = `getProducaoModeloPeriodo` da janela
   (`_cxuJanela`), DEPOIS do histórico, cache 5 min; devolve `PREP_PERIODO` e
-  `PH_UEP_PROD` (a régua da carteira). Falhou → sem os pontos, com o motivo
+  `PH_UEP_PROD` (guarda e devolve os dois). Falhou → sem os pontos, com o motivo
   na linha da régua.
 - **Meta de pontos**: a do ⚙ (`_metaPtsDia`: CONFIG_PAINEL `META_PTS`, `.gs`
   v5.42; sem ela, a deste computador `rpe_cap_pts` — ver *ABA 📏 RÉGUAS*). Com
@@ -1377,8 +1386,8 @@ via Google Apps Script (JSONP).
   `_filaCronoHtml`, `_FILA_DOC_SKIN`, `FILA_MOTIVOS`, `FILA_FAM_RAZAO`,
   `FILA_TETO_FOLGA`, `FILA_MAX_SEM` e `_filaUteis` foram apagados; ficou o
   `_filaN2br`. A amostra (`_filaAmostra`, `_filaAmostraDeItens`,
-  `FILA_AMOSTRA_DE`) saiu na v7.248.2: só o GRAVAR UEP a lia, e ele está
-  travado. O texto abaixo é histórico.
+  `FILA_AMOSTRA_DE`) saiu na v7.248.2: o único leitor era a FILA antiga. O
+  texto abaixo é histórico.
 - **FILA DE CRONOANÁLISE** (`_filaCronoMontar` conta, `_filaCronoHtml`
   desenho). Produto (modelo + `_capNome`) entra por: SEM UEP · ESTIMADA (EST)
   · PROVISÓRIA (< `UEP_MIN_DIAS` dias distintos na amostra) · NO LIMITE DA
@@ -6621,8 +6630,9 @@ feito e dá ar de verdade ao que sobrou.
 - Os botões **"SELECIONAR PASTA/Google Sheets"** e **"arquivo avulso"** (📄)
   saíram do cabeçalho do v7 — os dados vêm sempre do Sheets e eles só
   confundiam. As funções de Excel local (`selecionarPasta`/`triggerImport`/
-  `handleFileInput`) continuam no código, sem botão (no `SEM_USO_OK` do
-  `lint-js.js`); os `getElementById`
+  `handleFileInput`) continuam no código, sem botão (as duas primeiras no
+  `SEM_USO_OK` do `lint-js.js`; o `handleFileInput` é chamado pelo onchange
+  do `#file-input`); os `getElementById`
   de `btn-pasta` têm guarda de null (o de `processarResposta` roda a cada
   `lerSheets` — sem guarda, quebraria o painel inteiro).
 - **Modo DEMO** (produção zerada, horários genéricos
