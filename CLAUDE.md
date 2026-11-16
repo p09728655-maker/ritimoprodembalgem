@@ -2127,7 +2127,10 @@ via Google Apps Script (JSONP).
   `PROGRAMACAO` + `PROGRAMACAO_CONCLUIDA`.
 - **Ciclo do mobile (escalonado, uma chamada de cada vez):** tick base de **90s**
   só para o `getParadas` (banner de PRODUÇÃO PARADA quase ao vivo); `lerSheets`
-  a cada 2 ticks (3 min); `getHistory` + `getPontosDia` a cada 4 ticks (6 min).
+  a cada 2 ticks (3 min); `getHistory` a cada 4 ticks (6 min). O `getPontosDia`
+  do gerencial sai **junto com o `lerSheets`** (3 min) desde a 1.50.0 — era a
+  cada 6 min; com a UEP como veredito, a hora recém-lançada aparecia sem UEP e o
+  esperado do card subia sem a UEP dela (ver *GERENCIAL DO CELULAR*).
   Dá ~90 chamadas/hora contra as 240 do ciclo antigo de 1 min. Medido no
   navegador: login = 8 chamadas, 12 min de refresh = 16, botão ATUALIZAR = 5 (6 no gerencial desde a 1.43.0: o cadastro, para a UEP do card ATRASO).
   - `cicloRefresh()` tem **guarda de reentrância** e roda em `await` sequencial —
@@ -3773,12 +3776,38 @@ feito e dá ar de verdade ao que sobrou.
   `Math.max(toMin(CFG.turnoInicio), LANC_MADRUGADA_FIM)` (07:00, a janela do PC
   e do `.gs`).
 - **Os minutos da hora pelo `slotFim`** também no `calcKPIs` do celular
-  (`minDoSlot`): a jornada inteira soma 527, como no PC. Mexe 1 min no esperado
-  da UEP e no `efRitmo` das caixas no fim do dia.
-- Medido no Chromium (backend simulado, retrato de 13/11): 360, 390, 430 e 800
-  px, nada passa da largura. Os testes estão no `relatorios.test.js` (*A UEP NA
-  FRENTE no gerencial do celular*) e no `produtos-dia.test.js` (o resumo, a faixa
-  pela UEP, a HE com a C3 em 5); as mutações foram pegas.
+  (`minDoSlot`): a jornada inteira soma 527, como no PC. O esperado da UEP muda
+  1 min no fim do dia; o `efRitmo` das caixas (só julga sem a UEP do dia) muda
+  ~0,2% o dia todo (o `minTurno` vai de 528 para 527).
+- **A REVISÃO (antes do merge, achados corrigidos no mesmo PR)**:
+  - **a UEP do dia sai JUNTO com as caixas** no ciclo do gerencial (3 min, era 6):
+    no tick só das caixas, a hora recém-lançada saía SEM UEP / PARTE SEM UEP e o
+    esperado do card subia sem a UEP dela. Uma leitura a mais a cada 6 min por
+    celular gerencial (o operador não muda). A UEP de antes da última leitura que
+    falhou (`PONTOS_DIA_FALHA` com dado): o card diz *"UEP de HH:MM — a última
+    leitura não respondeu"* e a hora sem UEP diz NÃO LIDA, sem % (`velho`);
+  - **sem a HORA_A_HORA lida** (o getDados falhou, a leitura do dia não), os slots
+    do `getSlots` (`_gerSlotsM`, hora extra pela janela 07:00–fim do turno) e os
+    cards dizem *"a hora a hora ainda não foi lida"* — era "jornada encerrada"
+    às 10:00;
+  - a leitura do dia que falhou diz *"não respondeu"* no 1º card (era
+    "aguardando…" com a tabela dizendo NÃO LIDA);
+  - **sem a UEP do dia, META UEP "—"** na tabela (celular e PC): era a meta padrão
+    do código (288/h) pulando para a da planilha quando a leitura chegava;
+  - a linha do produto diz *"178 cx em HE"* (`heTxt` do rp-core): embaixo de
+    "2.697 UEP" o "178 em HE" lia como UEP;
+  - o `m` do `uepGerMontar` é protegido (try, como o PC era em volta do
+    `_tvUepMontar`); rp-core antigo em cache (sem `uepGerMontar`) → as caixas
+    julgam, o card diz para fechar e abrir o app;
+  - os minutos que restam em h:mm (*"nos 7h47"*, não *"nos 467 min"*);
+  - a tabela HORA A HORA com menos ar nas laterais (`.tbl.hh`): a 360 rolava 3 px
+    dentro do cartão, hoje 298/298; a 320 rola 13 px dentro do cartão (era 39 px
+    na 1.49.0).
+- Medido no Chromium (backend simulado, retrato de 13/11, fontes carregadas):
+  360, 390, 430 e 800 px, nada passa da largura da página. Os testes estão no
+  `relatorios.test.js` (*A UEP NA FRENTE no gerencial do celular*, com os achados
+  da revisão) e no `produtos-dia.test.js` (o resumo, a faixa pela UEP, a HE com a
+  C3 em 5); as mutações foram pegas, inclusive as três que a revisão viu passar.
 
 ## EFICIÊNCIA: uma régua só, e é a META DO DIA
 - **O cartão mostrava um número de uma conta com a cor de OUTRA.** O número era
@@ -7326,11 +7355,11 @@ feito e dá ar de verdade ao que sobrou.
     `rp-core` velho em cache: só as caixas (`atrasoTotal`). O cadastro que
     chega redesenha o gerencial. Saiu o card *"⚠ ATRASO NA PROGRAMAÇÃO"* do fim
     da lista (só caixas).
-    - Revisão: o gerencial RELÊ o cadastro no ciclo pesado quando passou de
+    - Revisão: o gerencial RELÊ o cadastro no ciclo (desde a 1.50.0 o das caixas, 3 min) quando passou de
       `PROD_CAT_TTL` (30 min) ou falhou, e no ATUALIZAR (`PROD_CAT_TS` /
       `PROD_CAT_FALHA` no `carregarProdutos`) — uma troca de UEP no dia chega
-      ao card. Falhou e não há UEP: *"cadastro não lido — tenta de novo em 6
-      min"*, nunca "lendo" para sempre; horas pelo cadastro guardado no aparelho
+      ao card. Falhou e não há UEP: *"cadastro não lido — tenta de novo em 3
+      min"* (6 até a 1.49.0), nunca "lendo" para sempre; horas pelo cadastro guardado no aparelho
       (sem leitura na sessão, com falha) dizem isso.
     - **min 0 com UEP é "<1 min", não "sem UEP"** (uma sobra de 1 cx). O cartão
       do PC tinha o mesmo erro: `_uepSubAtr` decide pelo `conta.uVenc > 0` e

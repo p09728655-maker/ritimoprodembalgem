@@ -471,7 +471,10 @@ function uepGerMontar(o){
   const minRest = rest.reduce((t, r) => t + r[1] - r[0], 0);
   const falta = Math.max(0, meta - feito);
   let m = null;
-  if (Number(o.minNorm) > 0 && horas.some(h => !h.he)){
+  // Protegido como o PC era (try em volta do _tvUepMontar): um item torto no
+  // porHoraModelo ou no cadastro não derruba o gerencial — fica sem os minutos,
+  // a falta em caixas e o "sai às".
+  if (Number(o.minNorm) > 0 && horas.some(h => !h.he)) try {
     let chega = null;
     if (falta > 0){
       let v = feito;
@@ -484,7 +487,7 @@ function uepGerMontar(o){
     m = { difMin: (feito - (Number(card.esperado) || 0)) / porMin, minRest, chega, falta,
           faltaCx: falta > 0 && uepCx > 0 ? Math.ceil(falta / uepCx) : null,
           prod: pr.cod ? { rot: nomeComCor(nome, pr.cor) || nome, nome, cor: String(pr.cor || '').trim(), uepCx } : null };
-  }
+  } catch (e) { m = null; }
   return { ok: true, card, meta, feito, he, horas, proj: uepProj(feito, o.minNorm), m, agoraMin: ag, minRest, falta,
            cxSem: Number(U.cxSem) || 0, cxCom: uepCxComHora(o.phm) };
 }
@@ -713,7 +716,9 @@ function pdiaMontar(phm, ph, cat, atual, agoraMin, o){
       iniTxt: fromMin(p.ini), fimTxt: fromMin(p.fim), agora: p === pAg,
       cx:p.cx, uep: p.uep > 0 ? Math.round(p.uep) : null,
       uepMedia: p.uepCx > 0 ? p.uep / p.uepCx : null, semUepCx: p.cx - p.uepCx,
-      he:p.he, heTxt: p.he > 0 ? (p.he === p.cx ? 'tudo em HE' : `${fmtN(p.he)} em HE`) : '',
+      // "cx" escrito (rp-core 1.18.0): no celular a linha abre pela UEP, e "178 em HE"
+      // embaixo de "2.697 UEP" lia como UEP (achado da revisão da 1.50.0)
+      he:p.he, heTxt: p.he > 0 ? (p.he === p.cx ? 'tudo em HE' : `${fmtN(p.he)} cx em HE`) : '',
       uepHe: p.uepHe,   // sem arredondar (1.17.1): 0,4 UEP em hora extra não é "sem UEP"
       pct: p.uep > 0 && uepTot > 0 ? Math.round(p.uep / uepTot * 100) : null,
       tab, horas:hrs

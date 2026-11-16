@@ -48,6 +48,18 @@ gerencial do PC recebeu na v7.243.0/7.244.0.
   de 13/11.
 - **Uma leitura a menos no login do celular**: o `getMediaHoras` só servia ao
   ⚠ de hora fraca e não é mais lido.
+- **No gerencial do celular, a UEP do dia passa a ser lida junto com as
+  caixas, a cada 3 min** (era a cada 6). Com as duas em momentos diferentes, a
+  hora recém-lançada aparecia "SEM UEP" e o selo do card podia cair por até
+  3 min. Custo: uma leitura a mais a cada 6 min por celular gerencial; o
+  operador não muda.
+- **Estados de leitura ditos com clareza:** a leitura do dia que falhou diz
+  "não respondeu"; a UEP de antes da última leitura que falhou diz de que horas
+  é, e a hora sem UEP diz NÃO LIDA; sem a hora a hora lida, os cards dizem isso
+  (antes: "jornada encerrada" às 10:00); sem a UEP do dia, a coluna META UEP diz
+  "—" (no PC também; antes, a meta padrão do código, 288/h).
+- **"178 cx em HE"** na linha do produto (antes "178 em HE", que embaixo da UEP
+  lia como UEP).
 
 **Atenção — o que muda de número no celular:**
 
@@ -55,7 +67,7 @@ gerencial do PC recebeu na v7.243.0/7.244.0.
 |---|---|---|
 | veredito do dia | % DA META DO DIA em caixas (*ABAIXO DO RITMO* em 13/11 16:22) **e** o selo da UEP (*ATENÇÃO*) | só o da UEP: *ATENÇÃO · 28 min atrás do ritmo* |
 | tabela hora a hora | % em caixas contra a meta da hora + atraso acumulado (09:00: 76,9%) | % da meta de UEP da hora (09:00: 87,9%, 160 cx de 182) |
-| minutos da última hora | 16:00–17:00 = 60 min | 16:00–16:59 = 59 min, como no PC e no `UEP_MIN_DIA` (o esperado da UEP e o selo das caixas mudam até 1 min no fim do dia) |
+| minutos da última hora | 16:00–17:00 = 60 min | 16:00–16:59 = 59 min, como no PC e no `UEP_MIN_DIA` (o esperado da UEP muda 1 min no fim do dia; o selo das caixas, que só aparece sem a UEP, muda ~0,2% o dia todo) |
 
 **Correção junto — a hora extra da madrugada no PRODUTOS EMBALADOS HOJE.** Em
 dia que começa às 05:00 (C3 = 5), o celular trocava o início do turno pelo da

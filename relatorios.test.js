@@ -2885,7 +2885,7 @@ ok('gerencial ao vivo: a linha de HE ganha etiqueta, não veredito',
    /const bdg=ehHE\?'<span class="badge b-acc">HORA EXTRA<\/span>'/.test(pega('function _gerHoraLinha(')), true);
 ok('gerencial ao vivo: a etiqueta HE não volta colada no OK/ABAIXO',
    /badge b-he" style="margin-right:5px">HE</.test(_v7), false);
-ok('gerencial ao vivo: META UEP da hora extra sai "—"', /\$\{ehHE\|\|!\(h\.metaH>0\)\?'—'/.test(pega('function _gerHoraLinha(')), true);
+ok('gerencial ao vivo: META UEP da hora extra sai "—" (e sem a UEP do dia também)', /\$\{ehHE\|\|o\.est\|\|!\(h\.metaH>0\)\?'—'/.test(pega('function _gerHoraLinha(')), true);
 ok('gerencial ao vivo: pico e vale só das horas de jornada',
    /const prodsNorm=dhAll\.filter\(r=>!r\.he\)/.test(_v7) &&
    /dh\.find\(r=>!r\.he&&r\.producaoHora===k\.melhor\)/.test(_v7), true);
@@ -5854,7 +5854,7 @@ process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não te
       card({ lista:LST, atrasoTotal:300 }, PRODS, 2761, false, { ts:0, falha:true }).sub,
       card({ lista:LST, atrasoTotal:300 }, PRODS, 2761, false, { ts:0 }).sub,
       card({ lista:[{ codigo:'501085118', falta:1, atraso:1, atrasoDesde:'10/11/2026' }], atrasoTotal:1 }, PRODS, 2761)],
-     ['desde 06/11 · cadastro não lido — tenta de novo em 6 min', 'desde 06/11 · cadastro não lido — tenta de novo em 6 min',
+     ['desde 06/11 · cadastro não lido — tenta de novo em 3 min', 'desde 06/11 · cadastro não lido — tenta de novo em 3 min',
       '300 cx · desde 06/11 · UEP do cadastro guardado no aparelho', '300 cx · desde 06/11',
       { l:'⚠ ATRASO · LOTES VENCIDOS', v:'&lt;1 min<small>de linha</small>', sub:'1 cx · desde 10/11', c:'red larga atr' }]);
   // 1.44.0 (PPCP: "demora pro card do atraso entrar, os outros entram antes"): o card do dia guardado no aparelho entra
@@ -5866,7 +5866,7 @@ process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não te
     const amanha = card({ lista:[], atrasoTotal:0 }, PRODS, 2761, false, null, { lido:false, hoje:'12/11/2026' });
     ok('celular: lida a programação, o card é guardado; na abertura seguinte do MESMO dia ele entra já, com a hora dele; a leitura que não veio é dita; outro dia, nada',
        [abre && abre.v === lido.v, abre && abre.sub, falhou && falhou.sub, amanha],
-       [true, '300 cx · desde 06/11 · de 08:10, atualizando…', '300 cx · desde 06/11 · de 08:10 · sem leitura nova (tenta a cada 6 min)', null]);
+       [true, '300 cx · desde 06/11 · de 08:10, atualizando…', '300 cx · desde 06/11 · de 08:10 · sem leitura nova (tenta a cada 3 min)', null]);
     card({ lista:[{ codigo:'501085118', falta:135, atraso:0 }], atrasoTotal:0 }, PRODS, 2761, false, null, { lido:T0 });
     const semAtr = card({ lista:[], atrasoTotal:0 }, PRODS, 2761, false, null, { lido:false });
     card({ lista:LST, atrasoTotal:300 }, PRODS, 2761, false, null, { lido:T0 });
@@ -5888,8 +5888,8 @@ process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não te
     const semHoje = card(L100, PRODS, 2761, false, null, { lido:ontem });                   // sem guardado de hoje: nada
     ok('celular: lido às 08:10 e redesenhado depois → o guardado diz 08:10; leitura de ONTEM na virada → os 100 cx de ontem NUNCA aparecem nem são guardados (vale o guardado de hoje, ou nada); a última leitura de hoje falhou → "de 08:10 · sem leitura nova"',
        [reabre && reabre.sub, comHoje && comHoje.sub, depois && depois.sub, falhaHoje.sub, semHoje, 'rp_atr_ret' in LS],
-       ['300 cx · desde 06/11 · de 08:10, atualizando…', '300 cx · desde 06/11 · de 08:10 · sem leitura nova (tenta a cada 6 min)', '300 cx · desde 06/11 · de 08:10, atualizando…',
-        '300 cx · desde 06/11 · de 08:10 · sem leitura nova (tenta a cada 6 min)', null, false]);
+       ['300 cx · desde 06/11 · de 08:10, atualizando…', '300 cx · desde 06/11 · de 08:10 · sem leitura nova (tenta a cada 3 min)', '300 cx · desde 06/11 · de 08:10, atualizando…',
+        '300 cx · desde 06/11 · de 08:10 · sem leitura nova (tenta a cada 3 min)', null, false]);
     const mJSc = mJS.slice(mJS.indexOf('function entrar('));
     ok('celular: na abertura do gerencial a leitura do dia vem logo depois do lerSheets (antes do histórico); ela tenta duas vezes, em sequência, 30 s e 45 s',
        [/await passo\('pontos',lerPontosDia\); renderGerencial\(\);[\s\S]{0,260}const dias=await passo\('historico',lerHistorico\); if\(dias\)\{ renderHistoricoComDados\(dias\); renderGerParadasResumo\(\); \}/.test(mJSc),
@@ -5930,7 +5930,7 @@ process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não te
           /function renderGerencial\(\)\{\s*_pontosDiaDeHoje\(\);/.test(mJS), /function aplicarMetaDiaAutomatica\(\)\{\s*_pontosDiaDeHoje\(\);/.test(mJS),
           /let PONTOS_DIA = _pontosDiaVazio\(\);/.test(mJS)],
          [[null, 0, 0, true], 99, true, true, true]); } }
-  ok('celular: o gerencial relê o cadastro (a UEP de agora) no ciclo pesado quando passou de 30 min ou falhou, e no ATUALIZAR; a leitura marca quando e se falhou',
+  ok('celular: o gerencial relê o cadastro (a UEP de agora) no ciclo das caixas (3 min, 1.50.0) quando passou de 30 min ou falhou, e no ATUALIZAR; a leitura marca quando e se falhou',
      [/if\(Date\.now\(\)-PROD_CAT_TS > PROD_CAT_TTL\) await passo\(carregarProdutos\);\s*await passo\(async\(\)=>\{ await lerPontosDia\(\); renderGerencial\(\); \}\);/.test(mJS.slice(mJS.indexOf('async function cicloRefresh('))),
       /await passo\(carregarProdutos\);[^\n]*\n\s*await passo\(async\(\)=>\{ await lerPontosDia\(\); renderGerencial\(\); \}\);/.test(mJS.slice(mJS.indexOf('async function _refresh('))),
       /PROD_CAT_TS = Date\.now\(\); PROD_CAT_FALHA = false;/.test(mJS), /\} else PROD_CAT_FALHA = true;\s*\}catch\(e\)\{ PROD_CAT_FALHA = true;/.test(mJS),
@@ -6237,6 +6237,64 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
   { RM('_GER_G = _G; renderTabelaHoraHora(_a)', { _G:GM, _a:allM });
     const TB = RM('_TB.innerHTML');
     ok('o render pinta uma linha por hora da HORA_A_HORA, com cinco colunas', [(TB.match(/<tr>/g) || []).length, celM(TB.split('</tr>')[4]).length], [11, 5]); }
+  // ── a revisão da 1.50.0 (achados 1 a 10)
+  { // 1: sem a HORA_A_HORA lida (getDados falhou, a leitura do dia não): o turno pelo getSlots, nunca "jornada encerrada" às 10:00
+    vm.runInContext(pegaM('function getSlots('), M);
+    const K0 = Object.assign({}, KM, { allHoje:[], minNorm:0 });
+    const G0 = RM('_AGORA = 600; _gerUepModeloM(_k)', { _k:K0 });
+    const L0 = RM('_gerUepCardsM(_G, _k, null)', { _G:G0, _k:K0 });
+    ok('sem a hora a hora lida (10:00, a C3 em 5): o turno pelo getSlots — 05:00 e 06:00 em hora extra, restam 348 min de jornada; os cards dizem que a hora a hora não foi lida, nunca "jornada encerrada"',
+       [G0.ok, G0.minRest, L0[0].sub, L0[2].sub, L0[3].sub, G0.horas.filter(h => h.he).map(h => h.inicio)],
+       [true, 348, 'a hora a hora ainda não foi lida', 'a hora a hora ainda não foi lida', 'meta − UEP feita na jornada', ['05:00', '06:00']]);
+    RM('_AGORA = 982'); }
+  { // 3: a leitura do dia que falhou diz isso; a UEP de antes da última que falhou diz de quando é
+    const Gf = RM('PONTOS_DIA = Object.assign({}, _pd, { uep:null }); PONTOS_DIA_FALHA = true; _gerUepModeloM(_k)', { _pd:PDM, _k:KM });
+    const sf = RM('_gerUepCardsM(_G, _k, null)', { _G:Gf, _k:KM })[0].sub;
+    const Gv = RM('PONTOS_DIA = Object.assign({}, _pd, { lidoEm:new Date(2026, 10, 13, 16, 10).getTime() }); PONTOS_DIA_FALHA = true; _gerUepModeloM(_k)', { _pd:PDM, _k:KM });
+    const sv = RM('_gerUepCardsM(_G, _k, null)', { _G:Gv, _k:KM })[0].sub;
+    // velho: a hora lançada sem UEP / com caixas a mais que o registro pode ser só a leitura atrasada
+    const hv = celM(RM('_gerHoraLinhaM(_h, 0, null, null, true)', { _h:{ label:'11:00', he:false, lancada:true, andamento:false, uep:null, cxSem:0, metaH:314, cx:120 } }));
+    const hp = celM(RM('_gerHoraLinhaM(_h, 100, null, null, true)', { _h:{ label:'11:00', he:false, lancada:true, andamento:false, uep:200, cxSem:0, metaH:314, cx:160 } }));
+    ok('a leitura do dia que falhou: "não respondeu" (era "aguardando…"); a UEP de antes diz de quando é; com ela velha, a hora sem UEP diz NÃO LIDA, sem %',
+       [sf, /<i>UEP de 16:10 — a última leitura não respondeu<\/i>$/.test(sv), hv.slice(3), hp.slice(3), /const velho = G\.ok && PONTOS_DIA_FALHA;/.test(pegaM('function renderTabelaHoraHora('))],
+       ['a leitura do dia não respondeu — o app tenta de novo', true, ['— NÃO LIDA', '120'], ['— NÃO LIDA', '160 meta 157'], true]);
+    RM('PONTOS_DIA = _pd; PONTOS_DIA_FALHA = false', { _pd:PDM }); }
+  // 4: sem a UEP do dia a META UEP é "—" (era a meta padrão do código, 288/h, que pulava para 314 quando a leitura chegava)
+  ok('sem a UEP do dia, a coluna META UEP diz "—" e não há meta em caixas (celular e PC)',
+     [celM(RM('_gerHoraLinhaM(_h, 0, 2, "LENDO…")', { _h:GM.horas[4] })),
+      cel(R('_gerHoraLinha(_h, 160, 0, null, { est:"LENDO…" })', { _h:horas[4] })).slice(2, 3)],
+     [['09:00-10:00', '276', '—', '— LENDO…', '160'], ['—']]);
+  // 2: a UEP do dia sai JUNTO com as caixas no ciclo do gerencial (3 min), como no PC
+  { const CIC = pegaM('async function cicloRefresh(');
+    const blocoDados = CIC.slice(CIC.indexOf('if(c % A_CADA_DADOS === 0){'), CIC.indexOf('if(PERFIL===\'gerencial\' && c % A_CADA_PESADO === 0){'));
+    ok('celular: no gerencial a leitura do dia sai com o getDados (a cada 3 min), logo depois dele; o ciclo de 6 min ficou com o histórico',
+       [/await passo\(lerSheets\);[\s\S]*if\(PERFIL==='gerencial'\)\{[\s\S]*await lerPontosDia\(\); renderGerencial\(\);/.test(blocoDados),
+        /lerPontosDia/.test(CIC.slice(CIC.indexOf('c % A_CADA_PESADO === 0'))), /sem leitura nova \(tenta a cada 3 min\)/.test(mJS)], [true, false, true]); }
+  { // 8: as três mutações que passavam — o escape do nome, o arredondamento para cima e a borda da tolerância
+    const Ge = RM('PRODUTOS = [{ codigo:"501089003", desc:"VOL 1/1 <b>X</b>", cor:"", uep:2.5 }]; _gerUepModeloM(_k)', { _k:KM });
+    const pe = RM('_gerUepCardsM(_G, _k, null)', { _G:Ge, _k:KM })[3].sub;
+    ok('o nome do produto sai escapado no PARA A META; as caixas arredondam para cima (455,3 ÷ 2,5 = 182,1 → 183)',
+       [pe.includes('<b>X</b>'), pe.includes('&lt;b&gt;X&lt;/b&gt;'), Ge.m.faltaCx], [false, true, 183]);
+    RM('PRODUTOS = _pr', { _pr:PRODM });
+    const allT = allM.filter(r => r.horario < '12:12').concat([rowM('12:12', 0)]);
+    const tolEm = ag => RM('_AGORA = _ag; _gerUepModeloM(_k)', { _ag:ag, _k:Object.assign({}, KM, { allHoje:allT }), PONTOS_DIA:Object.assign({}, PDM, { porHoraModelo:PHM.filter(x => x.hora < '12:12') }) })
+      .horas.find(h => h.inicio === '12:12').tol;
+    ok('a tolerância vale até 13:14 e acaba às 13:15 (o 12:12-13:00 fecha às 13:00, + 15 min)', [tolEm(780), tolEm(794), tolEm(795)], [true, true, false]);
+    RM('_AGORA = 982; PONTOS_DIA = _pd', { _pd:PDM }); }
+  { // 9: um item torto no porHoraModelo não derruba o gerencial (o PC tinha try em volta do _tvUepMontar); rp-core antigo em cache, idem
+    const Gt = RM('PRODUTOS = []; PONTOS_DIA = Object.assign({}, _pd, { porHoraModelo:_phm.concat([null]) }); _gerUepModeloM(_k)', { _pd:PDM, _phm:PHM, _k:KM });
+    const sem = vm.createContext({ console, Math, Number, String, Array, Object, JSON, isFinite, isNaN });
+    vm.runInContext('function nowMin(){ return 982; }\n' + pegaM('function _gerUepModeloM('), sem);
+    ok('um item null no porHoraModelo: o modelo sai sem os minutos e o "sai às" (m null), não quebra; sem o uepGerMontar (rp-core antigo), as caixas julgam',
+       [Gt.ok, Gt.m, Math.round(Gt.feito), vm.runInContext('_gerUepModeloM({ minNorm:468, allHoje:[] }).card.sub', sem)],
+       [true, null, 2306, 'o módulo base está desatualizado — feche e abra o app']);
+    RM('PRODUTOS = _pr; PONTOS_DIA = _pd', { _pr:PRODM, _pd:PDM }); }
+  { // 10: os minutos que restam em h:mm (de manhã eram "nos 300 min")
+    const K10 = Object.assign({}, KM, { minNorm:60, allHoje:allM.map(r => r.horario <= '07:00' ? r : Object.assign({}, r, { producaoHora:null })) });
+    const G10 = RM('_AGORA = 8*60; PONTOS_DIA = Object.assign({}, _pd, { uep:{ normal:200, he:0, codigos:10, cxSem:0 } }); _gerUepModeloM(_k)', { _pd:PDM, _k:K10 });
+    ok('08:00 com 200 UEP feitas, a meta não cabe: "nos 7h47 que restam" (467 min), não "nos 467 min"',
+       / nos 7h47 que restam$/.test(RM('_gerUepCardsM(_G, _k, null)', { _G:G10, _k:K10 })[3].sub.replace(/<[^>]+>/g, '')), true);
+    RM('_AGORA = 982; PONTOS_DIA = _pd', { _pd:PDM }); }
   // ── a tela: o que saiu, e o render
   const RGM = pegaM('function renderGerencial(');
   ok('celular: o render pinta as duas grades pela montagem do núcleo; saíram o % DA META DO DIA, a PROJEÇÃO FINAL em caixas e o NEC. P/ META',

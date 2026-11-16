@@ -169,6 +169,8 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .kpi-card.hero.red .kpi-sub b{color:var(--red)}
 .kpi-card .kpi-sub i{font-style:normal;display:block;margin-top:2px}
 .td-n2{display:block;font-size:8px;color:var(--txt2);letter-spacing:.3px;margin-top:2px}
+/* a tabela HORA A HORA tem 5 colunas: menos ar nas laterais (a 360 rolava 3 px) */
+.tbl.hh th,.tbl.hh td{padding-left:7px;padding-right:7px}
 .kpi-lbl{font-family:var(--font-d);font-size:8px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
 .kpi-val{font-family:var(--font-h);font-size:26px;font-weight:700;line-height:1;color:var(--txt)}
 .kpi-sub{font-family:var(--font-d);font-size:9px;color:var(--txt2);margin-top:4px}
@@ -857,7 +859,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
     <div class="card">
       <div class="card-ttl">HORA A HORA — <span id="ger-data-tbl">--/--/----</span></div>
       <div class="tbl-wrap">
-        <table class="tbl">
+        <table class="tbl hh">
           <thead>
             <tr>
               <th>HORA</th>
@@ -2856,11 +2858,12 @@ function sair(){
 // próximo começar. Agora as chamadas saem ESCALONADAS e uma de cada vez.
 // O tick base é curto só por causa do banner de PRODUÇÃO PARADA, que precisa
 // ser quase ao vivo; o resto sai espaçado por cima dele.
-// Por hora: 40 getParadas + 20 getDados + 10× (getHistory, getPontosDia) = ~90
-// chamadas, contra 240 do ciclo antigo.
+// Por hora: 40 getParadas + 20 getDados + 10 getHistory = ~70 chamadas, contra 240
+// do ciclo antigo; o gerencial lê também 20 getPontosDia (1.50.0: junto com o
+// getDados — era a cada 6 min, ver o ciclo).
 const REFRESH_MS      = 90*1000;   // paradas (banner)
 const A_CADA_DADOS    = 2;         // ticks → 3 min: hora a hora
-const A_CADA_PESADO   = 4;         // ticks → 6 min: histórico + pontos/programação
+const A_CADA_PESADO   = 4;         // ticks → 6 min: histórico (a leitura do dia saiu daqui na 1.50.0)
 let _refreshCiclo = 0;
 let _refreshRodando = false, _refreshP = null;
 // A leitura em curso (carga inicial, ciclo ou ATUALIZAR) como promessa: o
@@ -2892,17 +2895,24 @@ async function cicloRefresh(){
     if(PERFIL==='operador' || PERFIL==='gerencial') await passo(carregarParadas);
     if(c % A_CADA_DADOS === 0){
       await passo(lerSheets);
+      // 1.50.0 (a UEP na frente): no gerencial a UEP do dia é o veredito, e ela sai
+      // JUNTO com as caixas. Lida a cada 6 min contra as caixas a cada 3, a hora
+      // recém-lançada aparecia "SEM UEP" e o esperado do card subia sem a UEP da
+      // hora — até 3 min de veredito errado (achado da revisão). Como o PC: as duas
+      // no mesmo ciclo, em sequência. A UEP de agora do cadastro, a cada 30 min.
+      if(PERFIL==='gerencial'){
+        if(Date.now()-PROD_CAT_TS > PROD_CAT_TTL) await passo(carregarProdutos);
+        await passo(async()=>{ await lerPontosDia(); renderGerencial(); });
+      }
       if(PERFIL==='operador') await passo(carregarConfigPainel);   // toggle do modo leitor
       // Lista do dia para o aviso de cor errada: lote datado ou ENCERRADO pelo
       // PPCP depois do login. Em sequência, e só quando passou do TTL.
       if(PERFIL==='operador' && Date.now()-PROG_HOJE_TS > PROG_HOJE_TTL) await passo(carregarProgramacaoHoje);
     }
     if(PERFIL==='gerencial' && c % A_CADA_PESADO === 0){
+      // o histórico; a leitura do dia e o cadastro (a UEP do card ATRASO, 1.43.0)
+      // saem com as caixas, a cada 3 min (acima)
       await passo(async()=>renderHistoricoComDados(await lerHistorico()));
-      // a UEP do card ATRASO (1.43.0): o cadastro de 30 min atrás — uma troca de UEP no
-      // dia chega; falhou, tenta de novo no próximo ciclo pesado (6 min)
-      if(Date.now()-PROD_CAT_TS > PROD_CAT_TTL) await passo(carregarProdutos);
-      await passo(async()=>{ await lerPontosDia(); renderGerencial(); });
       await passo(()=>carregarParadasPeriodoSel());   // respeita o cache
     }
   }finally{ _refreshRodando = false; _fimR(); }
@@ -3764,7 +3774,7 @@ function renderGerencial(){
         ? {l:'⚠ ATRASO · LOTES VENCIDOS', v:(_atr.min > 0 ? _hm(_atr.min) : '&lt;1 min') + (_atr.semUep ? '*' : '') + '<small>de linha</small>',
            sub:`${fmtN(_atr.cx)} cx${_atr.desde ? ' · desde ' + _atr.desde : ''}${_atr.semUep ? ` · * ${plural(_atr.semUep,'código sem UEP fica','códigos sem UEP ficam')} só nas caixas` : ''}${_guard}`, c:'red larga atr'}
         : {l:'⚠ ATRASO · LOTES VENCIDOS', v:fmtN(_atr.cx) + '<small>cx</small>',
-           sub:`${_atr.desde ? 'desde ' + _atr.desde + ' · ' : ''}${PROD_CAT_TS ? 'sem UEP no cadastro' : PROD_CAT_FALHA ? 'cadastro não lido — tenta de novo em 6 min' : 'lendo o cadastro…'}`, c:'red larga atr'})
+           sub:`${_atr.desde ? 'desde ' + _atr.desde + ' · ' : ''}${PROD_CAT_TS ? 'sem UEP no cadastro' : PROD_CAT_FALHA ? 'cadastro não lido — tenta de novo em 3 min' : 'lendo o cadastro…'}`, c:'red larga atr'})
     : (!_atr && _prog.atrasoTotal > 0
         ? {l:'⚠ ATRASO · LOTES VENCIDOS', v:fmtN(_prog.atrasoTotal) + '<small>cx</small>', sub:'cx de lotes com data anterior a hoje', c:'red larga atr'}
         : null);
@@ -3783,10 +3793,10 @@ function renderGerencial(){
     atrKpi = atrKpi0;
     if(!(_atr && _atr.n > 0 && _atr.min == null && !PROD_CAT_TS)) _atrRetGuarda(atrKpi0, PONTOS_DIA.lidoEm);
     if(atrKpi && PONTOS_DIA_FALHA){ const d = new Date(PONTOS_DIA.lidoEm);
-      atrKpi = Object.assign({}, atrKpi, { sub: atrKpi.sub + ` · de ${p2(d.getHours())}:${p2(d.getMinutes())} · sem leitura nova (tenta a cada 6 min)` }); }
+      atrKpi = Object.assign({}, atrKpi, { sub: atrKpi.sub + ` · de ${p2(d.getHours())}:${p2(d.getMinutes())} · sem leitura nova (tenta a cada 3 min)` }); }
   } else {
     const r = _atrRetLe();
-    atrKpi = r && r.kpi ? Object.assign({}, r.kpi, { sub: r.kpi.sub + ` · de ${r.hora}${PONTOS_DIA_FALHA ? ' · sem leitura nova (tenta a cada 6 min)' : ', atualizando…'}` }) : null;
+    atrKpi = r && r.kpi ? Object.assign({}, r.kpi, { sub: r.kpi.sub + ` · de ${r.hora}${PONTOS_DIA_FALHA ? ' · sem leitura nova (tenta a cada 3 min)' : ', atualizando…'}` }) : null;
   }
   // ── A UEP NA FRENTE (1.50.0; PPCP 13/11/2026: "priorizar as UEPs" → o PC na
   // v7.243.0, "depois vamos para outro" → 16/11: o celular). UM veredito só, o da
@@ -4015,12 +4025,21 @@ function _pdiaToggle(i){
 // desenho. O teste confere o celular contra o PC no retrato de 13/11 16:22.
 let _GER_G = null;   // o modelo do último renderGerencial (a tabela hora a hora lê dele)
 // As horas do dia com os minutos de cada uma pelo fim que o backend manda.
+// Sem a HORA_A_HORA lida (o getDados falhou e a leitura do dia não), as horas do
+// turno pelo getSlots, com a hora extra pela janela 07:00–fim do turno — senão o
+// PARA A META dizia "jornada encerrada" às 10:00 (achado da revisão; o PC cai no
+// getSlots também).
 function _gerSlotsM(allHoje){
-  return (allHoje || []).map(r => ({ inicio: r.horario, label: r.slotLabel || r.horario, he: r.he === true,
+  if(!(allHoje || []).length)
+    return getSlots().map(s => ({ inicio: s.inicio, label: s.label, min: s.min,
+      he: toMin(s.inicio) < LANC_MADRUGADA_FIM || toMin(s.inicio) >= toMin(CFG.turnoFim) }));
+  return allHoje.map(r => ({ inicio: r.horario, label: r.slotLabel || r.horario, he: r.he === true,
     min: r.slotFim ? Math.max(1, toMin(r.slotFim) - toMin(r.horario)) : 60 }));
 }
 function _gerUepModeloM(k, agoraMin){
   if(agoraMin == null) agoraMin = nowMin();
+  if(typeof uepGerMontar !== 'function')   // rp-core.js antigo em cache: sem a montagem, as caixas julgam
+    return { ok: false, lendo: false, agoraMin, card: { l: 'UEP DO DIA', v: '—', sub: 'o módulo base está desatualizado — feche e abra o app', c: '' } };
   const slots = _gerSlotsM(k.allHoje);
   const pa = (PRODUTOS || []).find(x => x.codigo === PROD_ATUAL) || {};
   return uepGerMontar({ uep: PONTOS_DIA.uep, metaUep: PONTOS_DIA.metaUep, minNorm: k.minNorm, slots, allHoje: k.allHoje,
@@ -4031,29 +4050,35 @@ function _gerUepModeloM(k, agoraMin){
 // projeção em UEP (sem cor) e o que falta para a meta.
 function _gerUepCardsM(G, k, atrKpi){
   const c = G.card, L = [];
-  if(!G.ok) L.push({ l: c.l, v: c.v, sub: c.sub, c: (c.c || '') + ' larga hero' });
+  const semHH = !(k.allHoje || []).length;   // a HORA_A_HORA ainda não foi lida
+  // A leitura do dia que falhou diz isso (era "aguardando…" com a tabela dizendo NÃO
+  // LIDA logo abaixo); a que é de antes da última que falhou diz de quando é.
+  const lidoTxt = PONTOS_DIA.lidoEm ? (d => `${p2(d.getHours())}:${p2(d.getMinutes())}`)(new Date(PONTOS_DIA.lidoEm)) : '';
+  if(!G.ok) L.push({ l: c.l, v: c.v, sub: G.lendo && PONTOS_DIA_FALHA ? 'a leitura do dia não respondeu — o app tenta de novo' : c.sub, c: (c.c || '') + ' larga hero' });
   else {
     const m = G.m, temJ = k.minNorm > 0 && c.ef != null;
     const sub = temJ
       ? `<b>${slRitmo(c.ef)}</b>${m ? ' · ' + uepMinTxt(m.difMin) : ''}<i>${fmtN(Math.round(G.feito))} de ${fmtN(Math.round(c.esperado))} UEP esperadas até agora`
         + (G.he > 0 ? ` · +${fmtN(Math.round(G.he))} em hora extra` : '') + (G.cxSem > 0 ? ` · ${fmtN(G.cxSem)} cx sem UEP` : '') + '</i>'
-      : c.sub;
+        + (PONTOS_DIA_FALHA && lidoTxt ? `<i>UEP de ${lidoTxt} — a última leitura não respondeu</i>` : '')
+      : (semHH ? 'a hora a hora ainda não foi lida' : c.sub);
     L.push({ l: 'UEP DO DIA · META ' + fmtN(G.meta), v: fmtN(Math.round(G.feito)) + '<small>UEP</small>', sub, c: (temJ ? c.c : 'acc') + ' larga hero' });
   }
   if(atrKpi) L.push(atrKpi);
   if(!G.ok) return L;
   const p = G.proj, porH = G.meta / UEP_MIN_DIA * 60;
   L.push({ l: 'RITMO · UEP/HORA', v: p ? fmtN(Math.round(p.porHora)) + '<small>/h</small>' : '—', sub: `a meta pede ${fmtN(Math.round(porH))}/h`, c: 'uk' });
-  L.push({ l: 'PROJEÇÃO · UEP', v: p ? fmtN(Math.round(p.fim)) : '—', sub: p ? `${fmtP(p.fim / G.meta * 100)} da meta · só jornada` : 'sem hora de jornada lançada', c: 'uk' });
+  L.push({ l: 'PROJEÇÃO · UEP', v: p ? fmtN(Math.round(p.fim)) : '—', sub: p ? `${fmtP(p.fim / G.meta * 100)} da meta · só jornada` : semHH ? 'a hora a hora ainda não foi lida' : 'sem hora de jornada lançada', c: 'uk' });
   if(G.falta <= 0) L.push({ l: 'PARA A META', v: '✓', sub: 'meta de UEP do dia batida', c: 'larga uk' });
   else {
     const m = G.m, pr = m && m.prod;
     // o NEC. P/ META em cx/h virou isto: quanto falta, em caixas do produto de
     // agora, quando sai — e, não cabendo, o ritmo que a meta pede no que resta
     const l1 = pr && m.faltaCx ? `≈ ${fmtN(m.faltaCx)} cx de ${_escH(pr.nome)}` : '';
+    const hm = n => n < 60 ? Math.round(n) + ' min' : Math.floor(n / 60) + 'h' + p2(Math.round(n) % 60);
     const l2 = !m ? (G.minRest > 0 ? 'meta − UEP feita na jornada' : 'jornada encerrada')
       : m.chega != null ? `sai às ${fromMin(Math.round(m.chega))} no ritmo da meta`
-      : m.minRest > 0 ? `não cabe até ${CFG.turnoFim || '17:00'} no ritmo da meta · pede ${fmtN(Math.round(G.falta / m.minRest * 60))} UEP/h nos ${m.minRest} min que restam`
+      : m.minRest > 0 ? `não cabe até ${CFG.turnoFim || '17:00'} no ritmo da meta · pede ${fmtN(Math.round(G.falta / m.minRest * 60))} UEP/h nos ${hm(m.minRest)} que restam`
       : 'jornada encerrada';
     L.push({ l: 'PARA A META', v: fmtN(Math.round(G.falta)) + '<small>UEP</small>', sub: l1 ? l1 + '<i>' + l2 + '</i>' : l2, c: 'larga uk' });
   }
@@ -4079,21 +4104,24 @@ function _gerCxCardsM(k, semUep){
 // veredito por hora (às 09:00 de 13/11, 160 cx eram 98% em caixas e 87,9% da meta
 // de UEP). Sem a UEP do dia, as horas dizem LENDO… / NÃO LIDA / SEM UEP e não
 // pintam o % — quem julga é o card das caixas programadas.
-function _gerHoraLinhaM(h, cxCom, uepCxAgora, est){
+function _gerHoraLinhaM(h, cxCom, uepCxAgora, est, velho){
   const J = est ? null : uepHoraJulga(h, h.cx, cxCom);
+  // A UEP do dia é de antes da última leitura que falhou (velho): a hora lançada sem
+  // UEP, ou com caixas a mais que o registro, pode ser só a leitura atrasada — diz
+  // NÃO LIDA, sem %, em vez de afirmar SEM UEP / PARTE SEM UEP.
   const pct = J && !J.parte ? J.pct : null, s2 = pct == null ? '' : sc(pct);
   const temU = h.uep > 0;
   const uepTxt = temU ? fmtN(Math.round(h.uep)) + (J && J.parte ? '*' : '') : (J && J.uep === 0 ? '0' : (h.cxSem > 0 ? '0*' : '—'));
-  const metaCx = h.he || !(h.metaH > 0) ? null
+  const metaCx = h.he || est || !(h.metaH > 0) ? null
     : (temU && cxCom > 0 ? h.metaH * cxCom / h.uep : (h.andamento && uepCxAgora > 0 ? h.metaH / uepCxAgora : null));
   const st = h.he ? 'H. EXTRA' : h.andamento ? (h.ate ? 'ATÉ ' + h.ate : 'AGORA') : !h.lancada ? '' : est ? est
-    : h.tol && h.cx === 0 ? 'AINDA ACEITA' : !(h.metaH > 0) ? '' : !J ? 'SEM UEP' : J.parte ? 'PARTE SEM UEP'
+    : h.tol && h.cx === 0 ? 'AINDA ACEITA' : !(h.metaH > 0) ? '' : !J ? (velho ? 'NÃO LIDA' : 'SEM UEP') : J.parte ? (velho ? 'NÃO LIDA' : 'PARTE SEM UEP')
     : (pct >= 96 ? 'OK' : pct >= 90 ? 'ATENÇÃO' : 'ABAIXO');
   return `<tr>
       <td style="white-space:nowrap">${h.label}</td>
       <td class="td-num" style="color:${temU || J ? 'var(--txt)' : 'var(--txt2)'}">${uepTxt}</td>
-      <td class="td-num" style="color:var(--txt2)">${h.he || !(h.metaH > 0) ? '—' : fmtN(Math.round(h.metaH))}</td>
-      <td class="td-s ${h.he ? 'acc' : s2 || 'pend'}">${J ? fmtP(J.pct) + (J.parte ? '*' : '') : '—'}${st ? `<span class="td-s-sub">${st}</span>` : ''}</td>
+      <td class="td-num" style="color:var(--txt2)">${h.he || est || !(h.metaH > 0) ? '—' : fmtN(Math.round(h.metaH))}</td>
+      <td class="td-s ${h.he ? 'acc' : s2 || 'pend'}">${J && !(J.parte && velho) ? fmtP(J.pct) + (J.parte ? '*' : '') : '—'}${st ? `<span class="td-s-sub">${st}</span>` : ''}</td>
       <td class="td-num">${h.cx != null ? fmtN(h.cx) : '—'}${metaCx != null ? `<span class="td-n2">meta ${fmtN(Math.round(metaCx))}</span>` : ''}</td>
     </tr>`;
 }
@@ -4108,7 +4136,8 @@ function renderTabelaHoraHora(allHoje){
   const est = G.ok ? null : (!G.lendo ? 'SEM UEP' : PONTOS_DIA_FALHA ? 'NÃO LIDA' : 'LENDO…');
   const horas = G.ok ? G.horas : uepHorasDia(_gerSlotsM(allHoje), allHoje, {}, PONTOS_DIA.metaUep, nowMin(), LANC_TOLERANCIA_MIN);
   const uepCxAgora = G.ok && G.m && G.m.prod ? G.m.prod.uepCx : null;
-  tbody.innerHTML = horas.map(h => _gerHoraLinhaM(h, (G.cxCom || {})[h.inicio] || 0, uepCxAgora, est)).join('');
+  const velho = G.ok && PONTOS_DIA_FALHA;
+  tbody.innerHTML = horas.map(h => _gerHoraLinhaM(h, (G.cxCom || {})[h.inicio] || 0, uepCxAgora, est, velho)).join('');
 }
 
 // ════════════════════════════════════════════════

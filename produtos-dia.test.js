@@ -94,7 +94,7 @@ ok('% da UEP do dia', M.produtos.map(p => p.pct), [30, 66, 4]);
 ok('cor: uma pelo nome, várias pela contagem', M.produtos.map(p => p.corTxt), ['OFF WHITE/CINAMOMO', '2 cores', 'BRANCO']);
 ok('horário pelas horas da planilha (início da 1ª, fim da última)',
    M.produtos.map(p => p.iniTxt + '–' + p.fimTxt), ['05:00–07:00', '06:00–10:00', '09:00–10:00']);
-ok('hora extra: tudo · 60 · nada', M.produtos.map(p => p.heTxt), ['tudo em HE', '60 em HE', '']);
+ok('hora extra: tudo · 60 · nada ("cx" escrito, rp-core 1.18.0: no celular a linha abre pela UEP)', M.produtos.map(p => p.heTxt), ['tudo em HE', '60 cx em HE', '']);
 ok('AGORA só no produto do código de agora', M.produtos.map(p => p.agora), [false, false, true]);
 
 console.log('\n── o detalhe: cor × volume e hora a hora ──');
@@ -147,7 +147,7 @@ ok('hora a hora na ordem da hora, mesmo lançada fora de ordem',
 const tarde = monta([pm('16:00', '501136', 'LIVREIRO ENCANTO', 'BRANCO', 50, 93.5), pm('17:00', '501136', 'LIVREIRO ENCANTO', 'BRANCO', 40, 74.8)],
   [{ hora: '16:00', codigo: '501136001', desc: 'VOL 1/1 LIVREIRO ENCANTO', caixas: 50 },
    { hora: '17:00', codigo: '501136001', desc: 'VOL 1/1 LIVREIRO ENCANTO', caixas: 40 }], '', 18 * 60);
-ok('17:00 em diante é hora extra (a janela do .gs)', [tarde.heCx, tarde.produtos[0].heTxt, tarde.faixa.fim, tarde.faixa.he], [40, '40 em HE', 1080, [[1020, 1080]]]);
+ok('17:00 em diante é hora extra (a janela do .gs)', [tarde.heCx, tarde.produtos[0].heTxt, tarde.faixa.fim, tarde.faixa.he], [40, '40 cx em HE', 1080, [[1020, 1080]]]);
 const soUm = monta([pm('10:00', '501088', 'HOME ANGEL 1.8', 'CINAMOMO/OFF WHITE', 80, 198.4)],
   [{ hora: '10:00', codigo: '501088002', desc: 'VOL 2/2 HOME ANGEL 1.8', caixas: 80 }], '', 11 * 60);
 ok('produto de dois volumes com um só embalado hoje: sem tabela, o volume no hora a hora',
