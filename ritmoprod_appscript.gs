@@ -1,5 +1,18 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.66 — O LOTE DE HOJE ANTES DO 1º LANÇAMENTO (getProgramacaoSemana).
+//               PPCP, 16/11/2026 06:54, com o card ATRASO (6h04) e o TAKT DA
+//               SEMANA na tela: "6h04 não contempla o lote de hj?". A linha de
+//               HOJE chega com PRODUZIDO e SALDO vazios até o 1º lançamento do
+//               dia (ontem ela era futura e o write-back deixa futura em
+//               branco) e o _saldoConfiavel devolvia null: o TAKT tirava o lote
+//               de hoje da falta. Medido naquela manhã: 25442 e 25443 (1.150 cx,
+//               ≈ 3h41 de linha) fora, e o veredito dizia FECHA, sobram 3h39.
+//               Agora a linha de HOJE com as DUAS colunas vazias entra com a
+//               QTDE (nada foi lançado nela). Vencida com as colunas vazias, ou
+//               com o SALDO de outra linha (ERP colado por cima), segue null.
+//               ⚠ re-deploy manual. Antes dele o TAKT segue sem o lote de hoje
+//               até o 1º lançamento (a nota "linhas sem saldo confiável" diz).
 // Versão: 5.65 — O TEMPO-ALVO PELA ESTEIRA (getTemposAlvo) e a EFICIÊNCIA DA
 //               EMBALAGEM na CONFIG_PAINEL (EFICIENCIA_EMB).
 //               PPCP, 12/11/2026, com o RACK MOVE 1.6 na tela do app (alvo
@@ -585,7 +598,7 @@
 
 // A versão deste arquivo, a mesma do cabeçalho (v5.58). Vai no getDados para o
 // rodapé do painel dizer qual .gs está implantado — o GitHub não sabe.
-const GS_VERSAO = '5.65';
+const GS_VERSAO = '5.66';
 
 const SHEET_DADOS     = 'HORA_A_HORA';
 const SHEET_HIST      = 'HISTORICO';
@@ -5997,6 +6010,9 @@ function _lerProgDaAba(sh, arquivada) {
                // v5.59: o SALDO da linha, só quando a célula é DELA (ver
                // _saldoConfiavel). Só a semana do takt lê; o FIFO não.
                saldo: _saldoConfiavel(iProd >= 0 ? r[iProd] : '', iSald >= 0 ? r[iSald] : '', qtde),
+               // v5.66: PRODUZIDO e SALDO vazios (ou sem as colunas) — a linha nunca passou
+               // pelo write-back como lote aberto. A semana do takt lê; o FIFO não.
+               saidaVazia: _celVazia(iProd >= 0 ? r[iProd] : '') && _celVazia(iSald >= 0 ? r[iSald] : ''),
                row: i });   // índice da linha na aba (o write-back casa a linha por ela)
   }
   return out;
@@ -6015,6 +6031,7 @@ function _loteIntTxt(v) {
 // PRODUZIDO + SALDO = QTDE (a mesma conferência do _produzidoConfiavel, abaixo:
 // o extrato do ERP colado por cima das colunas de entrada deixa nas de saída o
 // SALDO de OUTRA linha). null = vazia, texto ou de outra linha — nunca 0.
+function _celVazia(v) { return v == null || String(v).trim() === ''; }
 function _saldoConfiavel(prodCel, saldoCel, qtde) {
   if (prodCel === '' || prodCel == null || saldoCel === '' || saldoCel == null) return null;
   const p = Number(prodCel), s = Number(saldoCel);
@@ -6590,7 +6607,10 @@ function getProgramacaoSemana(p) {
     let saldo;
     if (pr.arquivada || pr.foraEsteira || (pr.encerrada && !futura)) saldo = 0;
     else if (pr.saldo != null) saldo = pr.saldo;
-    else saldo = futura ? qtde : null;
+    // v5.66: a linha de HOJE com PRODUZIDO e SALDO vazios ainda não recebeu lançamento
+    // (ontem era futura, e futura fica em branco): o saldo é a QTDE. Sem isso o TAKT
+    // tirava o lote de hoje da falta até o 1º lançamento do dia.
+    else saldo = futura || (dNum === hojeNum && pr.saidaVazia) ? qtde : null;
     linhas.push({
       data: _numParaDataBR(dNum), dataNum: dNum,
       lote: pr.lote || '', ordem: pr.ordem == null ? null : pr.ordem,

@@ -600,14 +600,14 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-uep .tks-tr{position:relative;display:block;height:22px}
 #sec-uep .tks-tr i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--tks-base)}
 #sec-uep .tks-br.pr .tks-tr i{background:var(--red)}
-#sec-uep .tks-tr i.p2{opacity:.55} #sec-uep .tks-tr i.p3{opacity:.3}   /* v7.242.0: o PRECISA em partes (atraso · hoje · dias que vêm) */
-#sec-uep .tks-tr i.p1{border-radius:3px 0 0 3px} #sec-uep .tks-tr i.p2,#sec-uep .tks-tr i.p3{border-radius:0;box-shadow:inset 2px 0 0 rgba(0,0,0,.45)}
+#sec-uep .tks-tr i.p2{opacity:.55} #sec-uep .tks-tr i.p3{opacity:.3} #sec-uep .tks-tr i.p4{opacity:.18}   /* v7.242.0: o PRECISA em partes; v7.244.0: até 4 (vencidos antes da segunda · desta semana · hoje · dias que vêm) */
+#sec-uep .tks-tr i.p1{border-radius:3px 0 0 3px} #sec-uep .tks-tr i.p2,#sec-uep .tks-tr i.p3,#sec-uep .tks-tr i.p4{border-radius:0;box-shadow:inset 2px 0 0 rgba(0,0,0,.45)}
 #sec-uep .tks-tr i[class^="p"]:last-child{border-top-right-radius:3px;border-bottom-right-radius:3px}
 #sec-uep .tks-bpt{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;margin:-1px 62px 7px 74px;font-size:13px;color:var(--txt2)}
 #sec-uep .tks-bpt span{display:inline-flex;align-items:center;gap:6px}
 #sec-uep .tks-bpt span::before{content:'';width:11px;height:11px;border-radius:2px;background:var(--tks-base)}
 #sec-uep .tks-bpt.pr span::before{background:var(--red)}
-#sec-uep .tks-bpt .p2::before{opacity:.55} #sec-uep .tks-bpt .p3::before{opacity:.3}
+#sec-uep .tks-bpt .p2::before{opacity:.55} #sec-uep .tks-bpt .p3::before{opacity:.3} #sec-uep .tks-bpt .p4::before{opacity:.18}
 #sec-uep .tks-bpt b{color:var(--txt);font-weight:600} #sec-uep .tks-bpt em{font-style:normal}
 #sec-uep .tks-tr em{position:absolute;top:0;bottom:0;border-radius:0 3px 3px 0;background:repeating-linear-gradient(135deg,rgba(245,85,74,.8) 0 6px,rgba(245,85,74,.25) 6px 12px)}
 #sec-uep .tks-br b{font-family:var(--font-h);font-size:24px;color:var(--txt);letter-spacing:0;text-align:right}
@@ -4156,14 +4156,14 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.243.0';
+const APP_VER = '7.244.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
 // .gs v5.57) e o rodapé compara: o GitHub e o editor do Apps Script não se
 // falam, e sem isso ninguém via qual .gs estava rodando. Mudou o .gs? Suba este
 // número junto com o GS_VERSAO de lá (o apps-script.test.js confere).
-const GS_REPO   = '5.65';
+const GS_REPO   = '5.66';
 let GS_IMPL;   // undefined = ainda não leu · null = o .gs implantado não informa (antes da v5.57)
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5992,7 +5992,7 @@ async function _uepAbaCarregar(){
     await _uepAbaCatCarregar();
     // por último, a programação (a mais cara): só para apontar código sem UEP.
     // Reaproveita a leitura das outras abas se tiver menos de 15 min.
-    if(!PROG_DET_TS || Date.now()-PROG_DET_TS>GPX_TTL){ await carregarProgramacaoDetalhada(); if(_abaOn('uep')) renderUep(); }
+    if(!PROG_DET_TS || Date.now()-PROG_DET_TS>GPX_TTL || !_progDetHoje()){ await carregarProgramacaoDetalhada(); if(_abaOn('uep')) renderUep(); }
     // e o histórico por produto (bloco 7, o último da tela): o log do período com a hora.
     await _uepPadCarregar();
     // e a programação da semana (TAKT DA SEMANA, v7.209.0): a última, cache de 5 min.
@@ -10250,25 +10250,19 @@ function _uepSubAtr(P, A, est, hojeN){
 }
 // v7.242.0 (PPCP: "1h55 de atraso, como falta 6h16?"): a 2ª linha do card diz se o
 // atraso já está na barra PRECISA do TAKT DA SEMANA — não é um 2º problema para
-// somar. O TAKT só soma os lotes DESTA semana (segunda em diante) e só com UEP:
-// o vencido de antes da segunda e o de código sem UEP ficam fora, e a linha diz.
-// Curta de propósito (o card tem ~166 px a 1280); a explicação vai no title.
-// venc = A.venc (desde dd/MM/yyyy, uep null = sem UEP); hojeN = aaaammdd.
+// somar. Desde a v7.244.0 (PPCP, 16/11/2026: "6h04 não contempla o lote de hj?") o
+// TAKT soma TODO o vencido com UEP — o desta semana e o de antes da segunda, cada um
+// com a sua parte na legenda do PRECISA. Fica fora só o de código sem UEP (está só
+// nas caixas), e a linha diz. Curta de propósito (o card tem ~166 px a 1280); a
+// explicação vai no title. venc = A.venc (desde dd/MM/yyyy, uep null = sem UEP);
+// hojeN = aaaammdd (sem ele, sem a linha — o card de antes).
 function _uepAtrSub(venc, hojeN){
-  const h = Number(hojeN) || 0, L = (Array.isArray(venc) ? venc : []).filter(x => _cartNum(x && x.desde));
-  if(!h || !L.length) return null;
-  const x = new Date(Math.floor(h / 10000), Math.floor(h / 100) % 100 - 1, h % 100);
-  x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
-  const seg = x.getFullYear() * 10000 + (x.getMonth() + 1) * 100 + x.getDate(), sd = `${p2(x.getDate())}/${p2(x.getMonth() + 1)}`;
-  const TK = 'o TAKT DA SEMANA só soma os lotes desta semana (de ' + sd + ' em diante) e com UEP';
-  if(h === seg) return { sub:'fora do TAKT desta semana', t:'Hoje é segunda: todo o vencido é de antes desta semana — ' + TK + '.' };
-  const antes = L.some(v => _cartNum(v.desde) < seg), sem = L.some(v => v.uep == null);
-  if(!antes && !sem) return { sub:'já está no PRECISA do TAKT', t:'Este atraso já está dentro da barra PRECISA do TAKT DA SEMANA (a legenda mostra quanto): não some com o que falta da semana.' };
-  const comUep = L.some(v => v.uep != null);
-  if(sem && !antes) return { sub: comUep ? 'sem UEP (*): fora do TAKT' : 'sem UEP: fora do TAKT',
-    t:'O vencido de código sem UEP no cadastro fica fora (está só nas caixas) — ' + TK + '.' + (comUep ? ' O resto já está na barra PRECISA.' : '') };
-  if(antes && !sem) return { sub:'antes de ' + sd + ': fora do TAKT', t:'O vencido de antes de ' + sd + ' fica fora — ' + TK + '. O de ' + sd + ' em diante já está na barra PRECISA.' };
-  return { sub:'antes de ' + sd + ' e sem UEP: fora', t:'Ficam fora o vencido de antes de ' + sd + ' e o de código sem UEP — ' + TK + '. O que for desta semana e com UEP está na barra PRECISA.' };
+  const L = (Array.isArray(venc) ? venc : []).filter(x => _cartNum(x && x.desde));
+  if(!Number(hojeN) || !L.length) return null;
+  const sem = L.some(v => v.uep == null), comUep = L.some(v => v.uep != null);
+  if(!sem) return { sub:'já está no PRECISA do TAKT', t:'Este atraso já está dentro da barra PRECISA do TAKT DA SEMANA — o vencido de antes da segunda e o desta semana, cada um com a sua parte na legenda: não some com o que falta da semana.' };
+  return { sub: comUep ? 'sem UEP (*): fora do TAKT' : 'sem UEP: fora do TAKT',
+    t:'O vencido de código sem UEP no cadastro fica fora do TAKT DA SEMANA (está só nas caixas).' + (comUep ? ' O resto já está na barra PRECISA.' : '') };
 }
 // O toque: PRÓXIMOS DIAS com o quadro aberto, rolado até ele.
 function _uepAtrAbrir(){
@@ -10757,6 +10751,19 @@ function _taktMontar(S, hist, H, pts, est){
     const pc=pts && u ? Number(pts[String(l.codigo||'').replace(/\D/g, '')]) : 0;
     if(pc>0){ falta.pts+=s*pc; falta.uepPts+=s*u; if(d){ d.saldoPts+=s*pc; d.saldoUepPts+=s*u; } }
   });
+  // v7.244.0: o VENCIDO DE ANTES DESTA SEGUNDA (o card ATRASO; PPCP, 16/11/2026: "6h04 não
+  // contempla o lote de hj?" → o TAKT dizia FECHA com 6h04 de atraso fora). Só a esta semana
+  // (h.antes vem do _taktHoje): undefined = quem chama não é a esta semana, nada muda;
+  // null = a programação detalhada de hoje ainda não foi lida (a tela diz); objeto = somado
+  // ao saldo — horas, caixas e o que não tem UEP, como os lotes da semana.
+  if(hojeN>=deN && hojeN<=ateN && h.antes!==undefined){
+    if(!h.antes) falta.antesLendo=true;
+    else {
+      const a=h.antes, au=Math.max(0, Number(a.uep)||0), ac=Math.max(0, Number(a.cx)||0), as=Math.max(0, Number(a.cxSemUep)||0);
+      falta.uepAntes=au; falta.cxAntes=ac+as; falta.cxAntesSemUep=as; falta.antesDesde=a.desde||null;
+      falta.uep+=au; falta.cx+=ac+as; falta.cxSemUep+=as;
+    }
+  }
   // o feito: dias fechados do histórico; hoje, o da ⚖ UEP
   dias.forEach(d=>{
     if(d.hoje){ d.feito=Number(h.uep)||0; d.he=Number(h.he)||0; d.meta=meta; d.min=Math.min(Math.max(0, Number(h.minNorm)||0), UEP_MIN_DIA); return; }
@@ -10866,16 +10873,18 @@ function _taktVeredito(T, P, rit){
 function _taktPrecisaPartes(T, V){
   if(!T || !T.falta || !V || !(V.precisaMin>0) || !(T.meta>0)) return null;
   const k=UEP_MIN_DIA/T.meta, dH=(T.dias||[]).find(d=>d.hoje);
+  // v7.244.0: o vencido de antes desta segunda (o card ATRASO) é a 1ª parte
+  const uA=Math.max(0, Number(T.falta.uepAntes)||0);
   const uV=Math.max(0, Number(T.falta.uepVenc)||0), uH=dH ? Math.max(0, Number(dH.saldoUep)||0) : 0;
-  const uR=Math.max(0, (Number(T.falta.uep)||0)-uV-uH);
+  const uR=Math.max(0, (Number(T.falta.uep)||0)-uA-uV-uH);
   // lote em dia sem jornada (sábado, domingo, feriado) entre os que vêm: é hora extra, fora do TEM
   const he=(T.dias||[]).some(d=>!d.passado && !d.hoje && !d.util && d.saldoUep*k>=0.5);
-  const raw=[['venc', uV], ['hoje', uH], ['vem', uR]].filter(x=>x[1]*k>=0.5);   // menos de meio minuto não é parte
+  const raw=[['antes', uA], ['venc', uV], ['hoje', uH], ['vem', uR]].filter(x=>x[1]*k>=0.5);   // menos de meio minuto não é parte
   let acc=0, ant=0;
   const p=raw.map(([kk, u], i)=>{
     acc+=u;
     const fim=i===raw.length-1 ? V.precisaMin : Math.min(Math.round(acc*k), V.precisaMin), m=fim-ant;
-    ant=fim; return kk==='vem' && he ? { k:kk, min:m, he:true } : { k:kk, min:m };
+    ant=fim; return kk==='vem' && he ? { k:kk, min:m, he:true } : kk==='antes' ? { k:kk, min:m, de:String(T.de||'').slice(0, 5) } : { k:kk, min:m };
   }).filter(x=>x.min>0);
   return p.length>1 ? p : null;
 }
@@ -10911,7 +10920,7 @@ function _taktPtsMapa(cat){
 function _taktHoje(D, hojeN){
   const ag=new Date(), agMin=ag.getHours()*60+ag.getMinutes();
   return { num:hojeN, minNorm:D.k.minNorm, restMin:_taktRestMin(D.k.slots, D.k.allHoje, agMin),
-           uep:D.feito, he:D.he, meta:D.meta, fim:CFG.turnoFim||'17:00', ef:_efEmb() };
+           uep:D.feito, he:D.he, meta:D.meta, fim:CFG.turnoFim||'17:00', ef:_efEmb(), antes:_taktAntesDoPainel(hojeN) };
 }
 // Minutos de jornada que ainda faltam hoje (a hora em andamento, só o que resta;
 // hora extra fora). É o TEM do veredito da esta semana (com os dias úteis que vêm).
@@ -11120,7 +11129,7 @@ function _taktHtml(T, G, opt){
     +(tot>=1 ? `. Do que não saiu nos dias fechados, ${pc(C.carga)} foi excesso de programação e ${pc(C.ritmo)} ritmo da linha` : '')+'.';
   const porR=tot>=1 ? `do que não saiu: <b>${pc(C.carga)} excesso de programação</b> · <b>${pc(C.ritmo)} ritmo da linha</b>`
     : `a programação pede <b>${fmtP(T.pede)}</b> da média${X.pct!=null ? ` · a linha rodou a <b>${fmtP(X.pct)}</b>` : ''}`;
-  return tit+_taktHeroHtml(o.V, { semana:'esta', ate:F.ate, partes:_taktPrecisaPartes(T, o.V) })
+  return tit+_taktHeroHtml(o.V, { semana:'esta', ate:F.ate, partes:_taktPrecisaPartes(T, o.V) })+_taktAntesAviso(T)
     +_taktFecharHtml(_taktFecharDados(o.V, { semana:'esta', ate:F.ate }))
     +`<div class="uep-sec"><b>DIA A DIA</b> horas de linha · programado × feito<span class="tks-sec-r" title="${e(porT)}">${porR}</span></div><div class="uep-card" id="tks-g-box">${svg}`
     +`<div class="uep-leg"><span class="tks-lb">programado até 1 dia de linha</span><span class="tks-lx">programado acima de 1 dia</span><span style="--c:var(--tks-feito)">feito na jornada</span><span style="--c:var(--warn)">hora extra</span><span class="tks-lr">1 dia de linha (${_fmtHM(UEP_MIN_DIA)} = média de ${n0(T.meta)} UEP entregues sem hora extra)</span></div></div>`
@@ -11410,6 +11419,32 @@ function _tkaVencidoAntes(prog, linSemana, segN, hojeN){
   Object.keys(porCod).forEach(c=>{ porCod[c].l.saldo=Math.max(0, porCod[c].falta-(sem[c]||0)); });
   return out;
 }
+// O VENCIDO DE ANTES DESTA SEGUNDA no TAKT DA SEMANA e nas 4 SEMANAS (v7.244.0, PPCP
+// 16/11/2026: "6h04 não contempla o lote de hj?" → o TAKT dizia FECHA com o atraso fora).
+// As linhas são as do _tkaVencidoAntes (o AVALIAR já usa: por código, UMA vez, o falta do
+// FIFO menos o saldo desta semana até hoje) — é o card ATRASO menos o que venceu nesta
+// semana (que o TAKT já tem, linha a linha). Conta pura: { uep, cx (com UEP), cxSemUep,
+// desde (aaaammdd do mais antigo com saldo) }.
+function _taktAntesSoma(lin){
+  const a={ uep:0, cx:0, cxSemUep:0, desde:null };
+  (Array.isArray(lin) ? lin : []).forEach(l=>{
+    const s=Number(l && l.saldo)||0;
+    if(!(s>0) || l.foraEsteira) return;
+    const u=Number(l.uepCx)>0 ? Number(l.uepCx) : null;
+    if(u){ a.uep+=s*u; a.cx+=s; } else a.cxSemUep+=s;
+    const n=Number(l.dataNum)||0; if(n && (!a.desde || n<a.desde)) a.desde=n;
+  });
+  return a;
+}
+// Do painel: null = a programação detalhada DE HOJE ainda não foi lida (o `falta` dela é o
+// atraso do dia da leitura) — a tela diz, nunca soma 0 calada.
+function _taktAntesDoPainel(hojeN){
+  if(!_progDetHoje()) return null;
+  const x=new Date(Math.floor(hojeN/10000), Math.floor(hojeN/100)%100-1, hojeN%100);
+  x.setDate(x.getDate()-((x.getDay()+6)%7));
+  const segN=x.getFullYear()*10000+(x.getMonth()+1)*100+x.getDate();
+  return _taktAntesSoma(_tkaVencidoAntes(PROG_DETALHADA, TKS && _cartNum(TKS.hoje)===hojeN ? TKS.linhas : [], segN, hojeN));
+}
 // Lê o que faltar (na fila: uma leitura do Apps Script por vez) e redesenha.
 function _tkaPainelCarregar(fimN){
   if(TKA_VOO) return TKA_VOO;
@@ -11696,6 +11731,8 @@ function _taktSemanasMontar(L, rit){
     const futU=T.dias.filter(d=>d.util && !d.passado && !d.hoje).length;
     const restHoje=Math.max(0, Math.round(T.falta.capRest*k)-futU*UEP_MIN_DIA);   // o resto da jornada de hoje (o "tem" da ESTA SEMANA)
     let uVenc=0, uDia=0, ultConta=null;
+    // v7.244.0: na esta semana, o vencido de ANTES da segunda (o card ATRASO) também (_taktMontar → falta.uepAntes)
+    const uAnt=i===0 ? Math.max(0, Number(T.falta && T.falta.uepAntes)||0) : 0;
     const dias=[], fora=[], semUepD=[], he=[];
     T.dias.forEach(d=>{
       if(d.passado){ uVenc+=d.saldoUep; return; }
@@ -11708,19 +11745,21 @@ function _taktSemanasMontar(L, rit){
       uDia+=d.saldoUep; ultConta=d.data;
       dias.push(Object.assign(b, { precisa:Math.round(d.saldoUep*k), tem:d.hoje ? restHoje : UEP_MIN_DIA }));
     });
-    const temSoma=dias.reduce((a, d)=>a+d.tem, 0), uep=uVenc+uDia;
+    const temSoma=dias.reduce((a, d)=>a+d.tem, 0), uep=uVenc+uAnt+uDia;
     // para a SUGESTÃO de hora extra: os sábados e feriados de dia útil (não religiosos) que vêm pela frente,
     // das 05:00 às 11:00 — o lote que o dia já tem ocupa o começo (livre = 6h − ele) — e os dias úteis
     // com lote de amanhã em diante
     const ext=T.dias.filter(d=>!d.passado && !d.hoje && (d.dow===6 || (d.feriado && d.dow>=1 && d.dow<=5)) && !(d.feriado && !_feriadoParaHE(d.feriado)))
       .map((d, o)=>{ const ja=Math.round(d.saldoUep*k); return { data:d.data, dow:d.dow, fer:!!d.feriado, livre:Math.max(0, HE_SUG.min-ja), ini:HE_SUG.ini+ja, o }; });
     const fut=T.dias.filter(d=>d.util && !d.passado && !d.hoje && d.uep>0), nUtFut=fut.length, uIniFut=fut.length ? fut[0].data : null, uFimFut=fut.length ? fut[fut.length-1].data : null;
-    const vazia=T.dias.every(d=>!(d.cx>0)) && !(uVenc>0), semUep=!vazia && !T.dias.some(d=>d.uep>0);
+    const vazia=T.dias.every(d=>!(d.cx>0)) && !(uVenc>0) && !(uAnt>0), semUep=!vazia && !T.dias.some(d=>d.uep>0) && !(uAnt>0);
     const conta=!vazia && !semUep;
     const precisa=conta ? Math.round(uep*k) : 0, tem=conta ? temSoma : 0, precR=conta && rf ? Math.round(uep*k*rf) : null;
     if(ok && conta){ A=Math.max(0, A+precisa-tem); if(AR!=null) AR=Math.max(0, AR+precR-tem); }
     return { i, de:T.de, ate:T.ate, ini, fim:fimU, fimConta:ultConta, hoje:i===0, vazia, semUep, conta, precisa, tem, falta:precisa-tem,
              atraso:ok ? A : null, atrasoR:ok && AR!=null ? AR : null, antes:i===0 ? Math.round(uVenc*k) : 0,
+             antesSeg:Math.round(uAnt*k), antesDe:String(T.de||'').slice(0, 5), antesLendo:i===0 && !!(T.falta && T.falta.antesLendo),
+             cxAntesSemUep:i===0 ? Math.max(0, Number(T.falta && T.falta.cxAntesSemUep)||0) : 0,
              cxSemUep:T.cxSemUep, feriados:T.dias.filter(d=>d.feriado && d.dow>=1 && d.dow<=5).map(d=>d.data), fora, semUepD, he, dias:conta ? dias : [],   // semana sem conta: nada a abrir
              ext, nUtFut, uIniFut, uFimFut };
   });
@@ -11733,6 +11772,7 @@ function _taktSemanasMontar(L, rit){
   // hora paga à toa). Duas formas: sábado primeiro, ou dia útil primeiro.
   const sug=ok && ult && ult.atraso>0 ? _taktHeSugestao(semanas, semanas.indexOf(ult)) : null;
   return { semanas, completo:ok, fim:ult ? (ult.fimConta || ult.fim) : null, atraso:ult ? ult.atraso : null, atrasoR:ult ? ult.atrasoR : null,
+           antesLendo:!!(semanas[0] && semanas[0].antesLendo), antesDe:semanas[0] ? semanas[0].antesDe : null,
            nFora:semanas.reduce((a, s)=>a+(s.conta ? s.fora.length+s.semUepD.length : 0), 0), ritPct:rf ? 100/rf : null,
            heProg:semanas.reduce((a, s)=>a.concat(s.he || []), []),   // a hora extra JÁ programada (lote em sábado ou feriado)
            sug };
@@ -11803,7 +11843,8 @@ function _taktSemanasHtml(C, o){
     +(C.atraso>0 ? `<b>${hm(C.atraso)}</b> ainda a programar${_tkaDias(C.atraso)}` : '<b>nenhuma a programar</b>')+', na média da linha.'
     +(rr && C.atrasoR!=null ? ` No ritmo atual (${fmtP(C.ritPct)} da média): ${C.atrasoR>0 ? `<b>${hm(C.atrasoR)}</b> a programar${_tkaDias(C.atrasoR)}` : '<b>nenhuma</b>'}.` : '')
     +(C.nFora ? ` <span class="mono">Dia útil sem programação fica fora (${plural(C.nFora, 'dia', 'dias')}).</span>` : '')
-    +(C.completo ? '' : ' <span class="mono">(até onde foi lido)</span>')+'</div>';
+    +(C.completo ? '' : ' <span class="mono">(até onde foi lido)</span>')
+    +(C.antesLendo ? ` <span class="mono">O vencido de antes de ${e(dd(C.antesDe))} (o card ATRASO) não foi lido — está fora.</span>` : '')+'</div>';
   // A SUGESTÃO, direta (PPCP: "essa frase deixa dúvida"): o dia e o horário. Sábado e feriado das 05:00
   // às 11:00; dia útil no máximo 2h por dia (a conta já corta), na madrugada terminando no início do
   // turno — com o turno começando antes das 07:00, o que não cabe nela vai para depois do fim do turno
@@ -11826,20 +11867,22 @@ function _taktSemanasHtml(C, o){
     +(falta>0 ? `<br><b>Nem assim fecha:</b> faltam <b>${hm(falta)}</b> — sábado e feriado só das 05:00 às 11:00 e dia útil no máximo 2h por dia.` : '')+'</div>';
   const vazio=`<td></td>${rr ? '<td></td>' : ''}`;
   const lin=S.map(s=>{
-    const temDias=!!(s.dias && s.dias.length || s.antes>0), ab=temDias && (pp || !!TKS4_AB[s.i]);
+    const temDias=!!(s.dias && s.dias.length || s.antes>0 || s.antesSeg>0), ab=temDias && (pp || !!TKS4_AB[s.i]);
     const obs=s.est ? [] : [
       s.feriados.length ? s.feriados.map(f=>dd(f)+' feriado').join(', ') : '',
       s.conta && s.fora.length ? lista(s.fora)+' sem programação — fora' : '',
       s.conta && s.semUepD.length ? lista(s.semUepD)+' só caixas sem UEP — fora' : '',
       s.he.length ? s.he.map(h=>`${dd(h.data)} ${hm(h.min)} em hora extra, fora`).join(', ') : '',
       s.conta && s.cxSemUep>0 ? `${fmtN(s.cxSemUep)} cx sem UEP fora (a semana é mais pesada)` : '',
+      s.cxAntesSemUep>0 ? `${fmtN(s.cxAntesSemUep)} cx vencidas sem UEP fora` : '',
       C.sug ? C.sug.A.ext.filter(x=>x.i===s.i).map(x=>'sugestão: '+quando(x))
         .concat(C.sug.A.dias.filter(x=>x.i===s.i).map(x=>`sugestão: ${hm(x.porDia)} por dia programado`)).join(' · ') : ''
     ].filter(Boolean);
     const rot=`${s.est || pp || !temDias ? '' : ab ? '▾ ' : '▸ '}${s.est ? 'semana '+(s.i+1) : s.hoje ? 'esta semana' : dd(s.ini)+'–'+dd(s.fim)}`
       +(obs.length ? `<div class="mono tks4-o">${e(obs.join(' · '))}</div>` : '');
     if(s.est) return `<tr><td>${rot}</td><td class="n mono" colspan="${rr ? 5 : 4}">${pp ? 'não lida (a leitura da programação falhou)' : s.est==='falha' ? 'não consegui ler — ↻ ATUALIZAR' : 'lendo…'}</td></tr>`;
-    const dias=ab ? (s.antes>0 ? `<tr class="tks4-d"><td>lotes desta semana já vencidos</td><td class="n">${hm(s.antes)}</td><td class="n">—</td><td></td>${vazio}</tr>` : '')
+    const dias=ab ? (s.antesSeg>0 ? `<tr class="tks4-d"><td>vencidos antes de ${e(dd(s.antesDe))} (o card ATRASO)</td><td class="n">${hm(s.antesSeg)}</td><td class="n">—</td><td></td>${vazio}</tr>` : '')
+      +(s.antes>0 ? `<tr class="tks4-d"><td>lotes desta semana já vencidos</td><td class="n">${hm(s.antes)}</td><td class="n">—</td><td></td>${vazio}</tr>` : '')
       +s.dias.map(d=>`<tr class="tks4-d"><td>${dd(d.data)} ${TKS_DOW[d.dow]}${d.feriado ? ' · '+e(String(d.feriado).toLowerCase()) : !d.util ? ' · fim de semana' : ''}`
         +(d.he ? ' · hora extra, fora da conta' : d.fora==='vazio' ? ' · sem programação, fora' : d.fora==='semUep' ? ' · só caixas sem UEP, fora' : '')+'</td>'
         +(d.he ? `<td class="n mono">${hm(d.precisa)}</td><td class="n">—</td><td class="n">—</td>`
@@ -11853,7 +11896,7 @@ function _taktSemanasHtml(C, o){
   }).join('');
   return tit+ver+sug
     +`<div class="uep-card" style="overflow-x:auto"><table class="tka-tab tks4"><thead><tr><th>SEMANA</th><th class="n">PRECISA</th><th class="n">TEM</th><th class="n">NA SEMANA</th><th class="n">ATRASO NO FIM</th>${rr ? '<th class="n">NO RITMO ATUAL</th>' : ''}</tr></thead><tbody>${lin}</tbody></table>`
-    +`<div class="uep-nota">Horas de linha. Precisa = o saldo dos lotes dos dias úteis (na esta semana, também o que já venceu); tem = 8h47 por dia útil com lote (hoje, o que resta). Dia útil sem lote e lote em fim de semana ou feriado (hora extra) ficam fora. O atraso passa para a semana seguinte; a sobra só abate atraso que já existe; o atraso no fim é a hora extra que ainda falta programar. Sugestão: sábados e feriados de dia útil das 05:00 às 11:00 (menos o lote que o dia já tem; o religioso e o de fábrica fechada ficam fora; na mesma semana, o sábado antes do feriado) e dia útil no máximo 2h por dia, semana a semana, nunca mais que o menor atraso daquela semana até o fim — mais que isso, uma semana com sobra adiante deixaria a hora paga sem atraso para cobrir. A 1ª forma usa o sábado primeiro; a 2ª, o dia útil primeiro. Não soma o vencido de antes desta segunda (o card ATRASO).${pp ? '' : ' Toque na semana para ver o dia a dia.'}</div></div>`;
+    +`<div class="uep-nota">Horas de linha. Precisa = o saldo dos lotes dos dias úteis (na esta semana, também o que já venceu — nesta semana e antes dela, o card ATRASO); tem = 8h47 por dia útil com lote (hoje, o que resta). Dia útil sem lote e lote em fim de semana ou feriado (hora extra) ficam fora. O atraso passa para a semana seguinte; a sobra só abate atraso que já existe; o atraso no fim é a hora extra que ainda falta programar. Sugestão: sábados e feriados de dia útil das 05:00 às 11:00 (menos o lote que o dia já tem; o religioso e o de fábrica fechada ficam fora; na mesma semana, o sábado antes do feriado) e dia útil no máximo 2h por dia, semana a semana, nunca mais que o menor atraso daquela semana até o fim — mais que isso, uma semana com sobra adiante deixaria a hora paga sem atraso para cobrir. A 1ª forma usa o sábado primeiro; a 2ª, o dia útil primeiro.${pp ? '' : ' Toque na semana para ver o dia a dia.'}</div></div>`;
 }
 function _taktEstadoHtml(est, erro, fn, botoes){
   const msg=est==='lendo' ? 'Lendo a programação da semana…'
@@ -12079,6 +12122,13 @@ function _taktHerancaHtml(V, S, per){
 // semana viraram blocos próprios (_taktFecharHtml, _taktHerancaHtml).
 // o: { semana:'esta'|'prox', ate, nUteis, unid, ritmo }
 const TKS_RITMO_DESVIO=5;
+// v7.244.0: sem a programação detalhada de hoje, o vencido de antes da segunda não entrou no
+// PRECISA — diz, logo abaixo do veredito (nunca soma 0 calado). papel: a pele da 🖨.
+function _taktAntesAviso(T, papel){
+  if(!T || !T.falta || !T.falta.antesLendo) return '';
+  const t=`O vencido de antes de ${_rpEsc(String(T.de||'').slice(0, 5))} (o card ATRASO) não foi lido — está fora do PRECISA.`;
+  return papel ? `<div class="tks-por"><b>Atenção:</b> ${t}</div>` : `<div class="uep-nota" style="color:var(--warn);margin:0 0 8px">${t}</div>`;
+}
 function _taktHeroHtml(V, o){
   if(!V) return '';
   const esta=o.semana==='esta', hm=_fmtHM, nada=V.uep<1, un=o.unid||'caixas';
@@ -12110,12 +12160,12 @@ function _taktHeroHtml(V, o){
   const cap=esta ? (V.encerrada ? 'a jornada da semana acabou' : `jornada que resta${o.ate ? ' até '+_rpEsc(o.ate) : ''}`)
     : `${o.nUteis} ${o.nUteis===1 ? 'dia' : 'dias'} de ${hm(UEP_MIN_DIA)} de jornada`;
   // v7.242.0: com o.partes (_taktPrecisaPartes) a barra PRECISA mostra de onde vem — atraso, hoje, dias que vêm
-  // ⚠ "vencidos desta semana", nunca "atraso": o ATRASO do card soma também o vencido de antes da segunda (UM NOME POR INDICADOR)
-  const P=o.partes, rotP={ venc:'vencidos desta semana', hoje:'dos lotes de hoje', vem:'dos dias que vêm' };
+  // ⚠ "vencidos desta semana" e "vencidos antes de dd/mm", nunca "atraso": o ATRASO do card é a soma dos dois (UM NOME POR INDICADOR)
+  const P=o.partes, rotP=p=>p.k==='antes' ? 'vencidos antes de '+_rpEsc(p.de || 'segunda') : { venc:'vencidos desta semana', hoje:'dos lotes de hoje', vem:'dos dias que vêm' }[p.k];
   let x0=0;
   const prI=P ? P.map((p, i)=>{ const a=x0; x0+=p.min; return `<i class="p${i+1}" style="left:${w(a)}%;width:${(w(x0)-w(a)).toFixed(1)}%"></i>`; }).join('')
     : `<i style="width:${w(V.precisaMin)}%"></i>`;
-  const prL=P ? `<div class="tks-bpt${V.cabe ? '' : ' pr'}">${P.map((p, i)=>`<span class="p${i+1}"><b>${hm(p.min)}</b> ${rotP[p.k]}${p.he ? ' (com hora extra)' : ''}</span>`).join('<em>+</em>')}</div>` : '';
+  const prL=P ? `<div class="tks-bpt${V.cabe ? '' : ' pr'}">${P.map((p, i)=>`<span class="p${i+1}"><b>${hm(p.min)}</b> ${rotP(p)}${p.he ? ' (com hora extra)' : ''}</span>`).join('<em>+</em>')}</div>` : '';
   const barras=nada ? '' : `<div class="tks-bars">`
     +`<div class="tks-br${V.cabe ? '' : ' pr'}"><span>PRECISA</span><span class="tks-tr">${prI}</span><b>${hm(V.precisaMin)}</b></div>`+prL
     +`<div class="tks-br"><span>TEM</span><span class="tks-tr"><i style="width:${w(V.temMin)}%"></i>${gap}</span><b>${hm(V.temMin)}</b></div>`
@@ -12171,12 +12221,16 @@ const _TKS_DOC_SKIN = `
   .tks-doc .tks-tr i.p1+i,.tks-doc .tks-tr i.p2+i{box-shadow:inset 1.5px 0 0 #fff}
   .tks-doc .tks-br .tks-tr i.p3{opacity:1;background:#fff;box-shadow:inset 0 0 0 1.5px #A0AEC0}
   .tks-doc .tks-br.pr .tks-tr i.p3{box-shadow:inset 0 0 0 1.5px #C62828}
+  .tks-doc .tks-br .tks-tr i.p4{opacity:1;background:#fff;box-shadow:none;outline:1.5px dashed #A0AEC0;outline-offset:-1.5px}
+  .tks-doc .tks-br.pr .tks-tr i.p4{outline-color:#C62828}
   .tks-doc .tks-bpt{display:flex;flex-wrap:wrap;gap:1px 6px;margin:0 0 3px;font-size:9.5px;color:#5B6470}
   .tks-doc .tks-bpt span{display:inline-flex;align-items:center;gap:4px}
   .tks-doc .tks-bpt span::before{content:'';width:8px;height:8px;border-radius:1px;background:#A0AEC0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .tks-doc .tks-bpt.pr span::before{background:#C62828}
   .tks-doc .tks-bpt .p2::before{opacity:.55} .tks-doc .tks-bpt .p3::before{background:#fff;box-shadow:inset 0 0 0 1.5px #A0AEC0}
   .tks-doc .tks-bpt.pr .p3::before{background:#fff;box-shadow:inset 0 0 0 1.5px #C62828}
+  .tks-doc .tks-bpt .p4::before{background:#fff;outline:1.5px dashed #A0AEC0;outline-offset:-1.5px}
+  .tks-doc .tks-bpt.pr .p4::before{outline-color:#C62828}
   .tks-doc .tks-bpt b{color:#1F2328} .tks-doc .tks-bpt em{font-style:normal}
   .tks-doc .tks-tr em{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(135deg,#C62828 0 4px,#f3c4c4 4px 8px);-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .tks-doc .tks-bcap{font-size:9px;color:#5B6470;text-align:right}
@@ -12210,7 +12264,7 @@ function _taktDocHtml(A, ctx){
   if(T && T.takt!=null){
     const C=T.cas, t2=C.carga+C.ritmo, pc=v=>Math.round(v/t2*100)+'%';
     esq=`<div class="td-h">ESTA SEMANA<small>${per(T)} · até ${e(ctx.hora)}</small></div>`
-      +_taktHeroHtml(V0, { semana:'esta', ate:T.falta.ate, partes:_taktPrecisaPartes(T, V0) })
+      +_taktHeroHtml(V0, { semana:'esta', ate:T.falta.ate, partes:_taktPrecisaPartes(T, V0) })+_taktAntesAviso(T, true)
       +_taktFecharHtml(_taktFecharDados(V0, { semana:'esta', ate:T.falta.ate }), { papel:true })
       +`<div class="tks-por"><b>Por quê:</b> a programação pediu <b>${fmtP(T.pede)}</b> da média que a linha entrega sem hora extra`
       +(T.exec.pct!=null ? `, e a linha rodou a <b>${fmtP(T.exec.pct)}</b> dessa média` : '')
@@ -12335,6 +12389,7 @@ async function gerarRelatorio4Semanas(){
     if(!TKS || _cartNum(TKS.hoje)!==hojeN || Date.now()-TKS_TS>TKS_TTL){ msg('Lendo a programação desta semana…'); await _taktCarregar(true); }
     if(!TKP || TKP.de!==w.de || Date.now()-TKP_TS>TKS_TTL){ msg('Lendo a programação da semana que vem…'); await _taktProxCarregar(true); }
     if(!TK4 || TK4.de!==f4.de || Date.now()-TK4_TS>TKS_TTL){ msg('Lendo a programação das semanas 3 e 4…'); await _taktSemanas4Carregar(true); }
+    if(!_progDetHoje()){ msg('Lendo o atraso (lotes vencidos)…'); await carregarProgramacaoDetalhada(); }   // v7.244.0: o vencido de antes da segunda
   }catch(e){}
   if(!UEP_HIST){ win.close(); alert('Não consegui ler o histórico (os dias fechados da semana).\nTente de novo em alguns segundos.'); return; }
   if(!TKS || _cartNum(TKS.hoje)!==hojeN){ win.close(); alert('Não consegui ler a programação desta semana'+(TKS_ERRO ? ': '+TKS_ERRO : '')+'.\nTente de novo em alguns segundos.'); return; }
@@ -12371,6 +12426,7 @@ async function gerarRelatorioTakt(){
     if(!UEP_HIST){ msg('Lendo o histórico (os dias fechados)…'); await _uepAbaHistCarregar(); }
     if(!TKS || _cartNum(TKS.hoje)!==hojeN || Date.now()-TKS_TS>TKS_TTL){ msg('Lendo a programação desta semana…'); await _taktCarregar(true); }
     if(!TKP || TKP.de!==w.de || Date.now()-TKP_TS>TKS_TTL){ msg('Lendo a programação da semana que vem…'); await _taktProxCarregar(true); }
+    if(!_progDetHoje()){ msg('Lendo o atraso (lotes vencidos)…'); await carregarProgramacaoDetalhada(); }   // v7.244.0: o vencido de antes da segunda
   }catch(e){}
   if(!UEP_HIST){ win.close(); alert('Não consegui ler o histórico (os dias fechados da semana).\nTente de novo em alguns segundos.'); return; }
   if(!TKS || _cartNum(TKS.hoje)!==hojeN){ win.close(); alert('Não consegui ler a programação desta semana'+(TKS_ERRO ? ': '+TKS_ERRO : '')+'.\nTente de novo em alguns segundos.'); return; }
@@ -20499,9 +20555,11 @@ function renderProxDias(){
   // aproveita). Em voo, o fim da leitura redesenha.
   // ⚠ Leitura que falhou não pode disparar outra no fim dela (o fim redesenha):
   // entre duas tentativas há pelo menos 1 min.
-  if((!PROG_DET_TS || Date.now() - PROG_DET_TS > GPX_TTL) && !GPX_CARREGANDO && !REG_RODANDO && Date.now() - GPX_TENT > 60000){
+  // v7.244.0: a de OUTRO dia também (o TAKT soma o vencido do `falta` dela, que é o atraso do
+  // dia da leitura), e o fim redesenha a aba inteira com o TAKT na tela (o veredito muda)
+  if((!PROG_DET_TS || Date.now() - PROG_DET_TS > GPX_TTL || !_progDetHoje()) && !GPX_CARREGANDO && !REG_RODANDO && Date.now() - GPX_TENT > 60000){
     GPX_CARREGANDO = true; GPX_TENT = Date.now();
-    carregarProgramacaoDetalhada().finally(() => { GPX_CARREGANDO = false; renderProxDias(); });
+    carregarProgramacaoDetalhada().finally(() => { GPX_CARREGANDO = false; if(_abaOn('uep') && UEP_SUB === 'takt') renderUep(); else renderProxDias(); });
   }
   box.style.display = '';
   const sb = o => _sbPinta(document.getElementById('uep-sb-prox'), o);   // o número do botão PRÓXIMOS DIAS (v7.198.0)

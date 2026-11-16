@@ -41,7 +41,9 @@ global._rpEsc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/
  'function _tkAprox(', 'function _tkDia(', 'function _tkHAprox(', 'function _taktPico(', 'function _taktFecharDados(', 'function _taktFecharHtml(',
  'function _taktHerancaHtml(', 'function _taktExcessoHtml(',
  // v7.224.0: a faixa do takt (os volumes para o app de cronoanálise)
- 'function _taktSetup(', 'function _setupLer(', 'function _setupCfgTxt(', 'function _setupErro(', 'function _setupEnviar(', 'function _setupDaConfig(', 'function _setupResposta(', 'function _taktApp(', 'function _taktFaixa(', 'function _taktFaixaHtml('].forEach(f => eval.call(global, pega(f)));
+ 'function _taktSetup(', 'function _setupLer(', 'function _setupCfgTxt(', 'function _setupErro(', 'function _setupEnviar(', 'function _setupDaConfig(', 'function _setupResposta(', 'function _taktApp(', 'function _taktFaixa(', 'function _taktFaixaHtml(',
+ // v7.244.0: o vencido de antes da segunda no TAKT
+ 'function _taktAntesAviso(', 'function _taktAntesSoma('].forEach(f => eval.call(global, pega(f)));
 ['EIXO_PASSOS', '_tkS', 'TKS_DOW', 'CRONO_APP_GRUPO', '_taktFProd', '_tkDec', '_tkM', 'TKS_DOC_SVG_W', 'UEP_REF_STATUS', 'TKS_RITMO_DESVIO', 'SETUP_TROCAS_MAX', 'SETUP_MIN_MAX', 'EF_EMB_PADRAO'].forEach(c => eval.call(global, pegaConst(c).replace(/^const /, 'global.').replace(/^global\.(\w+)\s*=/, 'global.$1 =')));
 
 let falhas = 0;
@@ -581,7 +583,7 @@ ok('semana que vem: precisa de 46h08, tem 43h55 → faltam 2h13 — o MESMO do P
   ok('a pele: os segmentos de opacidade (tela e papel), a legenda alinhada embaixo da barra, o meio sem canto redondo e, no papel, a 3ª parte em contorno (em P&B a 0,3 sumia)',
      [/#sec-uep \.tks-tr i\.p2\{opacity:\.55\} #sec-uep \.tks-tr i\.p3\{opacity:\.3\}/.test(html), /#sec-uep \.tks-bpt\{display:flex;[^}]*margin:-1px 62px 7px 74px/.test(html),
       /\.tks-doc \.tks-tr i\.p2\{opacity:\.55\} \.tks-doc \.tks-tr i\.p3\{opacity:\.3\}/.test(html), /\.tks-doc \.tks-bpt\{display:flex;/.test(html),
-      /#sec-uep \.tks-tr i\.p2,#sec-uep \.tks-tr i\.p3\{border-radius:0;/.test(html), /#sec-uep \.tks-tr i\[class\^="p"\]:last-child\{border-top-right-radius:3px;/.test(html),
+      /#sec-uep \.tks-tr i\.p2,#sec-uep \.tks-tr i\.p3,#sec-uep \.tks-tr i\.p4\{border-radius:0;/.test(html), /#sec-uep \.tks-tr i\[class\^="p"\]:last-child\{border-top-right-radius:3px;/.test(html),
       /\.tks-doc \.tks-br \.tks-tr i\.p3\{opacity:1;background:#fff;box-shadow:inset 0 0 0 1\.5px #A0AEC0\}/.test(html), /\.tks-doc \.tks-bpt\.pr \.p3::before\{background:#fff;box-shadow:inset 0 0 0 1\.5px #C62828\}/.test(html)],
      [true, true, true, true, true, true, true, true]); }
 { const h1 = _taktHeroHtml(V1, { semana:'prox', nUteis:5 }), h0 = _taktHeroHtml(V0, { semana:'esta', ate:'17:00' });
@@ -1356,6 +1358,121 @@ eval.call(global, pega('function _tkaVencidoAntes('));
       /_taktSemanasDoPainel\(T0, hojeN, D\.meta, /.test(G4), /_taktSemanasHtml\(C, \{ papel:true \}\)/.test(G4), /_TKS4_DOC_SKIN/.test(G4),
       /onclick="_uepImpFecha\(\);gerarRelatorio4Semanas\(\)"/.test(html)],
      [true, true, true, true, true, true]); }
+// v7.244.0 / .gs v5.66 (PPCP 16/11/2026 06:54, com o card ATRASO "6h04 · 800 cx · desde 10/11" e o
+// TAKT na tela: "6h04 é não contempla o lote de hj?" → prévia com os dados do dia → "sim faz as duas").
+// Duas coisas ficavam fora do PRECISA da ESTA SEMANA: o vencido de antes da segunda (o card ATRASO)
+// e — até o 1º lançamento do dia — o lote de HOJE (PRODUZIDO e SALDO vazios: saldo null). O veredito
+// dizia FECHA, sobram 3h39; o certo era NÃO FECHA, faltam 6h07. O retrato é o da planilha de 16/11
+// (PROGRAMACAO e a UEP da PRODUTO_CODIGO), lido pela API naquela manhã.
+console.log('\n── v7.244.0: o vencido de antes da segunda e o lote de hoje no TAKT (o retrato real de 16/11 06:54) ──');
+{
+  // [lote, data, código, qtde, PRODUZIDO, SALDO, UEP/cx]
+  const R = [
+    ['25411','10/11','501071004',100,0,100,2.92], ['25411','10/11','501071005',100,0,100,2.96], ['25423','12/11','501126002',10,0,10,1.67],
+    ['25426','13/11','501142001',25,0,25,0.95], ['25426','13/11','501142002',635,630,5,0.95], ['25426','13/11','501142003',50,0,50,0.95], ['25426','13/11','501142004',390,180,210,0.95],
+    ['25427','13/11','501086116',35,0,35,3.87], ['25427','13/11','501086117',35,0,35,2.99], ['25427','13/11','501086118',115,0,115,3.87], ['25427','13/11','501086119',115,0,115,2.99],
+    ['25441','16/11','501089001',130,128,2,2], ['25441','16/11','501089002',290,286,4,2], ['25441','16/11','501089003',430,424,6,2],
+    ['25442','16/11','501128001',20,'','',0.89], ['25442','16/11','501128002',140,'','',0.89], ['25442','16/11','501128003',20,'','',0.89], ['25442','16/11','501128004',70,'','',0.89],
+    ['25443','16/11','501140001',380,'','',1.04], ['25443','16/11','501140002',400,'','',1.04], ['25443','16/11','501140003',120,'','',1.04],
+    ['25446','17/11','501134001',50,'','',2.14], ['25446','17/11','501134002',450,'','',2.14],
+    ['25447','17/11','501070001',60,'','',2.72], ['25447','17/11','501070002',60,'','',2.72], ['25447','17/11','501070003',60,'','',2.31],
+    ['25447','17/11','501070004',90,'','',2.72], ['25447','17/11','501070005',90,'','',2.72], ['25447','17/11','501070006',90,'','',2.31],
+    ['25448','17/11','501080001',80,'','',1.67], ['25448','17/11','501080002',80,'','',1.27], ['25448','17/11','501080005',20,'','',1.67],
+    ['25448','17/11','501080006',20,'','',1.27], ['25448','17/11','501080007',100,'','',1.67], ['25448','17/11','501080008',100,'','',1.27],
+    ['25453','18/11','501061001',140,'','',1.85], ['25453','18/11','501061002',140,'','',2.2], ['25453','18/11','501061003',100,'','',1.85],
+    ['25453','18/11','501061004',100,'','',2.2], ['25453','18/11','501061005',60,'','',1.85], ['25453','18/11','501061006',60,'','',2.2],
+    ['25454','18/11','501130001',100,'','',1.15], ['25454','18/11','501130003',100,'','',1.15], ['25455','18/11','501130005',100,'','',1],
+    ['25456','18/11','501130009',100,'','',2.8], ['25456','18/11','501130011',20,'','',2.8],
+    ['25457','18/11','501130013',100,'','',3.33], ['25457','18/11','501130015',40,'','',3.33], ['25457','18/11','501130016',10,'','',3.33],
+    ['25458','18/11','501090001',40,'','',2.07], ['25458','18/11','501090004',20,'','',2.07], ['25458','18/11','501090005',290,'','',2.07],
+    ['25463','19/11','501094001',600,'','',0.83], ['25463','19/11','501094002',200,'','',0.83], ['25463','19/11','501094003',500,'','',0.83],
+    ['25463','19/11','501094004',1400,'','',0.83], ['25463','19/11','501094005',400,'','',0.83],
+    ['25464','19/11','501060001',360,'','',1.73], ['25464','19/11','501060002',360,'','',1.71], ['25464','19/11','501060003',25,'','',1.73],
+    ['25464','19/11','501060004',25,'','',1.71], ['25464','19/11','501060005',15,'','',1.73], ['25464','19/11','501060006',15,'','',1.71]];
+  const HOJE = 20261116, num = d => 20260000 + Number(d.slice(3, 5)) * 100 + Number(d.slice(0, 2));
+  // o getProgramacaoSemana: com o .gs v5.66 a linha de HOJE com as duas colunas vazias vem com a QTDE; antes, null
+  const semana = v566 => ({ de:'16/11/2026', ate:'22/11/2026', hoje:'16/11/2026', feriados:[{ data:'20/11/2026', desc:'CONSCIÊNCIA NEGRA' }],
+    linhas:R.filter(r => num(r[1]) >= HOJE).map(([lote, d, cod, q, p, s, u]) => { const n = num(d), conf = p !== '' && s !== '' && Math.abs(p + s - q) < 0.5 ? s : null;
+      return { data:d + '/2026', dataNum:n, lote, codigo:cod, desc:'X', qtde:q, uepCx:u, uep:Math.round(q * u * 10) / 10, foraEsteira:false,
+        saldo:conf != null ? conf : n > HOJE || (v566 && n === HOJE && p === '' && s === '') ? q : null }; }) });
+  // o getProgramacaoDetalhada: o `falta` do FIFO por código nas linhas vencidas (aqui, um lote por código: o saldo dele)
+  const prog = R.filter(r => num(r[1]) < HOJE).map(([lote, d, cod, q, p, s, u]) => ({ dataNum:num(d), data:d + '/2026', lote, codigo:cod, desc:'X', cor:'', uepCx:u, falta:s, foraEsteira:false }));
+  const H = antes => ({ num:HOJE, minNorm:0, restMin:527, uep:0, he:0, meta:2761, fim:'17:00', antes });
+  const S1 = semana(true), A = _taktAntesSoma(_tkaVencidoAntes(prog, S1.linhas, HOJE, HOJE));
+  ok('o vencido de antes da segunda = o card ATRASO de 16/11: 800 cx, 6h04 de linha, desde 10/11, nenhum sem UEP',
+     [A.cx, A.cxSemUep, Math.round(A.uep * 527 / 2761), A.desde], [800, 0, 364, 20261110]);
+  const T0 = _taktMontar(semana(false), [], H(undefined)), V0 = _taktVeredito(T0, null, null);
+  const T1 = _taktMontar(S1, [], H(A)), V1 = _taktVeredito(T1, null, null), P1 = _taktPrecisaPartes(T1, V1);
+  ok('COMO ESTAVA (.gs v5.65, sem o vencido): os 7 códigos do lote de hoje sem saldo, fora; o veredito FECHA, sobram 3h39 — com 6h04 de atraso',
+     [T0.falta.semSaldo, V0.precisaMin, V0.temMin, V0.faltaMin, V0.cabe], [7, 1889, 2108, -219, true]);
+  ok('AGORA: PRECISA 41h15 = 6h04 vencidos antes de 16/11 + 3h46 dos lotes de hoje + 31h25 dos dias que vêm; TEM 35h08; NÃO FECHA, faltam 6h07 (≈ 1.300 caixas)',
+     [V1.precisaMin, V1.temMin, V1.faltaMin, V1.cabe, P1, _tkAprox(V1.faltaCx), T1.falta.semSaldo],
+     [2475, 2108, 367, false, [{ k:'antes', min:364, de:'16/11' }, { k:'hoje', min:226 }, { k:'vem', min:1885 }], '1.300', 0]);
+  const h1 = _taktHeroHtml(V1, { semana:'esta', ate:T1.falta.ate, partes:P1 });
+  ok('o desenho: NÃO FECHA e a legenda com as três partes, "vencidos antes de 16/11" primeiro — a soma é o PRECISA; o "pede" continua só a programação (115,3% nos dois)',
+     [h1.includes('<div class="tks-hv">NÃO FECHA'), h1.includes('<span class="p1"><b>6h04</b> vencidos antes de 16/11</span>'), h1.includes('<span class="p2"><b>3h46</b> dos lotes de hoje</span>'),
+      h1.includes('<span class="p3"><b>31h25</b> dos dias que vêm</span>'), P1.reduce((a, p) => a + p.min, 0) === V1.precisaMin, fmtP(T1.pede), fmtP(T0.pede)],
+     [true, true, true, true, true, '115,3%', '115,3%']);
+  // as quatro partes (no meio da semana): vencidos antes da segunda · desta semana · hoje · dias que vêm — p1..p4, a soma fecha
+  const S4 = { de:'09/11/2026', ate:'15/11/2026', hoje:'11/11/2026', feriados:[], linhas:[
+    { dataNum:20261110, data:'10/11/2026', codigo:'1', qtde:100, uepCx:2, saldo:40 }, { dataNum:20261111, data:'11/11/2026', codigo:'2', qtde:200, uepCx:1, saldo:200 },
+    { dataNum:20261112, data:'12/11/2026', codigo:'3', qtde:300, uepCx:1.5, saldo:300 }] };
+  const T4 = _taktMontar(S4, [], { num:20261111, minNorm:0, restMin:527, meta:2761, antes:{ uep:300, cx:100, cxSemUep:0, desde:20261105 } }), V4 = _taktVeredito(T4, null, null), P4 = _taktPrecisaPartes(T4, V4);
+  const h4 = _taktHeroHtml(V4, { semana:'esta', ate:'13/11', partes:P4 });
+  ok('no meio da semana, quatro partes: vencidos antes de 09/11 · desta semana · hoje · dias que vêm (p1..p4), e a soma é o PRECISA',
+     [P4.map(p => p.k), P4.reduce((a, p) => a + p.min, 0) === V4.precisaMin, h4.includes('vencidos antes de 09/11'), h4.includes('vencidos desta semana'), /<i class="p4"/.test(h4)],
+     [['antes', 'venc', 'hoje', 'vem'], true, true, true, true]);
+  // sem a programação detalhada de hoje (antes null): o vencido fica fora e a tela DIZ
+  const Tn = _taktMontar(S1, [], H(null)), Vn = _taktVeredito(Tn, null, null);
+  ok('sem a programação detalhada de hoje (antes null): o vencido fica fora e o aviso sai logo abaixo do veredito (tela e papel); com ele lido, nenhum aviso',
+     [Tn.falta.antesLendo, Vn.precisaMin, /O vencido de antes de 16\/11 \(o card ATRASO\) não foi lido — está fora do PRECISA\./.test(_taktAntesAviso(Tn)),
+      /<b>Atenção:<\/b> O vencido de antes de 16\/11/.test(_taktAntesAviso(Tn, true)), _taktAntesAviso(T1), _taktAntesAviso(T0)],
+     [true, 2110, true, true, '', '']);   // 41h15 sem os 6h04, cada um arredondado sozinho (35h10)
+  // quem não é a esta semana (antes undefined: a semana que vem, o AVALIAR) e hoje fora da semana: nada muda
+  const Tf = _taktMontar(S1, [], Object.assign(H(A), { num:20261124 }));
+  ok('quem não é a esta semana (antes undefined) e hoje fora da semana: o vencido não entra',
+     ['uepAntes' in T0.falta, 'antesLendo' in T0.falta, 'uepAntes' in Tf.falta], [false, false, false]);
+  // código com vencido E lote de hoje: o falta do FIFO (atraso + hoje) menos o saldo de hoje — sem contar o de hoje duas vezes
+  const Am = _taktAntesSoma(_tkaVencidoAntes([{ dataNum:20261113, data:'13/11/2026', codigo:'501140001', uepCx:1.04, falta:150 }],
+    [{ dataNum:20261116, codigo:'501140001', saldo:50, uepCx:1.04 }], 20261116, 20261116));
+  ok('código com vencido e lote de hoje: o vencido é o falta do FIFO (150 = 100 de atraso + 50 de hoje) menos o saldo de hoje — 100 cx, sem o de hoje duas vezes',
+     [Am.cx, Math.round(Am.uep * 10) / 10], [100, 104]);
+  const As = _taktAntesSoma([{ dataNum:20261112, saldo:30, uepCx:null }, { dataNum:20261110, saldo:20, uepCx:2 }, { dataNum:20261109, saldo:0, uepCx:2 },
+    { dataNum:20261105, saldo:40, uepCx:2, foraEsteira:true }]);
+  const Ts = _taktMontar(S1, [], H(As));
+  ok('vencido sem UEP só nas caixas (fora das horas, na nota de saldo sem UEP); saldo 0 e fora da esteira não entram; desde = o mais antigo com saldo',
+     [As, Ts.falta.cxSemUep, Math.round((Ts.falta.uep - (T1.falta.uep - T1.falta.uepAntes)) * 10) / 10, _taktAntesSoma(null)],
+     [{ uep:40, cx:20, cxSemUep:30, desde:20261110 }, 30, 40, { uep:0, cx:0, cxSemUep:0, desde:null }]);
+  // 4 SEMANAS: a 1ª semana soma o MESMO vencido — com todo dia útil programado e sem lote no fim de semana, o MESMO número da tela
+  const C = _taktSemanasMontar([{ T:T1 }], null), s0 = C.semanas[0], Hc = _taktSemanasHtml(C, { papel:true });
+  ok('4 SEMANAS: a 1ª semana PRECISA 41h15 · TEM 35h08 · atraso 6h07 — o MESMO do veredito; o vencido de antes da segunda à parte (6h04)',
+     [s0.precisa, s0.tem, s0.atraso, s0.antesSeg, s0.antes, C.atraso], [V1.precisaMin, V1.temMin, V1.faltaMin, 364, 0, 367]);
+  ok('4 SEMANAS desenho: a linha "vencidos antes de 16/11 (o card ATRASO)" no dia a dia; a regra diz que soma (saiu o "Não soma o vencido")',
+     [Hc.includes('<td>vencidos antes de 16/11 (o card ATRASO)</td><td class="n">6h04</td>'), /Não soma o vencido de antes desta segunda/.test(Hc), /nesta semana e antes dela, o card ATRASO/.test(Hc)],
+     [true, false, true]);
+  const Cn = _taktSemanasMontar([{ T:Tn }], null), Cs = _taktSemanasMontar([{ T:Ts }], null);
+  ok('4 SEMANAS: sem o vencido lido, a frase diz que está fora; vencido sem UEP contado na semana',
+     [/O vencido de antes de 16\/11 \(o card ATRASO\) não foi lido — está fora\./.test(_taktSemanasHtml(Cn, { papel:true })), Cn.semanas[0].antesSeg,
+      _taktSemanasHtml(Cs, { papel:true }).includes('30 cx vencidas sem UEP fora')],
+     [true, 0, true]);
+  // a ligação no painel: o _taktHoje leva o vencido; null sem a programação detalhada DE HOJE
+  eval.call(global, pega('function _progDetHoje(')); eval.call(global, pega('function _taktAntesDoPainel('));
+  const hs = global.hojeStr, sv = [global.PROG_DETALHADA, global.PROG_DET_TS, global.TKS];
+  global.hojeStr = () => '16/11/2026'; global.PROG_DETALHADA = prog; global.TKS = S1;
+  global.PROG_DET_TS = new Date(2026, 10, 16, 6, 50).getTime(); const Ad = _taktAntesDoPainel(HOJE);
+  global.PROG_DET_TS = new Date(2026, 10, 15, 22, 0).getTime(); const Ao = _taktAntesDoPainel(HOJE);
+  global.hojeStr = hs; [global.PROG_DETALHADA, global.PROG_DET_TS, global.TKS] = sv;
+  ok('do painel: com a programação detalhada de hoje, o mesmo vencido; de ontem, null (o `falta` é o atraso do dia da leitura)', [Ad, Ao], [A, null]);
+  ok('a ligação: o _taktHoje leva o vencido; a programação de OUTRO dia é relida e o fim redesenha o TAKT; as duas 🖨 leem o atraso; a pele da 4ª parte (tela e papel)',
+     [/antes:_taktAntesDoPainel\(hojeN\)/.test(pega('function _taktHoje(')),
+      /\|\| !_progDetHoje\(\)\) && !GPX_CARREGANDO/.test(pega('function renderProxDias(')), /UEP_SUB === 'takt'\) renderUep\(\); else renderProxDias\(\);/.test(pega('function renderProxDias(')),
+      /\|\| !_progDetHoje\(\)\)\{ await carregarProgramacaoDetalhada\(\);/.test(html),
+      /if\(!_progDetHoje\(\)\)\{ msg\('Lendo o atraso/.test(pega('async function gerarRelatorioTakt(')), /if\(!_progDetHoje\(\)\)\{ msg\('Lendo o atraso/.test(pega('async function gerarRelatorio4Semanas(')),
+      /_taktAntesAviso\(T\)/.test(pega('function _taktHtml(')), /_taktAntesAviso\(T, true\)/.test(pega('function _taktDocHtml(')),
+      /#sec-uep \.tks-tr i\.p4\{opacity:\.18\}/.test(html) && /#sec-uep \.tks-bpt \.p4::before\{opacity:\.18\}/.test(html),
+      /\.tks-doc \.tks-br \.tks-tr i\.p4\{opacity:1;background:#fff;box-shadow:none;outline:1\.5px dashed #A0AEC0/.test(html) && /\.tks-doc \.tks-bpt \.p4::before\{background:#fff;outline:1\.5px dashed/.test(html)],
+     [true, true, true, true, true, true, true, true, true, true]);
+}
 // AS LEITURAS DE VERDADE (revisão: o regex acima passava com a retentativa sem fim).
 // O bloco 4 SEMANAS do renderUep REAL, com relógio virtual, leituras de mentira de
 // 25 s e o refresh do gerencial (renderUep a cada 5 min), por 60 min.
