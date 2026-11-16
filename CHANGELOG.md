@@ -11,6 +11,37 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.251.0 — 16/11/2026 · o relatório semanal vai direto a onde perdemos
+
+O PPCP perguntou se a impressão tinha mudado junto com o bloco da semana
+(*"a impressão não mudou?"*) e pediu o papel *"limpo, fácil compreensão, direto
+ao ponto onde perdemos"*.
+
+- **🖨 IMPRIMIR SEMANA, 1ª folha, em UEP:**
+  - **Resultado da semana** em 4 números: jornada normal (com o % da meta e o
+    selo), o que faltou na jornada, a hora extra e as caixas (fato).
+  - **Onde perdemos — a cascata** META − PARADAS − RITMO = JORNADA, em UEP.
+  - **Dia a dia**: a UEP da jornada, a diferença para a meta, as UEP paradas e a
+    principal parada de cada dia, com o STATUS pela UEP.
+  - **Paradas por motivo**, das que mais tiraram UEP para as que menos.
+- **2ª folha (anexo):** as caixas por dia, como fato, sem o STATUS.
+- O papel diz o **mesmo veredito, com as mesmas palavras**, do bloco da tela.
+  Antes ele tinha dois que discordavam: a EFICIÊNCIA em caixas (*META BATIDA COM
+  HORA EXTRA*) e a faixa de UEP (*ATENÇÃO*, régua 100/90%).
+- **Paradas em UEP:** a mesma conta da aba PARADAS, com a meta de UEP de cada dia
+  no lugar da de caixas. Só os dias úteis entram: a parada de sábado (todo hora
+  extra) não tirou nada da meta. Sem as paradas lidas, a cascata não sai (o que
+  faltou não vira "ritmo" inventado).
+- **Saíram do papel com UEP:** o gráfico, o melhor e o pior dia (o dia a dia
+  mostra), a análise por horário (média histórica de caixas), o quadro de paradas
+  em caixas e a faixa de UEP. Semana sem UEP gravada: o papel de antes, igual.
+- **Atenção:** muda o que a folha mostra e o veredito do papel. Na semana 46 o
+  MELHOR DIA do papel antigo era 11/11 (125,3% em caixas), que em UEP é o pior
+  dia (86,2%). As paradas do papel novo somam só os dias úteis (o papel antigo
+  somava o sábado também).
+
+---
+
 ## v7.250.0 — 16/11/2026 · fechamento da semana com a UEP na frente
 
 O PPCP pediu, com o print do bloco FECHAMENTO DA SEMANA PASSADA do gerencial

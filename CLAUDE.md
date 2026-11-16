@@ -293,6 +293,10 @@ via Google Apps Script (JSONP).
 - O relatório semanal é documento: cor só com função, o número é tinta e o
   selo é o veredito; `_relMetaHE` (meta batida com hora extra = âmbar); a
   semana é a `_relSemanaJanela` e a `_relSemanaParaDivulgar`.
+- Semanal com UEP (v7.251.0): a 1ª folha é ONDE PERDEMOS — resultado, cascata
+  META − PARADAS − RITMO = JORNADA em UEP (paradas pelo `RP_PARADAS` com a meta
+  de UEP, só dias úteis; sem paradas lidas, sem cascata), dia a dia e motivos; as
+  caixas no anexo. Mesmo veredito da tela (`_gsemUepMontar`).
 - O nome em `APP_NOME`/`APP_NOME_CX` e o slogan em toda impressão.
 - Telas enxutas: número nunca sai; texto que só explica vai para o `title` ou
   um ⓘ; função que desenha tela e papel usa `.so-tela` e `.so-papel`.
@@ -320,7 +324,8 @@ via Google Apps Script (JSONP).
   `atrasoPtsTxt`): valor, não tempo; código sem pontos fora e dito, nunca 0.
 - FECHAMENTO DA SEMANA PASSADA no gerencial (v7.250.0): a UEP na frente
   (`_gsemUepMontar` → `_pintarUep`), as caixas como fato; semana sem UEP fica em
-  caixas. A Tela D da TV e o 🖨 IMPRIMIR SEMANA seguem em caixas.
+  caixas. A Tela D da TV segue em caixas; o 🖨 IMPRIMIR SEMANA, desde a
+  v7.251.0, vai em UEP (ONDE PERDEMOS, em `relatorios.md`).
 - Diretoria: um veredito só (a UEP); retrato guardado no aparelho; sem o
   `pollParadaTV` nem o `lerMediaHoras`.
 
