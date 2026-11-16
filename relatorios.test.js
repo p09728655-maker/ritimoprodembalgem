@@ -2766,8 +2766,8 @@ console.log('\n── dia passado: hora extra não é julgada, e a meta/h não �
 // direto ao ponto onde perdemos". A semana 46 (a do print do bloco) com paradas de teste.
 { global.CFG = Object.assign({}, global.CFG, { turnoInicio:'07:00', turnoFim:'17:00', almocoInicio:'11:00', almocoFim:'12:12', metaDia:2950 });
   global.PAR_CLASSE_MAP = {};
-  global.REL_UEP_MOTIVOS = Number(JS.match(/const REL_UEP_MOTIVOS = (\d+);/)[1]);
-  ['function _relParadasUep(', 'function _relSemUepPerdas(', 'function _relSemUepCorpoHtml(', 'function _uepEscalaNota(',
+  ['REL_NORMAL_SEMANAS', 'REL_NORMAL_TOL_MIN'].forEach(n => { global[n] = Number(JS.match(new RegExp('const ' + n + ' = (\\d+);'))[1]); });
+  ['function _relParadasUep(', 'function _relSemUepPerdas(', 'function _relSemNormal(', 'function _relSemUepCorpoHtml(', 'function _uepEscalaNota(',
    ].forEach(f => { const n = f.slice(9, -1); if (typeof global[n] === 'undefined') eval(pega(f).replace(/^function /, 'global.' + n + ' = function ')); });
   global._REL_UEP_COR = { ok:'#2E7D32', he:'#B4650A', ruim:'#B3261E' };
   // a nota da troca de escala da UEP: a lista de trocas vazia (como no painel) e o corte real
@@ -2786,13 +2786,14 @@ console.log('\n── dia passado: hora extra não é julgada, e a meta/h não �
       { data:'11/11/2026', ini:'14:00', fim:'14:15', tipo:'SETUP / TROCA DE PRODUTO' },
       { data:'12/11/2026', ini:'13:10', fim:'13:25', tipo:'FALTA DE MATERIAL' },
       { data:'13/11/2026', ini:'15:00', fim:'15:20', tipo:'MANUTENÇÃO ESTEIRA' },
-      { data:'14/11/2026', ini:'08:00', fim:'08:30', tipo:'FALTA DE MATERIAL' }],   // o sábado: todo hora extra
+      { data:'14/11/2026', ini:'08:00', fim:'08:30', tipo:'FALTA DE MATERIAL' },    // o sábado: todo hora extra
+      { data:'10/11/2026', ini:'05:30', fim:'06:30', tipo:'FALTA DE MATERIAL' }],   // v7.254.0: dia útil, mas na hora extra da madrugada
     realByDay: { '09/11/2026':2441, '10/11/2026':1740, '11/11/2026':1480, '12/11/2026':1482, '13/11/2026':1591, '14/11/2026':1145 } };
   const U = _gsemUepMontar(S46, _relSemanalKPIs(S46));
   const st = _relParadasUep(PAR, S46, '09/11/2026', '15/11/2026');
   const porMin = 2761 / (RP_PARADAS.horasProdutivas(CFG) * 60);
-  ok('paradas em UEP: a MESMA conta do RP_PARADAS com a meta de UEP do dia — só os dias úteis (a do sábado fica fora)',
-     [st.totMinNP, st.pecas, st.nParadas], [110, Math.round(110 * porMin), 5]);
+  ok('paradas em UEP: a MESMA conta do RP_PARADAS com a meta de UEP do dia — só a jornada dos dias úteis (o sábado e a madrugada ficam fora)',
+     [st.totMinNP, st.pecas, st.nParadas, st.diag.minForaJornada], [110, Math.round(110 * porMin), 5, 60]);
   const P = _relSemUepPerdas(U, st);
   // v7.253.0 (PPCP, com o papel da semana 46: "8h05min?"): a cascata META − PARADAS − RITMO saiu — a 2.761 é a média
   // demonstrada e já tem as paradas normais dentro; tirar todas da meta as contava duas vezes ("GANHO DE RITMO" falso)
@@ -2804,22 +2805,55 @@ console.log('\n── dia passado: hora extra não é julgada, e a meta/h não �
       ['12/11', -144, Math.round(15 * porMin), 'FALTA DE MATERIAL'], ['13/11', -153, Math.round(20 * porMin), 'MANUTENÇÃO ESTEIRA'], ['14/11', null, null, null]]);
   ok('os motivos: só os não programados, do que mais tirou UEP para o que menos',
      P.motivos.map(t => [t.tipo, t.qtd, t.min]), [['MANUTENÇÃO ESTEIRA', 2, 60], ['FALTA DE MATERIAL', 2, 35], ['SETUP / TROCA DE PRODUTO', 1, 15]]);
-  { const muitos = { paradas: ['A','B','C','D','E','F','G','H'].map((t, i) => ({ data:'10/11/2026', ini:'0' + (8 + (i >> 2)) + ':' + (i % 4) + '0', fim:'0' + (8 + (i >> 2)) + ':' + (i % 4) + (9 - i), tipo:'MOTIVO ' + t })),
-      realByDay: PAR.realByDay };
-    const PM = _relSemUepPerdas(U, _relParadasUep(muitos, S46, '09/11/2026', '15/11/2026'));
-    ok('mais de ' + REL_UEP_MOTIVOS + ' motivos: os maiores com linha própria, o resto somado em "demais motivos" (a soma fecha)',
-       [PM.top.length, PM.resto.n, PM.top.reduce((a, t) => a + t.min, 0) + PM.resto.min, PM.minNP], [REL_UEP_MOTIVOS, 8 - REL_UEP_MOTIVOS, PM.minNP, PM.minNP]); }
+  // ── v7.254.0: PIOR QUE O NORMAL (PPCP: "1 e 2" — a meta média já tem as paradas normais dentro)
+  // as 4 semanas antes (12/10–08/11): 20 dias úteis com UEP; por dia, 9 min de manutenção, 3 de falta de material e 2 de abastecimento
+  const DPREV = [], PPREV = [];
+  for (let d = new Date(2026, 9, 12); d <= new Date(2026, 10, 8); d.setDate(d.getDate() + 1)) {
+    const dw = d.getDay(), dt = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/2026';
+    if (dw === 0 || dw === 6) continue;
+    DPREV.push({ data:dt, real:1800, meta:1800, heCx:0, uep:2700, uepHe:0, metaUep:2761 });
+    PPREV.push({ data:dt, ini:'09:00', fim:'09:09', tipo:'MANUTENÇÃO ESTEIRA' }, { data:dt, ini:'10:00', fim:'10:03', tipo:'FALTA DE MATERIAL' },
+               { data:dt, ini:'14:00', fim:'14:02', tipo:'ABASTECIMENTO' });
+  }
+  const stPrev = _relParadasUep({ paradas:PPREV, realByDay:{} }, DPREV, '12/10/2026', '08/11/2026');
+  const N = _relSemNormal(st, stPrev, U.nComMeta, DPREV.length, U.metaMedia);
+  ok('o normal: a média por dia útil das 4 semanas antes × os dias úteis da semana; a troca pelo nº de trocas × a meta por troca do SMED (5 min)',
+     N.pior.map(l => [l.tipo, Math.round(l.normal), Math.round(l.acima)]),
+     [['FALTA DE MATERIAL', 15, 20], ['MANUTENÇÃO ESTEIRA', 45, 15], ['SETUP / TROCA DE PRODUTO', 5, 10]]);
+  ok('semana com feriado (4 dias úteis) pede menos parada: o normal é por dia útil, nunca por semana',
+     _relSemNormal(st, stPrev, 4, DPREV.length, U.metaMedia).pior.map(l => [l.tipo, Math.round(l.normal)]).filter(x => x[0] !== 'SETUP / TROCA DE PRODUTO'),
+     [['MANUTENÇÃO ESTEIRA', 36], ['FALTA DE MATERIAL', 12]]);
+  ok('o que ficou no normal ou abaixo vai somado (o abastecimento não parou nesta semana: −10 min)',
+     [N.resto.n, N.resto.min, Math.round(N.resto.normal), Math.round(N.resto.acima)], [1, 0, 10, -10]);
+  ok('o total: 110 min na semana × 75 normais = 35 acima, em UEP pela valoração da aba PARADAS; a madrugada fora é dita',
+     [N.tot.min, Math.round(N.tot.normal), Math.round(N.tot.acima), N.tot.uep, N.fora], [110, 75, 35, RP_PARADAS.perdaDeMin(35, 2761, RP_PARADAS.horasProdutivas(CFG)), 60]);
+  { const N0 = _relSemNormal(st, null, U.nComMeta, 0, U.metaMedia);
+    ok('sem as semanas anteriores: só a troca tem o normal (pela meta por troca); o total não inventa normal',
+       [N0.temPrev, N0.pior.map(l => l.tipo), N0.tot.normal, N0.tot.acima], [false, ['SETUP / TROCA DE PRODUTO'], null, null]);
+    ok('sem as paradas da semana, não há normal', _relSemNormal(null, stPrev, 5, 20, 2761), null);
+    ok('diferença abaixo de ' + REL_NORMAL_TOL_MIN + ' min é normal (ruído de apontamento)',
+       _relSemNormal(st, _relParadasUep({ paradas:PPREV.map(p => p.tipo === 'FALTA DE MATERIAL' ? Object.assign({}, p, { fim:'10:06:30' }) : p), realByDay:{} }, DPREV, 'a', 'b'),
+         U.nComMeta, DPREV.length, U.metaMedia).pior.some(l => l.tipo === 'FALTA DE MATERIAL'), false); }
   const SEM = _relSemUepPerdas(U, null);
   ok('sem as paradas (leitura falhou): sem os motivos e sem o total; o dia a dia sai, sem a coluna de paradas',
      [SEM.perdaPar, SEM.motivos, SEM.dias[0].dif, SEM.dias[0].parUep], [null, null, -165, null]);
   ok('as paradas em UEP precisam de UEP: semana sem UEP, sem paradas lidas ou sem o módulo → null',
      [_relParadasUep(PAR, [{ data:'09/11/2026', real:10, meta:10 }], '09/11/2026', '15/11/2026'), _relParadasUep(null, S46, 'a', 'b')], [null, null]);
-  const H = _relSemUepCorpoHtml(U, P, { parcial:false, fechados:6, nDias:6, tabelaCx:'<!--ANEXO-->' });
+  const H = _relSemUepCorpoHtml(U, P, { parcial:false, fechados:6, nDias:6, tabelaCx:'<!--ANEXO-->', N });
   ok('o papel: resultado em UEP com o veredito da tela, o dia a dia, os motivos e o anexo das caixas — sem a cascata, e o aviso de que a meta já tem as paradas',
      [/JORNADA NORMAL<\/div>\s*<div class="kpi-val" style="color:#B4650A">13\.068/.test(H), /⚠ META BATIDA COM HORA EXTRA/.test(H), /FALTOU NA JORNADA[\s\S]*737/.test(H),
       /META × PARADAS × RITMO|GANHO DE RITMO|GAP DE RITMO|casc-flow/.test(H), /já tem as paradas normais dentro/.test(H),
-      /ONDE PERDEMOS — DIA A DIA/.test(H), /ONDE PERDEMOS — PARADAS POR MOTIVO/.test(H), /COM HORA EXTRA<\/span>/.test(H), H.endsWith('<!--ANEXO-->')],
+      /ONDE PERDEMOS — DIA A DIA/.test(H), /ONDE PERDEMOS — PARADAS ACIMA DO NORMAL/.test(H), /COM HORA EXTRA<\/span>/.test(H), H.endsWith('<!--ANEXO-->')],
      [true, true, true, false, true, true, true, true, true]);
+  ok('a tabela do acima do normal: o motivo, o normal, o acima e a UEP; o resto somado; a regra do normal e o que ficou fora da jornada escritos',
+     [/FALTA DE MATERIAL<\/td>[\s\S]*?15 min<\/td>\s*<td class="td-bold" style="text-align:right">\+20 min<\/td>/.test(H), /\(5,0 min por troca\)/.test(H),
+      /no normal ou abaixo · 1 motivo/.test(H), /a média por dia útil das 4 semanas anteriores \(20 dias úteis\) × os 5 dias úteis desta semana/.test(H),
+      /1h00m de parada fora da jornada \(hora extra\) não entram/.test(H)], [true, true, true, true, true]);
+  ok('no dia a dia as paradas vão em tempo, sem UEP (a parada normal já está na meta; a UEP mora só no acima do normal)',
+     [/<th>TEMPO PARADO<\/th>/.test(H), /PARADAS · UEP/.test(H), /MANUTENÇÃO ESTEIRA <span style="color:#5B6470">\(40 min\)<\/span>/.test(H)], [true, false, true]);
+  ok('o semanal lê as 4 semanas anteriores depois da semana, só com UEP, e passa o normal ao papel',
+     [/const _pp=nDiasPrev\?await _pgBuscarDados\(dtToStr\(pIni\), dtToStr\(pFim\)\):null;/.test(JS), /if\(stUep\)\{/.test(JS),
+      /N:_relSemNormal\(stUep, stPrev, U\.nComMeta, nDiasPrev, U\.metaMedia\)/.test(JS)], [true, true, true]);
   ok('sem as paradas lidas, o papel diz isso (nunca uma coluna de zeros)',
      /As paradas da semana não foram lidas/.test(_relSemUepCorpoHtml(U, SEM, { parcial:false, fechados:6, nDias:6, tabelaCx:'' })), true);
   ok('a cascata voltou a ser só dos relatórios de produção, em caixas (o semanal não a usa nem leva a pele dela)',
@@ -2831,7 +2865,7 @@ console.log('\n── dia passado: hora extra não é julgada, e a meta/h não �
       /\$\{U\?'':`<td class="td-bold">\$\{efMedia!=null/.test(JS), /\$\{U\?'':`gap: /.test(JS)], [true, true, true, true]);
   ok('o semanal escolhe: com UEP o ONDE PERDEMOS (paradas em UEP pela mesma leitura); sem UEP o papel de antes, com a tabela das caixas',
      [/const U = _gsemUepMontar\(diasSem, kSem\);/.test(JS), /if\(_p && U\) stUep=_relParadasUep\(_p, diasSem, dtToStr\(seg\), dtToStr\(sex\)\);/.test(JS),
-      /\$\{U\?_relSemUepCorpoHtml\(U, _relSemUepPerdas\(U, stUep\), \{ parcial, fechados, nDias:diasSem\.length, tabelaCx \}\):`/.test(JS),
+      /\$\{U\?_relSemUepCorpoHtml\(U, _relSemUepPerdas\(U, stUep\), \{ parcial, fechados, nDias:diasSem\.length, tabelaCx,/.test(JS),
       /\$\{tabelaCx\}\n/.test(JS), /\$\{U\?'':'<th>STATUS<\/th>'\}/.test(JS)], [true, true, true, true, true]);
 }
 global.CFG = Object.assign({}, global.CFG, { turnoInicio:'07:00', turnoFim:'17:00' });

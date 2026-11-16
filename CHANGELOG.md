@@ -11,6 +11,32 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.254.0 · paradas-calc 1.4.0 — 16/11/2026 · o semanal mostra as paradas acima do normal
+
+Continuação do *"1 e 2"* do PPCP: a meta de 2.761 já tem as paradas normais
+dentro, então o que a semana perdeu é o que passou do normal.
+
+- **🖨 IMPRIMIR SEMANA, ONDE PERDEMOS — PARADAS ACIMA DO NORMAL**: por motivo, o
+  tempo na semana, o NORMAL, o que passou dele e quanto isso custou em UEP. Os
+  motivos que ficaram no normal ou abaixo vão somados numa linha.
+  - **Normal** = a média por dia útil das 4 semanas anteriores × os dias úteis
+    da semana (uma semana com feriado pede menos parada).
+  - **Troca de produto e de plástico**: nº de trocas × a meta por troca da
+    GESTÃO DE PERDAS (5 e 4 min). Trocar mais vezes é do mix programado; demorar
+    mais em cada troca é perda.
+  - Diferença abaixo de 5 min conta como normal.
+- **Só a jornada**: a parada das 05:00–07:00 ou depois das 17:00 de dia útil é
+  hora extra e não entra; o papel diz quantos minutos ficaram fora.
+  (`paradas-calc` 1.4.0, opção nova `soJornada`; as outras telas não mudam.)
+- **Dia a dia**: as paradas vão em tempo, sem UEP (a UEP de todas as paradas ao
+  lado da diferença do dia lia como a cascata que saiu).
+- Uma leitura a mais, só no clique do 🖨 e só com UEP: as paradas das 4
+  semanas anteriores. Sem ela, só as trocas têm o normal, e o papel diz isso.
+- **Atenção:** a tabela PARADAS POR MOTIVO (com a UEP de todas as paradas) vira
+  ACIMA DO NORMAL; o total de paradas da semana passa a contar só a jornada.
+
+---
+
 ## v7.253.0 — 16/11/2026 · a cascata sai do relatório semanal
 
 O PPCP, com o papel da semana 46 na mão (*"8h05min?"*). As 8h05 estão certas: é a

@@ -222,6 +222,30 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     semanas anteriores, a troca contra a premissa (30 min/dia) e as paradas
     recortadas na jornada (as de 05:00–07:00 e depois das 17:00 de dia útil
     entravam) — vem a seguir, com prévia.
+- **PARADAS ACIMA DO NORMAL (v7.254.0)** — o "2" do *"1 e 2"*. O ONDE PERDEMOS
+  troca a tabela PARADAS POR MOTIVO pelo que passou do normal:
+  - `_relSemNormal(st, stPrev, nDias, nDiasPrev, metaDia)` (pura): NORMAL = os
+    minutos do motivo nas `REL_NORMAL_SEMANAS`=4 semanas anteriores ÷ os dias
+    úteis com UEP delas × os dias úteis desta semana; TROCA (`PG_RE_TROCA_PROD`,
+    `PG_RE_TROCA_PLAS`) = nº de trocas × a meta por troca do `_pgSmed` (o MESMO
+    alvo da GESTÃO DE PERDAS, que desce sozinho); ACIMA abaixo de
+    `REL_NORMAL_TOL_MIN`=5 min conta como normal; em UEP pelo
+    `RP_PARADAS.perdaDeMin` com a meta média do dia. Sem as semanas anteriores:
+    só as trocas têm normal e os totais ficam "—" (nunca um normal inventado).
+  - As paradas da semana e das anteriores passam pelo `_relParadasUep` com
+    `soJornada` (paradas-calc 1.4.0): só o pedaço dentro de turnoInicio–turnoFim
+    — a das 05:00–07:00 ou depois das 17:00 de dia útil é hora extra; o papel diz
+    quantos minutos ficaram fora (`diag.minForaJornada`).
+  - Leitura: as 4 semanas anteriores numa chamada (`_pgBuscarDados`, em
+    sequência depois da semana, com o cache de período), só no clique do 🖨 e
+    só com UEP.
+  - O dia a dia leva as paradas em TEMPO, sem UEP: a UEP de todas as paradas ao
+    lado da DIFERENÇA do dia lia como a cascata revogada (−536 parados num dia
+    de −165). ⚠ Não devolver a UEP de todas as paradas ao dia.
+  - Medido na prévia (os motivos e totais do print da semana 46; o normal
+    inventado): 1ª folha cabe (resultado, dia a dia, acima do normal); 7 de 7
+    mutações pegas (a semana com feriado precisou de caso próprio: com 20 dias
+    úteis ÷ 5, "por dia útil" e "por semana" davam o mesmo número).
 - v7.252.0 (PPCP: *"dois vereditos está confuso"*): o anexo das caixas perdeu
   EFICIÊNCIA, EF. S/ HE e o gap em caixas — com a UEP na frente, o único % da
   meta do papel é o da UEP. Ficam as quantidades, a META e a META/H.

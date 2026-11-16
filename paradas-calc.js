@@ -91,6 +91,25 @@
     return Math.max(0, bruta - sobrepoe);
   }
 
+  // RECORTE DO TURNO (1.4.0, opção `soJornada` do stats). O relatório semanal com
+  // a UEP compara a parada com a meta da JORNADA: a parada das 05:00–07:00 ou
+  // depois das 17:00 de um dia útil é hora extra e não tirou nada da meta. Só o
+  // pedaço dentro de turnoInicio–turnoFim conta, e dele sai o almoço (como no
+  // durProdutiva). `fora` = os minutos que caíram fora do turno. Turno mal
+  // configurado: nada é recortado (o durProdutiva de sempre). null = sem duração.
+  function recorteTurno(ini, fim, cfg) {
+    var bruta = durMin(ini, fim);
+    if (bruta == null) return null;
+    cfg = cfg || {};
+    var j0 = toMin(cfg.turnoInicio), j1 = toMin(cfg.turnoFim);
+    if (!isFinite(j0) || !isFinite(j1) || j1 <= j0) return { d: durProdutiva(ini, fim, cfg), fora: 0 };
+    var a = Math.max(toMin(ini), j0), b = Math.min(toMin(fim), j1);
+    if (b <= a) return { d: 0, fora: bruta };
+    var aIni = toMin(cfg.almocoInicio), aFim = toMin(cfg.almocoFim);
+    var alm = (isFinite(aIni) && isFinite(aFim) && aFim > aIni) ? Math.max(0, Math.min(b, aFim) - Math.max(a, aIni)) : 0;
+    return { d: Math.max(0, b - a - alm), fora: bruta - (b - a) };
+  }
+
   // A coluna CLASSE da aba TIPOS_PARADA manda; vazia, cai na heurística.
   function ehPlanejada(tipo, classeMap) {
     var c = (classeMap || {})[String(tipo || '').trim()];
@@ -175,6 +194,8 @@
   //   nDiasBase    força a base de dias (o HISTÓRICO já sabe exatamente quais
   //                dias entraram na lista, não precisa derivar do realByDay)
   //   pesoMedio    kg por caixa (opcional, só o desktop usa)
+  //   soJornada    só o pedaço de cada parada dentro de cfg.turnoInicio–turnoFim
+  //                (1.4.0; o relatório semanal em UEP). Sem ela, nada muda.
   //
   // Perda = duração × (meta DAQUELE dia ÷ horas produtivas). Usar a meta de hoje
   // para todos os dias dava 3.780 cx onde a conta certa dava 3.897 em 30 dias.
@@ -201,14 +222,20 @@
 
     var totMin = 0, totMinNP = 0, pecas = 0, nParadas = 0;
     var porTipo = {}, porDia = {}, diasSet = {}, semMeta = {}, ignoradas = 0;
-    var minAlmoco = 0, noAlmoco = 0;
+    var minAlmoco = 0, noAlmoco = 0, minFora = 0, nFora = 0;
+    var soJornada = !!opts.soJornada;
 
     (paradas || []).forEach(function (p) {
       var bruta = durMin(p.ini, p.fim);
       if (bruta == null) { ignoradas++; return; }   // em andamento / horário inválido
-      // Só o tempo fora do almoço conta (ver durProdutiva).
-      var d = durProdutiva(p.ini, p.fim, cfg);
-      if (bruta > d) minAlmoco += (bruta - d);
+      // Só o tempo fora do almoço conta (ver durProdutiva); com `soJornada`, só
+      // o que caiu dentro do turno (ver recorteTurno).
+      var rc = soJornada ? recorteTurno(p.ini, p.fim, cfg) : null;
+      var fora = rc ? rc.fora : 0;
+      if (fora > 0) minFora += fora;
+      if (rc && fora >= bruta) { nFora++; return; }  // parada inteira fora da jornada
+      var d = rc ? rc.d : durProdutiva(p.ini, p.fim, cfg);
+      if (bruta - fora > d) minAlmoco += (bruta - fora - d);
       if (d <= 0) { noAlmoco++; return; }           // parada inteira dentro do almoço
       nParadas++; diasSet[p.data] = 1; totMin += d;
 
@@ -304,6 +331,8 @@
         paradasIgnoradas: ignoradas,            // sem FIM (em andamento) ou hora inválida
         paradasNoAlmoco: noAlmoco,              // caíram inteiras dentro do almoço
         minAlmocoExcluidos: minAlmoco,          // minutos de almoço tirados da conta
+        // com `soJornada` (1.4.0): os minutos e as paradas inteiras fora do turno
+        minForaJornada: minFora, paradasForaJornada: nFora,
         periodo: (opts.de || '?') + ' a ' + (opts.ate || '?'),
         baseDias: baseTrab ? 'trabalhados' : 'com parada'
       }
@@ -317,11 +346,12 @@
     return 'duração × ' + d.ritmoHora + ' cx/h (meta do dia ÷ ' + d.horasProd.toFixed(1) + 'h produtivas)'
       + ' · ' + d.classesCarregadas + ' classe(s)'
       + (d.minAlmocoExcluidos ? ' · almoço fora (' + fmtMin(d.minAlmocoExcluidos) + ')' : '')
+      + (d.minForaJornada ? ' · fora da jornada (' + fmtMin(d.minForaJornada) + ')' : '')
       + (d.diasSemMeta.length ? ' · ' + d.diasSemMeta.length + ' dia(s) sem meta' : '')
       + (d.paradasIgnoradas ? ' · ' + d.paradasIgnoradas + ' sem fim' : '');
   }
 
-  var VERSAO = '1.3.0';
+  var VERSAO = '1.4.0';
 
   glob.RP_PARADAS = {
     VERSAO: VERSAO,
@@ -331,6 +361,7 @@
     durMin: durMin,
     horaMin: toMin,          // HH:mm[:ss] → minutos com fração (mesma leitura do durMin)
     durProdutiva: durProdutiva,
+    recorteTurno: recorteTurno,
     fmtMin: fmtMin,
     ehPlanejada: ehPlanejada,
     diasTrabalhados: diasTrabalhados,

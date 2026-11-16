@@ -207,6 +207,8 @@ via Google Apps Script (JSONP).
 - A conta mora no `paradas-calc.js` (`RP_PARADAS`), UMA vez; os HTMLs só montam
   as entradas (`metaByDay`, `realByDay`, as classes). Nada de conta de parada
   nos HTMLs (o teste prende).
+- `soJornada` (paradas-calc 1.4.0): só o pedaço dentro do turno — usado só pelo
+  semanal em UEP; sem a opção, nada muda nas outras telas.
 - O almoço (11:00–12:12) fica fora de tudo (`durProdutiva` recorta). Perda em
   caixas = duração produtiva × meta DAQUELE dia ÷ horas produtivas, só das não
   planejadas, arredondada uma vez no fim. Parada em andamento não entra.
@@ -297,7 +299,10 @@ via Google Apps Script (JSONP).
   e motivos (paradas pelo `RP_PARADAS` com a meta de UEP, só dias úteis); as
   caixas no anexo. Mesmo veredito da tela (`_gsemUepMontar`). ⚠ Sem cascata
   META − PARADAS − RITMO (revogada na v7.253.0): a 2.761 é média demonstrada e
-  já tem as paradas normais dentro — subtrair todas as contava duas vezes.
+  já tem as paradas normais dentro — subtrair todas as contava duas vezes. Desde
+  a v7.254.0 o papel mostra as PARADAS ACIMA DO NORMAL (`_relSemNormal`: 4
+  semanas antes por dia útil; troca = nº × a meta por troca do SMED) e o dia a
+  dia em tempo, sem UEP; só a jornada (`soJornada` do paradas-calc 1.4.0).
 - O nome em `APP_NOME`/`APP_NOME_CX` e o slogan em toda impressão.
 - Telas enxutas: número nunca sai; texto que só explica vai para o `title` ou
   um ⓘ; função que desenha tela e papel usa `.so-tela` e `.so-papel`.

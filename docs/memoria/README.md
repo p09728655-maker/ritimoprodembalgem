@@ -40,6 +40,7 @@ de tema entra aqui também.
 - SWOT do relatório de paradas
 - GESTÃO DAS PERDAS — a 2ª camada do relatório de paradas
 - PARADAS no relatório semanal
+- RECORTE DA JORNADA NA CONTA DE PARADAS (paradas-calc 1.4.0 / v7.254.0)
 
 ## Programação e lotes — `programacao.md`
 - STATUS da PROGRAMACAO: EM ANDAMENTO é do lote DE HOJE
