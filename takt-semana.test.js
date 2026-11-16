@@ -1479,6 +1479,37 @@ console.log('\n── v7.245.0: o vencido de antes da segunda e o lote de hoje n
       /\.tks-doc \.tks-br \.tks-tr i\.p4\{opacity:1;background:#fff;box-shadow:none;outline:1\.5px dashed #A0AEC0/.test(html) && /\.tks-doc \.tks-bpt \.p4::before\{background:#fff;outline:1\.5px dashed/.test(html)],
      [true, false, false, true, true, true, true, true, true]);
 }
+// v7.246.0 / .gs v5.67 (PPCP 16/11/2026, com o DIA A DIA na tela: a barra de 16/11 mostrava 9h06 programadas e o
+// veredito 0h05 — o 25441 tinha sido embalado na semana passada → "sim com a mensagem que embalou antes"): o
+// listrado no pé da barra do programado, as horas dentro dele e "embalou … antes" embaixo do dia.
+console.log('\n── v7.246.0: o que já foi embalado antes do dia do lote, na barra do DIA A DIA ──');
+{
+  const L = (d, cod, q, u, saldo, adi) => Object.assign({ data:d + '/2026', dataNum:20260000 + Number(d.slice(3, 5)) * 100 + Number(d.slice(0, 2)), lote:'L', codigo:cod, desc:'X',
+    qtde:q, uepCx:u, uep:Math.round(q * u * 10) / 10, saldo, foraEsteira:false }, adi === undefined ? {} : { adiantadoCx:adi });
+  const linhas = adi => [L('16/11', '501089001', 130, 2, 2, adi && 128), L('16/11', '501089002', 290, 2, 4, adi && 286), L('16/11', '501089003', 430, 2, 6, adi && 424),
+    L('16/11', '501140001', 380, 1.04, 380, adi && null), L('17/11', '501134002', 450, 2.14, 450, adi && 0), L('19/11', '501094004', 1400, 0.83, 1400, adi && 0)];
+  const S = adi => ({ de:'16/11/2026', ate:'22/11/2026', hoje:'16/11/2026', feriados:[{ data:'20/11/2026', desc:'CONSCIÊNCIA NEGRA' }], linhas:linhas(adi) });
+  const H = { num:20261116, minNorm:0, restMin:527, uep:0, he:0, meta:2761, fim:'17:00' };
+  const strip = l => { const c = Object.assign({}, l); delete c.adiantadoCx; return c; };
+  const T = _taktMontar(S(true), [], H), T0 = _taktMontar(Object.assign(S(true), { linhas:linhas(true).map(strip) }), [], H);
+  const d16 = T.dias.find(d => d.n === 20261116);
+  ok('a conta: o 25441 de 16/11 — 838 cx (128 + 286 + 424), 1.676 UEP = 5h20 de linha embaladas antes; o que falta (o PRECISA) não muda',
+     [d16.adiCx, d16.adiUep, _fmtHM(Math.round(d16.adiUep * 527 / 2761)), T.adiCampo, T0.adiCampo, _taktVeredito(T, null, null).precisaMin === _taktVeredito(T0, null, null).precisaMin],
+     [838, 1676, '5h20', true, false, true]);
+  const g = _taktSvg(T, 1840), gp = _taktSvg(T, 480, { h:165 }), gf = _taktSvg(T, 1840, { fut:true }), g0 = _taktSvg(T0, 1840);
+  const ids = [...(g + gp).matchAll(/<pattern id="(tks-adi-\d+)"/g)].map(m => m[1]);
+  ok('o desenho: o listrado no pé da barra (url do padrão), as horas dentro (5h20), "embalou 5h20 antes" embaixo do dia e o title com as caixas; no papel (barra estreita) as horas não vão dentro — encostavam no "até agora" do feito — e a frase é "embalou 5h20"; um id por gráfico',
+     [/fill="url\(#tks-adi-\d+\)"/.test(g), />5h20<\/text>/.test(g), />embalou 5h20 antes<\/text>/.test(g), /838 cx, 1\.676 UEP — adiantado/.test(g),
+      />embalou 5h20<\/text>/.test(gp), />5h20<\/text>/.test(gp), ids.length === 2 && ids[0] !== ids[1]],
+     [true, true, true, true, true, false, true]);
+  ok('sem o embalado antes (o .gs sem o campo), na semana que vem (o saldo já não tem o adiantado) e no dia sem adiantado: nada listrado, o pé do gráfico como antes',
+     [/tks-adi/.test(g0), /tks-adi/.test(gf), (g.match(/embalou/g) || []).length], [false, false, 1]);
+  const h = _taktHtml(T, null, { largura:900, botoes:'', V:_taktVeredito(T, null, null) }), h0 = _taktHtml(T0, null, { largura:900, botoes:'', V:_taktVeredito(T0, null, null) });
+  ok('a legenda "embalou antes (adiantado)" só com o adiantado; sem o campo, a nota manda colar o .gs v5.67; a pele da legenda (tela) e o item do papel',
+     [h.includes('<span class="tks-la">embalou antes (adiantado)</span>'), h0.includes('tks-la'), /depois de colar o ritmoprod_appscript\.gs v5\.67/.test(h0), /v5\.67/.test(h),
+      /#sec-uep \.uep-leg \.tks-la::before\{background:repeating-linear-gradient/.test(html), /embalou antes<\/span>' : ''\}<span><i style="background:#3B7DD8"><\/i>feito/.test(html)],
+     [true, false, true, false, true, true]);
+}
 // AS LEITURAS DE VERDADE (revisão: o regex acima passava com a retentativa sem fim).
 // O bloco 4 SEMANAS do renderUep REAL, com relógio virtual, leituras de mentira de
 // 25 s e o refresh do gerencial (renderUep a cada 5 min), por 60 min.
