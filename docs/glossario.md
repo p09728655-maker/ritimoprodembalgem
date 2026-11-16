@@ -22,27 +22,35 @@ Unidade padrão: **caixa (cx)**. Não existe "peça" no vocabulário do produto.
 ⚠ O slot pós-almoço `12:12-13:00` tem **48 min**, não 60. Por isso as horas
 produtivas somam a duração real de cada slot em vez de multiplicar por 60.
 
-## Gerencial do PC — a UEP na frente (v7.243.0)
+## Gerencial — a UEP na frente (PC v7.243.0 · celular 1.50.0)
 
 PPCP, 13/11/2026: o veredito do dia no gerencial do PC passou a ser **um só, o
 da UEP** (meta 2.761 = a META oficial). As caixas ficam na tela como fato, sem
-cor. A TV e o celular ainda julgam em caixas (a seção abaixo vale para eles).
+cor. Desde 16/11/2026 o **gerencial do celular** (1.50.0) segue a mesma regra,
+com a MESMA conta (`rp-core:uepGerMontar`, rp-core 1.18.0 — os nomes antigos do
+PC delegam para ela). A TV ainda julga em caixas (a seção abaixo vale para ela).
+
+No celular: o 1º card é o UEP DO DIA, o ATRASO vem logo abaixo, depois RITMO ·
+UEP/HORA, PROJEÇÃO · UEP e PARA A META (que diz também o ritmo que a meta pede no
+que resta de jornada); a 2ª grade, EM CAIXAS, tem CAIXAS (com a hora extra e o
+cx/h), CAIXAS PROGRAMADAS, PONTOS e PESO, sem cor. A tabela HORA A HORA tem UEP ·
+META UEP · % DA META · CAIXAS (com a META EM CX embaixo).
 
 | Termo | Fórmula | Unidade | Onde está |
 |---|---|---|---|
 | **UEP DO DIA · META** (1º card, o único selo) | UEP de jornada × esperado até agora (`uepCard`); o selo é `slRitmo` do % do esperado | UEP | `v7:_gerUepCards` + `rp-core:uepCard` |
-| **min atrás / à frente do ritmo** | (UEP feita − esperada) ÷ (meta ÷ 527) | min | `v7:_tvUepMontar` (`difMin`) |
+| **min atrás / à frente do ritmo** | (UEP feita − esperada) ÷ (meta ÷ 527) | min | `rp-core:uepGerMontar` (`m.difMin`) |
 | **⚠ ATRASO · LOTES VENCIDOS** | caixas de lotes vencidos × UEP do código ÷ (meta ÷ 527) — o mesmo do celular e da faixa da ⚖ UEP | h de linha | `rp-core:atrasoVencido` |
-| **RITMO · UEP/HORA** | UEP de jornada ÷ minutos de jornada decorridos × 60 | UEP/h | `v7:_uepAbaProj` |
-| **PROJEÇÃO · UEP** | UEP feita + a média por minuto × minutos de jornada que faltam (número, sem veredito) | UEP | `v7:_uepAbaProj` |
-| **PARA A META** | meta − UEP feita; em caixas: ÷ UEP por caixa do produto de agora (para cima) | UEP / cx | `v7:_tvUepMontar` |
-| **CAIXAS PROGRAMADAS** | a META DO DIA em caixas (a do FECHAR DIA); o % feito é fato, sem cor | cx | `v7:_gerCxCards` |
-| **% DA META** (hora a hora) | UEP da hora ÷ (meta × minutos da hora ÷ 527) — a cor da linha | % | `v7:_gerHoraLinha` |
-| **a hora é julgada?** | não: hora extra, a hora de agora, sem lançamento, sem meta, só caixas sem UEP; **fechada em 0 caixas: sim (0%)**; parte das caixas sem UEP: o % com `*`, PARTE SEM UEP, sem cor (v7.244.0) | — | `v7:_gerHoraJulga` |
+| **RITMO · UEP/HORA** | UEP de jornada ÷ minutos de jornada decorridos × 60 | UEP/h | `rp-core:uepProj` |
+| **PROJEÇÃO · UEP** | UEP feita + a média por minuto × minutos de jornada que faltam (número, sem veredito) | UEP | `rp-core:uepProj` |
+| **PARA A META** | meta − UEP feita; em caixas: ÷ UEP por caixa do produto de agora (para cima); *sai às*: a hora em que a meta sai andando no ritmo da meta pelos minutos de jornada que restam (almoço fora) | UEP / cx | `rp-core:uepGerMontar` (`m.faltaCx`, `m.chega`) |
+| **CAIXAS PROGRAMADAS** | a META DO DIA em caixas (a do FECHAR DIA); o % feito é fato, sem cor | cx | `v7:_gerCxCards` · `mobile:_gerCxCardsM` |
+| **% DA META** (hora a hora) | UEP da hora ÷ (meta × minutos da hora ÷ 527) — a cor da linha; os minutos pelo fim da hora que o backend manda (16:00-16:59 = 59) | % | `rp-core:uepHorasDia` · `v7:_gerHoraLinha` · `mobile:_gerHoraLinhaM` |
+| **a hora é julgada?** | não: hora extra, a hora de agora, sem lançamento, sem meta, só caixas sem UEP; **fechada em 0 caixas: sim (0%)**, menos nos 15 min em que ela ainda aceita lançamento no app (AINDA ACEITA); parte das caixas sem UEP: o % com `*`, PARTE SEM UEP, sem cor (v7.244.0) | — | `rp-core:uepHoraJulga` |
 | **META UEP da hora no dia passado** | META UEP gravada × minutos da hora ÷ 527; em sábado e domingo, ÷ os minutos de jornada com produção (a gravada já é a das horas trabalhadas) | UEP | `v7:_gerHorasHist` |
-| **META EM CX** (hora a hora) | meta de UEP da hora × caixas com UEP ÷ UEP da hora (a hora de agora sem caixa: ÷ UEP por caixa do produto de agora) | cx | `v7:_gerHoraLinha` |
+| **META EM CX** (hora a hora) | meta de UEP da hora × caixas com UEP ÷ UEP da hora (a hora de agora sem caixa: ÷ UEP por caixa do produto de agora) | cx | `v7:_gerHoraLinha` · `mobile:_gerHoraLinhaM` |
 | **PICO / VALE** | a hora de jornada fechada com o maior / menor % da meta da hora | — | `v7:_gerAnaliseUep` |
-| **RITMO NECESSÁRIO** | (meta − UEP feita) ÷ minutos de jornada que restam a partir de agora × 60 (antes do 1º lançamento da jornada: a meta inteira ÷ 527 min) | UEP/h | `v7:_gerAnaliseUep` + `v7:_gerUepModelo` (`minRest`) |
+| **RITMO NECESSÁRIO** | (meta − UEP feita) ÷ minutos de jornada que restam a partir de agora × 60 (antes do 1º lançamento da jornada: a meta inteira ÷ 527 min); no celular, dentro do card PARA A META quando a meta não cabe | UEP/h | `v7:_gerAnaliseUep` · `mobile:_gerUepCardsM` + `rp-core:uepGerMontar` (`minRest`) |
 
 ⚠ Sem a UEP no backend ou no cadastro, as caixas programadas voltam a dar o
 selo — nunca uma tela sem veredito. No dia passado, o veredito é a UEP gravada
@@ -313,7 +321,7 @@ coluna UEP da PRODUTO_CODIGO (cronoanálise), registrada na `UEP_VERSOES`.
 | Indicador | Fórmula | Unidade | Onde |
 |---|---|---|---|
 | **ATRASO** (cartão na faixa das sub-abas) | o total do quadro ATRASO — CONFERÊNCIA (PRÓXIMOS DIAS): **horas** = Σ (atraso do código × UEP/cx da programação) ÷ (META UEP ÷ 527), em minuto inteiro — o `conta.venc` do `_gpxMontar`; **caixas** = Σ atraso por código (o `atraso` do `calcularProgramacao`: saldo dos lotes com data ANTES de hoje, FIFO por código; linha com X fora); **desde** = o `atrasoDesde` mais antigo. Código sem UEP: só nas caixas, e as horas levam `*`; menos de 1 min com UEP → *menos de 1 min* (v7.228.0). O programado de hoje não entra. Vermelho com atraso; *nada vencido* em verde. **2ª linha** (v7.242.0; v7.245.0): *já está no PRECISA do TAKT* — o TAKT DA SEMANA soma todo o vencido com UEP, o desta semana e o de antes da segunda; *sem UEP: fora do TAKT* (só nas caixas); sem o vencido no TAKT (`.gs` antes da v5.66), *antes de dd/mm: fora do TAKT* | h:min · cx | `v7:_uepSubAtr` · `v7:_gpxAtrasoMontar` · `v7:_gpxMontar` |
-| **⚠ ATRASO · LOTES VENCIDOS** (gerencial do celular, 1.43.0 — o 1º card, largura toda, vermelho) | o MESMO número do cartão ATRASO acima: **horas** = Σ (atraso do código × UEP/cx do **cadastro**) ÷ (META UEP ÷ 527), minuto inteiro; **caixas** = Σ atraso por código; **desde** = o `atrasoDesde` mais antigo. Código casado pelos dígitos; sem UEP: só nas caixas e `*` nas horas; sem UEP nenhuma ou `.gs` sem o atraso por código → só as caixas; menos de 1 min com UEP → *<1 min*. Cadastro relido a cada 30 min e no ATUALIZAR. Sem atraso, sem card | h:min · cx | `rp-core:atrasoVencido` · `mobile:renderGerencial` |
+| **⚠ ATRASO · LOTES VENCIDOS** (gerencial do celular, 1.43.0 — largura toda, vermelho; desde a 1.50.0 o 2º card, logo abaixo do UEP DO DIA) | o MESMO número do cartão ATRASO acima: **horas** = Σ (atraso do código × UEP/cx do **cadastro**) ÷ (META UEP ÷ 527), minuto inteiro; **caixas** = Σ atraso por código; **desde** = o `atrasoDesde` mais antigo. Código casado pelos dígitos; sem UEP: só nas caixas e `*` nas horas; sem UEP nenhuma ou `.gs` sem o atraso por código → só as caixas; menos de 1 min com UEP → *<1 min*. Cadastro relido a cada 30 min e no ATUALIZAR. Sem atraso, sem card | h:min · cx | `rp-core:atrasoVencido` · `mobile:renderGerencial` |
 
 ## Aba ⚖ UEP · TAKT DA SEMANA (v7.209.0)
 

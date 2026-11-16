@@ -12,7 +12,8 @@ via Google Apps Script (JSONP).
   formatação (`p2`/`fmtN`/`fmtP`), horário (`toMin`/`fromMin`/`normHora`), data
   (`hojeStr`/`dtToStr`), `mergeMedias`, `calcAtrasoHoras`, `sc`,
   `atrasoVencido` (o card ATRASO do celular, 1.14.0), `pdiaParMontar` (as
-  paradas na faixa do PRODUTOS EMBALADOS HOJE, 1.16.0). Só função
+  paradas na faixa do PRODUTOS EMBALADOS HOJE, 1.16.0), `uepGerMontar` e
+  companhia (o gerencial com a UEP na frente, PC e celular, 1.18.0). Só função
   **pura** entra aqui — nada que leia `DADOS`/`CFG` ou toque no DOM.
   `node rp-core.test.js` cobre a regra e falha se algum HTML voltar a declarar
   a própria cópia.
@@ -3608,6 +3609,14 @@ feito e dá ar de verdade ao que sobrou.
   meio — mesma regra já documentada para o relatório de paradas.
 
 ## GERENCIAL DO PC: A UEP NA FRENTE (v7.243.0 / rp-core 1.17.0; revisão na v7.244.0 / rp-core 1.17.1)
+- ⚠ **Desde o rp-core 1.18.0 (v7.247.0) a CONTA mora no `rp-core.js`**
+  (`uepGerMontar`, `uepHorasDia`, `uepHoraJulga`, `uepCxComHora`, `uepMinTxt`,
+  `uepProj`, `uepDoProduto`, `UEP_HORA_TOL_MIN`) e os nomes do PC delegam
+  (`_gerUepModelo`, `_uepAbaHoras`, `_gerHoraJulga`, `_uepAbaProj`,
+  `_tvUepDoProduto`…) — o celular 1.50.0 usa a mesma. O `G.m` (minutos, falta em
+  caixas, sai às, produto de agora) não vem mais do `_tvUepMontar`: vem do
+  `uepGerMontar` (null sem jornada lançada, como antes). Ver *GERENCIAL DO
+  CELULAR: A UEP NA FRENTE*.
 - ⚠ **A v7.243.0 entrou na `main` antes de a revisão terminar** (o PPCP pediu o
   merge). A revisão achou 3 bloqueios e 6 ajustes; as correções são a v7.244.0,
   num PR aberto sem merge (combinado: o PPCP confere antes). Ver *A REVISÃO
@@ -3666,8 +3675,8 @@ feito e dá ar de verdade ao que sobrou.
   **UEP/CX** · CAIXAS · **EM HE · UEP** (as caixas no `title`) · PARTE. rp-core
   1.17.0: `pdiaMontar` dá `uepHe` (produto e total) e `o.porUep` reparte a hora da
   faixa pela UEP (produto sem UEP na hora → a do dia; sem UEP nenhuma → a hora
-  inteira volta às caixas). **O celular não passa `porUep` e não muda.** rp-core
-  antigo em cache: sem a divisão e o EM HE em caixas.
+  inteira volta às caixas). ~~O celular não passa `porUep` e não muda.~~ — passa
+  desde a 1.50.0. rp-core antigo em cache: sem a divisão e o EM HE em caixas.
 - **Uma leitura a mais, só quando falta**: `_gerCatSeFalta` — sem cadastro neste
   computador (nem o `rpe_cap_cat`), lê o `getProdutos` UMA vez por sessão
   (`PDIA_PC_CATPED`, a mesma marca do clique no PRODUTOS EMBALADOS), no fim do
@@ -3720,6 +3729,57 @@ feito e dá ar de verdade ao que sobrou.
   - Em aberto (menor): o resumo do PRODUTOS EMBALADOS pode dizer *586 em hora
     extra* com a coluna somando 587 (arredondamento das três partes).
 
+## GERENCIAL DO CELULAR: A UEP NA FRENTE (mobile 1.50.0 / v7.247.0 / rp-core 1.18.0)
+- PPCP, 16/11/2026: *"ajustar app agora, mas antes me mostre como vai ficar"* →
+  prévia (artifact privado, o código real do celular rodando no Chromium com o
+  retrato de 13/11 16:22 do teste do PC, antes × depois) → *"ok implementar"*. A
+  fase 2 do *"pode implantar no gerencial primeiro depois vamos para outro"*.
+  Ficaram como propostas: ATRASO em 2º, o cx/h dentro do card CAIXAS, o
+  HISTÓRICO do celular em caixas (o mesmo corte do PC). TV, relatórios, semana,
+  EF do FECHAR DIA e o nome "referência" seguem para depois.
+- **A conta é a do PC, no rp-core** (`uepGerMontar`): o celular só lê
+  (`_gerUepModeloM`: os slots da HORA_A_HORA por `_gerSlotsM`, com os minutos
+  pelo `slotFim` do backend — 16:00-16:59 = 59 —, o PROD_ATUAL e o cadastro
+  `PRODUTOS`, a tolerância `LANC_TOLERANCIA_MIN`) e desenha (`_gerUepCardsM`,
+  `_gerCxCardsM`, `_gerHoraLinhaM`, `renderTabelaHoraHora`). O teste confere a
+  montagem do celular contra a do PC no mesmo retrato (esperado 2.452, 28 min
+  atrás, 37 min, 228 cx, cada hora).
+- **1ª grade (`#kpi-grid`, "KPIs DO DIA · UEP")**: UEP DO DIA · META (`larga
+  hero`, o ÚNICO selo, `<b>` em cor + `uepMinTxt`, e embaixo feito × esperado,
+  HE, cx sem UEP) · ⚠ ATRASO (o card de sempre, 2º) · RITMO · UEP/HORA e
+  PROJEÇÃO · UEP (`uk`, sem cor) · PARA A META (`larga uk`: ≈ cx do produto de
+  agora; *sai às* / *não cabe até 17:00 … pede X UEP/h nos N min que restam* /
+  *jornada encerrada*). No tablet (≥ 700 px, 4 colunas) o PARA A META ocupa 2
+  colunas, ao lado do ritmo e da projeção.
+- **2ª grade (`#kpi-grid2`, "EM CAIXAS")**: CAIXAS (normal + HE · cx/h) ·
+  CAIXAS PROGRAMADAS (% feito · faltam) · PONTOS · PESO, sem cor. Só sem a UEP
+  do dia (`!G.ok`) o programado ganha o selo (`slRitmo(k.efRitmo)`).
+- **Saíram**: PRODUÇÃO REAL, CAIXAS EM HORA EXTRA, META DO DIA, % DA META DO DIA,
+  RITMO ATUAL, PROJEÇÃO FINAL (cx) e NEC. P/ META; na tabela, o *+N* do atraso
+  acumulado em caixas (`calcAtrasoHoras`) e o ⚠ de hora fraca — e com ele o
+  `getMediaHoras`/`lerMediaHoras`/`MEDIA_HORAS` do celular (uma chamada a menos
+  no login).
+- **Tabela**: HORA · UEP · META UEP · % DA META (`uepHoraJulga`; cor só com
+  veredito; HE `acc` + H. EXTRA; ATÉ HH:MM; AINDA ACEITA; PARTE SEM UEP) ·
+  CAIXAS (+ `meta N` embaixo, `.td-n2`). Sem a UEP do dia: LENDO… / NÃO LIDA
+  (`PONTOS_DIA_FALHA`) / SEM UEP, sem pintar o %.
+- **PRODUTOS EMBALADOS HOJE**: o resumo abre pela UEP (`· N em HE` em âmbar, o
+  mesmo arredondamento do card) e as caixas em tinta mais fraca (`.pdia-res-n.sec`);
+  cada produto com a UEP em destaque; `porUep: true` (a faixa pela UEP, como o PC).
+- **Correção junto**: o `processarResposta` troca o `CFG.turnoInicio` pela C3, e
+  o `pdiaMontar` do celular recebia `turnoIni` 05:00 nos dias com C3 = 5 — a
+  madrugada não saía em hora extra no quadro (04/11: 0 cx em vez de 244), com o
+  card dizendo "+392 em hora extra" acima. Hoje
+  `Math.max(toMin(CFG.turnoInicio), LANC_MADRUGADA_FIM)` (07:00, a janela do PC
+  e do `.gs`).
+- **Os minutos da hora pelo `slotFim`** também no `calcKPIs` do celular
+  (`minDoSlot`): a jornada inteira soma 527, como no PC. Mexe 1 min no esperado
+  da UEP e no `efRitmo` das caixas no fim do dia.
+- Medido no Chromium (backend simulado, retrato de 13/11): 360, 390, 430 e 800
+  px, nada passa da largura. Os testes estão no `relatorios.test.js` (*A UEP NA
+  FRENTE no gerencial do celular*) e no `produtos-dia.test.js` (o resumo, a faixa
+  pela UEP, a HE com a C3 em 5); as mutações foram pegas.
+
 ## EFICIÊNCIA: uma régua só, e é a META DO DIA
 - **O cartão mostrava um número de uma conta com a cor de OUTRA.** O número era
   `efDia` (realizado ÷ meta do DIA) e a cor/status vinham de `ef` (realizado ÷
@@ -3753,7 +3813,7 @@ feito e dá ar de verdade ao que sobrou.
     pega a **cor do selo** (antes lia a cor do número, que agora é tinta).
   - ⚠ **A conta não mudou** — `efNoRitmo` continua sendo quem pinta a tela.
     Trocou qual número ocupa o lugar grande.
-- **Quem usa: TV (telas A e B) e gerencial do celular** (o gerencial do PC julga pela UEP desde a v7.243.0 — ver *GERENCIAL DO PC: A UEP NA FRENTE*; o % DA META DO DIA dele virou fato no card CAIXAS PROGRAMADAS).
+- **Quem usa: TV (telas A e B)** (os gerenciais julgam pela UEP — o do PC desde a v7.243.0, o do celular desde a 1.50.0; o % DA META DO DIA virou fato no card CAIXAS PROGRAMADAS; ver *GERENCIAL DO PC: A UEP NA FRENTE* e *GERENCIAL DO CELULAR: A UEP NA FRENTE*).
   Painel que julga o mesmo instante de dois jeitos é o defeito que este projeto
   mais pagou caro — por isso a conta saiu dos dois HTMLs para o núcleo.
   `rp-core.test.js` cobre a conta e `relatorios.test.js` falha se `sc(k.ef)`

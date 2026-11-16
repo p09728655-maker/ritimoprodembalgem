@@ -516,6 +516,7 @@ vm.runInContext(`
   function mudarPeriodoParadas(){ _MUDOU++; }
   function aplicarDetalheParadas(){}
   var _ELM = { innerHTML: '', clientWidth: 360 }, PDIA_ABERTO = '', PDIA_M = null, PDIA_P = null, PDIA_REAL = 0, PRODUTOS = [], PROD_ATUAL = '';
+  var LANC_MADRUGADA_FIM = ${MJS.match(/const LANC_MADRUGADA_FIM = ([^;]+);/)[1]};
   var PONTOS_DIA = { porHoraModelo: [], porHora: [] };
   var _parEscrevendo = false, _paradaLocalAberta = null, _JR = [], _QUEBRA = '', _RENDERS = 0;
   function jsonpFetch(){ const r = _JR.shift(); return r instanceof Error ? Promise.reject(r) : Promise.resolve(r); }
@@ -553,6 +554,23 @@ ok('celular: o render passa as paradas ao quadro', [run('_ELM.innerHTML').includ
 run('_pdiaToggle(0)');
 ok('celular: abrir um produto mantém a faixa de paradas', [run('_ELM.innerHTML').includes('pdia-it on'), run('_ELM.innerHTML').includes('class="pdia-par"')], [true, true]);
 run('_pdiaToggle(0)');
+// ── 1.50.0 (a UEP na frente, PPCP 16/11/2026): o quadro abre pela UEP, as caixas ao
+// lado; cada produto com a UEP em destaque; a faixa reparte a hora pela UEP (o PC
+// desde a v7.243.0); e a madrugada é hora extra também com a C3 em 5 — o
+// processarResposta troca o CFG.turnoInicio pela C3, e com 05:00 a jornada do quadro
+// começava às 05:00 (0 cx em HE, com o card UEP DO DIA dizendo "+392 em hora extra").
+{ const H7 = run('_ELM.innerHTML');
+  ok('celular 1.50.0: o resumo abre pela UEP (1.441), as caixas (596) ao lado, em tinta mais fraca',
+     [H7.indexOf('<b>1.441</b><i>UEP') >= 0, H7.indexOf('<b>1.441</b><i>UEP') < H7.indexOf('<b>596</b><i>CAIXAS'), H7.includes('pdia-res-n sec"><b>596</b>')], [true, true, true]);
+  ok('celular 1.50.0: cada produto com a UEP em destaque e as caixas embaixo',
+     /<div class="pdia-num"><b>[\d.]+<i> UEP<\/i><\/b><span>[\d.]+ cx<\/span><\/div>/.test(H7), true);
+  ok('celular 1.50.0: o render passa o porUep (a faixa pela UEP, como no PC)', /porUep: true \}\);/.test(pega(MJS, 'function renderGerProdutosDia(')), true);
+  run('CFG.turnoInicio = "05:00"; renderGerProdutosDia(596)');
+  const H5 = run('_ELM.innerHTML');
+  ok('celular 1.50.0: com a C3 em 5 (turno às 05:00), a madrugada sai em hora extra no quadro — 244 cx (PRISM 05–06h + HOME ANGEL 06h), 587 UEP, o eixo marcado HE',
+     [H5.includes('244 cx em hora extra'), H5.includes('<span class="he">587 em HE</span>'), H5.includes('05 HE')], [true, true, true]);
+  run('CFG.turnoInicio = "07:00"; renderGerProdutosDia(596)');
+  ok('celular 1.50.0: com o turno às 07:00 o quadro é o mesmo (a janela da jornada não depende da C3)', run('_ELM.innerHTML') === H7, true); }
 { // revisão: na virada do dia, a leitura de ontem não vale (o carregarParadas redesenha o quadro a cada 90 s)
   run('PONTOS_DIA = { porHoraModelo: _phm, porHora: _ph, lidoEm: new Date(2026, 10, 3, 16, 50).getTime() }; renderGerProdutosDia()', { _phm: PHM, _ph: PH });
   ok('celular: produtos de ontem nunca com as paradas de hoje (virada do dia)', [run('_ELM.innerHTML').includes('pdia-par'), run('_ELM.innerHTML').includes('Lendo a produção do dia')], [false, true]);

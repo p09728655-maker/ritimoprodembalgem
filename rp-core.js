@@ -358,6 +358,137 @@ function uepHistResumo(dias){
            meta: com.length ? uepDiaMeta(com[com.length - 1]) : UEP_META_PADRAO };
 }
 
+// ── O GERENCIAL COM A UEP NA FRENTE (rp-core 1.18.0) ─────────────────────────
+// PC v7.243.0/7.244.0 e celular 1.50.0 (PPCP, 13/11/2026: "priorizar as UEPs" →
+// "pode implantar no gerencial primeiro depois vamos para outro"; 16/11: o
+// celular). A conta nasceu no HTML do PC (_uepAbaHoras, _gerHoraJulga,
+// _gerUepModelo com o _tvUepMontar das Telas F/G); aqui é UMA para os dois
+// gerenciais — os nomes antigos do PC delegam para estas. Pura: o painel passa
+// a leitura do dia, os slots, o relógio e o cadastro.
+// A hora que acabou de fechar ainda aceita lançamento no app por este tempo (o
+// LANC_TOLERANCIA_MIN do celular; o teste confere): zero aí é "ainda não lançou".
+const UEP_HORA_TOL_MIN = 15;
+// As horas do dia em UEP. slots: [{inicio, label, min, he}]; allHoje: as linhas
+// da HORA_A_HORA ({horario, producaoHora, he}); uepH: o uepPorHora. A meta da hora
+// é a meta de UEP repartida pelos MINUTOS da hora (o 12:12 de 48 min pede menos);
+// hora extra sem meta. Hora lançada sem caixa com produto não vira 0 UEP: é falta
+// de dado. Com `agoraMin`, a hora que contém o relógio sai `andamento` (não é
+// julgada) e a que ainda não começou, `futuro`; sem ele (chamador antigo), nada
+// disso. `tolMin`: a janela da hora recém-fechada (tol).
+function uepHorasDia(slots, allHoje, uepH, metaUep, agoraMin, tolMin){
+  const meta = Number(metaUep) > 0 ? Number(metaUep) : UEP_META_PADRAO;
+  const ag = Number(agoraMin), temAg = agoraMin != null && isFinite(ag);
+  return (slots || []).map(sl => {
+    const reg = (allHoje || []).find(d => d.horario === sl.inicio);
+    const he = !!((reg && reg.he) || sl.he);
+    const lancada = !!(reg && reg.producaoHora != null);
+    const h = (uepH || {})[sl.inicio] || null;
+    const mn = sl.min || 60;
+    const metaH = he ? null : meta * mn / UEP_MIN_DIA;
+    const uep = h && h.uep > 0 ? h.uep : null;
+    const ini = toMin(sl.inicio), fim = ini + mn;
+    const andamento = temAg && ag >= ini && ag < fim;
+    const cx = lancada ? Number(reg.producaoHora) : null;
+    return { label: sl.label, inicio: sl.inicio, he, lancada, uep, cxSem: h ? h.cxSem : 0, metaH, andamento,
+             futuro: temAg && ag < ini, ate: andamento ? fromMin(ag) : null,
+             cls: he || andamento || uep == null || !metaH ? '' : sc(uep / metaH * 100),
+             cx, min: mn,
+             tol: !he && cx === 0 && temAg && Number(tolMin) > 0 && ag >= fim && ag < fim + Number(tolMin) };
+  });
+}
+// A hora é julgada? Regra ÚNICA da tabela, da análise e dos gráficos dos dois
+// gerenciais. null = não julga: hora extra, a hora de agora, sem lançamento, sem
+// meta, ou lançada só com caixas sem UEP. Hora fechada em ZERO caixas é julgada
+// (0%, a régua de sempre — o 12:12 que fechou em 0 em 28/08), menos na janela
+// em que ainda aceita lançamento (tol). Hora em que PARTE das caixas não tem UEP
+// (código sem UEP, ou lançada sem produto: caixas da hora maiores que as do
+// registro) sai com `parte`: o %, sem veredito — a UEP dela está incompleta.
+function uepHoraJulga(h, cx, cxCom){
+  if (!h || h.he || h.andamento || !h.lancada || !(h.metaH > 0)) return null;
+  if (!(h.uep > 0)) return cx === 0 && !(h.cxSem > 0) && !h.tol ? { uep: 0, pct: 0 } : null;
+  const pct = h.uep / h.metaH * 100;
+  const semProd = cx != null && cxCom != null && cx > (Number(cxCom) || 0) + (Number(h.cxSem) || 0);
+  return (h.cxSem > 0 || semProd) ? { uep: h.uep, pct, parte: true } : { uep: h.uep, pct };
+}
+// Caixas COM UEP de cada hora (HH:MM): a META EM CX da hora sai do peso delas.
+function uepCxComHora(phm){
+  const m = {};
+  (phm || []).forEach(it => {
+    const h = _uepHHMM(it && it.hora);
+    if (h && Number(it.uep) > 0) m[h] = (m[h] || 0) + (Number(it.caixas) || 0);
+  });
+  return m;
+}
+// "28 min atrás do ritmo": a diferença para o esperado, em minutos de meta.
+function uepMinTxt(difMin){
+  const a = Math.round(Math.abs(Number(difMin) || 0));
+  return a < 1 ? 'no tempo da meta' : `${a} min ${difMin < 0 ? 'atrás' : 'à frente'} do ritmo`;
+}
+// Projeção: o ritmo de UEP por minuto de jornada lançada, até o fim da jornada.
+function uepProj(feito, minNorm){
+  const f = Number(feito) || 0, m = Math.min(Math.max(0, Number(minNorm) || 0), UEP_MIN_DIA);
+  if (!(m > 0)) return null;
+  const porMin = f / m;
+  return { porHora: porMin * 60, fim: f + porMin * (UEP_MIN_DIA - m), restMin: UEP_MIN_DIA - m };
+}
+// UEP por caixa do produto que está rodando. O cadastro manda (UEP por CÓDIGO,
+// cada volume com a sua; código com ou sem pontos); sem cadastro, a média de hoje
+// do MESMO produto e cor no porHoraModelo (o 501130 tem quatro mesas — nunca só
+// pelos 6 dígitos). Nada achado → null.
+function uepDoProduto(cod, desc, cor, cat, phm){
+  const c = String(cod || '').replace(/\D/g, '');
+  if (!c) return null;
+  if (Array.isArray(cat)){
+    const p = cat.find(x => String(x && x.codigo || '').replace(/\D/g, '') === c);
+    if (p && Number(p.uep) > 0) return Number(p.uep);
+  }
+  const nome = String(desc || '').toUpperCase().trim().replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/, '').trim();
+  const cr = String(cor || '').toUpperCase().trim();
+  let cx = 0, u = 0;
+  (phm || []).forEach(it => {
+    if (String(it.modelo || '') !== c.slice(0, 6) || String(it.nome || '').toUpperCase().trim() !== nome) return;
+    if (String(it.cor || '').toUpperCase().trim() !== cr || !(Number(it.uep) > 0)) return;
+    cx += Number(it.caixas) || 0; u += Number(it.uep) || 0;
+  });
+  return cx > 0 ? u / cx : null;
+}
+// O MODELO do gerencial: o veredito (uepCard), as horas, a projeção, o que resta de
+// jornada e, com jornada lançada (`m`), os minutos à frente/atrás, o que falta em
+// caixas do produto de agora e quando a meta sai no ritmo da meta.
+// o: { uep, metaUep, minNorm, slots, allHoje, phm, agoraMin, tolMin, prod:{cod,desc,cor}, cat }
+// ok:false = sem a UEP do dia (lendo: a leitura ainda não chegou; senão backend
+// antigo ou cadastro sem UEP) — o painel devolve o veredito às caixas.
+function uepGerMontar(o){
+  const U = o.uep, ag = Number(o.agoraMin);
+  const card = uepCard(U, o.metaUep, o.minNorm);
+  if (!U || !(U.codigos > 0)) return { ok: false, lendo: U === null, card, agoraMin: ag };
+  const meta = card.meta, feito = Number(U.normal) || 0, he = Number(U.he) || 0, porMin = meta / UEP_MIN_DIA;
+  const horas = uepHorasDia(o.slots, o.allHoje, uepPorHora(o.phm), meta, ag, o.tolMin);
+  // O que resta de jornada a partir de agora (o almoço fica de fora) e, no ritmo
+  // da meta, quando a meta sai — a conta do "A META SAI ÀS" da Tela G.
+  const rest = [];
+  horas.forEach(h => { if (h.he) return; const i0 = toMin(h.inicio), f0 = i0 + h.min; if (f0 > ag) rest.push([Math.max(i0, ag), f0]); });
+  const minRest = rest.reduce((t, r) => t + r[1] - r[0], 0);
+  const falta = Math.max(0, meta - feito);
+  let m = null;
+  if (Number(o.minNorm) > 0 && horas.some(h => !h.he)){
+    let chega = null;
+    if (falta > 0){
+      let v = feito;
+      for (const [de, ate] of rest){ const cap = (ate - de) * porMin; if (v + cap >= meta){ chega = de + (meta - v) / porMin; break; } v += cap; }
+    }
+    const pr = o.prod || {};
+    const uepCx = pr.cod ? uepDoProduto(pr.cod, pr.desc, pr.cor, o.cat, o.phm) : null;
+    // "VOL 1/1" é ruído; "VOL 1/3" fica — a UEP é daquele volume.
+    const nome = String(pr.desc || '').replace(/^VOL\.?\s*1\s*\/\s*1\s*/i, '').trim() || String(pr.cod || '');
+    m = { difMin: (feito - (Number(card.esperado) || 0)) / porMin, minRest, chega, falta,
+          faltaCx: falta > 0 && uepCx > 0 ? Math.ceil(falta / uepCx) : null,
+          prod: pr.cod ? { rot: nomeComCor(nome, pr.cor) || nome, nome, cor: String(pr.cor || '').trim(), uepCx } : null };
+  }
+  return { ok: true, card, meta, feito, he, horas, proj: uepProj(feito, o.minNorm), m, agoraMin: ag, minRest, falta,
+           cxSem: Number(U.cxSem) || 0, cxCom: uepCxComHora(o.phm) };
+}
+
 // ── PRODUTOS EMBALADOS HOJE (os dois gerenciais: mobile 1.39.0, v7.201.0) ────
 // A CONTA do quadro — uma só para o celular e o PC (cada painel tem o seu
 // desenho). Pura: recebe o porHoraModelo e o porHora do getPontosDia, o
@@ -702,9 +833,10 @@ function paradaAInformar(tipo){
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.17.1',
+  versao: '1.18.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
         'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido',
-        'pdiaVol', 'pdiaBase', 'pdiaCurto', 'pdiaMontar', 'pdiaParMontar', 'atrasoVencido', 'paradaAInformar']
+        'pdiaVol', 'pdiaBase', 'pdiaCurto', 'pdiaMontar', 'pdiaParMontar', 'atrasoVencido', 'paradaAInformar',
+        'uepHorasDia', 'uepHoraJulga', 'uepCxComHora', 'uepMinTxt', 'uepProj', 'uepDoProduto', 'uepGerMontar']
 };
