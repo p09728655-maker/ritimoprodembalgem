@@ -58,6 +58,24 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   Causa nº 2: procurar o app **na raiz** sem saber que no celular ele é o `/mobile`
   (o modal da raiz mostra o endereço, COPIAR LINK e ABRIR NO CELULAR).
 - O `sw-mobile.js` só cacheia requisições **do próprio domínio**. Manter assim.
+- **O ÍCONE COM A CAIXA DENTRO DA ESTRELA (v7.255.0 / mobile 1.53.0)**. PPCP,
+  16/11/2026: *"pensei em atualizar a logo com uma embalagem dentro da estrela"*
+  → 3 versões (contorno amarelo, caixa amarela, caixa vermelha) → *"c"* (a caixa
+  vermelha com a fita amarela; a recomendação era a amarela — vermelho no painel
+  é ABAIXO/perda — e foi dita) → prévia com os arquivos reais → *"sim"*.
+  - Mudou SÓ o ícone do app: `icon-192/512`, os maskable e o
+    `apple-touch-icon`. A estrela é a mesma pixel a pixel (só a área da caixa
+    mudou, conferido); a caixa é desenhada por cima, proporcional à estrela de
+    cada arquivo (no maskable ela é menor, como a estrela). ⚠ O
+    **`patrimar-logo.png` (o logo da EMPRESA) não mudou**: login, TV, diretoria e
+    relatórios — mexer nele é decisão de marketing/diretoria.
+  - O `favicon-32.png` ficou como estava: nenhuma página nem manifest o usa (a aba
+    do navegador usa o `icon-192` reduzido).
+  - ⚠ **Trocou o ícone, suba o `?v=`** nos endereços (as 2 páginas e os 4
+    manifests, hoje `?v=2`): o navegador guarda o ícone por muito tempo. O
+    `deploy.test.js` reprova se um lugar ficar sem ele ou com outro número.
+    Quem já instalou: o Android troca sozinho em alguns dias; o iPhone só
+    reinstalando o atalho.
 - `manifest.webmanifest` (raiz) está **órfão** — nenhum HTML aponta para ele e o
   `start_url` (`./index.html`) nem existe. Os manifests que valem são
   `manifest.json` (v7) e `manifest-mobile.json` (mobile).

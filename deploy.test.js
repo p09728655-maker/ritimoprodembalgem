@@ -58,6 +58,16 @@ ok('o painel pede ao menos os dois HTMLs, os dois módulos, o service worker e o
     'manifest.json', 'manifest-mobile.json', 'manifest-diretoria.json', 'patrimar-logo.png'].filter(f => !pedidos.has(f)), []);
 ok('tudo o que o painel pede está liberado (senão é 404 em produção)', [...pedidos].filter(p => !libera.has(p)).sort(), []);
 
+console.log('\n── o ícone tem UMA versão (?v=) em todo lugar ──');
+// v7.255.0 (ícone com a caixa dentro da estrela): o navegador guarda o ícone por
+// muito tempo, e o ?v= no endereço é o que força a troca. Página ou manifest que
+// ficar sem ele (ou com outro número) mostra o ícone velho para sempre.
+{ const refs = [];
+  for (const f of ['ritmoprod_embalagem_v7.html', 'ritmoprod_mobile.html', 'manifest.json', 'manifest-mobile.json', 'manifest-diretoria.json', 'manifest-diretoria-site.json'])
+    for (const m of ler(f).matchAll(/\/(icon-(?:192|512)(?:-maskable)?|apple-touch-icon)\.png(\?v=\d+)?/g)) refs.push(f + ':' + m[1] + (m[2] || ' SEM ?v='));
+  const vs = [...new Set(refs.map(r => (r.match(/\?v=\d+/) || ['SEM'])[0]))];
+  ok('todo endereço de ícone (2 páginas e 4 manifests) leva o mesmo ?v=', [vs.length, vs[0] !== 'SEM', refs.length], [1, true, 22]); }
+
 console.log('\n── nada interno sai ──');
 const interno = f => /\.(md|gs|test\.js)$/.test(f) || /^(lint-js|testes)\.js$/.test(f) || f.startsWith('.') || /^docs?\b/.test(f);
 ok('nenhum documento, .gs, teste, ferramenta ou pasta oculta na lista', [...libera].filter(interno), []);
