@@ -370,6 +370,24 @@ function histDiaFds(d){
   if (d.uep != null && isFinite(Number(d.uep))) { o.uepHe = (Number(d.uepHe) || 0) + Number(d.uep); o.uep = 0; o.metaUep = 0; }
   return o;
 }
+// A META de cada dia para VALORAR PARADAS (RP_PARADAS.stats → metaByDay). O dia
+// sem meta (sábado, domingo — todo hora extra) cairia na meta do DIA EM QUE SE
+// ABRE A TELA (cfg.metaDia, com o atraso): o número mudaria conforme o dia em que
+// se olha. No fim de semana vale a MEDIANA das metas dos dias úteis do próprio
+// histórico — a linha roda no mesmo ritmo, e o número fica reproduzível.
+function metaDiasParadas(dias){
+  const m = {}, uteis = [];
+  (dias || []).forEach(d => {
+    const v = parseFloat(d && d.meta) || 0;
+    if (d && d.data && v > 0) { m[d.data] = v; if (!uepFimDeSemana(d.data)) uteis.push(v); }
+  });
+  if (uteis.length) {
+    uteis.sort((a, b) => a - b);
+    const k = uteis.length >> 1, med = uteis.length % 2 ? uteis[k] : (uteis[k - 1] + uteis[k]) / 2;
+    (dias || []).forEach(d => { if (d && d.data && !(m[d.data] > 0) && uepFimDeSemana(d.data)) m[d.data] = med; });
+  }
+  return m;
+}
 function uepHistResumo(dias){
   const comUep = (dias || []).filter(d => d && d.uep != null && isFinite(Number(d.uep)));
   // dia sem meta (sábado, domingo) não é julgado: sai do n, do bateu, da média e da meta somada
@@ -736,6 +754,6 @@ window.RP_CORE = {
   versao: '1.18.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
-        'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepDiaHe', 'histDiaFds', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido',
+        'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepDiaHe', 'histDiaFds', 'metaDiasParadas', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido',
         'pdiaVol', 'pdiaBase', 'pdiaCurto', 'pdiaMontar', 'pdiaParMontar', 'atrasoVencido', 'paradaAInformar']
 };

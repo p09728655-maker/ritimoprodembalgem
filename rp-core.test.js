@@ -293,6 +293,17 @@ ok('sem meta do dia também não',
      [true, '1.440', 'TODO HORA EXTRA · sem meta · 12 cx sem UEP', 'acc', 1440, null, false, undefined, true, undefined]);
 }
 
+// ── A meta de cada dia para valorar paradas (metaDiasParadas, v7.247.0) ──────
+{
+  const D = [{ data: '09/11/2026', meta: 1500 }, { data: '10/11/2026', meta: 1700 }, { data: '11/11/2026', meta: 1600 },
+             { data: '14/11/2026', meta: 0 }, { data: '15/11/2026', meta: 0 }, { data: '12/11/2026', meta: 0 }];
+  const m = metaDiasParadas(D);
+  ok('paradas: o fim de semana sem meta pela MEDIANA dos dias úteis (1.600), nunca a meta do dia em que se olha; dia útil sem meta continua sem (cai no padrão)',
+     [m['09/11/2026'], m['14/11/2026'], m['15/11/2026'], m['12/11/2026']], [1500, 1600, 1600, undefined]);
+  ok('sem dia útil com meta, o fim de semana fica sem (o RP_PARADAS usa o padrão e conta como "sem meta")',
+     metaDiasParadas([{ data: '14/11/2026', meta: 0 }])['14/11/2026'], undefined);
+}
+
 // ── R$ por UEP no período (uepCustoPeriodo) ────────────────────────────────
 {
   const D = [{ data: '22/09/2026', uep: 2606.4, metaUep: 2530 }, { data: '23/09/2026', uep: 2263, metaUep: 2530 },

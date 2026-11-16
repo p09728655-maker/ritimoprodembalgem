@@ -49,6 +49,28 @@ foi: *"aos sábados é horas extra total"*.
   melhor/pior hora.
   - EFICIÊNCIA MÉDIA, DIAS COM META e MELHOR/PIOR DIA passam a contar só os
     dias com meta.
+- **Hora extra não tem meta em dia nenhum, nem no meio da semana** (PPCP:
+  *"no meio da semana meta 0 em horas extra"*). Isso revoga a regra de
+  01/09/2026, em que a TV mostrava a meta da hora também na hora extra.
+  - **TV:** a hora extra aparece com meta *—*, sem ✓/✗ e em âmbar. O card da
+    hora diz *HORA EXTRA · SEM META*.
+  - **Celular:** a lista do operador e o lançamento dizem *HORA EXTRA · SEM
+    META*, sem cor de veredito.
+  - **PC:** a meta da linha de hora extra do ⚙ HORA EXTRA não soma mais na META
+    DO DIA. O `.gs` nunca somou essa meta.
+- **Correções da revisão:**
+  - No WhatsApp, o sábado sai *"todo hora extra, sem meta · 1.440 UEP em hora
+    extra"*. Antes saía *"(0,0%) · 0 UEP"*.
+  - O celular tira o NEC. P/ META no fim de semana.
+  - A Tela B não mostra META DO DIA no fim de semana.
+  - O "programado" do sábado é só o que foi datado para o dia, sem o atraso.
+  - O 🖨 do dia não monta a cascata contra meta no fim de semana.
+  - A Tela D divide o que faltou pelos dias com meta.
+  - A diretoria diz *TODO HORA EXTRA* no fim de semana, e não *AGUARDANDO A
+    JORNADA*.
+  - A parada de sábado é valorada pela **mediana das metas dos dias úteis**.
+    Antes era pela meta do dia em que a tela é aberta, e o número mudava
+    conforme o dia.
 - **As linhas já gravadas também mudam na tela.** O `rp-core` (`histDiaFds`)
   lê o sábado gravado pelo `.gs` anterior (07/11 e 14/11) da mesma forma que o
   `.gs` v5.68 grava.
@@ -59,8 +81,8 @@ foi: *"aos sábados é horas extra total"*.
     465 cx de jornada).
   - HISTÓRICO: a EFICIÊNCIA MÉDIA e os DIAS COM META deixam de contar o
     sábado.
-  - Paradas num sábado são valoradas pela meta padrão (a regra de sempre do
-    RP_PARADAS para dia sem meta).
+  - CAIXAS × PONTOS × UEP e 📏 RÉGUAS: o sábado sai dos dias comparados (só
+    entram dias com meta), e a oscilação muda junto.
 - **Revoga a `.gs` v5.60 / v7.222.0**, que dava ao sábado uma meta pelas
   horas de jornada trabalhadas. Feriado trabalhado **não** entra nesta regra:
   só sábado e domingo.

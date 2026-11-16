@@ -3819,10 +3819,22 @@ feito e dá ar de verdade ao que sobrou.
 - **O que NÃO mudou:** PRODUÇÃO REAL, META DO DIA, CAIXAS EM HORA EXTRA,
   EFICIÊNCIA do card, RITMO ATUAL, PROJEÇÃO e RITMO NECESSÁRIO. As caixas da HE
   contam para a meta do dia como sempre contaram.
-- ⚠ **A TV OPERACIONAL ficou fora, de propósito** (decisão do usuário,
-  01/09/2026): lá a meta da hora é o **ritmo que o operador acompanha** durante a
-  hora extra, não um veredito de gestão. Se um dia isso mudar, é a tabela
-  `tv-tbl-body` e a Tela A (`tva-pct`/`tva-status`) que precisam da regra.
+- ~~**A TV OPERACIONAL ficou fora, de propósito** (decisão do usuário,
+  01/09/2026)~~ — **revogado na v7.247.0** (PPCP, 16/11/2026: *"no meio da semana
+  meta 0 em horas extra"*): a hora extra não tem meta em DIA NENHUM, também na
+  TV. Tabela `tv-tbl-body`: HE com meta '—', status *HE*, linha `r-he` (âmbar),
+  sem atraso; Tela A (`tva-meta`/`tva-pct`/`tva-status`): *HORA EXTRA · SEM META*,
+  `tva-band he`. Celular: a lista do operador diz *HORA EXTRA · SEM META*, sem cor
+  de veredito, e o lançamento abre sem meta. A META da linha HE do modal ⚙ HORA
+  EXTRA não soma mais na meta do dia (`meta=metaBase`; o `.gs` nunca somou), e o
+  `metaH`/`metaReal` dos dois `calcKPIs` são só da jornada.
+  - ⚠ **A PLANILHA ainda dá meta à madrugada**: a coluna META da HORA_A_HORA
+    (B5) reparte a meta do dia pelas horas a partir do C3 — com C3=5 as horas
+    de 05:00 e 06:00 recebem meta e as de jornada ficam com o dia ÷ 11. O
+    painel ignora a meta da HE, mas a da jornada continua diluída nesses dias.
+    ⚠ **Não zerar a meta da madrugada na planilha sem mexer no `.gs`**: o
+    `getDados` pula slot com meta 0 (`if (metaVal === 0) continue;`) e o painel
+    filtra `metaHora>0` — a madrugada sumiria das telas. Pendente de decisão.
 - ⚠ **A hora de HE só aparece no celular se tiver meta na planilha**: o mobile
   monta o `DADOS` com `slots.filter(s=>s.metaHora>0)`. Linha de HE com a meta
   **vazia** some da tabela do celular *e das caixas dele* — o desktop mostraria
@@ -4075,6 +4087,18 @@ feito e dá ar de verdade ao que sobrou.
     ⚠ A TABELA hora a hora da TV continua julgando a hora pela meta da hora (o
     ritmo do operador — a regra da HE na TV desde 01/09/2026). O `k.meta`/
     `CFG.metaDia` do sábado não foi zerado: é o programado, mostrado como fato.
+- **Da revisão (mesma versão)**: o resumo do WhatsApp diz *"todo hora extra,
+  sem meta · X UEP em hora extra"* (era *"(0,0%) · 0 UEP"*); o celular tira o
+  NEC. P/ META no fim de semana e a análise em caixas do PC diz *sem meta*; a
+  Tela B não mostra META DO DIA; o *programado* do fim de semana é o
+  `programadoHoje` (`_progHojeCx` — sem o atraso que o SOMAR ATRASO põe na META
+  DO DIA); a cascata do 🖨 do dia não sai no fim de semana; a eficiência do
+  período no celular voltou a total ÷ meta (a régua do `_relMetaHE.efTotal`); o
+  *cx/dia* da Tela D divide pelos dias com meta; a diretoria diz *TODO HORA
+  EXTRA · SEM META* (sem barra); as paradas do fim de semana são valoradas pela
+  **mediana das metas dos dias úteis** do histórico (`metaDiasParadas`,
+  rp-core) — antes caíam na meta do dia em que se abria a tela; e rede para o
+  rp-core antigo em cache (`histDiaFds`/`uepDiaHe` no guarda do núcleo).
 - **Testes**: a data de "hoje" ficou FIXA nos testes que dependem dela
   (`hora-extra.test.js`: `HOJE_TESTE`; `relatorios.test.js`: a aba UEP, a
   diretoria e o gerencial). Conferido rodando a suíte inteira com o relógio

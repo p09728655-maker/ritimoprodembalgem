@@ -217,6 +217,13 @@ ok('dia sem separação de HE não inventa número',
    /sex 14\/08 — 1\.598 cx \(79,9%\)\n/.test(zap), true);
 ok('e o buraco da jornada normal vai escrito',
    /Sem a hora extra teriam faltado 64 cx\./.test(zap), true);
+// v7.247.0 (revisão): o sábado (todo hora extra, sem meta — como o histDiaFds o
+// entrega) sai "todo hora extra" com a UEP do dia inteira, nunca "(0,0%) · 0 UEP"
+{ const zS = _zapResumoSemana(dias.concat([histDiaFds({ data:'15/08/2026', real:690, meta:524, ef:131.7, ok:true, melhor:135, pior:92,
+    heCx:225, heCount:6, fechado:true, uep:894, uepHe:546, metaUep:1257 })]), 'x', 33);
+  ok('zap: o sábado é "todo hora extra, sem meta · 1.440 UEP em hora extra", e "dias na meta" diz quantos dias de fim de semana ficaram fora',
+     [/sáb 15\/08 — 690 cx · todo hora extra, sem meta · 1\.440 UEP em hora extra\n/.test(zS), /0,0%|· 0 UEP/.test(zS),
+      /Dias na meta: \d+ de 5 \(1 dia de fim de semana, todo hora extra\)/.test(zS)], [true, false, true]); }
 const zapForte=_zapResumoSemana(dias.map(d=>({...d,real:d.real+400,heCx:0,ef:d.ef})), 'x', 33);
 ok('semana que bateu sem HE diz isso', zapForte.includes('*Meta batida na jornada normal.*'), true);
 // Semana em aberto não recebe veredito, pelo mesmo motivo do selo do PDF: o
@@ -2850,6 +2857,25 @@ ok('TV: e ele sai em tinta, sem cor de status',
    /ee\.className='tv-ef-val';/.test(_v7), true);
 ok('TV: quem julga é o selo, e ele fala de ritmo',
    /be\.textContent='● '\+\(fds\?'TODO HORA EXTRA':slRitmo\(k\.efRitmo\)\)/.test(_v7), true);
+// v7.247.0 (PPCP, 16/11/2026: "no meio da semana meta 0 em horas extra"): a hora
+// extra não tem meta em DIA NENHUM — revoga a regra de 01/09/2026 da TV (a meta da
+// hora também na HE, como ritmo do operador)
+{ const _mob = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
+  ok('hora extra sem meta em qualquer dia: TV (tabela e card da hora), celular (lista do operador e lançamento) e a meta do modal ⚙ HORA EXTRA fora da meta do dia',
+     [/const rc=prod===null\?'r-pend':isHE\?'r-he':/.test(_v7), /\$\{isHE\?'—':fmtN\(metaSlot\)\}\$\{!isHE&&atrasoHora>0\?/.test(_v7),
+      /if\(isHE\)\{\s*setTxt\('tva-pct','—'\); setTxt\('tva-status','HORA EXTRA · SEM META'\);/.test(_v7),
+      /const meta=metaBase;/.test(_v7), /const metaReal=dhJ\.reduce/.test(_v7),
+      /\$\{slot\.he\?'HORA EXTRA · SEM META':`META:/.test(_mob), /Number\(meta\)>0 \? `META: \$\{fmtN\(meta\)\} CX\/HORA` : 'HORA EXTRA · SEM META'/.test(_mob),
+      /const efSlot = temValor && !slot\.he \?/.test(_mob), /const metaReal = dhJ\.reduce/.test(_mob)],
+     [true, true, true, true, true, true, true, true, true]);
+  ok('fim de semana (revisão): o celular sem NEC. P/ META; a Tela B sem META DO DIA; a cascata do 🖨 do dia não sai; a Tela D divide o que faltou pelos dias com meta',
+     [/const necKpi = fds \? null :/.test(_mob), /\.\.\.\(necKpi \? \[necKpi\] : \[\]\)/.test(_mob),
+      /md\.textContent=fds\?'—':fmtN\(k\.meta\)/.test(_v7), /if\(CFG\.sheetsUrl && _rpOk\(\) && !uepFimDeSemana\(hojeStr\(\)\)\)\{/.test(_v7),
+      /const nJorn = d\.dias\.filter\(_diaComMeta\)\.length;/.test(_v7)],
+     [true, true, true, true, true]);
+  ok('rp-core antigo em cache: o painel e o celular ganham a rede de histDiaFds e uepDiaHe (o histórico não cai)',
+     [_v7, _mob].map(t => /if \(typeof window\.histDiaFds !== 'function'\) window\.histDiaFds = function\(d\)\{ return d; \};/.test(t)), [true, true]);
+}
 // v7.247.0 (PPCP, 16/11/2026: "sábado todas horas são extras"): no fim de semana a
 // TV, o gerencial e o celular não julgam caixas contra meta nenhuma
 ok('sábado e domingo ao vivo: a TV não julga (âmbar, TODO HORA EXTRA, sem falta nem necessário); o PC e o celular sem selo nas caixas',
@@ -5646,6 +5672,11 @@ console.log('\n── estudo de UEP ──');
   ok('na diretoria ninguém clica: versão nova recarrega sozinha, e o anti-descanso de tela vale lá também',
      [/if\(document\.documentElement\.classList\.contains\('modo-dir'\)\)\{ location\.reload\(\); return; \}/.test(JS),
       /has\('tv'\) && !document\.documentElement\.classList\.contains\('modo-dir'\)\) return;/.test(JS)], [true, true]);
+  // v7.247.0 (revisão): no fim de semana a diretoria não espera jornada nenhuma
+  { const Hf = _dirHoje(Object.assign({}, D, { feito:0, he:1440, card:{ c:'acc', fds:true, ef:null, esperado:0 } }), { minNorm:0, realNormal:0, realHE:690 }, []);
+    ok('diretoria num sábado: "TODO HORA EXTRA · SEM META", nunca "AGUARDANDO A JORNADA", e sem a barra contra a meta',
+       [Hf.selo.t, Hf.iniciou, Hf.fds, /dir-barra/.test(_dirHojeHtml(Hf)), /todo hora extra, sem meta/.test(_dirHojeHtml(Hf))],
+       ['TODO HORA EXTRA · SEM META', false, true, false, true]); }
   global.hojeStr = _hojeReal;
 }
 
@@ -6028,7 +6059,7 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
    'function _gerHoraJulga(', 'function _gerHoraLinha(', 'function _gerAtrasoKpi(', 'function _gerUepCards(', 'function _gerCxCards(', 'function _metaPartes(',
    'function _metaPartesTxt(', 'function _gerAnaliseUep(', 'function _gerCxComHora(', 'function _gerKpiHtml(', 'function _gerUepModelo(',
    'function _uepCardLeitura(', 'function _tvUepMontar(', 'function _tvUepDoProduto(', 'function _gerHorasHist(', 'function _gerInfoImpressao(',
-   'function parseBR(', 'function _fdsNome(', 'function _gerAnaliseUepHtml(']
+   'function parseBR(', 'function _fdsNome(', 'function _progHojeCx(', 'function _gerAnaliseUepHtml(']
     .forEach(f => vm.runInContext(pega(f), C));
   // o "hoje" é FIXO (sexta 13/11/2026, o retrato): desde a v7.247.0 o sábado e o
   // domingo são todo hora extra, e o teste não pode mudar com o dia em que roda
@@ -6072,10 +6103,13 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
     ok('o dia passado de sábado na impressão: todo hora extra, sem a meta gravada pela v5.60',
        R('_gerInfoImpressao(null, null, _H, "agora")', { _H:{ data:'14/11/2026', dia:{ real:690, meta:524, uep:894, uepHe:546, metaUep:1257 } } }).split('\n')[0],
        'Dia 14/11/2026 (sábado) — todo hora extra, sem meta  |  UEP: 1.440');
+    // o programado do sábado é só o datado no dia (sem o atraso que o SOMAR ATRASO põe na META DO DIA)
+    R(`PONTOS_DIA = Object.assign({}, PONTOS_DIA, { programacao:{ lista:[], atrasoTotal:1200, programadoHoje:600, metaEfetiva:1800 } });`);
     const CS = R('_gerCxCards(_k, true)', { _k:K });
-    ok('sábado ao vivo: a linha das caixas sem cor nem selo, mesmo sem UEP; o programado como fato, "sem meta"',
-       [CS.map(c => c.c), CS[1].v, /sem meta — sábado é todo hora extra/.test(CS[1].sub), /RITMO|ABAIXO/.test(CS[1].sub)],
-       [['', '', '', '', ''], '1.800', true, false]);
+    ok('sábado ao vivo: a linha das caixas sem cor nem selo, mesmo sem UEP; o programado do dia (600, não os 1.800 com o atraso) como fato, "sem meta"',
+       [CS.map(c => c.c), CS[1].v, /^240,0% feito · sem meta — sábado é todo hora extra/.test(CS[1].sub), /RITMO|ABAIXO/.test(CS[1].sub)],
+       [['', '', '', '', ''], '600', true, false]);
+    R(`PONTOS_DIA = _pd;`, { _pd:PD });
     R(`_HOJE_TESTE = '13/11/2026';`); }
   ok('a meta é a da CONFIG_PAINEL (2.761), não o padrão do código — o esperado muda com ela',
      Math.round(R('PONTOS_DIA = Object.assign({}, _pd, { metaUep:2530 }); _gerUepModelo(_k, 982).card.esperado', { _pd:PD, _k:K })), 2247);
