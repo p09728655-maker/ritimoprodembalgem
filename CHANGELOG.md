@@ -11,6 +11,23 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.248.1 · mobile 1.51.1 — 16/11/2026 · WhatsApp sai; correções da 4ª revisão
+
+- **O resumo do WhatsApp saiu** (PPCP: *"watsap esqueça, pode tirar"*): os botões
+  📲 WHATSAPP do bloco da semana e 📲 RESUMO NO WHATSAPP da aba HISTÓRICO. A
+  divulgação da semana é o 🖨 IMPRIMIR SEMANA.
+- **Semana só de fim de semana:** o relatório semanal mostra EFICIÊNCIA e SEM
+  HORA EXTRA como *—*, e TOTAL META como *sem meta na semana*.
+- **Dia útil sem meta gravada** não é mais chamado de "fim de semana" (semanal,
+  🖨 do histórico, aba HISTÓRICO).
+- **Celular:** a Média / dia do histórico usa a base dos dias com meta, igual ao PC.
+- **Aba HISTÓRICO:** o sábado mostra *—* em MELHOR H./PIOR H.
+- **Cascata do período:** depois da meia-noite ou no DEMO, o dia de hoje não some
+  quando o ao vivo está vazio.
+- **Atenção — números que mudam:**
+  - Celular, Média / dia (5 dias de 1.400 cx + sábado de 690): **1.282 → 1.400**.
+  - Semanal só de fim de semana: EFICIÊNCIA *0,0% · ABAIXO* → **—**.
+
 ## v7.248.0 · mobile 1.51.0 · rp-core 1.19.0 · `.gs` v5.68 — 16/11/2026 · sábado e domingo são hora extra o dia inteiro
 
 O PPCP olhou o PERÍODO da aba ⚖ UEP: o sábado 14/11 aparecia em vermelho

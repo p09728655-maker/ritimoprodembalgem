@@ -1131,7 +1131,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.51.0';
+const APP_VER   = '1.51.1';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -4324,11 +4324,16 @@ function _renderHistoricoComDados(dias){
   const comMeta=lista.filter(d=>(parseFloat(d.meta)||0)>0);
   const totRealM=comMeta.reduce((s,d)=>s+(parseFloat(d.real)||0),0);
   const efMed=totMeta>0?(totRealM/totMeta)*100:0;
-  const mediaDia=lista.length?Math.round(totReal/lista.length):0;
+  // Média / dia na base dos dias COM META (sem nenhum, todos) — a do relatório
+  // semanal e do 🖨 do histórico do PC: o fim de semana (todo hora extra) só no
+  // total. Era Σ ÷ todos os dias: 1.282 aqui × 1.400 no PC na mesma semana.
+  const baseMed=comMeta.length?comMeta:lista;
+  const mediaDia=baseMed.length?Math.round(baseMed.reduce((s,d)=>s+(parseFloat(d.real)||0),0)/baseMed.length):0;
+  const medLbl=comMeta.length&&comMeta.length<lista.length?'Média / dia com meta':'Média / dia';
   if(elRes){
     elRes.innerHTML=`
       <div class="hist-rz"><div class="hist-rz-lbl">Produzido (${lista.length}d)</div><div class="hist-rz-val">${fmtN(totReal)}</div></div>
-      <div class="hist-rz"><div class="hist-rz-lbl">Média / dia</div><div class="hist-rz-val">${fmtN(mediaDia)}</div></div>
+      <div class="hist-rz"><div class="hist-rz-lbl">${medLbl}</div><div class="hist-rz-val">${fmtN(mediaDia)}</div></div>
       <div class="hist-rz"><div class="hist-rz-lbl">Meta período</div><div class="hist-rz-val">${fmtN(totMeta)}</div></div>
       <div class="hist-rz"><div class="hist-rz-lbl">Eficiência média</div><div class="hist-rz-val ${totMeta>0?sc(efMed):''}">${totMeta>0?fmtP(efMed):'—'}</div></div>
       <div class="hist-rz" id="hist-rz-perd" style="grid-column:1/-1"><div class="hist-rz-lbl">Caixas perdidas em paradas</div><div class="hist-rz-val" id="hist-rz-perd-val" style="font-size:15px;color:var(--txt2)">calculando…</div></div>`;

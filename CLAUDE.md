@@ -845,13 +845,13 @@ via Google Apps Script (JSONP).
   `SEMANA N` **sem** o `· ` — o ponto separador da TV mora na marcação dela.
 - **Divulgar a semana sai do próprio bloco** (pedido do usuário, 31/08/2026:
   *"preciso da impressão do resultado da semana para enviar para o pessoal"*).
-  O `#ger-semana` ganhou **🖨 IMPRIMIR SEMANA** e **📲 WHATSAPP**, e os dois
-  mandam a semana **que está na tela** (`RP_SEMANA.semana()` devolve
+  O `#ger-semana` ganhou **🖨 IMPRIMIR SEMANA** (e o 📲 WHATSAPP, que saiu na
+  v7.248.1 — ver abaixo), que manda a semana **que está na tela** (`RP_SEMANA.semana()` devolve
   `{semStr, numSem, ate}`), como o `gerarRelatorioParadas(de, ate)` já faz com o
   período. Antes o relatório só existia na aba HISTÓRICO e saía pela data do
   filtro **de lá** — o mesmo defeito que fazia a tela dizer 27h16m e o papel 42
-  min. `imprimirSemanaGer`/`zapSemanaGer` são adaptadores de duas linhas; o
-  relatório, o resumo e as contas continuam sendo os mesmos.
+  min. `imprimirSemanaGer` é um adaptador de duas linhas; o relatório e as
+  contas continuam sendo os mesmos.
 - **`_relSemanaParaDivulgar(todos, ate, fixa)` é a regra ÚNICA de qual semana se
   divulga**: a semana pedida e, quando ela ainda não tem dia fechado, a **semana
   passada**. Numa **segunda-feira** — o dia em que o resultado é divulgado — a
@@ -862,7 +862,11 @@ via Google Apps Script (JSONP).
   outra semana de volta.
 - Pedir relatório de semana sem dado **fecha** a janela do *"Carregando
   relatório…"*: deixá-la em branco fazia parecer pop-up travado.
-- **O resumo do WhatsApp NÃO leva emoji** (31/08/2026). A mensagem chegou ao
+- ⚠ **O RESUMO DO WHATSAPP SAIU na v7.248.1** (PPCP, 16/11/2026: *"watsap
+  esqueça, pode tirar"*): os dois botões (bloco da semana e aba HISTÓRICO), o
+  `_zapResumoSemana`, o `enviarResumoZap` e o `zapSemanaGer`. A divulgação da
+  semana é o 🖨 IMPRIMIR SEMANA. O `relatorios.test.js` falha se voltar. O que
+  segue é registro: ~~**O resumo do WhatsApp NÃO leva emoji** (31/08/2026). A mensagem chegou ao
   celular com **todos** os marcadores virados losango — 📦 do título, ⚠️ do
   veredito, ▪ das linhas e 🏆 do melhor dia, todos como `◆` — enquanto `·`, `—`
   e o `*negrito*` do WhatsApp chegaram intactos na MESMA mensagem: emoji depende
@@ -871,12 +875,12 @@ via Google Apps Script (JSONP).
   troféu. `relatorios.test.js` falha se um caractere acima de `U+2500` voltar ao
   resumo. **A hora extra aparece em três alturas de propósito** — veredito,
   bloco da divisão e **cada dia que teve** (*"· 286 em hora extra"*): quem lê só
-  o dia a dia não pode achar que as caixas saíram todas dentro do turno.
+  o dia a dia não pode achar que as caixas saíram todas dentro do turno.~~
 - **PUBLICAR NO MURAL foi removido** (31/08/2026): o mural do Radar não existe
   mais. Saíram o botão, o campo *MURAL — RADAR DIÁRIO* das configurações, a
   chave `CFG.muralUrl` e o `_muralResumoSemana` — o `relatorios.test.js` falha
-  se a palavra voltar ao painel. A divulgação da semana é o PDF e o resumo do
-  WhatsApp.
+  se a palavra voltar ao painel. A divulgação da semana é o PDF (o resumo do
+  WhatsApp saiu na v7.248.1).
 
 ## TELA E da TV — programação do dia
 - Pedido do usuário (24/09/2026): *"me propõe uma tela para tv com a
@@ -4291,6 +4295,28 @@ feito e dá ar de verdade ao que sobrou.
     leitura falhada), a mediana dos úteis não existe e a parada de hoje é
     valorada pela meta da HORA_A_HORA; muda quando o histórico chega.
   - 8 de 8 mutações pegas; suíte inteira com o relógio em 14/11, 15/11 e 17/11.
+- **Da 4ª revisão (v7.248.1 / mobile 1.51.1, depois do merge da #531)**:
+  - **Semana só de fim de semana** (férias coletivas, filtro do histórico): o
+    semanal mostra EFICIÊNCIA e SEM HORA EXTRA *—*, sem cor, e TOTAL META *sem
+    meta na semana* (era *0,0% · ABAIXO* em vermelho — o `_relMetaHE` devolve 0
+    com meta 0). O 🖨 do histórico, sem dia com meta, sem borda vermelha.
+  - **O rótulo sai do DIA, não da conta** (`_relSemMeta`/`_relSemMetaTxt`/
+    `_relSemMetaFora`): *N dia(s) de fim de semana, todo hora extra* só para
+    sábado e domingo; o dia útil sem meta gravada é *dia útil sem meta gravada*,
+    e a média diz *sem os dias sem meta*. Era tudo "fim de semana" (`dias −
+    dias com meta`). Vale no semanal, no 🖨 do histórico e na aba HISTÓRICO.
+  - **Celular, Média / dia** do histórico na base dos dias com meta (*Média /
+    dia com meta* quando há dia sem meta): era Σ ÷ todos os dias, 1.282 contra
+    1.400 do PC na mesma semana.
+  - `_phTotaisPeriodo`: só tira o hoje do histórico quando o ao vivo TEM o dia
+    (`kH.real > 0`) e compara pela data (`getTime`). Entre o `resetDiario`
+    (~23:44–00:00) e a meia-noite, ou no DEMO, o histórico é quem cobre hoje.
+  - Aba HISTÓRICO: o sábado sai *—* em MELHOR H./PIOR H. (o `histDiaFds` zera os
+    dois e saíam *0* verde e vermelho). Legenda do gráfico: *Média X cx/dia com
+    meta* quando há dia sem meta.
+  - ⚠ Ficou como está: o `histDiaFds` não sabe as horas de um sábado gravado
+    pelo `.gs` antes da v5.68 (o HE da linha é o da madrugada) — o semanal diz
+    *(2h)* num sábado todo em hora extra até a linha ser regravada.
 - **Linhas de 07/11 e 14/11 do HISTORICO corrigidas pela API em 16/11/2026**
   (PPCP: *"CORRIGIR"*), como o `.gs` v5.68 grava. Conferido antes na
   HISTORICO_HORA: 07/11 = 465 cx de 07–11 h + 225 de madrugada = 690; 14/11 =
