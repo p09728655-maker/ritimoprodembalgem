@@ -199,6 +199,10 @@ via Google Apps Script (JSONP).
 - F e G: escala medida (`_tvUepCabe`, `--tvu-k`) e o gráfico da G no tamanho
   da caixa (`_tvGSvg(m, selo, dim)`); os dois números do agora sempre. Mexeu
   em texto ou tamanho: medir na TV e no gerencial, ALTURA e largura.
+- G com UM veredito (v7.256.0): nenhum cartão diz se a meta sai — o "A META
+  NÃO SAI" tinha tolerância zero e brigava com o NO RITMO; a hora da meta mora
+  só no gráfico. Minutos com o sentido por extenso (`2 min ATRÁS`), a falta em
+  caixas.
 - Tela cheia de PARADA: poll de 15 s só na TV (`_paradaNaTV`); a parada sem FIM
   é a aberta; o START é no celular. PAROU AGORA, motivo depois: TIPO
   `A INFORMAR`.

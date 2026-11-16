@@ -174,8 +174,9 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     CAIXA HOJE contra o normal, hora a hora em UEP com a meta da hora.
   - **G = CORRIDA DO DIA**: UEP acumulada × esperado (SVG), **minutos** à
     frente/atrás, FALTA PARA A META em UEP **e em caixas do produto de agora**,
-    e A META SAI ÀS (mantendo 288 UEP/h). Fala em tempo e caixas — é a que se
-    lê sem entender UEP.
+    e ~~A META SAI ÀS (mantendo 288 UEP/h)~~ (o cartão saiu na v7.256.0 — ver
+    *UM VEREDITO SÓ NA G*, abaixo). Fala em tempo e caixas — é a que se lê sem
+    entender UEP.
 - **Conta nenhuma nova**: `_tvUepModelo` lê o `_uepAbaDados` (4º leitor — o
   teste conta) e o `_tvUepMontar` só arruma para a TV (curva, minutos,
   caixas). Desenho em `_tvFHtml` / `_tvGHtml` / `_tvGSvg`, sem conta (o teste
@@ -322,6 +323,43 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     OPERADOR, que já abre nele) devolve ao gráfico a caixa de 842 px.
   - Nada de conta mudou: `_tvUepMontar`, cartões, números e veredito são os
     mesmos.
+- **UM VEREDITO SÓ NA G (v7.256.0, PPCP 16/11/2026, com o print das 15:58:
+  *"essa tela na tv ainda está ruim de ver"* e *"está confuso a meta não sai e
+  está no ritmo?"*).** O print: 2.429 feitas × 2.441 esperadas (−12 UEP,
+  99,5%), selo NO RITMO e, no 3º cartão, *"A META NÃO SAI ATÉ 16:59 — 327
+  UEP/h"*.
+  - **Causa**: o 3º cartão andava no ritmo da meta a partir do FEITO. Como o
+    esperado também anda no ritmo da meta, ele só chegava na meta com feito ≥
+    esperado: **1 UEP atrás e já dizia NÃO SAI — o dia inteiro** (às 09:20, com
+    96,8%, também). Era um 2º juiz, com tolerância zero, ao lado do selo, que
+    tem 4% (`sc`: ≥ 96 = NO RITMO). Pedir 327/h contra 314/h é 4% a mais na
+    última hora, não "não sai".
+  - **Saiu o 3º cartão** (A META SAI ÀS / NÃO SAI ATÉ / JORNADA ENCERRADA). O
+    horário em que a meta sai continua **no gráfico**, no ponto em que o
+    pontilhado cruza a META (só aparece quando cruza). JORNADA NORMAL ENCERRADA
+    virou o 2º cartão. O `precisaH` saiu do modelo (sem leitor).
+  - **O sentido por extenso**: `2 min ATRÁS` / `54 min À FRENTE` (número e
+    palavra em itens de flex — no texto corrido o "À" ficava numa linha e o
+    "FRENTE" na outra). O `−2 min` ao lado do NO RITMO se lia como contradição.
+    Saiu a linha *"2.429 feitas · 2.441 esperadas"*: os dois números estão no
+    gráfico, na letra maior da tela.
+  - **A falta em CAIXAS no número grande** (*156 caixas*), com o produto e a
+    UEP no apoio (*de PENTEADEIRA PRINCESA · 332 UEP*). Sem UEP no cadastro
+    para o produto de agora, o número grande volta a ser a UEP.
+  - A legenda do pontilhado diz **RITMO DA META · 314/h** (era *ATÉ A META, A
+    314/h*: com a linha atrás do esperado ele não chega na meta).
+  - Com dois cartões, a escala `--tvu-k` não precisa encolher: medido no
+    Chromium (15:58, 09:20, 15:02 à frente, 16:34 abaixo), TV 1920×1080 e
+    1366×768 e a janela de 1920×975 e 1366×560 — **1,00 em todas** (antes 0,85
+    na TV e 0,75 na janela pequena), nada corta.
+  - O teste (`tela-uep.test.js`) prende: o print das 15:58 (NO RITMO, 156
+    caixas, `2 min ATRÁS`), nenhum cartão com SAI ÀS / NÃO SAI / NÃO CABE nem
+    um 3º cartão (15:58, 09:20, à frente, fim da tarde, jornada encerrada, meta
+    batida) e nenhum sinal na frente do número. Com o código velho, 4 falhas.
+  - ⚠ O gerencial (PC e celular) ainda tem, no apoio do card PARA A META, o
+    *"não cabe até 17:00 no ritmo da meta"* — o mesmo critério de tolerância
+    zero, em letra pequena e com o "no ritmo da meta" escrito. Não mexido nesta
+    versão.
 - Mexeu em texto ou tamanho? Renderizar de novo na TV e no gerencial, nas
   duas resoluções, medindo ALTURA e largura.
 

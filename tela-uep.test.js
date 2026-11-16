@@ -105,10 +105,9 @@ ok('nenhuma hora de jornada lançada → null (05:00 de HE, turno nem começou)'
 console.log('\n── os outros desfechos da corrida ──');
 const tarde = montarD(990, { '07:00': 100, '08:00': 100 }, { '07:00': 60, '08:00': 60 });
 const Mt = _tvUepMontar(tarde, { agoraMin: 990, prod: PROD, cat: CAT });
-ok('não chega na jornada: sem hora, com o ritmo que faltaria', [Mt.chega, Math.round(Mt.precisaH), Mt.minRest],
-   [null, Math.round((2530 - 200) / 29 * 60), 29]);
+ok('não chega na jornada no ritmo da meta: sem hora (o gráfico não marca horário)', [Mt.chega, Mt.minRest], [null, 29]);
 const fimDia = _tvUepMontar(montarD(1030, { '07:00': 100 }, { '07:00': 60 }), { agoraMin: 1030 });
-ok('jornada encerrada: nada resta, nada a projetar', [fimDia.minRest, fimDia.chega, fimDia.precisaH, fimDia.agora], [0, null, null, 1019]);
+ok('jornada encerrada: nada resta, nada a projetar', [fimDia.minRest, fimDia.chega, fimDia.agora], [0, null, 1019]);
 const batida = _tvUepMontar(montarD(960, Object.assign({}, UEP_H, { '15:00': 400 }), Object.assign({}, CX_H, { '15:00': 300 })), { agoraMin: 960 });
 ok('meta batida: falta 0 e nenhuma projeção', [batida.falta, batida.proj, batida.faltaCx], [0, null, null]);
 
@@ -195,9 +194,30 @@ ok('Tela F traz o produto, a UEP da caixa e o peso contra o normal',
    [F0.includes('>BANQUETA VERSATIL<'), F0.includes('RODANDO AGORA · BRANCO'), F0.includes('<b>1,04</b> UEP'), F0.includes('o normal é 1,85 · hoje mais leves')],
    [true, true, true, true]);
 ok('Tela F: hora em andamento diz "até HH:MM", a futura sai "—"', [F0.includes('até 15:02'), /tvf-col fut">[\s\S]*?class="tvf-val"[^>]*>—</.test(F0)], [true, true]);
-ok('Tela G fala em tempo e em caixas', [G0.includes('+1h05'), G0.includes('250 caixas</b> deste produto') && G0.includes('1,04 UEP/cx · BANQUETA VERSATIL'), G0.includes('<b>15:56</b>'),
-    G0.includes('>A META SAI ÀS<') && G0.includes('mantendo 288 UEP por hora')],
+ok('Tela G fala em tempo e em caixas: o sentido por extenso, a falta em caixas do produto de agora, a hora da meta no gráfico',
+   [G0.includes('<span>1h05</span><span class="tvg-dir">À FRENTE</span>'), G0.includes('<b>250</b> caixas') && G0.includes('de BANQUETA VERSATIL · 259 UEP'),
+    G0.includes('class="tvg-t0">15:56</text>'), G0.includes('RITMO DA META · 288/h')],
    [true, true, true, true]);
+// O print de 16/11/2026 15:58: 2.429 feitas × 2.441 esperadas (−12 UEP, 99,5%)
+// e a tela dizia NO RITMO e "A META NÃO SAI ATÉ 16:59" — o 3º cartão andava no
+// ritmo da meta a partir do feito e, com 1 UEP atrás, dizia NÃO SAI o dia
+// inteiro (às 09:20, com 96,8%, também). Um veredito só: o do selo.
+{
+  const D1558 = montarD(958, { '07:00': 330, '08:00': 320, '09:00': 300, '10:00': 300, '12:12': 230, '13:00': 320, '14:00': 320, '15:00': 309 },
+                        { '07:00': 160, '08:00': 150, '09:00': 140, '10:00': 140, '12:12': 110, '13:00': 150, '14:00': 150, '15:00': 145 });
+  D1558.card = uepCard({ normal: D1558.feito, he: 0, cxCom: 1, cxSem: 0, codigos: 429 }, 2761, D1558.k.minNorm); D1558.meta = 2761;
+  const PEN = { cod: '502100001', desc: 'VOL 1/1 PENTEADEIRA PRINCESA', cor: 'BRANCO' }, CATP = [{ codigo: '502.100.001', uep: 2.14 }];
+  const M1558 = _tvUepMontar(D1558, { agoraMin: 958, prod: PEN, cat: CATP });
+  const M0920 = _tvUepMontar(montarD(560, { '07:00': 300, '08:00': 290, '09:00': 120 }, { '07:00': 150, '08:00': 145, '09:00': 60 }), { agoraMin: 560, prod: PEN, cat: CATP });
+  const G1558 = _tvGHtml(M1558, true);
+  ok('o print das 15:58: −12 UEP, NO RITMO, 156 caixas de PENTEADEIRA',
+     [Math.round(M1558.difUep), slRitmo(M1558.ef), M1558.chega, G1558.includes('>NO RITMO<'), G1558.includes('<b>156</b> caixas'),
+      G1558.includes('<span>2 min</span><span class="tvg-dir">ATRÁS</span>')], [-12, 'NO RITMO', null, true, true, true]);
+  ok('um veredito só: nenhum cartão diz se a meta sai (15:58, 09:20, 15:02 à frente, fim da tarde, jornada encerrada, meta batida)',
+     [M1558, M0920, M, Mt, fimDia, batida].map(mm => [false, true].map(s => /SAI ÀS|NÃO SAI|NÃO CABE|tvu-card[^]*tvu-card[^]*tvu-card/i.test(_tvGHtml(mm, s)))).flat()
+       .filter(Boolean).length, 0);
+  ok('o sentido vai por extenso, nunca por sinal ("−2 min" ao lado do NO RITMO)', /[−+]\d/.test(G1558.replace(/<svg[\s\S]*<\/svg>/, '')), false);
+}
 ok('o rodapé diz o que é 1 UEP', F0.includes('1 UEP = 1 caixa de MESA CABECEIRA MADERO'), true);
 ok('desenho sem conta: nenhuma régua de UEP dentro dos três',
    ['function _tvFHtml(', 'function _tvGHtml(', 'function _tvGSvg(', 'function _tvGDesenho('].map(f => /uepCard\(|efNoRitmo\(|_uepAbaDados\(|_uepAbaHoras\(|minSlotDecorrido\(/.test(pegaJs(f))),
