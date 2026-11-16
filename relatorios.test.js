@@ -2905,7 +2905,7 @@ ok('TV: a Tela B espelha a linha de apoio',
 // e só julga quando não há UEP nenhuma (backend ou cadastro).
 ok('gerencial: o % do dia em caixas é fato, sem selo — o selo é o da UEP',
    [/\$\{fmtP\(k\.efDia\)\} feito · `\+_metaPartesTxt\(p, k\.gap, false\)/.test(_v7),
-    /l:'CAIXAS PROGRAMADAS', v:fmtN\(k\.meta\), c:semUep&&k\.metaAteAgora>0\?sc\(k\.efRitmo\):''/.test(_v7),
+    /l:'CAIXAS PROGRAMADAS', v:fmtN\(k\.meta\), c:semUep&&!velho&&k\.metaAteAgora>0\?sc\(k\.efRitmo\):''/.test(_v7),
     /`<b>\$\{slRitmo\(c\.ef\)\}<\/b> · /.test(_v7), /v:fmtP\(k\.efDia\),\s*sub:slRitmo\(k\.efRitmo\)/.test(_v7)], [true, true, true, false]);
 // celular 1.50.0: a mesma regra do PC — o % do dia em caixas é fato no card CAIXAS
 // PROGRAMADAS, que só julga sem a UEP do dia; o card % DA META DO DIA saiu.
@@ -5961,7 +5961,7 @@ console.log('\n── estudo de UEP ──');
   ok('os cards das caixas programadas (hoje e dia passado, com e sem UEP) passam pelo _metaPartesTxt',
      // v7.248.0: no dia passado, o fim de semana diz "sem meta" no lugar
      [(JS.match(/l:'META DO DIA',\s*v:(meta>0\|\|!fdsDia\?)?fmtN\((k\.)?meta\)(:'—')?,\s*sub:(fdsDia\?semMetaTxt:)?_metaPartesTxt\(/g) || []).length,
-      /l:'CAIXAS PROGRAMADAS', v:fmtN\(k\.meta\)[\s\S]{0,200}_metaPartesTxt\(p, k\.gap, false\)/.test(pega('function _gerCxCards(')),
+      /l:'CAIXAS PROGRAMADAS', v:fmtN\(k\.meta\)[\s\S]{0,320}_metaPartesTxt\(p, k\.gap, false\)/.test(pega('function _gerCxCards(')),
       /l:'CAIXAS PROGRAMADAS', v:fmtN\(meta\), c:'', sub:`\$\{fmtP\(ef\)\} feito · `\+_metaPartesTxt\(/.test(pega('function renderGerencialHist('))], [1, true, true]);
   ok('o card de hoje lê a META DIA da aba pelo _metaDiaAba (a linha rotulada HE fora, como no .gs)',
      [/_metaPartes\(k\.meta, _metaDiaAba\(\)\)/.test(JS), /\^HE\\b\|\^HE\\d/.test(pega('function _metaDiaAba('))], [true, true]);
@@ -6131,6 +6131,72 @@ console.log('\n── FECHAR DIA: o Excel que falha não impede a gravação no 
   vm.runInContext(`enviou=[]; avisos=[]; exportarExcelDia=function(){};`, C);
   vm.runInContext('fecharDia()', C);
   ok('com a XLSX: grava no Sheets e não avisa nada', [vm.runInContext('enviou', C), vm.runInContext('avisos', C)], [['16/11/2026'], []]);
+}
+
+// ── v7.248.3: o PC atualiza pela HORA MARCADA, e dado velho não dá veredito.
+// Caso real, 16/11/2026: o gerencial do PC atrás da janela da diretoria ficou das
+// 13:24 às 13:36 sem ler (1.445 UEP × 1.639 na diretoria — a hora das 13:00).
+// O contador descia por tique de 1 s; escondida, a janela recebe ~1 tique por
+// minuto e os 5 min viravam horas.
+console.log('\n── PC: a atualização pela hora marcada e o dado velho sem veredito ──');
+{
+  const vm = require('vm');
+  let T = 0;
+  class D extends Date { static now(){ return T; } }
+  const linha = re => { const m = JS.match(re); if(!m) throw new Error('sumiu: ' + re); return m[0]; };
+  const C = vm.createContext({ console, Math, String, Date: D });
+  vm.runInContext(`var window = { _intervaloMin:5 }, _proxCiclo = 0, ciclos = 0, pintou = 0, countdownTimer = 1;
+    var _txt = { textContent:'' }; var document = { getElementById: () => _txt };
+    function _cicloLeitura(){ ciclos++; } function _dadoVelhoPintar(){ pintou++; }`, C);
+  vm.runInContext(linha(/const _marcaProxCiclo = [^\n]+/), C);
+  vm.runInContext(pega('function _tickCountdown('), C);
+  vm.runInContext('_marcaProxCiclo(Date.now())', C);
+  // escondida: um tique por minuto durante 11 min
+  for (T = 60000; T <= 11 * 60000; T += 60000) vm.runInContext('_tickCountdown()', C);
+  ok('escondida (1 tique por minuto): 11 min dão 2 leituras, como na frente (por tique, seriam 0)', vm.runInContext('ciclos', C), 2);
+  T = 11 * 60000 + 1000; vm.runInContext('_tickCountdown()', C);
+  ok('o contador mostra o que FALTA pelo relógio', vm.runInContext('_txt.textContent', C), '3:59');
+  vm.runInContext('ciclos = 0; _marcaProxCiclo(Date.now())', C);
+  T += 12 * 60000; vm.runInContext('_tickCountdown()', C);
+  ok('sem tique nenhum por 12 min: a janela que volta lê na hora (uma vez)', vm.runInContext('ciclos', C), 1);
+  ok('a janela que volta confere a hora marcada (visibilitychange e focus)',
+     [/addEventListener\('visibilitychange', \(\)=>\{ if\(document\.visibilityState==='visible' && countdownTimer\) _tickCountdown\(\); \}\)/.test(JS),
+      /window\.addEventListener\('focus', \(\)=>\{ if\(countdownTimer\) _tickCountdown\(\); \}\)/.test(JS)], [true, true]);
+  ok('o contador por tique saiu', /countdownSec/.test(JS), false);
+
+  // o dado velho: mais de dois intervalos, nunca menos de 3 min
+  vm.runInContext(pega('function _dadoVelho('), C);
+  const V = (ts, ag, iv) => vm.runInContext(`_dadoVelho(${ts}, ${ag}, ${iv})`, C), T0 = 1000;
+  ok('dado velho: sem leitura não é velho; 9 min com intervalo de 5 não; 11 min sim; intervalo de 1 → 3 min',
+     [V(0, T0 + 60 * 60000, 5), V(T0, T0 + 9 * 60000, 5), V(T0, T0 + 11 * 60000, 5), V(T0, T0 + 2 * 60000, 1), V(T0, T0 + 4 * 60000, 1)],
+     [false, false, true, false, true]);
+
+  // os cards: o retrato da tela de 16/11 às 13:36 (dado das 13:24)
+  const K = vm.createContext({ console, Math, Number, String, Array, Object, JSON, isFinite, isNaN, Date, window: {} });
+  K.window = K;
+  vm.runInContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'), K);
+  vm.runInContext(`var CFG = { turnoFim:'17:00', metaComAtraso:true }, PONTOS_DIA = { pontos:75988, pesoKg:12850 };
+    function hojeStr(){ return '16/11/2026'; } function _gerAtrasoKpi(){ return null; } function _metaDiaAba(){ return 2000; }
+    function _progHojeCx(){ return 2000; } function _rpEsc(s){ return String(s); }`, K);
+  vm.runInContext(linha(/const _horaDe = [^\n]+/), K);
+  ['function _gerUepCards(', 'function _gerCxCards(', 'function _metaPartes(', 'function _metaPartesTxt(', 'function _gerMinTxt(', 'function _fdsNome(']
+    .forEach(f => vm.runInContext(pega(f), K));
+  K.G = { ok:true, card:{ c:'warn', ef:95.8, esperado:1509, sub:'', t:'' }, feito:1445, meta:2761, he:0, cxSem:0, m:null, proj:null, minRest:300 };
+  K.k = { minNorm:288, real:1087, meta:2410, efDia:45.1, gap:1323, metaAteAgora:1500, efRitmo:72, nHE:0, realNormal:1087, realHE:0, ritmo:217 };
+  K.velho = new Date(2026, 10, 16, 13, 24).getTime();
+  const u0 = vm.runInContext('_gerUepCards(G, k, 0)[0]', K), u1 = vm.runInContext('_gerUepCards(G, k, velho)[0]', K);
+  ok('UEP em dia: o selo de sempre (ATENÇÃO, 95,8%)', [u0.sub.startsWith('<b>ATENÇÃO</b>'), /warn/.test(u0.c)], [true, true]);
+  ok('UEP velha: o número fica, o selo sai — "DADOS DE 13:24", em âmbar de aviso',
+     [u1.v.startsWith('1.445'), u1.sub.startsWith('<b>DADOS DE 13:24</b>'), /NO RITMO|ATENÇÃO|ABAIXO/.test(u1.sub), /acc/.test(u1.c)], [true, true, false, true]);
+  const cx = (sem, v) => vm.runInContext(`_gerCxCards(k, ${sem}, ${v})`, K).find(c => c.l === 'CAIXAS PROGRAMADAS');
+  ok('UEP velha e caixas em dia: as caixas julgam (o selo passa para elas)', [cx(true, 0).c, cx(true, 0).sub.startsWith('<b>ABAIXO DO RITMO</b>')], ['red', true]);
+  ok('as duas velhas: ninguém julga — "DADOS DE 13:24", sem cor', [cx(true, 'velho').c, cx(true, 'velho').sub.startsWith('<b>DADOS DE 13:24</b>')], ['', true]);
+  ok('com a UEP em dia, as caixas seguem sem cor', [cx(false, 0).c, /<b>/.test(cx(false, 0).sub)], ['', false]);
+  ok('o renderGerencial passa o dado velho aos dois cards',
+     [/const semUep=!G\.ok \|\| !!velhoU;/.test(pega('function renderGerencial(')),
+      /_gerKpiPinta\(_gerUepCards\(G, k, velhoU\), _gerCxCards\(k, semUep, velhoC\)\)/.test(pega('function renderGerencial('))], [true, true]);
+  ok('o selo do cabeçalho diz de quando é o dado (só troca o verde "Google Sheets ·")',
+     /\/\^Google Sheets · \/\.test\(txt\.textContent\)/.test(pega('function _dadoVelhoPintar(')) && /dados de '\+_horaDe\(_ultSheetsOk\)/.test(pega('function _dadoVelhoPintar(')), true);
 }
 
 // Se um teste assíncrono não terminar (promessa que nunca resolve), o processo
@@ -6371,7 +6437,7 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
   ok('as caixas programadas dizem o % feito como fato (80,0%) e o que falta',
      [L2[0].sub, L2[1].sub], ['1.262 normal + 178 em hora extra', '80,0% feito · caixas programadas · faltam 360']);
   ok('sem a UEP do dia (lendo, falhou, backend ou cadastro), as caixas voltam a julgar — nunca uma tela sem veredito',
-     [L2s[1].c, /^<b>ATENÇÃO<\/b> · 80,0% feito/.test(L2s[1].sub), /const semUep=!G\.ok;/.test(pega('function renderGerencial('))], ['warn', true, true]);
+     [L2s[1].c, /^<b>ATENÇÃO<\/b> · 80,0% feito/.test(L2s[1].sub), /const semUep=!G\.ok \|\| !!velhoU;/.test(pega('function renderGerencial('))], ['warn', true, true]);
   { const L0 = R('_gerCxCards(_k, true)', { _k:Object.assign({}, k, { metaAteAgora:0 }) });
     ok('sem a UEP e sem minuto de jornada lançado: AGUARDANDO A JORNADA, sem cor (nunca ABAIXO)',
        [L0[1].c, /^<b>AGUARDANDO A JORNADA<\/b> · /.test(L0[1].sub)], ['', true]); }
@@ -6479,7 +6545,7 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
   // ── o render: a UEP primeiro, as caixas embaixo, e a tabela e os gráficos em UEP
   const RG = pega('function renderGerencial(');
   ok('o render: duas linhas de cards, a análise em UEP, a tabela pela _gerHoraLinha e os gráficos em UEP; o ⚠/▲ de caixas saiu',
-     [/_gerKpiPinta\(_gerUepCards\(G, k\), _gerCxCards\(k, semUep\)\)/.test(RG), /G\.ok\?_gerAnaliseUepHtml\(G\):_gerAnaliseCxHtml\(k, dh\)/.test(RG),
+     [/_gerKpiPinta\(_gerUepCards\(G, k, velhoU\), _gerCxCards\(k, semUep, velhoC\)\)/.test(RG), /G\.ok\?_gerAnaliseUepHtml\(G\):_gerAnaliseCxHtml\(k, dh\)/.test(RG),
       /_gerHoraLinha\(h, cxDe\(sl\)/.test(RG), /_gerChartsUep\(/.test(RG), /fraqMark|MEDIA_HORAS/.test(RG), /id="kpi-grid2"/.test(src),
       /function renderChartHora|function renderChartComp/.test(JS)],
      [true, true, true, true, false, true, false]);

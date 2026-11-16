@@ -408,3 +408,41 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
 - **O cartão do dia dos PRÓXIMOS DIAS é UM desenho** (`_gpxCartaoHtml(d, pf)`,
   v7.117.0): `pf='dir'` na diretoria, `pf='gpx'` na aba e no papel — muda só a
   pele. O trilho de barras saiu dos três.
+
+## DADO VELHO NO GERENCIAL DO PC E A ATUALIZAÇÃO PELA HORA MARCADA (v7.248.3)
+- PPCP, 16/11/2026, com os dois prints na mão: *"não bate as ueps"*. A diretoria
+  (dados de 13:35) dizia 1.639 UEP e NO RITMO; o gerencial do PC (lista de 13:24,
+  ainda na v7.248.1) dizia 1.445 e ATENÇÃO. A conta estava certa nas duas: o hora
+  a hora do PC (383 + 323 + 225 + 300 + 214 = 1.445) é o da diretoria sem a hora
+  das 13:00 (193 UEP = 186 cx de BANQUETA VERSATIL × 1,04). O PC é que ficou 12
+  min sem ler, com a atualização de 5 em 5 min.
+- **A causa**: o contador da atualização descia 1 a cada tique de 1 s
+  (`countdownSec--`). A janela do gerencial estava atrás da janela da diretoria;
+  o Windows e o Chrome tratam janela coberta ou minimizada como escondida e
+  seguram os timers (~1 por minuto). Os 5 min viravam horas, sem aviso.
+  - Agora a próxima leitura é uma HORA MARCADA (`_proxCiclo`,
+    `_marcaProxCiclo`); o `_tickCountdown` só confere se ela passou. Escondida, a
+    leitura sai com no máximo ~1 min de atraso; a janela que volta para a frente
+    (`visibilitychange`, `focus`) confere na hora e lê se a hora passou.
+  - O `forcarRefresh` (↻) e o `alterarIntervalo` remarcam a hora.
+- **Dado velho à vista**: `_dadoVelho(ts, agora, intervalo)` — mais de dois
+  intervalos, nunca menos de 3 min. `_ultSheetsOk` (o getDados) e o
+  `PONTOS_DIA_TS` (o getPontosDia).
+  - UEP velha: o card UEP DO DIA mantém o número e troca o selo por *DADOS DE
+    HH:MM · sem leitura nova da produção do dia — sem veredito até a próxima*
+    (âmbar `acc`); o selo passa para as CAIXAS PROGRAMADAS (`semUep = !G.ok ||
+    velhoU`), como no celular.
+  - As duas velhas: as CAIXAS PROGRAMADAS também dizem *DADOS DE HH:MM*, sem cor
+    — ninguém julga com o dado velho.
+  - O selo do cabeçalho: o verde *Google Sheets · hora* vira âmbar *dados de
+    HH:MM — sem leitura nova* (`_dadoVelhoPintar`, no tique); o *Buscando…* e o
+    erro vermelho ficam como estão. Quando o estado muda, o gerencial ao vivo
+    redesenha (sem leitura nova, nada mais o redesenharia).
+- A tabela hora a hora e os gráficos seguem pintados com o dado que há: são
+  horas passadas, e o 1º card diz de quando ele é.
+- ⚠ A TV não ganhou o aviso de dado velho (ela fica na frente, e a tela A/B
+  julga em caixas) — pendente se for preciso.
+- Testes em `relatorios.test.js` (*PC: a atualização pela hora marcada e o dado
+  velho sem veredito*): o `_tickCountdown` real com o relógio na mão (1 tique por
+  minuto escondida; 12 min sem tique), o `_dadoVelho`, os dois cards no retrato
+  de 16/11 13:36; 4 de 4 mutações pegas.
