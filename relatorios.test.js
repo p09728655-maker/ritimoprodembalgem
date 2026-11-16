@@ -2862,8 +2862,11 @@ ok('gerencial: o % do dia em caixas é fato, sem selo — o selo é o da UEP',
    [/\$\{fmtP\(k\.efDia\)\} feito · `\+_metaPartesTxt\(p, k\.gap, false\)/.test(_v7),
     /l:'CAIXAS PROGRAMADAS', v:fmtN\(k\.meta\), c:semUep\?sc\(k\.efRitmo\):''/.test(_v7),
     /`<b>\$\{slRitmo\(c\.ef\)\}<\/b> · /.test(_v7), /v:fmtP\(k\.efDia\),\s*sub:slRitmo\(k\.efRitmo\)/.test(_v7)], [true, true, true, false]);
+// celular 1.50.0: a mesma regra do PC — o % do dia em caixas é fato no card CAIXAS
+// PROGRAMADAS, que só julga sem a UEP do dia; o card % DA META DO DIA saiu.
 ok('celular: o card diz a mesma coisa',
-   /v:fmtP\(k\.efDia\), sub:slRitmo\(k\.efRitmo\)/.test(_mob), true);
+   [/l: 'CAIXAS PROGRAMADAS', v: fmtN\(k\.meta\), c: semUep \? sc\(k\.efRitmo\) : ''/.test(_mob),
+    /\$\{fmtP\(k\.efDia\)\} feito · /.test(_mob), /v:fmtP\(k\.efDia\),\s*sub:slRitmo\(k\.efRitmo\)/.test(_mob)], [true, true, false]);
 
 console.log('\n── HORA EXTRA não é julgada, no dia de HOJE também ──');
 // 01/09/2026: o dia começou às 05:00 e o backend passou a marcar `he` por
@@ -2875,20 +2878,21 @@ console.log('\n── HORA EXTRA não é julgada, no dia de HOJE também ──'
 // nem veredito, nem pico/vale, nem atraso.
 ok('o atraso do núcleo pula a hora extra',
    /if \(r\.he\) return \{ atrasoHora: 0/.test(_core), true);
-ok('gerencial ao vivo (UEP, v7.243.0): a hora extra não tem % da meta (a regra é a _gerHoraJulga)',
-   /if\(!h \|\| h\.he \|\| h\.andamento \|\| !h\.lancada \|\| !\(h\.metaH>0\)\) return null;/.test(pega('function _gerHoraJulga(')), true);
+ok('gerencial ao vivo (UEP, v7.243.0): a hora extra não tem % da meta (a regra é a uepHoraJulga do rp-core 1.18.0, a do celular também)',
+   [/if \(!h \|\| h\.he \|\| h\.andamento \|\| !h\.lancada \|\| !\(h\.metaH > 0\)\) return null;/.test(_core),
+    /return uepHoraJulga\(h, cx, cxCom\);/.test(pega('function _gerHoraJulga('))], [true, true]);
 ok('gerencial ao vivo: a linha de HE ganha etiqueta, não veredito',
    /const bdg=ehHE\?'<span class="badge b-acc">HORA EXTRA<\/span>'/.test(pega('function _gerHoraLinha(')), true);
 ok('gerencial ao vivo: a etiqueta HE não volta colada no OK/ABAIXO',
    /badge b-he" style="margin-right:5px">HE</.test(_v7), false);
-ok('gerencial ao vivo: META UEP da hora extra sai "—"', /\$\{ehHE\|\|!\(h\.metaH>0\)\?'—'/.test(pega('function _gerHoraLinha(')), true);
+ok('gerencial ao vivo: META UEP da hora extra sai "—" (e sem a UEP do dia também)', /\$\{ehHE\|\|o\.est\|\|!\(h\.metaH>0\)\?'—'/.test(pega('function _gerHoraLinha(')), true);
 ok('gerencial ao vivo: pico e vale só das horas de jornada',
    /const prodsNorm=dhAll\.filter\(r=>!r\.he\)/.test(_v7) &&
    /dh\.find\(r=>!r\.he&&r\.producaoHora===k\.melhor\)/.test(_v7), true);
 ok('gerencial ao vivo: o `he` chega ao cálculo do atraso',
    /he: !!\(\(reg&&reg\.he\)\|\|sl\.he\)/.test(_v7), true);
-ok('celular: a tabela hora a hora segue a mesma regra',
-   /const ehHE=r\.he===true;/.test(_mob) && /const ef2=\(!ehHE&&prod!=null/.test(_mob), true);
+ok('celular: a tabela hora a hora segue a mesma regra (a uepHoraJulga do núcleo; a hora extra só com a etiqueta)',
+   [/const J = est \? null : uepHoraJulga\(h, h\.cx, cxCom\);/.test(_mob), /const st = h\.he \? 'H\. EXTRA'/.test(_mob)], [true, true]);
 ok('celular: melhor/pior também olham só a jornada',
    /const prodsNorm = dh\.filter\(r=>!r\.he\)/.test(_mob), true);
 
@@ -3959,8 +3963,9 @@ ok('a janela de contradição existe em 8 das 9 horas', _discordam, 8);
   ok(nome + ': e não pinta mais cor de status',
      /PROJEÇÃO FINAL[^\n]*k\.proj>=k\.meta\?'ok':'red'/.test(txt), false);
 });
-ok('ritmoprod_mobile.html: o número da projeção continua na tela',
-   /\{l:'PROJEÇÃO FINAL',\s*v:fmtN\(k\.proj\)/.test(_mob), true);
+// celular 1.50.0: a projeção é em UEP, como no PC — número, sem cor de status (uk).
+ok('ritmoprod_mobile.html: o número da projeção continua na tela, em UEP e sem cor de status',
+   /l: 'PROJEÇÃO · UEP', v: p \? fmtN\(Math\.round\(p\.fim\)\) : '—', sub: [^\n]*, c: 'uk' \}/.test(_mob), true);
 // v7.243.0: no gerencial do PC a projeção é em UEP — número, sem cor de status.
 ok('ritmoprod_embalagem_v7.html: a projeção é em UEP, sem cor de status',
    /l:'PROJEÇÃO · UEP', v:p\?fmtN\(Math\.round\(p\.fim\)\):'—', c:''/.test(pega('function _gerUepCards(')), true);
@@ -4258,13 +4263,16 @@ console.log('\n── estudo de UEP ──');
   {
     const MOB = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
     ok('o gerencial do desktop e o do celular mostram o card pelo uepCard do núcleo',
-       [/_uepCardLeitura\(uepCard\(U, PONTOS_DIA\.metaUep, k\.minNorm\)\)/.test(pega('function _gerUepModelo(')),
-        (MOB.match(/uepCard\(PONTOS_DIA\.uep, PONTOS_DIA\.metaUep, k\.minNorm\)/g) || []).length], [true, 1]);
+       // rp-core 1.18.0: os dois montam pelo uepGerMontar, que chama o uepCard
+       [/const G=uepGerMontar\(\{ uep:PONTOS_DIA\.uep, metaUep:PONTOS_DIA\.metaUep, minNorm:k\.minNorm/.test(pega('function _gerUepModelo(')),
+        (MOB.match(/uepGerMontar\(\{ uep: PONTOS_DIA\.uep, metaUep: PONTOS_DIA\.metaUep, minNorm: k\.minNorm/g) || []).length,
+        /const card = uepCard\(U, o\.metaUep, o\.minNorm\);/.test(_core)], [true, 1, true]);
     // v7.243.0: a hora do gerencial do PC é a do _uepAbaHoras (a da aba ⚖ UEP),
     // com a soma por hora do núcleo (uepPorHora).
     ok('UEP hora a hora nos dois gerenciais pela conta do núcleo',
-       [/_uepAbaHoras\(k\.slots, k\.allHoje, uepPorHora\(PONTOS_DIA\.porHoraModelo\), meta, agoraMin\)/.test(pega('function _gerUepModelo(')),
-        /uepCelula\(uepH\[r\.horario\]/.test(MOB), /porHoraModelo: json\.porHoraModelo/.test(MOB)], [true, true, true]);
+       [/uepHorasDia\(o\.slots, o\.allHoje, uepPorHora\(o\.phm\), meta, ag, o\.tolMin\)/.test(_core),
+        /phm:PONTOS_DIA\.porHoraModelo/.test(pega('function _gerUepModelo(')) && /phm: PONTOS_DIA\.porHoraModelo/.test(MOB),
+        /porHoraModelo: json\.porHoraModelo/.test(MOB)], [true, true, true]);
     ok('a PROGRAMAÇÃO mostra a UEP da linha e do dia contra a meta',
        /UEP \(\$\{fmtP\(pctUep\)\} da meta/.test(pega('function renderProgramacaoDetalhada(')), true);
     // v7.175.0 (PPCP, 27/10/2026, com o print: "essa tela está toda desalinhada"):
@@ -5606,7 +5614,7 @@ console.log('\n── estudo de UEP ──');
   CFG.sheetsUrl = urlAntes;
   ok('a aba UEP e o card UEP DO DIA leem o estado; a aba oferece ↻ quando falhou',
      [/msg:_pontosEstadoTxt\(\)/.test(pega('function _uepAbaDados(')), /_pontosTentarAgora\(\)/.test(pega('function renderUep(')),
-      /_uepCardLeitura\(uepCard\(U, PONTOS_DIA\.metaUep/.test(JS), /Timeout — verifique a URL/.test(JS)], [true, true, true, false]);
+      /G\.card=_uepCardLeitura\(G\.card\)/.test(pega('function _gerUepModelo(')), /Timeout — verifique a URL/.test(JS)], [true, true, true, false]);
   ok('só UMA retentativa automática por falha, e só com a aba UEP aberta',
      [/if\(PONTOS_LEIT\.auto \|\| !_abaOn\('uep'\)/.test(pega('function _pontosRetentar(')), /PONTOS_LEIT\.auto=false/.test(LPD)], [true, true]);
   const POLL = pega('async function pollParadaTV(');
@@ -5812,7 +5820,8 @@ process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não te
 { const vm = require('vm'), mob = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
   const mJS = [...mob.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
   const RG = mJS.slice(mJS.indexOf('function renderGerencial('), mJS.indexOf('function renderGerencial(') + 9000);
-  const ini = RG.indexOf('  const _prog = PONTOS_DIA.programacao'), fimK = RG.indexOf('  const kpis=[');
+  // 1.50.0: o trecho do card ATRASO termina onde a montagem da UEP começa (a lista `kpis` saiu)
+  const ini = RG.indexOf('  const _prog = PONTOS_DIA.programacao'), fimK = RG.indexOf('  const G = _gerUepModeloM(k);');
   const trecho = RG.slice(ini, fimK);
   // o aparelho de mentira (o retrato do card) e os dois ajudantes REAIS
   const AJ = ['function _atrRetGuarda(', 'function _atrRetLe('].map(a => { const i = mJS.indexOf(a); return mJS.slice(i, mJS.indexOf('\n}\n', i) + 2); }).join('\n');
@@ -5845,7 +5854,7 @@ process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não te
       card({ lista:LST, atrasoTotal:300 }, PRODS, 2761, false, { ts:0, falha:true }).sub,
       card({ lista:LST, atrasoTotal:300 }, PRODS, 2761, false, { ts:0 }).sub,
       card({ lista:[{ codigo:'501085118', falta:1, atraso:1, atrasoDesde:'10/11/2026' }], atrasoTotal:1 }, PRODS, 2761)],
-     ['desde 06/11 · cadastro não lido — tenta de novo em 6 min', 'desde 06/11 · cadastro não lido — tenta de novo em 6 min',
+     ['desde 06/11 · cadastro não lido — tenta de novo em 3 min', 'desde 06/11 · cadastro não lido — tenta de novo em 3 min',
       '300 cx · desde 06/11 · UEP do cadastro guardado no aparelho', '300 cx · desde 06/11',
       { l:'⚠ ATRASO · LOTES VENCIDOS', v:'&lt;1 min<small>de linha</small>', sub:'1 cx · desde 10/11', c:'red larga atr' }]);
   // 1.44.0 (PPCP: "demora pro card do atraso entrar, os outros entram antes"): o card do dia guardado no aparelho entra
@@ -5857,7 +5866,7 @@ process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não te
     const amanha = card({ lista:[], atrasoTotal:0 }, PRODS, 2761, false, null, { lido:false, hoje:'12/11/2026' });
     ok('celular: lida a programação, o card é guardado; na abertura seguinte do MESMO dia ele entra já, com a hora dele; a leitura que não veio é dita; outro dia, nada',
        [abre && abre.v === lido.v, abre && abre.sub, falhou && falhou.sub, amanha],
-       [true, '300 cx · desde 06/11 · de 08:10, atualizando…', '300 cx · desde 06/11 · de 08:10 · sem leitura nova (tenta a cada 6 min)', null]);
+       [true, '300 cx · desde 06/11 · de 08:10, atualizando…', '300 cx · desde 06/11 · de 08:10 · sem leitura nova (tenta a cada 3 min)', null]);
     card({ lista:[{ codigo:'501085118', falta:135, atraso:0 }], atrasoTotal:0 }, PRODS, 2761, false, null, { lido:T0 });
     const semAtr = card({ lista:[], atrasoTotal:0 }, PRODS, 2761, false, null, { lido:false });
     card({ lista:LST, atrasoTotal:300 }, PRODS, 2761, false, null, { lido:T0 });
@@ -5879,8 +5888,8 @@ process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não te
     const semHoje = card(L100, PRODS, 2761, false, null, { lido:ontem });                   // sem guardado de hoje: nada
     ok('celular: lido às 08:10 e redesenhado depois → o guardado diz 08:10; leitura de ONTEM na virada → os 100 cx de ontem NUNCA aparecem nem são guardados (vale o guardado de hoje, ou nada); a última leitura de hoje falhou → "de 08:10 · sem leitura nova"',
        [reabre && reabre.sub, comHoje && comHoje.sub, depois && depois.sub, falhaHoje.sub, semHoje, 'rp_atr_ret' in LS],
-       ['300 cx · desde 06/11 · de 08:10, atualizando…', '300 cx · desde 06/11 · de 08:10 · sem leitura nova (tenta a cada 6 min)', '300 cx · desde 06/11 · de 08:10, atualizando…',
-        '300 cx · desde 06/11 · de 08:10 · sem leitura nova (tenta a cada 6 min)', null, false]);
+       ['300 cx · desde 06/11 · de 08:10, atualizando…', '300 cx · desde 06/11 · de 08:10 · sem leitura nova (tenta a cada 3 min)', '300 cx · desde 06/11 · de 08:10, atualizando…',
+        '300 cx · desde 06/11 · de 08:10 · sem leitura nova (tenta a cada 3 min)', null, false]);
     const mJSc = mJS.slice(mJS.indexOf('function entrar('));
     ok('celular: na abertura do gerencial a leitura do dia vem logo depois do lerSheets (antes do histórico); ela tenta duas vezes, em sequência, 30 s e 45 s',
        [/await passo\('pontos',lerPontosDia\); renderGerencial\(\);[\s\S]{0,260}const dias=await passo\('historico',lerHistorico\); if\(dias\)\{ renderHistoricoComDados\(dias\); renderGerParadasResumo\(\); \}/.test(mJSc),
@@ -5900,7 +5909,7 @@ process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não te
       const C = { ordem:[], console, document:{ querySelectorAll:q => (q === '.btn-refresh' ? bts : []) } };
       vm.createContext(C);
       vm.runInContext('let _refreshP = null, _refreshRodando = false, PERFIL = "operador";' +
-        'let _refreshPedido = null;' + fn('function _refreshMarca(') + fn('function refresh(') + fn('async function _refresh(') +
+        'let _refreshPedido = null, _gerSegura = false;' + fn('function _refreshMarca(') + fn('function refresh(') + fn('async function _refresh(') + fn('async function _lerSheetsSegura(') +
         ';async function lerSheets(){ ordem.push("lerSheets"); } async function carregarParadas(){ ordem.push("paradas"); }' +
         ';globalThis.T = async () => { const fim = _refreshMarca(); const a = refresh(), b = refresh(), c = refresh();' +
         ' await null; await null; const meio = [globalThis.document.querySelectorAll(".btn-refresh").map(x => [x.disabled, x.textContent]), a === b && b === c, ordem.slice()];' +
@@ -5921,7 +5930,7 @@ process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não te
           /function renderGerencial\(\)\{\s*_pontosDiaDeHoje\(\);/.test(mJS), /function aplicarMetaDiaAutomatica\(\)\{\s*_pontosDiaDeHoje\(\);/.test(mJS),
           /let PONTOS_DIA = _pontosDiaVazio\(\);/.test(mJS)],
          [[null, 0, 0, true], 99, true, true, true]); } }
-  ok('celular: o gerencial relê o cadastro (a UEP de agora) no ciclo pesado quando passou de 30 min ou falhou, e no ATUALIZAR; a leitura marca quando e se falhou',
+  ok('celular: o gerencial relê o cadastro (a UEP de agora) no ciclo das caixas (3 min, 1.50.0) quando passou de 30 min ou falhou, e no ATUALIZAR; a leitura marca quando e se falhou',
      [/if\(Date\.now\(\)-PROD_CAT_TS > PROD_CAT_TTL\) await passo\(carregarProdutos\);\s*await passo\(async\(\)=>\{ await lerPontosDia\(\); renderGerencial\(\); \}\);/.test(mJS.slice(mJS.indexOf('async function cicloRefresh('))),
       /await passo\(carregarProdutos\);[^\n]*\n\s*await passo\(async\(\)=>\{ await lerPontosDia\(\); renderGerencial\(\); \}\);/.test(mJS.slice(mJS.indexOf('async function _refresh('))),
       /PROD_CAT_TS = Date\.now\(\); PROD_CAT_FALHA = false;/.test(mJS), /\} else PROD_CAT_FALHA = true;\s*\}catch\(e\)\{ PROD_CAT_FALHA = true;/.test(mJS),
@@ -5932,10 +5941,12 @@ process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não te
       card({ lista:[{ codigo:'501070001', falta:100 }], atrasoTotal:100 }, PRODS, 2761), card({ lista:LST, atrasoTotal:300 }, PRODS, 2761, true)],
      [null, null, { l:'⚠ ATRASO · LOTES VENCIDOS', v:'100<small>cx</small>', sub:'cx de lotes com data anterior a hoje', c:'red larga atr' },
       { l:'⚠ ATRASO · LOTES VENCIDOS', v:'300<small>cx</small>', sub:'cx de lotes com data anterior a hoje', c:'red larga atr' }]);
-  ok('celular: é o 1º card da grade (antes da PRODUÇÃO REAL), o antigo "⚠ ATRASO NA PROGRAMAÇÃO" do fim da lista saiu; o card vai largo e vermelho pelo CSS; o cadastro que chega redesenha',
-     [/const kpis=\[\s*\.\.\.\(atrKpi \? \[atrKpi\] : \[\]\),\s*\{l:'PRODUÇÃO REAL'/.test(RG), /ATRASO NA PROGRAMAÇÃO/.test(mob),
+  // 1.50.0 (a UEP na frente): o ATRASO é o 2º card, logo abaixo do UEP DO DIA — os dois na 1ª tela do celular
+  ok('celular: é o 2º card da grade (logo abaixo do UEP DO DIA), o antigo "⚠ ATRASO NA PROGRAMAÇÃO" do fim da lista saiu; o card vai largo e vermelho pelo CSS; o cadastro que chega redesenha',
+     [(F => F.lastIndexOf("L.push({ l: 'UEP DO DIA · META '") < F.indexOf('if(atrKpi) L.push(atrKpi);') && F.indexOf('if(atrKpi) L.push(atrKpi);') < F.indexOf("'RITMO · UEP/HORA'"))(mJS.slice(mJS.indexOf('function _gerUepCardsM('))),
+      /ATRASO NA PROGRAMAÇÃO/.test(mob),
       /\.kpi-card\.larga\{grid-column:1\/-1\}/.test(mob), /\.kpi-card\.atr \.kpi-val\{font-size:34px;color:var\(--red\)\}/.test(mob),
-      /carregarProdutos\(\)\.then\(\(\) => \{ if\(PERFIL === 'gerencial'\) renderGerencial\(\); \}\)/.test(mJS), /<div class="kpi-card \$\{k\.c\}">/.test(RG)],
+      /carregarProdutos\(\)\.then\(\(\) => \{ if\(PERFIL === 'gerencial'\) renderGerencial\(\); \}\)/.test(mJS), /<div class="kpi-card \$\{c\.c\}">/.test(RG)],
      [true, false, true, true, true, true]);
 }
 
@@ -5957,9 +5968,11 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
    'function _metaPartesTxt(', 'function _gerAnaliseUep(', 'function _gerCxComHora(', 'function _gerKpiHtml(', 'function _gerUepModelo(',
    'function _uepCardLeitura(', 'function _tvUepMontar(', 'function _tvUepDoProduto(', 'function _gerHorasHist(', 'function _gerInfoImpressao(']
     .forEach(f => vm.runInContext(pega(f), C));
-  const _tol = JS.match(/const GER_TOL_MIN=(\d+);/), _tolMob = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8').match(/const LANC_TOLERANCIA_MIN = (\d+);/);
-  ok('a janela da hora recém-fechada é a MESMA do app (LANC_TOLERANCIA_MIN do celular)', [_tol && _tol[1], _tolMob && _tolMob[1]], ['15', '15']);
-  vm.runInContext(`var GER_TOL_MIN = ${_tol ? _tol[1] : 15};`, C);
+  // rp-core 1.18.0: a janela é o UEP_HORA_TOL_MIN do núcleo (o PC lê dele; o celular passa o LANC_TOLERANCIA_MIN)
+  const _tol = String(vm.runInContext('UEP_HORA_TOL_MIN', C)), _tolMob = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8').match(/const LANC_TOLERANCIA_MIN = (\d+);/);
+  ok('a janela da hora recém-fechada é a MESMA do app (LANC_TOLERANCIA_MIN do celular)',
+     [_tol, _tolMob && _tolMob[1], /const GER_TOL_MIN=UEP_HORA_TOL_MIN;/.test(JS)], ['15', '15', true]);
+  vm.runInContext(`var GER_TOL_MIN = UEP_HORA_TOL_MIN;`, C);
   vm.runInContext(`var CFG = { turnoInicio:'07:00', turnoFim:'17:00' }; var GER_CAT_FALHA = false;
     var _CAT = [{ codigo:'501.089.003', uep:2 }]; function _pdiaPcCat(){ return _CAT; } function _metaDiaAba(){ return 1800; }
     function _pontosEstadoTxt(){ return 'lendo a produção do dia…'; }`, C);
@@ -6124,6 +6137,203 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
       /renderGerProdutosDia\(\); \}\)\.then\(\(\)=>_gerCatSeFalta\(\)\)\.catch/.test(pega('function _cicloLeitura(')), /await _gerCatSeFalta\(\);/.test(JS)], [true, true, true, true]);
   ok('nenhuma leitura nova: o gerencial não chama o Apps Script por conta da UEP',
      /jsonpFetch|_capBuscar|getProgramacaoDetalhada/.test(['function _gerUepModelo(', 'function _gerUepCards(', 'function _gerAtrasoKpi(', 'function _gerCxCards('].map(pega).join('\n')), false);
+
+  // ══ O CELULAR (1.50.0 / rp-core 1.18.0): a mesma montagem, o mesmo retrato ══
+  // PPCP, 16/11/2026: "ajustar app agora, mas antes me mostre como vai ficar" →
+  // prévia (o retrato de 13/11 16:22) → "ok implementar". Roda as funções REAIS do
+  // celular contra o rp-core e confere contra o PC acima (G).
+  console.log('\n── A UEP NA FRENTE no gerencial do celular (1.50.0) ──');
+  const mob = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
+  const mJS = [...mob.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
+  const pegaM = sig => { const i = mJS.indexOf(sig); if(i < 0) throw new Error('não encontrei: ' + sig);
+    const j = mJS.indexOf('{', mJS.indexOf(')', i)); let n = 0;
+    for(let x = j; x < mJS.length; x++){ if(mJS[x] === '{') n++; else if(mJS[x] === '}' && --n === 0) return mJS.slice(i, x + 1); }
+    throw new Error('não fecha: ' + sig); };
+  const M = vm.createContext({ console, Math, Number, String, Array, Object, JSON, isFinite, isNaN, window: {} });
+  M.window = M;
+  vm.runInContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'), M);
+  vm.runInContext(`var LANC_TOLERANCIA_MIN = ${mJS.match(/const LANC_TOLERANCIA_MIN = (\d+);/)[1]}; var LANC_MADRUGADA_FIM = 420;
+    var CFG = { turnoInicio:'05:00', turnoFim:'17:00', almocoInicio:'11:00', almocoFim:'12:12' };
+    var PONTOS_DIA = {}, PRODUTOS = [], PROD_ATUAL = '', PONTOS_DIA_FALHA = false, _AGORA = 982, _TB = { innerHTML:'' };
+    function nowMin(){ return _AGORA; }
+    var document = { getElementById: id => id === 'ger-tbl-body' ? _TB : null };`, M);
+  ['function _escH(', 'function corDeProduto(', 'function _gerSlotsM(', 'function _gerUepModeloM(', 'function _gerUepCardsM(', 'function _gerCxCardsM(',
+   'function _gerHoraLinhaM(', 'function renderTabelaHoraHora('].forEach(f => vm.runInContext(pegaM(f), M));
+  vm.runInContext('var _GER_G = null;', M);
+  const RM = (e, v) => { Object.assign(M, v || {}); return vm.runInContext(e, M); };
+  // as linhas da HORA_A_HORA como o processarResposta do celular monta (o fim da hora vem do backend: 16:59)
+  const FIM = { '05:00':'06:00', '06:00':'07:00', '07:00':'08:00', '08:00':'09:00', '09:00':'10:00', '10:00':'11:00', '12:12':'13:00', '13:00':'14:00', '14:00':'15:00', '15:00':'16:00', '16:00':'16:59' };
+  const rowM = (ini, cx, he) => ({ horario:ini, slotFim:FIM[ini], slotLabel:`${ini}-${FIM[ini]}`, producaoHora:cx, he:!!he });
+  const allM = SL.map(sl => rowM(sl.inicio, CX[sl.inicio] == null ? null : CX[sl.inicio], sl.he));
+  const KM = Object.assign({}, K, { allHoje:allM });
+  const PDM = Object.assign({}, PD);
+  const PRODM = [{ codigo:'501089003', desc:'VOL 1/1 SAPATEIRA SPAZIO', cor:'', uep:2 }];
+  const GM = RM('PONTOS_DIA = _pd; PRODUTOS = _pr; PROD_ATUAL = "501089003"; _AGORA = 982; _gerUepModeloM(_k)', { _pd:PDM, _pr:PRODM, _k:KM });
+  const resumo = X => [Math.round(X.card.esperado), Math.round(X.m.difMin), X.minRest, X.m.minRest, X.m.faltaCx, X.m.chega, Math.round(X.proj.fim), Math.round(X.proj.porHora),
+                       X.horas.map(h => [h.inicio, h.metaH == null ? null : Math.round(h.metaH), h.uep == null ? null : Math.round(h.uep), h.cls, h.andamento, h.cx, h.min])];
+  ok('celular e PC: a MESMA montagem no retrato de 13/11 16:22 (esperado 2.452, 28 min atrás, 37 min de jornada, 228 cx, projeção 2.596; cada hora com a mesma meta, UEP e cor)',
+     resumo(GM), resumo(G));
+  ok('o 16:00-16:59 vale 59 min pelo fim que o backend manda (meta 309 UEP, a do PC), não os 60 do getSlots do celular',
+     [GM.horas[10].min, Math.round(GM.horas[10].metaH)], [59, 309]);
+  // ── os cards
+  const ATR = { l:'⚠ ATRASO · LOTES VENCIDOS', v:'1h55<small>de linha</small>', sub:'210 cx', c:'red larga atr' };
+  const LM = RM('_gerUepCardsM(_G, _k, _a)', { _G:GM, _k:KM, _a:ATR }), LM0 = RM('_gerUepCardsM(_G, _k, null)', { _G:GM, _k:KM });
+  ok('1ª grade: UEP DO DIA (o único selo, a largura toda), o ATRASO logo abaixo, ritmo e projeção sem cor, PARA A META larga',
+     LM.map(c => [c.l, c.c]),
+     [['UEP DO DIA · META 2.761', 'warn larga hero'], ['⚠ ATRASO · LOTES VENCIDOS', 'red larga atr'], ['RITMO · UEP/HORA', 'uk'], ['PROJEÇÃO · UEP', 'uk'], ['PARA A META', 'larga uk']]);
+  ok('sem atraso, sem o card (o resto igual)', LM0.map(c => c.l), ['UEP DO DIA · META 2.761', 'RITMO · UEP/HORA', 'PROJEÇÃO · UEP', 'PARA A META']);
+  ok('os textos dizem os números do PC: o selo e os minutos, feito × esperado e a hora extra; 296 contra 314/h; 2.596 = 94,0%; 455 UEP ≈ 228 cx, não cabe, 738 UEP/h em 37 min',
+     LM0.map(c => [c.v, c.sub]),
+     [['2.306<small>UEP</small>', '<b>ATENÇÃO</b> · 28 min atrás do ritmo<i>2.306 de 2.452 UEP esperadas até agora · +392 em hora extra</i>'],
+      ['296<small>/h</small>', 'a meta pede 314/h'], ['2.596', '94,0% da meta · só jornada'],
+      ['455<small>UEP</small>', '≈ 228 cx de SAPATEIRA SPAZIO<i>não cabe até 17:00 no ritmo da meta · pede 738 UEP/h nos 37 min que restam</i>']]);
+  { const G9 = RM('_AGORA = 9*60+30; _gerUepModeloM(_k)', { _k:Object.assign({}, KM, { minNorm:180 }) });
+    ok('cabendo, a meta "sai às" (o mesmo horário do PC)',
+       [RM('_gerUepCardsM(_G, _k, null)', { _G:G9, _k:Object.assign({}, KM, { minNorm:180 }) })[3].sub.includes('sai às '), G9.m.chega != null],
+       [true, true]);
+    RM('_AGORA = 982'); }
+  const LC = RM('_gerCxCardsM(_k, false)', { _k:KM }), LCs = RM('_gerCxCardsM(_k, true)', { _k:KM });
+  ok('2ª grade (EM CAIXAS): caixas com a HE e o cx/h, o programado com o % feito como fato, pontos e peso — nenhuma com cor',
+     [LC.map(c => [c.l, c.c]), LC[0].sub, LC[1].sub],
+     [[['CAIXAS', ''], ['CAIXAS PROGRAMADAS', ''], ['PONTOS', ''], ['PESO', '']], '1.262 normal + 178 HE · 144 cx/h', '80,0% feito · faltam 360']);
+  ok('na tela inteira, UM card com a cor do ritmo (ok/âmbar/vermelho do ritmo); o vermelho do ATRASO é do atraso',
+     [...LM, ...LC].filter(c => /\b(ok|warn)\b/.test(c.c) || (/\bred\b/.test(c.c) && !/\batr\b/.test(c.c))).length, 1);
+  // ── sem a UEP do dia: as caixas programadas julgam; nunca uma tela sem veredito, nunca duas
+  { const Gl = RM('PONTOS_DIA = Object.assign({}, _pd, { uep:null }); _gerUepModeloM(_k)', { _pd:PDM, _k:KM });
+    const Lg = RM('_gerUepCardsM(_G, _k, null)', { _G:Gl, _k:KM });
+    ok('a UEP ainda não chegou: o card diz que está lendo (sem cor), só ele na 1ª grade; o programado volta a dar o selo',
+       [Gl.ok, Gl.lendo, Lg.map(c => [c.l, c.c, c.sub]), LCs[1].c, LCs[1].sub],
+       [false, true, [['UEP DO DIA', ' larga hero', 'aguardando a leitura do dia…']], 'warn', '<b>ATENÇÃO</b> · 80,0% feito · faltam 360']);
+    RM('_GER_G = _G; PONTOS_DIA_FALHA = false; renderTabelaHoraHora(_a)', { _G:Gl, _a:allM });
+    const t1 = RM('_TB.innerHTML');
+    RM('PONTOS_DIA_FALHA = true; renderTabelaHoraHora(_a)', { _a:allM });
+    const t2 = RM('_TB.innerHTML');
+    RM('_GER_G = _G; PONTOS_DIA = Object.assign({}, _pd, { uep:{ normal:0, he:0, codigos:0 } }); PONTOS_DIA_FALHA = false; renderTabelaHoraHora(_a)', { _G:RM('_gerUepModeloM(_k)', { _k:KM, PONTOS_DIA:Object.assign({}, PDM, { uep:{ normal:0, he:0, codigos:0 } }) }), _a:allM });
+    const t3 = RM('_TB.innerHTML');
+    ok('sem a UEP do dia a hora lançada diz LENDO… / NÃO LIDA / SEM UEP e não pinta o % (nem a que fechou em zero)',
+       [/LENDO…/.test(t1), /NÃO LIDA/.test(t2), /SEM UEP/.test(t3), [t1, t2, t3].some(t => /td-s (ok|warn|red)/.test(t))], [true, true, true, false]);
+    RM('PONTOS_DIA = _pd; PONTOS_DIA_FALHA = false', { _pd:PDM }); }
+  // ── a tabela hora a hora em UEP
+  const celM = h => [...h.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map(x => x[1].replace(/<span[^>]*>/g, ' ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
+  const linM = (i, G0) => RM('_gerHoraLinhaM(_h, _cc, _u, null)', { _h:(G0 || GM).horas[i], _cc:(G0 || GM).cxCom[SL[i].inicio] || 0, _u:2 });
+  ok('09:00: 160 cx eram 87,9% da meta de UEP — precisavam de 182 (a mesma linha do PC)', celM(linM(4)), ['09:00-10:00', '276', '314', '87,9% ABAIXO', '160 meta 182']);
+  ok('12:12 (48 min) pede 251 UEP: 68,2% e 144 cx', celM(linM(6)).slice(1), ['172', '251', '68,2% ABAIXO', '98 meta 144']);
+  ok('15:00: 142,5% OK', celM(linM(9)).slice(3), ['142,5% OK', '224 meta 157']);
+  ok('hora extra: a UEP, sem meta, sem %, a etiqueta e nenhum veredito (cor da etiqueta: acc)',
+     [celM(linM(0)), /td-s acc/.test(linM(0)), /td-s (ok|warn|red)/.test(linM(0))], [['05:00-06:00', '167', '—', '— H. EXTRA', '76'], true, false]);
+  ok('a hora de agora (16:00, sem caixa): sem %, a meta (309) e a meta em caixas do produto de agora (155), "ATÉ 16:22"',
+     celM(linM(10)), ['16:00-16:59', '—', '309', '— ATÉ 16:22', '— meta 155']);
+  { const allZ = allM.map(r => r.horario === '08:00' ? Object.assign({}, r, { producaoHora:0 }) : r);
+    const GZ = RM('PONTOS_DIA = Object.assign({}, _pd, { porHoraModelo:_phm }); _gerUepModeloM(_k)', { _pd:PDM, _phm:PHM.filter(x => x.hora !== '08:00'), _k:Object.assign({}, KM, { allHoje:allZ }) });
+    ok('a hora que fechou com ZERO caixas é cobrada: 0 · 314 · 0,0% ABAIXO', celM(linM(3, GZ)), ['08:00-09:00', '0', '314', '0,0% ABAIXO', '0']);
+    const allT = allM.filter(r => r.horario < '12:12').concat([rowM('12:12', 0)]);
+    const GT = RM('_AGORA = 782; PONTOS_DIA = Object.assign({}, _pd, { porHoraModelo:_phm }); _gerUepModeloM(_k)', { _pd:PDM, _phm:PHM.filter(x => x.hora < '12:12'), _k:Object.assign({}, KM, { allHoje:allT }) });
+    ok('13:02, o 12:12-13:00 em zero ainda aceita lançamento no app (15 min): AINDA ACEITA, sem veredito',
+       celM(RM('_gerHoraLinhaM(_h, 0, 2, null)', { _h:GT.horas.find(h => h.inicio === '12:12') })).slice(3), ['— AINDA ACEITA', '0']);
+    RM('_AGORA = 982; PONTOS_DIA = _pd', { _pd:PDM }); }
+  ok('parte das caixas sem UEP: o % com *, PARTE SEM UEP, sem cor',
+     [celM(RM('_gerHoraLinhaM(_h, 80, null, null)', { _h:{ label:'11:00', he:false, lancada:true, andamento:false, uep:80, cxSem:80, metaH:314, cx:160 } })),
+      /td-s (ok|warn|red)/.test(RM('_gerHoraLinhaM(_h, 80, null, null)', { _h:{ label:'11:00', he:false, lancada:true, andamento:false, uep:80, cxSem:80, metaH:314, cx:160 } }))],
+     [['11:00', '80*', '314', '25,5%* PARTE SEM UEP', '160 meta 314'], false]);
+  { RM('_GER_G = _G; renderTabelaHoraHora(_a)', { _G:GM, _a:allM });
+    const TB = RM('_TB.innerHTML');
+    ok('o render pinta uma linha por hora da HORA_A_HORA, com cinco colunas', [(TB.match(/<tr>/g) || []).length, celM(TB.split('</tr>')[4]).length], [11, 5]); }
+  // ── a revisão da 1.50.0 (achados 1 a 10)
+  { // 1: sem a HORA_A_HORA lida (getDados falhou, a leitura do dia não): o turno pelo getSlots, nunca "jornada encerrada" às 10:00
+    vm.runInContext(pegaM('function getSlots('), M);
+    const K0 = Object.assign({}, KM, { allHoje:[], minNorm:0 });
+    const G0 = RM('_AGORA = 600; _gerUepModeloM(_k)', { _k:K0 });
+    const L0 = RM('_gerUepCardsM(_G, _k, null)', { _G:G0, _k:K0 });
+    ok('sem a hora a hora lida (10:00, a C3 em 5): o turno pelo getSlots — 05:00 e 06:00 em hora extra, restam 348 min de jornada; os cards dizem que a hora a hora não foi lida, nunca "jornada encerrada"',
+       [G0.ok, G0.minRest, L0[0].sub, L0[2].sub, L0[3].sub, G0.horas.filter(h => h.he).map(h => h.inicio)],
+       [true, 348, 'a hora a hora ainda não foi lida', 'a hora a hora ainda não foi lida', 'meta − UEP feita na jornada', ['05:00', '06:00']]);
+    RM('_AGORA = 982'); }
+  { // 3: a leitura do dia que falhou diz isso; a UEP de antes da última que falhou diz de quando é
+    const Gf = RM('PONTOS_DIA = Object.assign({}, _pd, { uep:null }); PONTOS_DIA_FALHA = true; _gerUepModeloM(_k)', { _pd:PDM, _k:KM });
+    const sf = RM('_gerUepCardsM(_G, _k, null)', { _G:Gf, _k:KM })[0].sub;
+    const Gv = RM('PONTOS_DIA = Object.assign({}, _pd, { lidoEm:new Date(2026, 10, 13, 16, 10).getTime() }); PONTOS_DIA_FALHA = true; _gerUepModeloM(_k)', { _pd:PDM, _k:KM });
+    const sv = RM('_gerUepCardsM(_G, _k, null)', { _G:Gv, _k:KM })[0].sub;
+    // velho: a hora lançada sem UEP / com caixas a mais que o registro pode ser só a leitura atrasada
+    const hv = celM(RM('_gerHoraLinhaM(_h, 0, null, null, true)', { _h:{ label:'11:00', he:false, lancada:true, andamento:false, uep:null, cxSem:0, metaH:314, cx:120 } }));
+    const hp = celM(RM('_gerHoraLinhaM(_h, 100, null, null, true)', { _h:{ label:'11:00', he:false, lancada:true, andamento:false, uep:200, cxSem:0, metaH:314, cx:160 } }));
+    const cv = RM('_gerUepCardsM(_G, _k, null)', { _G:Gv, _k:KM })[0];
+    ok('a leitura do dia que falhou: "não veio" (era "aguardando…"); a UEP de antes diz de quando é e NÃO dá selo (o selo vai às caixas programadas); a hora sem UEP diz NÃO LIDA, sem %',
+       [sf, Gv.velha, cv.c, /^UEP de 16:10 — a última leitura não veio<i>sem selo/.test(sv), hv.slice(3), hp.slice(3),
+        /const velho = !!G\.velha;/.test(pegaM('function renderTabelaHoraHora(')), /_gerCxCardsM\(k, !G\.ok \|\| G\.velha\)/.test(pegaM('function renderGerencial('))],
+       ['a leitura do dia não veio — o app tenta de novo', true, 'acc larga hero', true, ['— NÃO LIDA', '120'], ['— NÃO LIDA', '160 meta 157'], true, true]);
+    // a falha de ontem não vale para hoje (o dia novo começa "lendo")
+    { const D = vm.createContext({ Date, dtToStr:M.dtToStr || vm.runInContext('dtToStr', M), hojeStr:() => '14/11/2026' });
+      vm.runInContext(pegaM('function _pontosDiaVazio(') + '\n' + pegaM('function _pontosDiaDeHoje(') + '\nvar PONTOS_DIA = { uep:{ normal:9 }, lidoEm:new Date(2026, 10, 13, 16, 0).getTime() }, PONTOS_DIA_FALHA = true; _pontosDiaDeHoje();', D);
+      ok('a falha de ontem não vale para hoje: o dia novo começa lendo (PONTOS_DIA vazio, a falha zerada)', [vm.runInContext('PONTOS_DIA.uep', D), vm.runInContext('PONTOS_DIA_FALHA', D)], [null, false]); }
+    RM('PONTOS_DIA = _pd; PONTOS_DIA_FALHA = false', { _pd:PDM }); }
+  { // 2ª revisão: o desenho do gerencial espera a UEP do dia (o lerSheets do ciclo e do ATUALIZAR não desenha sozinho); rp-core antigo: a tabela só com as caixas
+    const RA = vm.createContext({ PERFIL:'gerencial', _N:0, renderGerencial(){ RA._N++; }, renderLancamentos(){}, lerSheets: async () => { vm.runInContext('renderAtivo()', RA); return true; } });
+    vm.runInContext('var _gerSegura = false;\n' + pegaM('function renderAtivo(') + '\n' + pegaM('async function _lerSheetsSegura('), RA);
+    await vm.runInContext('_lerSheetsSegura()', RA); const n1 = RA._N; vm.runInContext('renderAtivo()', RA);
+    const T = vm.createContext({ console, Math, Number, String, Array, Object, JSON, isFinite, isNaN });
+    vm.runInContext(['function _escH(', 'function _gerHoraLinhaM(', 'function renderTabelaHoraHora('].map(pegaM).join('\n')
+      + `\nvar fmtN = n => String(n), fmtP = n => n + '%', sc = () => 'ok', PONTOS_DIA = {}, PONTOS_DIA_FALHA = false, _TB = { innerHTML:'' };
+      var document = { getElementById: () => _TB }; var _GER_G = { ok:false, lendo:false };`, T);
+    vm.runInContext('renderTabelaHoraHora(_a)', Object.assign(T, { _a:allM }));
+    ok('o lerSheets do ciclo do gerencial não desenha a tela (quem desenha é o renderGerencial depois da UEP do dia); fora dele, desenha', [n1, RA._N], [0, 1]);
+    ok('rp-core antigo em cache (sem uepHorasDia): a tabela sai com as caixas e ATUALIZE, sem quebrar o lerSheets',
+       [(T._TB.innerHTML.match(/<tr>/g) || []).length, celM(T._TB.innerHTML.split('</tr>')[4])], [11, ['09:00-10:00', '—', '—', '— ATUALIZE', '160']]); }
+  // 4: sem a UEP do dia a META UEP é "—" (era a meta padrão do código, 288/h, que pulava para 314 quando a leitura chegava)
+  ok('sem a UEP do dia, a coluna META UEP diz "—" e não há meta em caixas (celular e PC)',
+     [celM(RM('_gerHoraLinhaM(_h, 0, 2, "LENDO…")', { _h:GM.horas[4] })),
+      cel(R('_gerHoraLinha(_h, 160, 0, null, { est:"LENDO…" })', { _h:horas[4] })).slice(2, 3)],
+     [['09:00-10:00', '276', '—', '— LENDO…', '160'], ['—']]);
+  // 2: a UEP do dia sai JUNTO com as caixas no ciclo do gerencial (3 min), como no PC
+  { const CIC = pegaM('async function cicloRefresh(');
+    const blocoDados = CIC.slice(CIC.indexOf('if(c % A_CADA_DADOS === 0){'), CIC.indexOf('if(PERFIL===\'gerencial\' && c % A_CADA_PESADO === 0){'));
+    ok('celular: no gerencial a leitura do dia sai com o getDados (a cada 3 min), logo depois dele, e a tela desenha uma vez só, depois das duas; o ciclo de 6 min ficou com o histórico',
+       [/await passo\(_lerSheetsSegura\);[\s\S]*if\(PERFIL==='gerencial'\)\{[\s\S]*await lerPontosDia\(\); renderGerencial\(\);/.test(blocoDados),
+        /lerPontosDia/.test(CIC.slice(CIC.indexOf('c % A_CADA_PESADO === 0'))), /sem leitura nova \(tenta a cada 3 min\)/.test(mJS)], [true, false, true]); }
+  { // 8: as três mutações que passavam — o escape do nome, o arredondamento para cima e a borda da tolerância
+    const Ge = RM('PRODUTOS = [{ codigo:"501089003", desc:"VOL 1/1 <b>X</b>", cor:"", uep:2.5 }]; _gerUepModeloM(_k)', { _k:KM });
+    const pe = RM('_gerUepCardsM(_G, _k, null)', { _G:Ge, _k:KM })[3].sub;
+    ok('o nome do produto sai escapado no PARA A META; as caixas arredondam para cima (455,3 ÷ 2,5 = 182,1 → 183)',
+       [pe.includes('<b>X</b>'), pe.includes('&lt;b&gt;X&lt;/b&gt;'), Ge.m.faltaCx], [false, true, 183]);
+    RM('PRODUTOS = _pr', { _pr:PRODM });
+    const allT = allM.filter(r => r.horario < '12:12').concat([rowM('12:12', 0)]);
+    const tolEm = ag => RM('_AGORA = _ag; _gerUepModeloM(_k)', { _ag:ag, _k:Object.assign({}, KM, { allHoje:allT }), PONTOS_DIA:Object.assign({}, PDM, { porHoraModelo:PHM.filter(x => x.hora < '12:12') }) })
+      .horas.find(h => h.inicio === '12:12').tol;
+    ok('a tolerância vale até 13:14 e acaba às 13:15 (o 12:12-13:00 fecha às 13:00, + 15 min)', [tolEm(780), tolEm(794), tolEm(795)], [true, true, false]);
+    RM('_AGORA = 982; PONTOS_DIA = _pd', { _pd:PDM }); }
+  { // 9: um item torto no porHoraModelo não derruba o gerencial (o PC tinha try em volta do _tvUepMontar); rp-core antigo em cache, idem
+    const Gt = RM('PRODUTOS = []; PONTOS_DIA = Object.assign({}, _pd, { porHoraModelo:_phm.concat([null]) }); _gerUepModeloM(_k)', { _pd:PDM, _phm:PHM, _k:KM });
+    const sem = vm.createContext({ console, Math, Number, String, Array, Object, JSON, isFinite, isNaN });
+    vm.runInContext('function nowMin(){ return 982; }\n' + pegaM('function _gerUepModeloM('), sem);
+    ok('um item null no porHoraModelo: o modelo sai sem os minutos e o "sai às" (m null), não quebra; sem o uepGerMontar (rp-core antigo), as caixas julgam',
+       [Gt.ok, Gt.m, Math.round(Gt.feito), vm.runInContext('_gerUepModeloM({ minNorm:468, allHoje:[] }).card.sub', sem)],
+       [true, null, 2306, 'o módulo base está desatualizado — feche e abra o app']);
+    RM('PRODUTOS = _pr; PONTOS_DIA = _pd', { _pr:PRODM, _pd:PDM }); }
+  { // 10: os minutos que restam em h:mm (de manhã eram "nos 300 min")
+    const K10 = Object.assign({}, KM, { minNorm:60, allHoje:allM.map(r => r.horario <= '07:00' ? r : Object.assign({}, r, { producaoHora:null })) });
+    const G10 = RM('_AGORA = 8*60; PONTOS_DIA = Object.assign({}, _pd, { uep:{ normal:200, he:0, codigos:10, cxSem:0 } }); _gerUepModeloM(_k)', { _pd:PDM, _k:K10 });
+    ok('08:00 com 200 UEP feitas, a meta não cabe: "nos 7h47 que restam" (467 min), não "nos 467 min"',
+       / nos 7h47 que restam$/.test(RM('_gerUepCardsM(_G, _k, null)', { _G:G10, _k:K10 })[3].sub.replace(/<[^>]+>/g, '')), true);
+    RM('_AGORA = 982; PONTOS_DIA = _pd', { _pd:PDM }); }
+  // ── a tela: o que saiu, e o render
+  const RGM = pegaM('function renderGerencial(');
+  ok('celular: o render pinta as duas grades pela montagem do núcleo; saíram o % DA META DO DIA, a PROJEÇÃO FINAL em caixas e o NEC. P/ META',
+     [/const G = _gerUepModeloM\(k\);/.test(RGM), /pinta\(_gerUepCardsM\(G, k, atrKpi\)\)/.test(RGM), /pinta\(_gerCxCardsM\(k, !G\.ok \|\| G\.velha\)\)/.test(RGM),
+      /id="kpi-grid2"/.test(mob), /'% DA META DO DIA'|'PROJEÇÃO FINAL'|'NEC\. P\/ META'|'PRODUÇÃO REAL'/.test(mJS)], [true, true, true, true, false]);
+  ok('celular: o ⚠ de hora fraca e o +N do atraso em caixas saíram da tabela; o getMediaHoras não é mais lido (uma chamada a menos no login)',
+     [/MEDIA_HORAS|calcAtrasoHoras\(|action=getMediaHoras|lerMediaHoras\(/.test(mJS), /<th class="td-num"[^>]*>CAIXAS<\/th>/.test(mob)], [false, true]);
+  ok('celular: nenhuma leitura nova — a montagem não chama o Apps Script',
+     /jsonpFetch|carregarProdutos|lerPontosDia/.test(['function _gerUepModeloM(', 'function _gerUepCardsM(', 'function _gerCxCardsM(', 'function _gerHoraLinhaM('].map(pegaM).join('\n')), false);
+  // ── os minutos do turno pelo fim que o backend manda (calcKPIs do celular)
+  { const C2 = vm.createContext({ console, Math, Number, String, Array, Object, JSON, isFinite, isNaN, window: {} });
+    C2.window = C2;
+    vm.runInContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'), C2);
+    vm.runInContext(`var _D0 = Date; Date = class extends _D0 { constructor(...a){ super(...(a.length ? a : [2026, 10, 13, 18, 0])); } };
+      var CFG = { turnoInicio:'07:00', turnoFim:'17:00', almocoInicio:'11:00', almocoFim:'12:12', metaDia:1800 }; var DADOS = [];
+      function nowMin(){ return 18*60; }`, C2);
+    ['function getSlots(', 'function calcKPIs('].forEach(f => vm.runInContext(pegaM(f), C2));
+    C2._L = SL.filter(s => !s.he).map(s => Object.assign(rowM(s.inicio, 100), { data:vm.runInContext('hojeStr()', C2), metaHora:200, metaDia:1800 }));
+    ok('calcKPIs do celular: a jornada inteira lançada soma 527 min (o 16:00-16:59 vale 59, como no PC e no UEP_MIN_DIA)',
+       vm.runInContext('DADOS = _L; calcKPIs().minNorm', C2), 527); }
 }
 
 console.log(falhas === 0

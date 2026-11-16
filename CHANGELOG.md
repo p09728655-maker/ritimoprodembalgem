@@ -11,6 +11,79 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## mobile 1.50.0 · v7.247.0 · rp-core 1.18.0 — 16/11/2026 · GERENCIAL DO CELULAR: a UEP na frente
+
+PPCP: *"ajustar app agora, mas antes me mostre como vai ficar"* → prévia com o
+retrato de 13/11 às 16:22 → *"ok implementar"*. É a mesma mudança que o
+gerencial do PC recebeu na v7.243.0/7.244.0.
+
+- **Um veredito só, o da UEP.** O 1º card é o **UEP DO DIA**, com o selo, os
+  minutos atrás ou à frente do ritmo, o feito × o esperado e a UEP de hora
+  extra. Até a 1.49.0 a mesma tela dizia *ABAIXO DO RITMO* no card % DA META
+  DO DIA (caixas) e *ATENÇÃO* no card UEP DO DIA.
+- **O ATRASO vem logo abaixo** (era o 1º card). O número não mudou. Os dois
+  cabem na primeira tela de um celular de 360×740.
+- **RITMO · UEP/HORA e PROJEÇÃO · UEP**, sem cor.
+- **PARA A META**: quanto falta em UEP, quantas caixas isso dá no produto de
+  agora, e se a meta *sai às HH:MM* ou *não cabe até 17:00*. Quando não cabe,
+  diz também o ritmo que a meta pede no que resta. Substitui o NEC. P/ META em
+  cx/h.
+- **EM CAIXAS**, sem cor: CAIXAS (normal + HE · cx/h), CAIXAS PROGRAMADAS
+  (% feito · faltam), PONTOS e PESO.
+- **HORA A HORA em UEP**: UEP · META UEP · % DA META (a cor da linha) ·
+  CAIXAS, com a meta da hora em caixas embaixo. Hora extra sem veredito. A hora
+  de agora diz *ATÉ HH:MM*. A hora que fechou em zero e ainda aceita lançamento
+  diz *AINDA ACEITA*. Saíram o *+N* do atraso acumulado em caixas e o ⚠ de hora
+  fraca (média histórica de caixas).
+- **PRODUTOS EMBALADOS HOJE** abre pela UEP (com a de hora extra); as caixas
+  ficam ao lado. Cada produto mostra a UEP em destaque. A faixa reparte a hora
+  pela UEP, como no PC.
+- **Sem a UEP do dia** (lendo, leitura falhou, cadastro sem UEP), o selo volta
+  para as CAIXAS PROGRAMADAS, e a tabela diz LENDO… / NÃO LIDA / SEM UEP sem
+  pintar o %.
+- **Uma conta só para o PC e o celular** (`rp-core.js` 1.18.0:
+  `uepGerMontar`, `uepHorasDia`, `uepHoraJulga`, `uepProj`, `uepDoProduto`…).
+  Os nomes antigos do PC delegam para elas. No PC nada muda na tela (v7.247.0
+  só pela troca de arquivo). O teste confere o celular contra o PC no retrato
+  de 13/11.
+- **Uma leitura a menos no login do celular**: o `getMediaHoras` só servia ao
+  ⚠ de hora fraca e não é mais lido.
+- **No gerencial do celular, a UEP do dia passa a ser lida junto com as
+  caixas, a cada 3 min** (era a cada 6). Com as duas em momentos diferentes, a
+  hora recém-lançada aparecia "SEM UEP" e o selo do card podia cair por até
+  3 min. Custo: uma leitura a mais a cada 6 min por celular gerencial; o
+  operador não muda.
+- **A tela desenha uma vez só, depois das caixas e da UEP do dia.** Antes, por
+  alguns segundos (até 75 s com o Apps Script frio), as caixas novas apareciam
+  com a UEP anterior.
+- **Estados de leitura ditos com clareza:**
+  - a leitura do dia que falhou diz "não veio";
+  - com a UEP de antes da última leitura que falhou, o card diz de que horas ela
+    é e **não dá selo**, porque comparada com os minutos de agora diria "ABAIXO"
+    sem a linha ter parado. Até a leitura voltar, o selo vai para as CAIXAS
+    PROGRAMADAS, e a hora sem UEP diz NÃO LIDA;
+  - sem a hora a hora lida, os cards dizem isso (antes: "jornada encerrada" às
+    10:00);
+  - sem a UEP do dia, a coluna META UEP diz "—" (no PC também; antes, a meta
+    padrão do código, 288/h);
+  - a falha de ontem não passa para hoje.
+- **"178 cx em HE"** na linha do produto (antes "178 em HE", que embaixo da UEP
+  lia como UEP).
+
+**Atenção — o que muda de número no celular:**
+
+| | antes (1.49.0) | agora (1.50.0) |
+|---|---|---|
+| veredito do dia | % DA META DO DIA em caixas (*ABAIXO DO RITMO* em 13/11 16:22) **e** o selo da UEP (*ATENÇÃO*) | só o da UEP: *ATENÇÃO · 28 min atrás do ritmo* |
+| tabela hora a hora | % em caixas contra a meta da hora + atraso acumulado (09:00: 76,9%) | % da meta de UEP da hora (09:00: 87,9%, 160 cx de 182) |
+| minutos da última hora | 16:00–17:00 = 60 min | 16:00–16:59 = 59 min, como no PC e no `UEP_MIN_DIA` (o esperado da UEP muda 1 min no fim do dia; o selo das caixas, que só aparece sem a UEP, muda ~0,2% o dia todo) |
+
+**Correção junto — a hora extra da madrugada no PRODUTOS EMBALADOS HOJE.** Em
+dia que começa às 05:00 (C3 = 5), o celular trocava o início do turno pelo da
+C3, e o quadro contava 05:00–07:00 como jornada. Por isso não mostrava hora
+extra nenhuma (04/11: 0 cx em vez de 244). Agora a jornada do quadro começa às
+07:00, a régua do PC e do `.gs`.
+
 ## v7.246.1 — 16/11/2026 · correções da revisão da v7.246.0
 
 - **O 🖨 TAKT DA SEMANA voltou a ter uma folha só.** O item *embalou antes* na

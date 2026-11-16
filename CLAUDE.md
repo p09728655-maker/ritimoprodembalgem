@@ -12,7 +12,8 @@ via Google Apps Script (JSONP).
   formatação (`p2`/`fmtN`/`fmtP`), horário (`toMin`/`fromMin`/`normHora`), data
   (`hojeStr`/`dtToStr`), `mergeMedias`, `calcAtrasoHoras`, `sc`,
   `atrasoVencido` (o card ATRASO do celular, 1.14.0), `pdiaParMontar` (as
-  paradas na faixa do PRODUTOS EMBALADOS HOJE, 1.16.0). Só função
+  paradas na faixa do PRODUTOS EMBALADOS HOJE, 1.16.0), `uepGerMontar` e
+  companhia (o gerencial com a UEP na frente, PC e celular, 1.18.0). Só função
   **pura** entra aqui — nada que leia `DADOS`/`CFG` ou toque no DOM.
   `node rp-core.test.js` cobre a regra e falha se algum HTML voltar a declarar
   a própria cópia.
@@ -2126,7 +2127,10 @@ via Google Apps Script (JSONP).
   `PROGRAMACAO` + `PROGRAMACAO_CONCLUIDA`.
 - **Ciclo do mobile (escalonado, uma chamada de cada vez):** tick base de **90s**
   só para o `getParadas` (banner de PRODUÇÃO PARADA quase ao vivo); `lerSheets`
-  a cada 2 ticks (3 min); `getHistory` + `getPontosDia` a cada 4 ticks (6 min).
+  a cada 2 ticks (3 min); `getHistory` a cada 4 ticks (6 min). O `getPontosDia`
+  do gerencial sai **junto com o `lerSheets`** (3 min) desde a 1.50.0 — era a
+  cada 6 min; com a UEP como veredito, a hora recém-lançada aparecia sem UEP e o
+  esperado do card subia sem a UEP dela (ver *GERENCIAL DO CELULAR*).
   Dá ~90 chamadas/hora contra as 240 do ciclo antigo de 1 min. Medido no
   navegador: login = 8 chamadas, 12 min de refresh = 16, botão ATUALIZAR = 5 (6 no gerencial desde a 1.43.0: o cadastro, para a UEP do card ATRASO).
   - `cicloRefresh()` tem **guarda de reentrância** e roda em `await` sequencial —
@@ -3608,6 +3612,14 @@ feito e dá ar de verdade ao que sobrou.
   meio — mesma regra já documentada para o relatório de paradas.
 
 ## GERENCIAL DO PC: A UEP NA FRENTE (v7.243.0 / rp-core 1.17.0; revisão na v7.244.0 / rp-core 1.17.1)
+- ⚠ **Desde o rp-core 1.18.0 (v7.247.0) a CONTA mora no `rp-core.js`**
+  (`uepGerMontar`, `uepHorasDia`, `uepHoraJulga`, `uepCxComHora`, `uepMinTxt`,
+  `uepProj`, `uepDoProduto`, `UEP_HORA_TOL_MIN`) e os nomes do PC delegam
+  (`_gerUepModelo`, `_uepAbaHoras`, `_gerHoraJulga`, `_uepAbaProj`,
+  `_tvUepDoProduto`…) — o celular 1.50.0 usa a mesma. O `G.m` (minutos, falta em
+  caixas, sai às, produto de agora) não vem mais do `_tvUepMontar`: vem do
+  `uepGerMontar` (null sem jornada lançada, como antes). Ver *GERENCIAL DO
+  CELULAR: A UEP NA FRENTE*.
 - ⚠ **A v7.243.0 entrou na `main` antes de a revisão terminar** (o PPCP pediu o
   merge). A revisão achou 3 bloqueios e 6 ajustes; as correções são a v7.244.0,
   num PR aberto sem merge (combinado: o PPCP confere antes). Ver *A REVISÃO
@@ -3666,8 +3678,8 @@ feito e dá ar de verdade ao que sobrou.
   **UEP/CX** · CAIXAS · **EM HE · UEP** (as caixas no `title`) · PARTE. rp-core
   1.17.0: `pdiaMontar` dá `uepHe` (produto e total) e `o.porUep` reparte a hora da
   faixa pela UEP (produto sem UEP na hora → a do dia; sem UEP nenhuma → a hora
-  inteira volta às caixas). **O celular não passa `porUep` e não muda.** rp-core
-  antigo em cache: sem a divisão e o EM HE em caixas.
+  inteira volta às caixas). ~~O celular não passa `porUep` e não muda.~~ — passa
+  desde a 1.50.0. rp-core antigo em cache: sem a divisão e o EM HE em caixas.
 - **Uma leitura a mais, só quando falta**: `_gerCatSeFalta` — sem cadastro neste
   computador (nem o `rpe_cap_cat`), lê o `getProdutos` UMA vez por sessão
   (`PDIA_PC_CATPED`, a mesma marca do clique no PRODUTOS EMBALADOS), no fim do
@@ -3720,6 +3732,94 @@ feito e dá ar de verdade ao que sobrou.
   - Em aberto (menor): o resumo do PRODUTOS EMBALADOS pode dizer *586 em hora
     extra* com a coluna somando 587 (arredondamento das três partes).
 
+## GERENCIAL DO CELULAR: A UEP NA FRENTE (mobile 1.50.0 / v7.247.0 / rp-core 1.18.0)
+- PPCP, 16/11/2026: *"ajustar app agora, mas antes me mostre como vai ficar"* →
+  prévia (artifact privado, o código real do celular rodando no Chromium com o
+  retrato de 13/11 16:22 do teste do PC, antes × depois) → *"ok implementar"*. A
+  fase 2 do *"pode implantar no gerencial primeiro depois vamos para outro"*.
+  Ficaram como propostas: ATRASO em 2º, o cx/h dentro do card CAIXAS, o
+  HISTÓRICO do celular em caixas (o mesmo corte do PC). TV, relatórios, semana,
+  EF do FECHAR DIA e o nome "referência" seguem para depois.
+- **A conta é a do PC, no rp-core** (`uepGerMontar`): o celular só lê
+  (`_gerUepModeloM`: os slots da HORA_A_HORA por `_gerSlotsM`, com os minutos
+  pelo `slotFim` do backend — 16:00-16:59 = 59 —, o PROD_ATUAL e o cadastro
+  `PRODUTOS`, a tolerância `LANC_TOLERANCIA_MIN`) e desenha (`_gerUepCardsM`,
+  `_gerCxCardsM`, `_gerHoraLinhaM`, `renderTabelaHoraHora`). O teste confere a
+  montagem do celular contra a do PC no mesmo retrato (esperado 2.452, 28 min
+  atrás, 37 min, 228 cx, cada hora).
+- **1ª grade (`#kpi-grid`, "KPIs DO DIA · UEP")**: UEP DO DIA · META (`larga
+  hero`, o ÚNICO selo, `<b>` em cor + `uepMinTxt`, e embaixo feito × esperado,
+  HE, cx sem UEP) · ⚠ ATRASO (o card de sempre, 2º) · RITMO · UEP/HORA e
+  PROJEÇÃO · UEP (`uk`, sem cor) · PARA A META (`larga uk`: ≈ cx do produto de
+  agora; *sai às* / *não cabe até 17:00 … pede X UEP/h nos N min que restam* /
+  *jornada encerrada*). No tablet (≥ 700 px, 4 colunas) o PARA A META ocupa 2
+  colunas, ao lado do ritmo e da projeção.
+- **2ª grade (`#kpi-grid2`, "EM CAIXAS")**: CAIXAS (normal + HE · cx/h) ·
+  CAIXAS PROGRAMADAS (% feito · faltam) · PONTOS · PESO, sem cor. Só sem a UEP
+  do dia (`!G.ok`) o programado ganha o selo (`slRitmo(k.efRitmo)`).
+- **Saíram**: PRODUÇÃO REAL, CAIXAS EM HORA EXTRA, META DO DIA, % DA META DO DIA,
+  RITMO ATUAL, PROJEÇÃO FINAL (cx) e NEC. P/ META; na tabela, o *+N* do atraso
+  acumulado em caixas (`calcAtrasoHoras`) e o ⚠ de hora fraca — e com ele o
+  `getMediaHoras`/`lerMediaHoras`/`MEDIA_HORAS` do celular (uma chamada a menos
+  no login).
+- **Tabela**: HORA · UEP · META UEP · % DA META (`uepHoraJulga`; cor só com
+  veredito; HE `acc` + H. EXTRA; ATÉ HH:MM; AINDA ACEITA; PARTE SEM UEP) ·
+  CAIXAS (+ `meta N` embaixo, `.td-n2`). Sem a UEP do dia: LENDO… / NÃO LIDA
+  (`PONTOS_DIA_FALHA`) / SEM UEP, sem pintar o %.
+- **PRODUTOS EMBALADOS HOJE**: o resumo abre pela UEP (`· N em HE` em âmbar, o
+  mesmo arredondamento do card) e as caixas em tinta mais fraca (`.pdia-res-n.sec`);
+  cada produto com a UEP em destaque; `porUep: true` (a faixa pela UEP, como o PC).
+- **Correção junto**: o `processarResposta` troca o `CFG.turnoInicio` pela C3, e
+  o `pdiaMontar` do celular recebia `turnoIni` 05:00 nos dias com C3 = 5 — a
+  madrugada não saía em hora extra no quadro (04/11: 0 cx em vez de 244), com o
+  card dizendo "+392 em hora extra" acima. Hoje
+  `Math.max(toMin(CFG.turnoInicio), LANC_MADRUGADA_FIM)` (07:00, a janela do PC
+  e do `.gs`).
+- **Os minutos da hora pelo `slotFim`** também no `calcKPIs` do celular
+  (`minDoSlot`): a jornada inteira soma 527, como no PC. O esperado da UEP muda
+  1 min no fim do dia; o `efRitmo` das caixas (só julga sem a UEP do dia) muda
+  ~0,2% o dia todo (o `minTurno` vai de 528 para 527).
+- **A REVISÃO (antes do merge, achados corrigidos no mesmo PR)**:
+  - **a UEP do dia sai JUNTO com as caixas** no ciclo do gerencial (3 min, era 6):
+    no tick só das caixas, a hora recém-lançada saía SEM UEP / PARTE SEM UEP e o
+    esperado do card subia sem a UEP dela. Uma leitura a mais a cada 6 min por
+    celular gerencial (o operador não muda). E a tela desenha UMA vez, depois
+    das duas leituras (`_lerSheetsSegura` / `_gerSegura`: o `lerSheets` do ciclo e
+    do ATUALIZAR não desenha o gerencial; quem desenha é o `renderGerencial`
+    depois do `lerPontosDia`) — senão, por segundos (75 s no cold start), as
+    caixas novas com a UEP anterior;
+  - **UEP VELHA** (`G.velha` = `G.ok && PONTOS_DIA_FALHA`: a última leitura do dia
+    não veio e a da tela é de antes): **sem selo** no 1º card (*"UEP de HH:MM — a
+    última leitura não veio"*, `acc`), o selo vai para as CAIXAS PROGRAMADAS, e a
+    hora sem UEP diz NÃO LIDA, sem %. Comparada com os minutos de agora, ela dava
+    *ABAIXO · 60 min atrás* sem a linha ter parado (2ª revisão). ⚠ O PC não tem
+    o `velho` (lê as duas no mesmo ciclo; com a leitura falhando ele faz o de antes);
+  - **sem a HORA_A_HORA lida** (o getDados falhou, a leitura do dia não), os slots
+    do `getSlots` (`_gerSlotsM`, hora extra pela janela 07:00–fim do turno) e os
+    cards dizem *"a hora a hora ainda não foi lida"* — era "jornada encerrada"
+    às 10:00;
+  - a leitura do dia que falhou diz *"não veio"* no 1º card (era "aguardando…"
+    com a tabela dizendo NÃO LIDA; "não veio" cobre o timeout e o `ok:false`); a
+    falha de ontem não passa para hoje (`_pontosDiaDeHoje` zera o
+    `PONTOS_DIA_FALHA` junto);
+  - **sem a UEP do dia, META UEP "—"** na tabela (celular e PC): era a meta padrão
+    do código (288/h) pulando para a da planilha quando a leitura chegava;
+  - a linha do produto diz *"178 cx em HE"* (`heTxt` do rp-core): embaixo de
+    "2.697 UEP" o "178 em HE" lia como UEP;
+  - o `m` do `uepGerMontar` é protegido (try, como o PC era em volta do
+    `_tvUepMontar`); rp-core antigo em cache (sem `uepGerMontar`/`uepHorasDia`)
+    → as caixas julgam, o card diz para fechar e abrir o app e a tabela sai só
+    com as caixas (ATUALIZE) — sem isso ela lançava dentro do `lerSheets`;
+  - os minutos que restam em h:mm (*"nos 7h47"*, não *"nos 467 min"*);
+  - a tabela HORA A HORA com menos ar nas laterais (`.tbl.hh`): a 360 rolava 3 px
+    dentro do cartão, hoje 298/298; a 320 rola 13 px dentro do cartão (era 39 px
+    na 1.49.0).
+- Medido no Chromium (backend simulado, retrato de 13/11, fontes carregadas):
+  360, 390, 430 e 800 px, nada passa da largura da página. Os testes estão no
+  `relatorios.test.js` (*A UEP NA FRENTE no gerencial do celular*, com os achados
+  da revisão) e no `produtos-dia.test.js` (o resumo, a faixa pela UEP, a HE com a
+  C3 em 5); as mutações foram pegas, inclusive as três que a revisão viu passar.
+
 ## EFICIÊNCIA: uma régua só, e é a META DO DIA
 - **O cartão mostrava um número de uma conta com a cor de OUTRA.** O número era
   `efDia` (realizado ÷ meta do DIA) e a cor/status vinham de `ef` (realizado ÷
@@ -3753,7 +3853,7 @@ feito e dá ar de verdade ao que sobrou.
     pega a **cor do selo** (antes lia a cor do número, que agora é tinta).
   - ⚠ **A conta não mudou** — `efNoRitmo` continua sendo quem pinta a tela.
     Trocou qual número ocupa o lugar grande.
-- **Quem usa: TV (telas A e B) e gerencial do celular** (o gerencial do PC julga pela UEP desde a v7.243.0 — ver *GERENCIAL DO PC: A UEP NA FRENTE*; o % DA META DO DIA dele virou fato no card CAIXAS PROGRAMADAS).
+- **Quem usa: TV (telas A e B)** (os gerenciais julgam pela UEP — o do PC desde a v7.243.0, o do celular desde a 1.50.0; o % DA META DO DIA virou fato no card CAIXAS PROGRAMADAS; ver *GERENCIAL DO PC: A UEP NA FRENTE* e *GERENCIAL DO CELULAR: A UEP NA FRENTE*).
   Painel que julga o mesmo instante de dois jeitos é o defeito que este projeto
   mais pagou caro — por isso a conta saiu dos dois HTMLs para o núcleo.
   `rp-core.test.js` cobre a conta e `relatorios.test.js` falha se `sc(k.ef)`
@@ -7266,11 +7366,11 @@ feito e dá ar de verdade ao que sobrou.
     `rp-core` velho em cache: só as caixas (`atrasoTotal`). O cadastro que
     chega redesenha o gerencial. Saiu o card *"⚠ ATRASO NA PROGRAMAÇÃO"* do fim
     da lista (só caixas).
-    - Revisão: o gerencial RELÊ o cadastro no ciclo pesado quando passou de
+    - Revisão: o gerencial RELÊ o cadastro no ciclo (desde a 1.50.0 o das caixas, 3 min) quando passou de
       `PROD_CAT_TTL` (30 min) ou falhou, e no ATUALIZAR (`PROD_CAT_TS` /
       `PROD_CAT_FALHA` no `carregarProdutos`) — uma troca de UEP no dia chega
-      ao card. Falhou e não há UEP: *"cadastro não lido — tenta de novo em 6
-      min"*, nunca "lendo" para sempre; horas pelo cadastro guardado no aparelho
+      ao card. Falhou e não há UEP: *"cadastro não lido — tenta de novo em 3
+      min"* (6 até a 1.49.0), nunca "lendo" para sempre; horas pelo cadastro guardado no aparelho
       (sem leitura na sessão, com falha) dizem isso.
     - **min 0 com UEP é "<1 min", não "sem UEP"** (uma sobra de 1 cx). O cartão
       do PC tinha o mesmo erro: `_uepSubAtr` decide pelo `conta.uVenc > 0` e
