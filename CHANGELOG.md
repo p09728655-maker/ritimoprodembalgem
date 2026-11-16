@@ -41,6 +41,12 @@ nos números nem no `.gs`** (não precisa re-deploy).
   - 2 constantes de regra que não valiam mais (`TKS_N_SEM`, `PAR_PLANEJADA`);
   - 3 funções no celular;
   - 21 variáveis calculadas e nunca usadas.
+- **A memória do projeto foi reorganizada.**
+  - O `CLAUDE.md` caiu de 641 KB para uns 26 KB: ficou o que vale hoje, as
+    armadilhas e o mapa dos temas.
+  - O detalhe de cada tema foi para `docs/memoria/<tema>.md`, sem cortes: 14
+    arquivos, com um índice das seções.
+  - O padrão do código e o revisor mandam ler o arquivo da área antes de mexer.
 - **O Exportar Excel do HISTÓRICO saiu.** A função existia, mas nenhum botão a
   chamava desde antes de 06/11/2026. PPCP: o botão não volta.
 - **Corrigido — PRODUÇÃO/HORA com a UEP de outro período.** A leitura da

@@ -1,0 +1,410 @@
+# Gerencial do PC, do celular e diretoria — memória detalhada
+
+Parte da memória do projeto. O resumo do que vale hoje está no `CLAUDE.md`, na
+seção deste tema; aqui fica o detalhe: o porquê de cada regra, os casos reais,
+as medições e o histórico. É o texto que estava no `CLAUDE.md` até 16/11/2026
+(v7.248.2), movido sem cortes. Regra riscada (`~~…~~`) está revogada.
+
+Mudou uma regra deste tema? Registre aqui, com a data e o caso, e, se muda o
+que vale, atualize também a linha do resumo no `CLAUDE.md`.
+
+## PRODUTOS EMBALADOS HOJE — gerencial do celular (mobile 1.39.0) e do PC (v7.201.0)
+- PPCP, 04/11/2026: *"sugestão para tela gerencial do app celular, colocando os
+  produtos embalados do dia"* → *"não alterar nada, me mostre antes"* → duas
+  prévias (artifact privado, dados reais do dia) → *"o que dá pra melhorar no
+  visual"* → *"implementar a versão 2"*. Quadro `#ger-pdia` entre os KPIs e as
+  PARADAS do `view-gerencial`.
+- **Conta** `pdiaMontar(phm, ph, cat, atual, agoraMin, o)` no **`rp-core.js`**
+  (v7.201.0 / mobile 1.40.0 — era `_pdiaMontar` no celular; com o PC ela virou
+  UMA só, com `pdiaVol`/`pdiaBase`/`pdiaCurto`/`PDIA_LARG`; o teste falha se um
+  painel voltar a ter cópia) · **desenho** do celular `_pdiaHtml` +
+  `_pdiaDetHtml` (sem conta, o teste prende) · **leitura**
+  `renderGerProdutosDia(k.real)` no fim do `renderGerencial` · `_pdiaToggle(i)`
+  abre um produto por vez (`PDIA_ABERTO`, só na sessão).
+- **Nenhuma leitura nova**: `porHoraModelo` (caixas e UEP por hora, produto e
+  cor — a régua do `.gs`) e `porHora` (o log na ordem dos bipes, com o código e
+  a descrição com o VOL), os dois do `getPontosDia` que o gerencial já lê a cada
+  6 min. O `lerPontosDia` passou a guardar o `porHora` e o `lidoEm`.
+- O que mostra: resumo (caixas, UEP, produtos, **trocas de produto**), a
+  **faixa da sequência** (cada hora repartida pelas caixas de cada produto, a
+  hora em andamento só até agora; HE em âmbar, almoço listrado, agora em
+  laranja), a **cobertura** (caixas com produto × PRODUÇÃO REAL, e de que horas
+  é a lista) e uma linha por produto **na ordem em que rodou** (caixas, UEP,
+  cor, horário pelas horas da planilha, HE, barra = parte da UEP do dia). O
+  toque abre **por cor e volume** (só com 2+ volumes embalados hoje) e o **hora
+  a hora**.
+- ⚠ **Sem veredito por produto** (nem verde/vermelho, nem cx/h): o veredito do
+  dia é o selo do % DA META, e hora parcial distorce o ritmo de um produto.
+- **Trocas**: o produto mudou na sequência. Na mesma hora cada produto conta
+  uma vez (A,B,A,B é a esteira com dois lados) e o produto que vinha da hora
+  anterior abre a seguinte — a madrugada pode ser lançada horas depois, e a
+  ordem dos lançamentos dentro da hora não é a da linha.
+- **Código → produto**: com um produto só do modelo no dia, é ele; com vários (o
+  501130 tem quatro mesas), pelo nome (`_pdiaBase`: desc sem o VOL e sem a cor
+  no fim, do catálogo ou do próprio log). O **AGORA** (`PROD_ATUAL`) só casa
+  pelo nome — sem nome, nenhum: o código pode ser de uma mesa irmã que ainda
+  não embalou hoje.
+- A faixa: os blocos alternam dois tons neutros (`#44658F`/`#2E4A6E`, para
+  separar vizinhos) e o nome entra só se couber (`_pdiaCurto`: inteiro, sem as
+  medidas, ou a última palavra — BUFFET 4 PT PRISM → PRISM; referência
+  `PDIA_LARG`=340 px). O % da barra fica numa coluna fixa (as barras alinham).
+- Medido no Chromium com os dados de 04/11: 360, 390 e 430 px, nada passa da
+  largura nem corta; em 360 o hora a hora quebra a descrição em duas linhas.
+- Sem leitura do dia: *"Lendo a produção do dia…"*; dia sem produto lançado diz
+  quantas caixas da HORA_A_HORA ficaram sem produto; falha da conta diz isso
+  (nunca "lendo").
+- **NO PC (v7.201.0)** — PPCP: *"onde daria para colocar no pc"* → *"ok
+  gerencial"* (prévia) → *"ok"*. Card `#ger-pdia` (`.tbl-wrap ger-live-only`)
+  logo abaixo do `#kpi-grid` da aba GERENCIAL; `renderGerProdutosDia(k.real)`
+  depois dos KPIs do `renderGerencial` (só o dia ao vivo — o modo histórico
+  sai antes e o `.ger-live-only` esconde o card; o dia passado não tem o
+  `porHoraModelo`). Fora da impressão do dia (`#ger-pdia` na lista do
+  `@media print`). Pele `#ger-pdia .pdpc-*`, sem verde nem vermelho (o teste
+  prende).
+  - Mesma conta, com `larg: PDIA_PC_LARG` (1100 — o nome inteiro cabe no bloco:
+    BUFFET 4 PT PRISM) e `passo: 60` (uma marca por hora). O desenho
+    (`_pdiaPcHtml`/`_pdiaPcDetHtml`) escreve o "agora" no eixo e tira a hora
+    cheia a menos de 25 min dele; tabela de 8 colunas (PRODUTO · COR · HORÁRIO ·
+    CAIXAS · UEP · EM HE · PARTE DA UEP DO DIA), `min-width:900` com rolagem
+    dentro do card; clique abre um produto por vez (`PDIA_PC_ABERTO`).
+  - Antes da 1ª resposta do `getPontosDia` (`PONTOS_DIA_TS` 0 — o `PONTOS_DIA`
+    nasce com listas vazias) é o `_pontosEstadoTxt`, nunca "nenhuma caixa". O
+    cabeçalho diz a hora da lista. AGORA pelo `PONTOS_DIA.produtoAtual` (+
+    `produtoAtualDesc`).
+  - **A cor de cada lançamento vem do cadastro** (`_pdiaPcCat`: `CAP_RAW`, senão
+    o `rpe_cap_cat` guardado). Sem nenhum, o 1º clique lê o cadastro
+    (`_capBuscar`, a leitura do simulador) **uma vez por sessão**
+    (`PDIA_PC_CATPED`) e redesenha; falhou, o detalhe sai sem a cor.
+  - ⚠ **A barra (parte da UEP do dia) inclui a hora extra**; o MIX DE HOJE da
+    aba ⚖ UEP é só da jornada. Num dia com HE os dois % diferem (04/11 às
+    09:41: HOME ANGEL 66% aqui × 93% lá — 947 de 1.441 UEP com a HE, 799 de
+    855 sem) e os dois estão certos. As dicas do celular e do
+    PC dizem *"com hora extra"*.
+  - Medido no Chromium com os dados de 04/11 às 09:41: 1280, 1366 e 1920 —
+    nada passa da largura, a página não rola de lado, os nomes cabem.
+  - **Faixa de 42 px, nome em até 2 linhas, largura REAL** (v7.215.0, PPCP
+    com o print de um bloco escrito só *MEL*: *"deixar um pouco mais larga e
+    se precisar quebra nome do produto"*). `pdiaCurto(nome, larg, linhas)`:
+    com `linhas` > 1 quebra sem partir palavra e, sem espaço para o nome todo,
+    tenta o FIM do nome (CAMARIM MEL) antes da última palavra; sem `linhas`, a
+    regra de 1 linha de antes (o celular não passa e não muda).
+    `renderGerProdutosDia` mede o `#ger-pdia-corpo` (− 32 px do recuo) e só
+    sem medida (aba escondida, teste) usa os 1.100 de `PDIA_PC_LARG`; um
+    `resize` redesenha (250 ms). `.pdpc-sg` com `white-space:normal`,
+    `line-height:1.1`, `padding:0 3px`. Com os dados de 06/11: 1920 →
+    PENTEADEIRA CAMARIM MEL (2 linhas, bloco de 99 px); 1366/1280 → CAMARIM
+    MEL (69/65 px). HTML novo com `rp-core.js` velho em cache: o 3º argumento é
+    ignorado e cai na regra de 1 linha (sem quebrar nada).
+  - **AS PARADAS NA FAIXA (v7.236.0 / mobile 1.49.0 / rp-core 1.16.0**, PPCP
+    13/11/2026, com o print: *"no timeline colocar as paradas"* → *"sim fazer"*
+    no celular). Faixa fina logo abaixo da sequência, no MESMO eixo (PC
+    `.pdpc-par` 16 px, celular `.pdia-par` 12 px): não programada `var(--red)`,
+    programada (`ehPlanejada` com o mapa de classes) cinza, aberta listrada até
+    agora. Linha embaixo do eixo: N paradas · tempo (não programadas) · PARADA
+    AGORA · legenda. No PC o `title` da marca diz tipo, horário, duração e
+    motivo; no celular a linha é um botão (`_pdiaParVer`) que põe as PARADAS DO
+    DIA em *Hoje*, abre o detalhe e rola até lá.
+    - **Conta** `pdiaParMontar(lista, F, o)` no **`rp-core.js`** (UMA para os
+      dois; o teste falha se um painel tiver cópia): `durProdutiva` +
+      `ehPlanejada` do `paradas-calc` (o almoço sai da marca e da soma; parada
+      toda no almoço, de zero ou sem horário, fora). Os totais (só ENCERRADAS)
+      fecham com o `RP_PARADAS.stats` = o TEMPO TOTAL PARADO das paradas de HOJE
+      (o teste confere). Nenhuma perda em caixas aqui. `PDIA_PAR_ROT_PX`=44: a
+      duração escrita na marca só a partir dessa largura. **Desenho**
+      `_pdiaPcParHtml` / `_pdiaParHtml` (sem conta); `_pdiaPcHtml(M, aberto, P)`
+      e `_pdiaHtml(M, aberto, lidoEm, P)` — sem `P` (null), o quadro de antes.
+    - **Leitura do PC** `lerParadasDoDia` → `getParadas` (só o dia; lê a aba
+      PARADAS inteira, barato só pelo cache de 20 s do `.gs`), 2 tentativas em
+      sequência, voo compartilhado, `PDIA_PAR = {dia, ts, lista}`; falhou →
+      `PDIA_PAR_FALHA`, mantém a lista de HOJE (*"não atualizou"*, também com a
+      lista de mais de dois ciclos — o ciclo é o intervalo de atualização do
+      painel, 1–60 min, nunca menos que 5). Só com `_pdiaParPrecisa()`: GERENCIAL ao vivo
+      (`!GER_DATA`), fora da diretoria e da TV. No `_cicloLeitura` DEPOIS do
+      `renderGerencial` (`_cicloVoo` marca o ciclo no ar e só o dono a
+      desmarca — o ↻ com um ciclo no ar não a zera antes), na carga inicial
+      depois da leitura do dia, e ao abrir a aba (`_pdiaParSeVelha`: lista com
+      mais de 5 min → espera `_pdiaParOcupada` = o ciclo, a aba PARADAS
+      `_parBusy` e o `_uepLendo`, reconfere e só então lê).
+    - **Leitura do celular**: nenhuma nova — o `PARADAS_HOJE` do `carregarParadas`
+      (90 s), que agora marca `PARADAS_HOJE_TS`/`_DIA`/`_FALHA` e redesenha o
+      quadro. Só a LEITURA marca falha (`leu`): erro de desenho depois de uma
+      leitura boa não vira *"não atualizou"*; e o redesenho na falha
+      (`_parFalhouLeitura`) não escapa — o REGISTRAR/START espera o
+      `carregarParadas` para soltar o botão. O `renderGerProdutosDia` chama o
+      `_pontosDiaDeHoje` (redesenhado a cada 90 s, na virada não mistura os
+      produtos de ontem com as paradas de hoje).
+    - Parada ABERTA com o relógio do aparelho atrás do INÍCIO gravado pelo
+      celular do operador: continua PARADA AGORA (zero, sem marca), nunca some.
+    - Todas programadas: sem o *"(0 s não programadas)"*.
+    - Estados da faixa (`_pdiaParDoPainel`, um por painel): sem Apps Script →
+      sem faixa; sem o `paradas-calc` ou rp-core antigo (sem `pdiaParMontar`) →
+      diz; antes da 1ª leitura (ou lista de outro dia) → *lendo*; falhou →
+      *paradas não lidas*; zero → *nenhuma parada apontada hoje*.
+    - ⚠ **O motivo vai em ATRIBUTO no PC** (`title`, `aria-label`): o `_rpEsc`
+      só escapa `&<>`, então o desenho usa `ea` (escapa `"` e `'` também) —
+      achado da revisão: `x" onmouseover="…` abria o atributo. O `_escH` do
+      celular já escapa aspas. ⚠ O `title`/`aria-label` do NOME do produto no
+      `_pdiaPcHtml` ainda usa o `_rpEsc` (pré-existente, não mexido).
+    - ⚠ A pele do PRODUTO continua sem verde/vermelho; o vermelho é só das
+      regras de paradas (o teste separa as duas peles).
+    - Sem produto lançado o quadro sai cedo (sem faixa): com a linha parada
+      desde o começo do turno, a PARADA AGORA não aparece aqui.
+    - Medido no Chromium: PC 1920 e 1366, celular 360, 390 e 430 — nada passa
+      da largura; a linha das paradas quebra em duas a 1366 e no celular.
+
+## GERENCIAL DO PC: A UEP NA FRENTE (v7.243.0 / rp-core 1.17.0; revisão na v7.244.0 / rp-core 1.17.1)
+- ⚠ **Desde o rp-core 1.18.0 (v7.247.0) a CONTA mora no `rp-core.js`**
+  (`uepGerMontar`, `uepHorasDia`, `uepHoraJulga`, `uepCxComHora`, `uepMinTxt`,
+  `uepProj`, `uepDoProduto`, `UEP_HORA_TOL_MIN`) e os nomes do PC delegam
+  (`_gerUepModelo`, `_uepAbaHoras`, `_gerHoraJulga`, `_uepAbaProj`,
+  `_tvUepDoProduto`…) — o celular 1.50.0 usa a mesma. O `G.m` (minutos, falta em
+  caixas, sai às, produto de agora) não vem mais do `_tvUepMontar`: vem do
+  `uepGerMontar` (null sem jornada lançada, como antes). Ver *GERENCIAL DO
+  CELULAR: A UEP NA FRENTE*.
+- ⚠ **A v7.243.0 entrou na `main` antes de a revisão terminar** (o PPCP pediu o
+  merge). A revisão achou 3 bloqueios e 6 ajustes; as correções são a v7.244.0,
+  num PR aberto sem merge (combinado: o PPCP confere antes). Ver *A REVISÃO
+  (v7.244.0)* no fim desta seção.
+- PPCP, 13/11/2026: *"precisamos ir adaptando a tela gerencial para priorizar
+  as UEPs"* → *"e também o painel tb… tv"* → três decisões (o 2.761 vira a
+  **META oficial**; na TV o selo virá da UEP, dito em minutos e caixas do produto
+  de agora; o celular muda junto) → prévias com os números do dia → *"pode
+  implantar no gerencial primeiro depois vamos para outro"*. **Fase 1 = só o
+  gerencial do PC.** TV, celular, HISTÓRICO, relatórios, semana/Tela D, a EF do
+  FECHAR DIA e o nome "referência" (relatório CAIXAS × PONTOS × UEP, 📏 RÉGUAS,
+  `UEP_REF_STATUS`) ficam para as próximas.
+- **Por quê**: no HISTORICO de 16/10 a 12/11 (19 dias úteis, jornada) caixas e
+  UEP discordaram em **12**; o gerencial mostrava os dois selos (% DA META em
+  caixas e UEP DO DIA). Ex.: 04/11 caixas 64% × UEP 104%; 06/11 e 11/11 caixas
+  ~100% × UEP 84–86%. ⚠ A UEP julga o RITMO da linha contra a capacidade, não a
+  ENTREGA do programado — por isso o programado e o ATRASO ficam à vista.
+- **1ª linha (`#kpi-grid`, `_gerUepCards`)**: UEP DO DIA · META (hero, `ger-hero`,
+  2 colunas, o ÚNICO selo — `slRitmo` do `uepCard`, + *N min atrás/à frente do
+  ritmo* pelo `difMin` do `_tvUepMontar`) · ⚠ ATRASO · LOTES VENCIDOS em horas
+  (`_gerAtrasoKpi` = o `atrasoVencido` do rp-core, o mesmo do celular; sem cadastro,
+  as caixas) · RITMO UEP/H e PROJEÇÃO UEP (`_uepAbaProj`, sem cor) · PARA A META
+  (UEP e ≈ caixas do produto de agora; *sai às* ou *não cabe até 17:00*).
+- **2ª linha (`#kpi-grid2`, `_gerCxCards`)**: CAIXAS · CAIXAS PROGRAMADAS (a META
+  DO DIA em caixas; *80,0% feito* como fato) · RITMO CX/H · PONTOS · PESO — **sem
+  cor**. Só sem UEP nenhuma (`semUep`: backend ou cadastro) as caixas programadas
+  voltam a julgar: nunca uma tela sem veredito.
+- **Saíram do gerencial ao vivo**: % DA META DO DIA, PROJEÇÃO FINAL (cx), HORAS
+  PRODUTIVAS, MELHOR/PIOR HORA (cx), *⚠ ATRASO NA PROGRAMAÇÃO* (cx); na tabela
+  ACUMULADO, META/H, EFICIÊNCIA, o *(+N)* e o ⚠/▲ da média histórica de caixas
+  (era um 2º veredito por hora). O `calcAtrasoHoras` e o `getMediaHoras` seguem
+  (a TV usa).
+- **Tabela** (`_gerHoraLinha`, a MESMA no dia de hoje e no dia passado; o thead é
+  refeito, `_gerTheadUep`/`_gerTheadCx`): HORÁRIO · UEP · META UEP · % DA META
+  (cor `sc`) · CAIXAS · **META EM CX** (meta da hora × caixas COM UEP ÷ UEP da
+  hora — `uepCxComHora` do rp-core; a hora de agora sem caixa: ÷ UEP/cx do produto de agora)
+  · STATUS. Hora extra e hora em andamento (`ATÉ HH:MM`) não são julgadas; hora
+  só com código sem UEP = *SEM UEP* (`0*`), nunca ABAIXO. As horas são as do
+  `_uepAbaHoras` (a régua da aba ⚖ UEP).
+- **Análise** (`_gerAnaliseUep`/`_gerAnaliseUepHtml`): RITMO NECESSÁRIO em UEP/h
+  (≈ cx/h do produto de agora), TENDÊNCIA e PICO/VALE pelo **% da meta da hora**
+  (em caixas o 12:12 de 48 min era sempre o vale), só horas de jornada fechadas.
+  Sem UEP: `_gerAnaliseCxHtml` (a de antes).
+- **Gráficos** (`_gerChartsUep`): UEP por hora (cor da tabela, HE âmbar, a hora de
+  agora cinza) × meta da hora; caixas por hora numa cor só, sem meta. Títulos
+  `#ger-ch1-ttl`/`#ger-ch2-ttl`. Cor literal (canvas).
+- **Dia passado** (`renderGerencialHist`, `comUep = dia.uep != null`): UEP gravada
+  × META UEP daquele dia no hero (texto `sl`), + FALTOU/META BATIDA, UEP EM HORA
+  EXTRA e UEP POR CAIXA; a tabela e os gráficos em UEP com o `uepHora` (cadastro
+  ATUAL); a análise `_gerAnaliseUepHistHtml`. Dia sem UEP gravada: o de antes, em
+  caixas. Com UEP gravada mas sem `uepHora`: a tabela em caixas SEM cor.
+- **PRODUTOS EMBALADOS HOJE do PC**: o resumo abre com a UEP (`pdpc-n big`) e
+  *X na jornada + Y em hora extra* (total = `round(M.uep)`, jornada =
+  `round(M.uep − M.uepHe)`, HE = a diferença — fecha com as linhas; pode ficar 1
+  UEP longe de outra tela); tabela PRODUTO · COR · HORÁRIO · **UEP** (`pdpc-uu`) ·
+  **UEP/CX** · CAIXAS · **EM HE · UEP** (as caixas no `title`) · PARTE. rp-core
+  1.17.0: `pdiaMontar` dá `uepHe` (produto e total) e `o.porUep` reparte a hora da
+  faixa pela UEP (produto sem UEP na hora → a do dia; sem UEP nenhuma → a hora
+  inteira volta às caixas). ~~O celular não passa `porUep` e não muda.~~ — passa
+  desde a 1.50.0. rp-core antigo em cache: sem a divisão e o EM HE em caixas.
+- **Uma leitura a mais, só quando falta**: `_gerCatSeFalta` — sem cadastro neste
+  computador (nem o `rpe_cap_cat`), lê o `getProdutos` UMA vez por sessão
+  (`PDIA_PC_CATPED`, a mesma marca do clique no PRODUTOS EMBALADOS), no fim do
+  `_cicloLeitura` e da carga inicial, só com o gerencial ao vivo.
+- Medido no Chromium (Apps Script simulado com os lançamentos reais de 13/11,
+  Chart.js local): 1920, 1366 e 1280 — nada passa da largura; o hero tem 2
+  colunas e a 2ª linha cabe numa só.
+- Testes: `relatorios.test.js` (*A UEP NA FRENTE no gerencial do PC*, com o retrato
+  real de 13/11: os cards, um selo só, as horas 09:00/12:12/15:00/HE/agora/sem UEP,
+  a análise, o ATRASO, a leitura do cadastro) e `produtos-dia.test.js` (o resumo,
+  as colunas, o `uepHe`, a faixa pela UEP e o celular igual).
+- **A REVISÃO (v7.244.0)** — o que mudou:
+  - **Uma regra para julgar a hora: `_gerHoraJulga(h, cx, cxCom)`** (tabela,
+    análise, gráfico, ao vivo e dia passado). Não julga: hora extra, a hora de
+    agora, sem lançamento, sem meta, só caixas sem UEP. **Hora fechada em ZERO
+    caixas é julgada** (0%, ABAIXO, entra no vale — era "SEM UEP" e sumia: o caso
+    de 28/08). **Parte das caixas sem UEP** (código sem UEP, ou lançada sem
+    produto: caixas da HORA_A_HORA > caixas do registro) → `parte`: o % com `*`,
+    PARTE SEM UEP, sem cor.
+  - **O modelo (`_gerUepModelo(k, agoraMin)`)** guarda `cx` e `min` de cada hora
+    e o `minRest` (o que resta de jornada) — sem depender do `_tvUepMontar`, que
+    não monta antes do 1º lançamento de jornada (era "jornada encerrada" de
+    manhã). Às 16:22 de 13/11 restam 37 min → o ritmo necessário é **738 UEP/h**
+    (o "463" da v7.243.0 era de um modelo escrito à mão no teste).
+  - **`semUep = !G.ok`**: sem a UEP do dia (lendo, falhou, backend, cadastro), as
+    caixas programadas julgam; as horas lançadas dizem LENDO… (`G.lendo`) ou NÃO
+    LIDA (`PONTOS_LEIT.falha`), e NÃO pintam o % — nem a que fechou em zero
+    (`o.est` desliga o `_gerHoraJulga`; o gráfico recebe `!G.ok`). Nunca uma tela
+    sem veredito, nunca dois.
+  - **A hora que acabou de fechar ainda aceita lançamento** (`GER_TOL_MIN` = 15 =
+    o `LANC_TOLERANCIA_MIN` do celular; o teste confere): com 0 caixas e até 15
+    min depois do fim, `h.tol` → AINDA ACEITA, sem veredito e fora do vale. Sem
+    isso o vale do dia era sempre a última hora fechada (2ª revisão).
+  - **Dia passado: `_gerHorasHist(horas, metaDia, uepHH, data)`** — dia útil: a
+    meta da hora = META UEP gravada × minutos ÷ 527 (o 16:00-16:59 vale 59); em
+    sábado e domingo toda hora é hora extra, sem meta (v7.248.0). A
+    célula de UEP diz *pelo cadastro de hoje* (o total do card é o gravado).
+    Só horas com produção chegam aqui (o `arquivarHorasDoDia` grava `real > 0`).
+  - **`GER_CAT_FALHA`**: a leitura do cadastro que falhou faz o ATRASO dizer
+    *cadastro não lido*, nunca "lendo" para sempre.
+  - **Impressão** (`_gerInfoImpressao`): o cabeçalho diz a UEP com o selo e as
+    caixas como fato; no dia passado, o dia da tela.
+  - rp-core 1.17.1: o `uepHe` do produto vem SEM arredondar (o desenho escreve
+    *<1* abaixo de 0,5). `renderChartHora`/`renderChartComp` apagados (sem uso).
+  - Testes rodam a montagem real (`_gerUepModelo` + `_tvUepMontar`), a hora em
+    zero, a parte sem UEP, o sábado de 07/11, a manhã sem jornada, o LENDO…, o
+    cadastro que falhou, a impressão, a hora em tolerância e o NÃO LIDA. 14 de 14
+    mutações pegas.
+  - Em aberto (menor): o resumo do PRODUTOS EMBALADOS pode dizer *586 em hora
+    extra* com a coluna somando 587 (arredondamento das três partes).
+
+## GERENCIAL DO CELULAR: A UEP NA FRENTE (mobile 1.50.0 / v7.247.0 / rp-core 1.18.0)
+- PPCP, 16/11/2026: *"ajustar app agora, mas antes me mostre como vai ficar"* →
+  prévia (artifact privado, o código real do celular rodando no Chromium com o
+  retrato de 13/11 16:22 do teste do PC, antes × depois) → *"ok implementar"*. A
+  fase 2 do *"pode implantar no gerencial primeiro depois vamos para outro"*.
+  Ficaram como propostas: ATRASO em 2º, o cx/h dentro do card CAIXAS, o
+  HISTÓRICO do celular em caixas (o mesmo corte do PC). TV, relatórios, semana,
+  EF do FECHAR DIA e o nome "referência" seguem para depois.
+- **A conta é a do PC, no rp-core** (`uepGerMontar`): o celular só lê
+  (`_gerUepModeloM`: os slots da HORA_A_HORA por `_gerSlotsM`, com os minutos
+  pelo `slotFim` do backend — 16:00-16:59 = 59 —, o PROD_ATUAL e o cadastro
+  `PRODUTOS`, a tolerância `LANC_TOLERANCIA_MIN`) e desenha (`_gerUepCardsM`,
+  `_gerCxCardsM`, `_gerHoraLinhaM`, `renderTabelaHoraHora`). O teste confere a
+  montagem do celular contra a do PC no mesmo retrato (esperado 2.452, 28 min
+  atrás, 37 min, 228 cx, cada hora).
+- **1ª grade (`#kpi-grid`, "KPIs DO DIA · UEP")**: UEP DO DIA · META (`larga
+  hero`, o ÚNICO selo, `<b>` em cor + `uepMinTxt`, e embaixo feito × esperado,
+  HE, cx sem UEP) · ⚠ ATRASO (o card de sempre, 2º) · RITMO · UEP/HORA e
+  PROJEÇÃO · UEP (`uk`, sem cor) · PARA A META (`larga uk`: ≈ cx do produto de
+  agora; *sai às* / *não cabe até 17:00 … pede X UEP/h nos N min que restam* /
+  *jornada encerrada*). No tablet (≥ 700 px, 4 colunas) o PARA A META ocupa 2
+  colunas, ao lado do ritmo e da projeção.
+- **2ª grade (`#kpi-grid2`, "EM CAIXAS")**: CAIXAS (normal + HE · cx/h) ·
+  CAIXAS PROGRAMADAS (% feito · faltam) · PONTOS · PESO, sem cor. Só sem a UEP
+  do dia (`!G.ok`) o programado ganha o selo (`slRitmo(k.efRitmo)`).
+- **Saíram**: PRODUÇÃO REAL, CAIXAS EM HORA EXTRA, META DO DIA, % DA META DO DIA,
+  RITMO ATUAL, PROJEÇÃO FINAL (cx) e NEC. P/ META; na tabela, o *+N* do atraso
+  acumulado em caixas (`calcAtrasoHoras`) e o ⚠ de hora fraca — e com ele o
+  `getMediaHoras`/`lerMediaHoras`/`MEDIA_HORAS` do celular (uma chamada a menos
+  no login).
+- **Tabela**: HORA · UEP · META UEP · % DA META (`uepHoraJulga`; cor só com
+  veredito; HE `acc` + H. EXTRA; ATÉ HH:MM; AINDA ACEITA; PARTE SEM UEP) ·
+  CAIXAS (+ `meta N` embaixo, `.td-n2`). Sem a UEP do dia: LENDO… / NÃO LIDA
+  (`PONTOS_DIA_FALHA`) / SEM UEP, sem pintar o %.
+- **PRODUTOS EMBALADOS HOJE**: o resumo abre pela UEP (`· N em HE` em âmbar, o
+  mesmo arredondamento do card) e as caixas em tinta mais fraca (`.pdia-res-n.sec`);
+  cada produto com a UEP em destaque; `porUep: true` (a faixa pela UEP, como o PC).
+- **Correção junto**: o `processarResposta` troca o `CFG.turnoInicio` pela C3, e
+  o `pdiaMontar` do celular recebia `turnoIni` 05:00 nos dias com C3 = 5 — a
+  madrugada não saía em hora extra no quadro (04/11: 0 cx em vez de 244), com o
+  card dizendo "+392 em hora extra" acima. Hoje
+  `Math.max(toMin(CFG.turnoInicio), LANC_MADRUGADA_FIM)` (07:00, a janela do PC
+  e do `.gs`).
+- **Os minutos da hora pelo `slotFim`** também no `calcKPIs` do celular
+  (`minDoSlot`): a jornada inteira soma 527, como no PC. O esperado da UEP muda
+  1 min no fim do dia; o `efRitmo` das caixas (só julga sem a UEP do dia) muda
+  ~0,2% o dia todo (o `minTurno` vai de 528 para 527).
+- **A REVISÃO (antes do merge, achados corrigidos no mesmo PR)**:
+  - **a UEP do dia sai JUNTO com as caixas** no ciclo do gerencial (3 min, era 6):
+    no tick só das caixas, a hora recém-lançada saía SEM UEP / PARTE SEM UEP e o
+    esperado do card subia sem a UEP dela. Uma leitura a mais a cada 6 min por
+    celular gerencial (o operador não muda). E a tela desenha UMA vez, depois
+    das duas leituras (`_lerSheetsSegura` / `_gerSegura`: o `lerSheets` do ciclo e
+    do ATUALIZAR não desenha o gerencial; quem desenha é o `renderGerencial`
+    depois do `lerPontosDia`) — senão, por segundos (75 s no cold start), as
+    caixas novas com a UEP anterior;
+  - **UEP VELHA** (`G.velha` = `G.ok && PONTOS_DIA_FALHA`: a última leitura do dia
+    não veio e a da tela é de antes): **sem selo** no 1º card (*"UEP de HH:MM — a
+    última leitura não veio"*, `acc`), o selo vai para as CAIXAS PROGRAMADAS, e a
+    hora sem UEP diz NÃO LIDA, sem %. Comparada com os minutos de agora, ela dava
+    *ABAIXO · 60 min atrás* sem a linha ter parado (2ª revisão). ⚠ O PC não tem
+    o `velho` (lê as duas no mesmo ciclo; com a leitura falhando ele faz o de antes);
+  - **sem a HORA_A_HORA lida** (o getDados falhou, a leitura do dia não), os slots
+    do `getSlots` (`_gerSlotsM`, hora extra pela janela 07:00–fim do turno) e os
+    cards dizem *"a hora a hora ainda não foi lida"* — era "jornada encerrada"
+    às 10:00;
+  - a leitura do dia que falhou diz *"não veio"* no 1º card (era "aguardando…"
+    com a tabela dizendo NÃO LIDA; "não veio" cobre o timeout e o `ok:false`); a
+    falha de ontem não passa para hoje (`_pontosDiaDeHoje` zera o
+    `PONTOS_DIA_FALHA` junto);
+  - **sem a UEP do dia, META UEP "—"** na tabela (celular e PC): era a meta padrão
+    do código (288/h) pulando para a da planilha quando a leitura chegava;
+  - a linha do produto diz *"178 cx em HE"* (`heTxt` do rp-core): embaixo de
+    "2.697 UEP" o "178 em HE" lia como UEP;
+  - o `m` do `uepGerMontar` é protegido (try, como o PC era em volta do
+    `_tvUepMontar`); rp-core antigo em cache (sem `uepGerMontar`/`uepHorasDia`)
+    → as caixas julgam, o card diz para fechar e abrir o app e a tabela sai só
+    com as caixas (ATUALIZE) — sem isso ela lançava dentro do `lerSheets`;
+  - os minutos que restam em h:mm (*"nos 7h47"*, não *"nos 467 min"*);
+  - a tabela HORA A HORA com menos ar nas laterais (`.tbl.hh`): a 360 rolava 3 px
+    dentro do cartão, hoje 298/298; a 320 rola 13 px dentro do cartão (era 39 px
+    na 1.49.0).
+- Medido no Chromium (backend simulado, retrato de 13/11, fontes carregadas):
+  360, 390, 430 e 800 px, nada passa da largura da página. Os testes estão no
+  `relatorios.test.js` (*A UEP NA FRENTE no gerencial do celular*, com os achados
+  da revisão) e no `produtos-dia.test.js` (o resumo, a faixa pela UEP, a HE com a
+  C3 em 5); as mutações foram pegas, inclusive as três que a revisão viu passar.
+
+## TELA DA DIRETORIA — `/diretoria` (v7.116.0)
+- Pedido do PPCP (25/09/2026): *"uma tela para a sala do diretor"*, com UEP,
+  caixas e pontos, pouco texto, link separado. Rota no `vercel.json` para o
+  MESMO HTML; o `<head>` põe `html.modo-dir` (também `?dir`) antes da 1ª
+  pintura — sem splash, login, cabeçalho, rodapé nem barra de versão.
+  `iniciarDiretoria()` liga a `#sec-dir` e o carrossel (`DIR_TEMPO` 20 s).
+- **Um veredito só: a UEP.** Caixas e pontos são tinta. Selo da semana:
+  META BATIDA (UEP ≥ Σ metas dos dias com UEP) ou ABAIXO DA META.
+- **Contas**: `_dirHoje` (lê `_uepAbaDados` — é o 3º leitor dela, o teste conta),
+  `_dirSemana` (`_relSemanaPassada` + `uepHistResumo` + `_qpRealDia`),
+  `_dirUltimos`, e `_gpxDoPainel` para a carteira. `_dir*Html` são desenho (o
+  teste falha se chamarem conta).
+- **Pontos**: hoje pelo `porHoraModelo` (jornada × HE pela hora); semana pelo
+  `getProducaoModeloPeriodo` (inclui HE — o período não separa por hora sem o
+  `cxHora`); carteira pelo `pontos` da programação (`d.pts` no `_cartAberta`,
+  campo ADICIONAL; linha sem o campo → `null`, nunca zero). Pontos só veem caixa
+  lançada com produto: cobertura < `DIR_COB_MIN` (95%) é escrita na tela.
+- **Custo**: histórico 30 min, programação 15 min (`GPX_TTL`), pontos da semana
+  6 h com a soma guardada em `localStorage['rpe_dir_pts']` (a recarga de 28 min
+  do anti-descanso não refaz a leitura). `PREP_PERIODO` guardado e devolvido.
+- Na diretoria `_naTV()` é verdadeiro e versão nova faz `location.reload()`.
+- **Aba ⚖ UEP enxuta** na mesma versão: explicação no `title`, não na tela.
+- **Pontos da semana sem/com HE** (v7.123.0 / `.gs` v5.20): o
+  `getProducaoModeloPeriodo` devolve `pontosHe` por item (soma exata das horas
+  `_ehHoraExtraCaixas`). Sem o campo, o card diz "sem HE não separado" — nunca
+  rateia. ⚠ O `.gs` pulou o número **v5.19** (versão proibida, ver META PADRÃO).
+- **Retrato guardado** (v7.119.0): `_dirGuarda`/`_dirLe`/`_dirRestaura`,
+  chaves `rpe_dir_ret_sheets|pontos|hist|prog`. Do dia só no mesmo dia;
+  histórico 12 h; programação 2 h. ⚠ O `_dirRestaura` roda num `setTimeout(0)`:
+  dentro da inicialização, o `aplicarMetaDiaAutomatica`/`aplicarConfigPainel`
+  ainda tocam coisa não declarada e falhavam calados (sem hora do dado).
+- **Endereço próprio** (v7.121.0): host que começa com `diretoria` (domínio
+  `diretoria-patrimar.vercel.app`, alias do MESMO projeto na Vercel) liga o
+  modo-dir em QUALQUER caminho; o mobile redireciona para `/diretoria`. Cada
+  deploy vale para os dois endereços. Não é segurança do dado (Apps Script
+  público) — separa a tela.
+- **App próprio**: `manifest-diretoria.json` (`id`/`start_url` `/diretoria`,
+  `display: fullscreen`); o `<head>` troca o `<link rel=manifest>` no modo-dir.
+- ⚠ **Na diretoria não rodam `pollParadaTV` nem `lerMediaHoras`** (v7.117.0):
+  disputavam a fila do Apps Script com o `getHistory`, que estourava o tempo.
+  As leituras da diretoria começam no fim do `lerSheetsComRetry`.
+- **Âmbar do "dados de" POR TELA** (v7.126.0, `_dirVelhoMs`): o intervalo da
+  própria leitura + 15 min — HOJE 15, SEMANA 45 (`DIR_HIST_TTL`), PRÓXIMOS DIAS
+  30 (`GPX_TTL`). Com 15 min fixos a SEMANA ficava âmbar com a leitura em dia.
+  A versão em uso (`APP_VER`) fica no canto do rodapé (`.dir-ver`).
+- **O cartão do dia dos PRÓXIMOS DIAS é UM desenho** (`_gpxCartaoHtml(d, pf)`,
+  v7.117.0): `pf='dir'` na diretoria, `pf='gpx'` na aba e no papel — muda só a
+  pele. O trilho de barras saiu dos três.

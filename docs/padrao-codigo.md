@@ -6,7 +6,9 @@ cobrar por máquina está no `node testes.js` (suítes + `lint-js.js`); o resto
 o revisor confere no diff.
 
 Quase tudo aqui veio de um defeito que chegou à fábrica. O porquê de cada
-regra está no CLAUDE.md, na seção do assunto.
+regra está no arquivo do tema, em `docs/memoria/` (o mapa e o resumo do que
+vale hoje estão no CLAUDE.md). **Antes de mexer numa área, leia o arquivo
+dela.**
 
 ---
 
@@ -147,8 +149,10 @@ diferente se corrige só na linha que você já está mexendo.
 
 - **H1.** Uma entrada no `CHANGELOG.md`. **Atenção** (antes → depois) é
   obrigatório quando muda um número exibido ou o formato de um arquivo.
-- **H2.** Regra nova ou mudada vai para a seção do assunto no `CLAUDE.md`; a
-  revogada sai de lá (ou fica marcada como revogada, com a versão).
+- **H2.** Regra nova ou mudada vai para o arquivo do tema em `docs/memoria/`,
+  com a data e o caso; se ela muda o que vale, a linha do resumo no
+  `CLAUDE.md` também. A revogada sai do resumo e fica marcada como revogada no
+  arquivo do tema, com a versão. Seção nova entra no `docs/memoria/README.md`.
 - **H3.** Indicador novo ou mudado: `docs/glossario.md`, com a fórmula
   conferida no código.
 

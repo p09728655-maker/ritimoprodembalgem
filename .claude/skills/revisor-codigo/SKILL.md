@@ -29,6 +29,9 @@ Não reformate, não "modernize" e não comente o que está fora do diff.
 - Com argumento: o commit, a faixa (`a..b`) ou os arquivos pedidos.
 - Para cada função que o diff toca, leia a função INTEIRA no arquivo — o diff
   não mostra quem chama, nem o que vem antes do `return`.
+- Leia o arquivo da memória de cada área que o diff toca (`docs/memoria/`, o
+  mapa está no CLAUDE.md): é lá que está o porquê das regras, e o defeito mais
+  caro deste projeto é desfazer uma regra sem saber por que ela existia.
 
 ## 2. O automático primeiro
 
@@ -82,8 +85,9 @@ Confira a tabela da seção H do padrão contra os arquivos do diff:
   `GS_REPO`?
 - Mudou número exibido ou formato de arquivo e a entrada do CHANGELOG não tem
   **Atenção** com antes → depois?
-- Regra nova sem a seção no CLAUDE.md, ou regra revogada que ficou lá como se
-  valesse?
+- Regra nova sem o registro no arquivo do tema (`docs/memoria/`)? Mudou o que
+  vale e o resumo do CLAUDE.md não acompanhou? Regra revogada que ficou no
+  resumo como se valesse?
 
 ## 5. O relatório
 
