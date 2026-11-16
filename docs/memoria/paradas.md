@@ -831,3 +831,16 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
 - Parada **prevista** entra com o tempo dela e **zero caixa** (esconder faria a
   soma do tempo não fechar com o total); parada inteiramente dentro do almoço
   continua fora de tudo.
+
+## RECORTE DA JORNADA NA CONTA DE PARADAS (paradas-calc 1.4.0 / v7.254.0)
+- Opção nova do `RP_PARADAS.stats`: **`soJornada`** — só o pedaço de cada parada
+  dentro de `cfg.turnoInicio`–`cfg.turnoFim` conta (e dele sai o almoço, como no
+  `durProdutiva`). Parada inteira fora (madrugada, depois das 17:00) sai da conta
+  e vai para o `diag.minForaJornada` / `diag.paradasForaJornada`; a que atravessa
+  o turno conta só o pedaço de dentro. `recorteTurno(ini, fim, cfg)` exportado.
+- Quem usa: o relatório semanal em UEP (o ONDE PERDEMOS compara com a meta da
+  JORNADA — PPCP, 16/11/2026, *"8h05min?"*). **Sem a opção nada muda**: a aba
+  PARADAS, a GESTÃO DE PERDAS, o celular e a TV continuam contando a parada
+  inteira (o teste prende).
+- Turno mal configurado (sem início/fim, ou fim antes do início): não recorta.
+

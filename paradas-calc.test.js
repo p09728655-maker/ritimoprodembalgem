@@ -203,6 +203,25 @@ console.log('\n── microparadas: segundos entram na conta ──');
      RP.durProdutiva('11:30:10', '11:30:40', CFG), 0);
 }
 
+console.log('\n── soJornada (1.4.0): só o pedaço dentro do turno ──');
+// PPCP, 16/11/2026, com o papel da semana 46 ("8h05min?"): o relatório semanal em UEP compara a
+// parada com a meta da JORNADA — a das 05:00–07:00 ou depois das 17:00 de dia útil é hora extra.
+ok('parada inteira dentro do turno: igual ao durProdutiva', RP.recorteTurno('08:10', '08:30', CFG), { d: 20, fora: 0 });
+ok('parada da madrugada (05:30–06:40): toda fora da jornada', RP.recorteTurno('05:30', '06:40', CFG), { d: 0, fora: 70 });
+ok('atravessa o começo do turno (06:40–07:25): 25 dentro, 20 fora', RP.recorteTurno('06:40', '07:25', CFG), { d: 25, fora: 20 });
+ok('atravessa o fim do turno (16:50–17:30): 10 dentro, 30 fora', RP.recorteTurno('16:50', '17:30', CFG), { d: 10, fora: 30 });
+ok('atravessa o almoço dentro do turno: o almoço sai como sempre', RP.recorteTurno('10:56', '12:18', CFG), { d: 10, fora: 0 });
+ok('turno mal configurado: não recorta (o durProdutiva de sempre)', RP.recorteTurno('05:30', '06:40', { almocoInicio:'11:00', almocoFim:'12:12' }), { d: 70, fora: 0 });
+{ const P = [{ data:'10/11/2026', ini:'05:30', fim:'06:40', tipo:'FALTA DE MATERIAL' }, { data:'10/11/2026', ini:'06:40', fim:'07:25', tipo:'SETUP' },
+             { data:'10/11/2026', ini:'09:00', fim:'09:30', tipo:'MANUTENÇÃO' }, { data:'10/11/2026', ini:'16:50', fim:'17:30', tipo:'MANUTENÇÃO' }];
+  const o = { cfg: CFG, metaByDay: { '10/11/2026': 2761 }, classeMap: {} };
+  const sem = RP.stats(P, o), com = RP.stats(P, Object.assign({ soJornada: true }, o));
+  ok('sem a opção nada muda (todas as telas de hoje): 70 + 45 + 30 + 40 min', [sem.totMin, sem.nParadas, sem.diag.minForaJornada], [185, 4, 0]);
+  ok('com soJornada: 25 + 30 + 10 min dentro; a da madrugada sai inteira; os minutos fora vão para o diagnóstico',
+     [com.totMin, com.nParadas, com.diag.minForaJornada, com.diag.paradasForaJornada, com.porTipo['FALTA DE MATERIAL']], [65, 3, 120, 1, undefined]);
+  ok('a perda é valorada só pelos minutos dentro (a mesma régua: meta ÷ horas produtivas)', com.pecas, RP.perdaDeMin(65, 2761, RP.horasProdutivas(CFG)));
+  ok('o diagnóstico diz o que ficou fora', /fora da jornada \(2h00m\)/.test(RP.diagTexto(com.diag)), true); }
+
 console.log('\n── os HTMLs não podem ter conta própria ──');
 // Guarda-corpo: se a conta voltar para dentro de um dos painéis, eles divergem
 // de novo. Estes trechos só existiam nas cópias antigas.
