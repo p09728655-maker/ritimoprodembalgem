@@ -31,7 +31,9 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     por `innerHTML`): com a frase inteira no mesmo corpo, o número não podia
     crescer — estourava a largura da coluna e o `nowrap` cortava justamente o
     que interessa. O gerencial tem a mesma marcação numa escala menor
-    (`#ger-semana #gsem-normal-pct`), como o resto do bloco.
+    (`#ger-semana #gsem-normal-pct`), como o resto do bloco. (v7.250.0: no
+    gerencial o bloco é em UEP e o texto quebra linha em vez do `nowrap`; a
+    Tela D segue em caixas e em linha única — ver `gerencial.md`.)
   - **O buraco vai em caixas E em caixas/dia**: "faltaram 863 cx" não diz se
     dava para fazer; "173 cx/dia" a operação sabe na hora. A base é o nº de
     dias fechados da própria semana.

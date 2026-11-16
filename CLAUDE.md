@@ -318,6 +318,9 @@ via Google Apps Script (JSONP).
   PC; guardado no aparelho (`rp_atr_ret`). Desde a v7.249.0 o card (PC e
   celular) e o ATRASO — CONFERÊNCIA dizem também os PONTOS (cadastro de hoje;
   `atrasoPtsTxt`): valor, não tempo; código sem pontos fora e dito, nunca 0.
+- FECHAMENTO DA SEMANA PASSADA no gerencial (v7.250.0): a UEP na frente
+  (`_gsemUepMontar` → `_pintarUep`), as caixas como fato; semana sem UEP fica em
+  caixas. A Tela D da TV e o 🖨 IMPRIMIR SEMANA seguem em caixas.
 - Diretoria: um veredito só (a UEP); retrato guardado no aparelho; sem o
   `pollParadaTV` nem o `lerMediaHoras`.
 

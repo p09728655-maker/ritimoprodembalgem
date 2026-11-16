@@ -1793,6 +1793,10 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 #ger-semana .tvd-split-num{font-size:clamp(28px,3.4vw,44px)}
 #ger-semana .tvd-split-txt{font-size:9px;letter-spacing:1px;gap:2px}
 #ger-semana .tvd-split-txt b{font-size:11px;letter-spacing:2px}
+/* v7.250.0: no gerencial o texto ao lado dos números QUEBRA LINHA em vez de
+   cortar com "…" (a 1366 o "faltaram 1.434 cx · 287 cx/dia" saía pela metade).
+   A TV segue com a linha única da Tela D. */
+#ger-semana .tvd-split-txt span{white-space:normal}
 /* No gerencial a mesma marcação é lida a 60 cm, dentro de um card: o % cresce
    junto, mas na escala daqui (a da TV explodiria o bloco). */
 #ger-semana #gsem-normal-pct{font-size:22px;line-height:1.15}
@@ -2730,7 +2734,7 @@ if (_v7Instalado()) _v7EscondeBotao();
         <div class="tvd-hero">
           <div class="tvd-lbl">PRODUÇÃO DA SEMANA</div>
           <div class="tvd-hero-num" id="gsem-total">—</div>
-          <div class="tvd-hero-unit">CAIXAS NA SEMANA</div>
+          <div class="tvd-hero-unit" id="gsem-unidade">CAIXAS NA SEMANA</div>
           <div class="tvd-soma" id="gsem-soma"></div>
           <div class="tvd-selo he" id="gsem-selo">—</div>
         </div>
@@ -2739,18 +2743,21 @@ if (_v7Instalado()) _v7EscondeBotao();
           <div class="tvd-split">
             <div class="tvd-split-fio" style="background:var(--ok)"></div>
             <div class="tvd-split-num" style="color:var(--ok)" id="gsem-normal">—</div>
-            <div class="tvd-split-txt"><b>JORNADA NORMAL</b><span id="gsem-normal-pct">—</span><span id="gsem-normal-falta"></span></div>
+            <div class="tvd-split-txt"><b id="gsem-normal-lbl">JORNADA NORMAL</b><span id="gsem-normal-pct">—</span><span id="gsem-normal-falta"></span></div>
           </div>
           <div class="tvd-split" id="gsem-linha-extra">
             <div class="tvd-split-fio" style="background:var(--warn)"></div>
             <div class="tvd-split-num" style="color:var(--warn)" id="gsem-extra">—</div>
-            <div class="tvd-split-txt"><b>HORA EXTRA</b><span id="gsem-extra-pct">—</span></div>
+            <div class="tvd-split-txt"><b id="gsem-extra-lbl">HORA EXTRA</b><span id="gsem-extra-pct">—</span></div>
           </div>
-          <!-- UEP da semana (v7.87.0): só no gerencial — a TV não tem estes ids. -->
+          <!-- UEP da semana (v7.87.0): só no gerencial — a TV não tem estes ids.
+               v7.250.0: com a UEP na frente, esta linha passa a ser a das CAIXAS
+               (fato, fio neutro); a UEP sobe para o número grande e as duas
+               linhas de cima. -->
           <div class="tvd-split" id="gsem-linha-uep" style="display:none">
-            <div class="tvd-split-fio" style="background:var(--acc)"></div>
+            <div class="tvd-split-fio" id="gsem-uep-fio" style="background:var(--acc)"></div>
             <div class="tvd-split-num" id="gsem-uep">—</div>
-            <div class="tvd-split-txt"><b>UEP · JORNADA</b><span id="gsem-uep-pct">—</span><span id="gsem-uep-sub"></span></div>
+            <div class="tvd-split-txt"><b id="gsem-uep-lbl">UEP · JORNADA</b><span id="gsem-uep-pct">—</span><span id="gsem-uep-sub"></span></div>
           </div>
         </div>
       </div>
@@ -4175,7 +4182,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.249.0';
+const APP_VER = '7.250.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -21885,6 +21892,44 @@ function _relSemanalKPIs(dias){
   };
 }
 
+// ── O FECHAMENTO DA SEMANA COM A UEP NA FRENTE (v7.250.0, só no gerencial) ──
+// PPCP, 16/11/2026, com o print do bloco (9.879 caixas em destaque, a UEP num
+// canto): "nessa tbm passar para uep como informação principal". É o passo da
+// semana na UEP NA FRENTE do gerencial (v7.243.0): o número grande, o selo, a
+// barra e os dias passam a ser em UEP; as caixas ficam como fato, sem cor. UM
+// veredito: o da UEP. A TV (Tela D, ids tvd-) continua em caixas — a TV ainda
+// julga em caixas nas telas A/B, e duas réguas no mesmo carrossel seriam dois
+// vereditos.
+// A régua do selo é a das caixas (_relMetaHE), agora em UEP: verde só quando a
+// JORNADA bateu a soma das metas dos dias com UEP; âmbar quando só bateu com a
+// hora extra (a do fim de semana inclusa, como nas caixas); vermelho, o que falta.
+// O dia: verde jornada ≥ meta do dia; âmbar jornada + hora extra ≥ meta; vermelho
+// abaixo; sábado e domingo âmbar, todo hora extra, sem veredito.
+// null = a semana não tem UEP gravada (histórico antigo): o bloco fica em
+// caixas, e as caixas julgam — nunca uma tela sem veredito.
+function _gsemUepMontar(dias, k){
+  const ur = uepHistResumo(dias);
+  if(!ur.n) return null;
+  const jorn = ur.total, he = ur.he, meta = ur.metaTot, tot = jorn + he;
+  const mh = _relMetaHE(tot, he, meta);
+  return {
+    jorn, he, meta, tot, pct: jorn / meta * 100, semUep: ur.semUep, nComMeta: ur.n,
+    selo: mh.soComHE ? 'he' : jorn >= meta ? 'ok' : 'ruim',
+    falta: mh.faltouSemHE, faltaPorDia: mh.faltouSemHE > 0 ? Math.round(mh.faltouSemHE / ur.n) : 0,
+    faltaTot: Math.max(0, meta - tot),
+    horasHe: k.totHoras, nDiasHe: dias.filter(x => uepDiaHe(x) > 0).length,
+    // as caixas, fato: o total, a jornada contra a meta de caixas, a hora extra
+    cx: k.totReal, cxHe: k.totHE, cxMeta: k.totMeta, cxPct: k.totMeta ? (k.totReal - k.totHE) / k.totMeta * 100 : null,
+    dias: dias.map(x => {
+      const temU = x.uep != null && isFinite(Number(x.uep)), m = uepDiaMeta(x), fds = !(m > 0);
+      const uj = temU && !fds ? Number(x.uep) : null, uh = temU ? uepDiaHe(x) : null;
+      const cls = !temU ? '' : fds ? 'he' : uj >= m ? 'ok' : uj + uh >= m ? 'he' : 'ruim';
+      return { data: x.data, temU, fds, uj, uh, meta: m, cls, pct: uj != null ? uj / m * 100 : null,
+               cx: Number(x.real) || 0, cxHe: _heIndef(x) ? null : (Number(x.heCx) || 0), cxPct: x.meta ? x.real / x.meta * 100 : null };
+    })
+  };
+}
+
 // ── FECHAMENTO DA SEMANA PASSADA — o dado e o desenho, uma implementação só ──
 // A mesma leitura aparece em DOIS lugares: a TELA D do carrossel da TV e o
 // bloco FECHAMENTO DA SEMANA PASSADA da aba GERENCIAL. Buscar e desenhar em
@@ -21949,6 +21994,15 @@ const RP_SEMANA = (function() {
     set('setor',   (document.getElementById('tv-setor') || {}).textContent || 'EMBALAGEM');
     set('semana',  'SEMANA ' + d.numSem);
     set('periodo', d.semStr);
+    // v7.250.0: no gerencial, a UEP na frente (a conta é o _gsemUepMontar)
+    const comUep = pfx === 'gsem-';
+    const U = comUep ? _gsemUepMontar(d.dias, k) : null;
+    if (U) { _pintarUep(el, set, U, d); return true; }
+    set('unidade', 'CAIXAS NA SEMANA');
+    set('normal-lbl', 'JORNADA NORMAL');
+    set('extra-lbl', 'HORA EXTRA');
+    set('uep-lbl', 'UEP · JORNADA');
+    const fioU = el('uep-fio'); if (fioU) fioU.style.background = 'var(--acc)';
     set('total',   fmtN(k.totReal));
     set('soma',    '= soma dos ' + plural(d.dias.length,'dia fechado','dias fechados') + ' ↓');
     set('normal',  fmtN(normal));
@@ -21991,7 +22045,6 @@ const RP_SEMANA = (function() {
         set('uep-sub', `bateu em ${ur.bateu} de ${plural(ur.n,'dia','dias')} · ${fmtN(Math.round(ur.media))}/dia${ur.nFds ? ' útil' : ''}${ur.he > 0 ? ' · +' + fmtN(Math.round(ur.he)) + ' em HE' : ''}`);
       }
     }
-    const comUep = pfx === 'gsem-';
 
     // Veredito. Verde SÓ quando a jornada normal sozinha bateu a meta.
     const selo = el('selo');
@@ -22051,6 +22104,78 @@ const RP_SEMANA = (function() {
       }).join('');
     }
     return true;
+  }
+
+  // O desenho da semana em UEP (v7.250.0, só o gerencial). Nenhuma conta: tudo
+  // vem pronto do _gsemUepMontar. Os mesmos ids do desenho em caixas; os rótulos
+  // trocam (a mesma marcação serve as duas réguas).
+  function _pintarUep(el, set, U, d) {
+    const r = v => fmtN(Math.round(v));
+    set('total', r(U.tot));
+    set('unidade', 'UEP NA SEMANA');
+    set('soma', '= soma dos ' + plural(d.dias.length,'dia fechado','dias fechados') + ' ↓');
+    set('normal-lbl', 'UEP · JORNADA');
+    set('normal', r(U.jorn));
+    const ePct = el('normal-pct');
+    if (ePct) ePct.innerHTML = fmtP(U.pct) + '<i>da meta</i>';
+    // a coluna tem a largura do rótulo (~16 caracteres): o "por dia" entre
+    // parênteses quebra limpo para a 2ª linha (número e unidade presos, \u00a0)
+    set('normal-falta', U.falta > 0 ? `faltaram ${r(U.falta)}\u00a0UEP${U.faltaPorDia ? ` (${fmtN(U.faltaPorDia)}\u00a0UEP/dia)` : ''}` : '');
+    set('extra-lbl', 'UEP · HORA EXTRA');
+    set('extra', r(U.he));
+    set('extra-pct', U.horasHe > 0 ? `${plural(U.horasHe,'hora','horas')} em ${plural(U.nDiasHe,'dia','dias')}`
+                                   : (U.nDiasHe ? `em ${plural(U.nDiasHe,'dia','dias')}` : ''));
+    const linhaExtra = el('linha-extra');
+    if (linhaExtra) linhaExtra.style.display = U.he > 0 ? '' : 'none';
+    // as caixas: fato, sem cor (o veredito é o da UEP)
+    const linhaCx = el('linha-uep');
+    if (linhaCx) linhaCx.style.display = '';
+    set('uep-lbl', 'CAIXAS');
+    set('uep', fmtN(U.cx));
+    const fio = el('uep-fio'); if (fio) fio.style.background = 'var(--txt3)';
+    const eCx = el('uep-pct'); if (eCx) eCx.innerHTML = '';
+    set('uep-sub', `${fmtN(U.cx - U.cxHe)} na jornada${U.cxPct != null ? ` · ${fmtP(U.cxPct)} da meta` : ''}${U.cxHe > 0 ? ` · ${fmtN(U.cxHe)} em hora extra` : ''}`
+      + (U.semUep ? ` · ${plural(U.semUep, 'dia sem UEP fica', 'dias sem UEP ficam')} só nas caixas` : ''));
+    const selo = el('selo');
+    if (selo) {
+      selo.className = 'tvd-selo ' + U.selo;
+      selo.textContent = U.selo === 'he' ? '⚠ META BATIDA COM HORA EXTRA'
+        : U.selo === 'ok' ? '✓ META BATIDA NA JORNADA NORMAL' : `FALTARAM ${r(U.faltaTot)} UEP PARA A META`;
+      selo.style.display = '';
+    }
+    const escala = Math.max(U.tot, U.meta) || 1;
+    const barN = el('bar-normal'), barE = el('bar-extra'), marca = el('marca');
+    if (barN) barN.style.width = (U.jorn / escala * 100) + '%';
+    if (barE) barE.style.width = (U.he / escala * 100) + '%';
+    if (marca) {
+      const pctMeta = U.meta / escala * 100;
+      marca.style.left = pctMeta + '%';
+      marca.style.display = '';
+      marca.classList.toggle('fim', pctMeta > 80);
+    }
+    set('marca-lbl', 'META ' + r(U.meta) + ' UEP');
+    const cx = el('dias');
+    if (cx) {
+      cx.innerHTML = U.dias.map(x => {
+        const cor = x.cls === 'ok' ? 'var(--ok)' : x.cls === 'he' ? 'var(--warn)' : x.cls === 'ruim' ? 'var(--red)' : 'var(--txt2)';
+        const dt  = parseBR(x.data);
+        const num = !x.temU ? '—' : x.fds ? r(x.uh) : r(x.uj);
+        const pct = !x.temU ? 'sem UEP gravada' : x.fds ? 'todo hora extra' : fmtP(x.pct) + ' da meta';
+        const he  = !x.temU ? '' : x.fds ? 'UEP em hora extra' : (x.uh > 0 ? `+${r(x.uh)} UEP em hora extra` : 'sem hora extra');
+        const cxl = x.fds ? `${fmtN(x.cx)} cx em hora extra`
+          : `${fmtN(x.cx)} cx${x.cxPct != null ? ' · ' + fmtP(x.cxPct) + ' da meta' : ''}`;
+        return `<div class="tvd-dia ${x.cls}">
+          <div class="tvd-dia-data">${x.data.substring(0, 5)}</div>
+          <div class="tvd-dia-sem">${dt ? _DIA_SEM[dt.getDay()] : ''}</div>
+          <div class="tvd-dia-meio">
+          <div class="tvd-dia-num">${num}</div>
+          <div class="tvd-dia-pct" style="color:${cor}">${pct}</div>
+          </div>
+          <div class="tvd-dia-he${x.temU && (x.fds || x.uh > 0) ? '' : ' vazio'}">${he}</div>
+          <div class="tvd-dia-uep" title="Caixas do dia (com a hora extra) ÷ a meta de caixas do dia: fato, sem veredito — o veredito é o da UEP.">${cxl}</div>
+        </div>`;
+      }).join('');
+    }
   }
 
   return { carregar, tem, pintar, aoCarregar, semana };
