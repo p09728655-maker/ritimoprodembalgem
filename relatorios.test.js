@@ -2768,8 +2768,7 @@ console.log('\n── dia passado: hora extra não é julgada, e a meta/h não �
   global.PAR_CLASSE_MAP = {};
   global.REL_UEP_MOTIVOS = Number(JS.match(/const REL_UEP_MOTIVOS = (\d+);/)[1]);
   ['function _relParadasUep(', 'function _relSemUepPerdas(', 'function _relSemUepCorpoHtml(', 'function _uepEscalaNota(',
-   'function _cascPasso(', 'function _cascOp(', 'function _cascBarra('].forEach(f => { const n = f.slice(9, -1); if (typeof global[n] === 'undefined') eval(pega(f).replace(/^function /, 'global.' + n + ' = function ')); });
-  eval(pega('function _rpCascataHtml(').replace(/^function _rpCascataHtml/, 'global._rpCascataHtml = function'));
+   ].forEach(f => { const n = f.slice(9, -1); if (typeof global[n] === 'undefined') eval(pega(f).replace(/^function /, 'global.' + n + ' = function ')); });
   global._REL_UEP_COR = { ok:'#2E7D32', he:'#B4650A', ruim:'#B3261E' };
   // a nota da troca de escala da UEP: a lista de trocas vazia (como no painel) e o corte real
   if (typeof global.UEP_ESCALAS === 'undefined') global.UEP_ESCALAS = [];
@@ -2795,9 +2794,10 @@ console.log('\n── dia passado: hora extra não é julgada, e a meta/h não �
   ok('paradas em UEP: a MESMA conta do RP_PARADAS com a meta de UEP do dia — só os dias úteis (a do sábado fica fora)',
      [st.totMinNP, st.pecas, st.nParadas], [110, Math.round(110 * porMin), 5]);
   const P = _relSemUepPerdas(U, st);
-  ok('a cascata da jornada em UEP fecha: META − PARADAS − RITMO = JORNADA',
-     [P.casc.un, P.casc.meta, P.casc.real, P.casc.perdaPar, Math.round(P.casc.perdaRitmo), P.casc.meta - P.casc.perdaPar - Math.round(P.casc.perdaRitmo)],
-     ['UEP', 13805, 13068, Math.round(110 * porMin), 13805 - 13068 - Math.round(110 * porMin), 13068]);
+  // v7.253.0 (PPCP, com o papel da semana 46: "8h05min?"): a cascata META − PARADAS − RITMO saiu — a 2.761 é a média
+  // demonstrada e já tem as paradas normais dentro; tirar todas da meta as contava duas vezes ("GANHO DE RITMO" falso)
+  ok('o total das paradas em UEP da semana (sem cascata: a meta média já tem as paradas normais dentro)',
+     [P.perdaPar, P.minNP, 'casc' in P], [Math.round(110 * porMin), 110, false]);
   ok('o dia a dia: a diferença da jornada contra a meta, as UEP paradas e a principal parada; o sábado sem nada disso',
      P.dias.map(x => [x.data.slice(0, 5), x.dif, x.parUep, x.causa ? x.causa.tipo : null]),
      [['09/11', -165, Math.round(20 * porMin), 'FALTA DE MATERIAL'], ['10/11', 106, 0, null], ['11/11', -381, Math.round(55 * porMin), 'MANUTENÇÃO ESTEIRA'],
@@ -2810,16 +2810,20 @@ console.log('\n── dia passado: hora extra não é julgada, e a meta/h não �
     ok('mais de ' + REL_UEP_MOTIVOS + ' motivos: os maiores com linha própria, o resto somado em "demais motivos" (a soma fecha)',
        [PM.top.length, PM.resto.n, PM.top.reduce((a, t) => a + t.min, 0) + PM.resto.min, PM.minNP], [REL_UEP_MOTIVOS, 8 - REL_UEP_MOTIVOS, PM.minNP, PM.minNP]); }
   const SEM = _relSemUepPerdas(U, null);
-  ok('sem as paradas (leitura falhou): sem cascata — o faltante não vira "ritmo" inventado; o dia a dia sai, sem a coluna de paradas',
-     [SEM.casc, SEM.motivos, SEM.dias[0].dif, SEM.dias[0].parUep], [null, null, -165, null]);
+  ok('sem as paradas (leitura falhou): sem os motivos e sem o total; o dia a dia sai, sem a coluna de paradas',
+     [SEM.perdaPar, SEM.motivos, SEM.dias[0].dif, SEM.dias[0].parUep], [null, null, -165, null]);
   ok('as paradas em UEP precisam de UEP: semana sem UEP, sem paradas lidas ou sem o módulo → null',
      [_relParadasUep(PAR, [{ data:'09/11/2026', real:10, meta:10 }], '09/11/2026', '15/11/2026'), _relParadasUep(null, S46, 'a', 'b')], [null, null]);
   const H = _relSemUepCorpoHtml(U, P, { parcial:false, fechados:6, nDias:6, tabelaCx:'<!--ANEXO-->' });
-  ok('o papel: resultado em UEP com o veredito da tela, a cascata em UEP, o dia a dia, os motivos e o anexo das caixas',
+  ok('o papel: resultado em UEP com o veredito da tela, o dia a dia, os motivos e o anexo das caixas — sem a cascata, e o aviso de que a meta já tem as paradas',
      [/JORNADA NORMAL<\/div>\s*<div class="kpi-val" style="color:#B4650A">13\.068/.test(H), /⚠ META BATIDA COM HORA EXTRA/.test(H), /FALTOU NA JORNADA[\s\S]*737/.test(H),
-      /ONDE PERDEMOS — META × PARADAS × RITMO/.test(H), /13\.805 − \d{3} − \d{3} = <b>13\.068 UEP<\/b>/.test(H),
+      /META × PARADAS × RITMO|GANHO DE RITMO|GAP DE RITMO|casc-flow/.test(H), /já tem as paradas normais dentro/.test(H),
       /ONDE PERDEMOS — DIA A DIA/.test(H), /ONDE PERDEMOS — PARADAS POR MOTIVO/.test(H), /COM HORA EXTRA<\/span>/.test(H), H.endsWith('<!--ANEXO-->')],
-     [true, true, true, true, true, true, true, true, true]);
+     [true, true, true, false, true, true, true, true, true]);
+  ok('sem as paradas lidas, o papel diz isso (nunca uma coluna de zeros)',
+     /As paradas da semana não foram lidas/.test(_relSemUepCorpoHtml(U, SEM, { parcial:false, fechados:6, nDias:6, tabelaCx:'' })), true);
+  ok('a cascata voltou a ser só dos relatórios de produção, em caixas (o semanal não a usa nem leva a pele dela)',
+     [/<u>cx<\/u>/.test(pega('function _cascPasso(')), /_rpCascataHtml|_RP_CASC_CSS/.test(pega('async function gerarRelatorioSemanal(') + pega('function _relSemUepCorpoHtml('))], [true, false]);
   ok('o desenho do papel não faz conta (D1): nada de reduce, filter, sort, uepHistResumo ou RP_PARADAS',
      /\.filter\(|\.sort\(|\.reduce\(|\.slice\(0|uepHistResumo|RP_PARADAS|perdaBrutaDeMin|uepDiaMeta/.test(pega('function _relSemUepCorpoHtml(')), false);
   ok('o anexo das caixas com a UEP na frente: sem EFICIÊNCIA, sem EF. S/ HE e sem o gap em caixas (só a quantidade)',

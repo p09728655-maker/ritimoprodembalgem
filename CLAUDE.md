@@ -293,10 +293,11 @@ via Google Apps Script (JSONP).
 - O relatório semanal é documento: cor só com função, o número é tinta e o
   selo é o veredito; `_relMetaHE` (meta batida com hora extra = âmbar); a
   semana é a `_relSemanaJanela` e a `_relSemanaParaDivulgar`.
-- Semanal com UEP (v7.251.0): a 1ª folha é ONDE PERDEMOS — resultado, cascata
-  META − PARADAS − RITMO = JORNADA em UEP (paradas pelo `RP_PARADAS` com a meta
-  de UEP, só dias úteis; sem paradas lidas, sem cascata), dia a dia e motivos; as
-  caixas no anexo. Mesmo veredito da tela (`_gsemUepMontar`).
+- Semanal com UEP (v7.251.0): a 1ª folha é ONDE PERDEMOS — resultado, dia a dia
+  e motivos (paradas pelo `RP_PARADAS` com a meta de UEP, só dias úteis); as
+  caixas no anexo. Mesmo veredito da tela (`_gsemUepMontar`). ⚠ Sem cascata
+  META − PARADAS − RITMO (revogada na v7.253.0): a 2.761 é média demonstrada e
+  já tem as paradas normais dentro — subtrair todas as contava duas vezes.
 - O nome em `APP_NOME`/`APP_NOME_CX` e o slogan em toda impressão.
 - Telas enxutas: número nunca sai; texto que só explica vai para o `title` ou
   um ⓘ; função que desenha tela e papel usa `.so-tela` e `.so-papel`.

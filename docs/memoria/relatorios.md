@@ -204,6 +204,24 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   pelo papel sem UEP e pelo anexo.
 - Medido: o PDF A4 sai em 2 folhas (a 1ª com todo o ONDE PERDEMOS, a 2ª o
   anexo).
+- ⚠ **A CASCATA EM UEP FOI REVOGADA na v7.253.0** (o que está acima sobre ela
+  vale só para a v7.251.0–7.252.0). PPCP, com o papel da semana 46 (8h05 de
+  parada, −2.534 UEP, 18,4% da meta): *"8h05min?"*. As 8h05 estavam certas (a
+  soma dos motivos; 97 min por dia útil, o nível de sempre — ~20% na memória).
+  O erro era conceitual: a **2.761 é a MÉDIA demonstrada de 28/09–26/10** e já
+  tem as paradas normais dentro. META − TODAS AS PARADAS − RITMO as contava
+  duas vezes: *13.805 − 2.534 + GANHO DE RITMO 1.797 = 13.068*, um ganho que era
+  só a parada normal. ⚠ **Não pôr de volta uma cascata que subtraia da meta
+  média todas as paradas.** Ela só faz sentido contra uma meta SEM perdas (o
+  potencial), ou com as paradas ACIMA do normal.
+  - Saiu: o passo da cascata, o `casc` do `_relSemUepPerdas` (ficou
+    `perdaPar`), a unidade `un` do `_cascPasso`/`_rpCascataHtml` (só o semanal
+    a usava) e o `_RP_CASC_CSS` do semanal. O papel diz que o tempo parado não
+    se desconta da meta.
+  - Combinado (*"1 e 2"*): o "pior que o normal" — cada motivo contra as 4
+    semanas anteriores, a troca contra a premissa (30 min/dia) e as paradas
+    recortadas na jornada (as de 05:00–07:00 e depois das 17:00 de dia útil
+    entravam) — vem a seguir, com prévia.
 - v7.252.0 (PPCP: *"dois vereditos está confuso"*): o anexo das caixas perdeu
   EFICIÊNCIA, EF. S/ HE e o gap em caixas — com a UEP na frente, o único % da
   meta do papel é o da UEP. Ficam as quantidades, a META e a META/H.
