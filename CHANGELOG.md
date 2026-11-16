@@ -11,6 +11,27 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.253.0 — 16/11/2026 · a cascata sai do relatório semanal
+
+O PPCP, com o papel da semana 46 na mão (*"8h05min?"*). As 8h05 estão certas: é a
+soma dos motivos, 97 min por dia útil, 18,4% da jornada, o nível de sempre. O
+erro era a cascata.
+
+- **A cascata META − PARADAS − RITMO saiu do 🖨 IMPRIMIR SEMANA.** A meta de
+  2.761 UEP é a média demonstrada da linha (28/09–26/10) e já tem as paradas
+  normais dentro. Tirar todas as paradas da meta as contava duas vezes: a semana
+  46 saía *META 13.805 − PARADAS 2.534 + GANHO DE RITMO 1.797 = 13.068*, e esse
+  "ganho de ritmo" era só a parada normal.
+- O papel fica com o resultado, o dia a dia e as paradas por motivo, e uma
+  linha diz que o tempo parado não se desconta da meta.
+- Os relatórios de produção continuam com a cascata deles, em caixas, sem
+  mudança.
+- **Atenção:** some do papel semanal a cascata (com o GANHO/GAP DE RITMO). O
+  "o que foi pior que o normal" (cada motivo contra as semanas anteriores, a
+  troca contra a premissa e as paradas só da jornada) vem na próxima versão.
+
+---
+
 ## v7.252.0 — 16/11/2026 · um % da meta só: o da UEP
 
 O PPCP, vendo a semana com a UEP na frente: *"dois vereditos está confuso"* —
