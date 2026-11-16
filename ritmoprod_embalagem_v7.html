@@ -4182,7 +4182,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.250.0';
+const APP_VER = '7.251.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -16151,9 +16151,10 @@ function _relCascataProduto(linhas, porCor){
 //   foram fisicamente perdidas. É GAP DE RITMO — diferença entre o ritmo
 //   necessário e o realizado. O mesmo vale para "PERDIDO PARADO" → IMPACTO DE
 //   PARADAS.
-function _cascPasso(cls, titulo, valor, desc){
+// `un` (v7.251.0): a unidade — 'cx' (padrão) ou 'UEP' (o relatório semanal com a UEP na frente)
+function _cascPasso(cls, titulo, valor, desc, un){
   return `<div class="casc-step ${cls}"><div class="cs-t">${titulo}</div>`
-       + `<div class="cs-n">${valor}<u>cx</u></div><div class="cs-d">${desc}</div></div>`;
+       + `<div class="cs-n">${valor}<u>${un || 'cx'}</u></div><div class="cs-d">${desc}</div></div>`;
 }
 function _cascOp(op){ return `<div class="casc-op">${op}</div>`; }
 // Barra: representa SÓ realizado ÷ meta. Antes ela empilhava paradas e ritmo em
@@ -16198,8 +16199,8 @@ function _rpCascataHtml(titulo, c, nota){
   const vRit=Math.round(ganho?c.ganhoRitmo:c.perdaRitmo);
   const vPar=Math.round(c.perdaPar);
   const passoRitmo = ganho
-    ? _cascPasso('casc-ganho-step','GANHO DE RITMO','+'+fmtN(vRit),'a linha rodou acima do ritmo necessário para a meta')
-    : _cascPasso('casc-rit-step','GAP DE RITMO','−'+fmtN(vRit),'diferença estimada entre o ritmo necessário e o ritmo realizado');
+    ? _cascPasso('casc-ganho-step','GANHO DE RITMO','+'+fmtN(vRit),'a linha rodou acima do ritmo necessário para a meta', c.un)
+    : _cascPasso('casc-rit-step','GAP DE RITMO','−'+fmtN(vRit),'diferença estimada entre o ritmo necessário e o ritmo realizado', c.un);
 
   // Contexto do ritmo: só entra quando o relatório sabe os dois números (é o
   // caso do dia, que vem do calcKPIs). Sem eles a linha não aparece — nada de
@@ -16223,17 +16224,18 @@ function _rpCascataHtml(titulo, c, nota){
     ${listaTp?`<span>${listaTp}</span>`:''}
   </div>` : '';
 
+  const un=c.un||'cx';
   return `${abre}
   <div class="casc-flow">
-    ${_cascPasso('casc-meta-step','META', fmtN(c.meta), 'o que estava programado')}
+    ${_cascPasso('casc-meta-step','META', fmtN(c.meta), un==='cx'?'o que estava programado':'a meta da jornada', un)}
     ${_cascOp('−')}
-    ${_cascPasso('casc-par-step','IMPACTO DE PARADAS','−'+fmtN(vPar),'produção estimada impactada pelo tempo de parada')}
+    ${_cascPasso('casc-par-step','IMPACTO DE PARADAS','−'+fmtN(vPar),'produção estimada impactada pelo tempo de parada', un)}
     ${_cascOp(ganho?'+':'−')}
     ${passoRitmo}
     ${_cascOp('=')}
-    ${_cascPasso('casc-real-step','REALIZADO', fmtN(c.real), `${fmtP(c.pctReal)} da meta`)}
+    ${_cascPasso('casc-real-step', un==='cx'?'REALIZADO':'JORNADA', fmtN(c.real), `${fmtP(c.pctReal)} da meta`, un)}
   </div>
-  <div class="casc-form">${fmtN(c.meta)} − ${fmtN(vPar)} ${ganho?'+':'−'} ${fmtN(vRit)} = <b>${fmtN(c.real)} cx</b></div>
+  <div class="casc-form">${fmtN(c.meta)} − ${fmtN(vPar)} ${ganho?'+':'−'} ${fmtN(vRit)} = <b>${fmtN(c.real)} ${un}</b></div>
   ${_cascBarra(c.real, c.meta, 'DA META')}
   ${ctxRitmo}
   ${ctxPar}
@@ -21918,13 +21920,16 @@ function _gsemUepMontar(dias, k){
     falta: mh.faltouSemHE, faltaPorDia: mh.faltouSemHE > 0 ? Math.round(mh.faltouSemHE / ur.n) : 0,
     faltaTot: Math.max(0, meta - tot),
     horasHe: k.totHoras, nDiasHe: dias.filter(x => uepDiaHe(x) > 0).length,
+    // v7.251.0: o papel (🖨 IMPRIMIR SEMANA) lê esta MESMA montagem
+    media: jorn / ur.n, metaMedia: meta / ur.n, bateu: ur.bateu,
+    datasUep: dias.filter(x => x.uep != null && isFinite(Number(x.uep))).map(x => x.data),
     // as caixas, fato: o total, a jornada contra a meta de caixas, a hora extra
     cx: k.totReal, cxHe: k.totHE, cxMeta: k.totMeta, cxPct: k.totMeta ? (k.totReal - k.totHE) / k.totMeta * 100 : null,
     dias: dias.map(x => {
       const temU = x.uep != null && isFinite(Number(x.uep)), m = uepDiaMeta(x), fds = !(m > 0);
       const uj = temU && !fds ? Number(x.uep) : null, uh = temU ? uepDiaHe(x) : null;
       const cls = !temU ? '' : fds ? 'he' : uj >= m ? 'ok' : uj + uh >= m ? 'he' : 'ruim';
-      return { data: x.data, temU, fds, uj, uh, meta: m, cls, pct: uj != null ? uj / m * 100 : null,
+      return { data: x.data, temU, fds, uj, uh, meta: m, cls, pct: uj != null ? uj / m * 100 : null, fechado: x.fechado !== false,
                cx: Number(x.real) || 0, cxHe: _heIndef(x) ? null : (Number(x.heCx) || 0), cxPct: x.meta ? x.real / x.meta * 100 : null };
     })
   };
@@ -22251,6 +22256,131 @@ function _rpUepFaixaHtml(dias){
 </div>`;
 }
 
+// ── O RELATÓRIO SEMANAL COM A UEP NA FRENTE: ONDE PERDEMOS (v7.251.0) ─────
+// PPCP, 16/11/2026, depois do bloco da tela (v7.250.0): "a impressão não
+// mudou?" → "deixar limpo, fácil compreensão, direto ao ponto onde perdemos".
+// A 1ª folha responde UMA pergunta: a jornada fez X UEP contra a meta — onde
+// ficou o que faltou? Resultado (4 números) → a CASCATA META − PARADAS − RITMO =
+// JORNADA, em UEP → o dia a dia (a diferença e a principal parada de cada dia)
+// → as paradas por motivo. As caixas vão para o ANEXO, como fato. Mesmo
+// veredito e mesmas palavras do bloco da tela (o _gsemUepMontar é um só). Antes
+// o semanal tinha DOIS vereditos que discordavam: a EFICIÊNCIA em caixas e a
+// faixa de UEP (régua 100/90%, sem a hora extra). Semana sem UEP: o papel de antes.
+//
+// AS PARADAS EM UEP: a MESMA conta do RP_PARADAS (paradas-calc), com a meta de
+// UEP de cada dia no lugar da de caixas — perda = minutos × meta UEP do dia ÷
+// minutos produtivos. Só os dias úteis com UEP (a cascata é da jornada: a parada
+// de sábado, todo hora extra, não tirou nada da meta); sem meta padrão (metaDia
+// 0), para nenhum dia cair na meta de caixas. null = sem as paradas (a leitura
+// falhou, o módulo não carregou): a cascata não sai — sem paradas, todo o
+// faltante viraria "ritmo", um número inventado.
+function _relParadasUep(par, dias, de, ate){
+  if(!par || !Array.isArray(par.paradas) || !_rpOk()) return null;
+  const meta = {};
+  (dias || []).forEach(d => { if(d && d.uep != null && isFinite(Number(d.uep)) && uepDiaMeta(d) > 0) meta[d.data] = uepDiaMeta(d); });
+  if(!Object.keys(meta).length) return null;
+  return RP_PARADAS.stats(par.paradas.filter(p => p && meta[p.data] > 0),
+    { cfg: Object.assign({}, CFG, { metaDia: 0 }), metaByDay: meta, classeMap: PAR_CLASSE_MAP, realByDay: par.realByDay, de, ate });
+}
+// ONDE PERDEMOS: a cascata, o dia a dia e os motivos. Conta pura (U do
+// _gsemUepMontar, st do _relParadasUep). As paradas PREVISTAS ficam fora.
+const REL_UEP_MOTIVOS = 6;   // motivos com linha própria no papel; o resto vai somado em "demais motivos"
+function _relSemUepPerdas(U, st){
+  const pd = (st && st.porDia) || {};
+  const np = t => t && !t.planej && t.min > 0;
+  const motivos = st ? (st.tipos || []).filter(np).sort((a, b) => b.perd - a.perd || b.min - a.min) : null;
+  const dias = U.dias.map(x => {
+    const p = x.fds ? null : pd[x.data];
+    const tps = p && p.tipos ? Object.keys(p.tipos).map(t => Object.assign({ tipo: t }, p.tipos[t])).filter(np).sort((a, b) => b.perd - a.perd || b.min - a.min) : [];
+    return Object.assign({}, x, { dif: x.uj != null ? x.uj - x.meta : null,
+      parUep: !st || x.fds || !x.temU ? null : (p ? p.perd : 0), parMin: !st || x.fds || !x.temU ? null : (p ? p.minNP : 0), causa: tps[0] || null });
+  });
+  const casc = st ? _relCascata({ meta: U.meta, real: U.jorn, perdaPar: st.pecas, minNP: st.totMinNP, tipos: motivos }) : null;
+  if(casc) casc.un = 'UEP';
+  const resto = (motivos || []).slice(REL_UEP_MOTIVOS), soma = k => resto.reduce((a, t) => a + t[k], 0);
+  return { dias, motivos, casc, nParadas: st ? motivos.reduce((a, t) => a + t.qtd, 0) : null, minNP: st ? st.totMinNP : null,
+           top: (motivos || []).slice(0, REL_UEP_MOTIVOS), resto: resto.length ? { n: resto.length, qtd: soma('qtd'), min: soma('min'), perd: soma('perd') } : null };
+}
+// O DESENHO da 1ª folha + o anexo. Nenhuma conta: U, P (o _relSemUepPerdas) e o
+// anexo das caixas chegam prontos.
+const _REL_UEP_COR = { ok:'#2E7D32', he:'#B4650A', ruim:'#B3261E' };
+function _relSemUepCorpoHtml(U, P, o){
+  const r = v => fmtN(Math.round(v)), INK2 = '#5B6470';
+  const cor = o.parcial ? INK2 : _REL_UEP_COR[U.selo];
+  const selo = o.parcial ? `PARCIAL · ${o.fechados} de ${o.nDias} ${o.nDias === 1 ? 'dia fechado' : 'dias fechados'}`
+    : U.selo === 'he' ? '⚠ META BATIDA COM HORA EXTRA' : U.selo === 'ok' ? '✓ META BATIDA NA JORNADA NORMAL' : `FALTARAM ${r(U.faltaTot)} UEP PARA A META`;
+  const chip = x => !x.fechado ? '<span class="sbadge">EM ANDAMENTO</span>' : !x.temU ? '<span class="sbadge">SEM UEP</span>'
+    : x.fds ? '<span class="sbadge">HORA EXTRA</span>'
+    : `<span class="sbadge ${x.cls === 'ok' ? 's-ok' : x.cls === 'he' ? 's-warn' : 's-red'}">${x.cls === 'ok' ? 'NA META' : x.cls === 'he' ? 'COM HORA EXTRA' : 'ABAIXO'}</span>`;
+  const sinal = v => (v > 0 ? '+' : v < 0 ? '−' : '') + r(Math.abs(v));
+  const dias = P.dias.map(x => `<tr>
+      <td class="td-mono">${x.data.substring(0, 5)}</td>
+      <td class="td-bold">${x.fds ? (x.temU ? r(x.uh) + ' <span style="font-size:9px;color:' + INK2 + '">em HE</span>' : '—') : x.temU ? r(x.uj) : '—'}</td>
+      <td class="td-mono" style="color:${INK2}">${x.fds ? 'sem meta' : r(x.meta)}</td>
+      <td class="td-bold">${x.pct != null ? fmtP(x.pct) : '—'}</td>
+      <td class="td-bold">${x.dif != null ? sinal(x.dif) : '—'}</td>
+      <td class="td-mono">${x.parUep != null ? (x.parMin > 0 ? `−${r(x.parUep)} <span style="color:${INK2}">· ${_fmtMinPar(Math.round(x.parMin))}</span>` : '—') : '—'}</td>
+      <td style="font-size:10.5px">${x.causa ? _rpEsc(x.causa.tipo) + ` <span style="color:${INK2}">(−${r(x.causa.perd)})</span>` : ''}</td>
+      <td>${chip(x)}</td></tr>`).join('');
+  const mot = P.motivos || [], R = P.resto;
+  const linhaM = t => `<tr><td>${_rpEsc(t.tipo)}</td><td class="td-mono" style="text-align:right">${fmtN(t.qtd)}</td>
+      <td class="td-mono" style="text-align:right">${_fmtMinPar(Math.round(t.min))}</td>
+      <td class="td-bold" style="text-align:right">−${r(t.perd)}</td>
+      <td class="td-mono" style="text-align:right;color:${INK2}">${fmtP(t.perd / U.meta * 100)}</td></tr>`;
+  return `
+<div class="rp-sec-ttl">RESULTADO DA SEMANA · UEP</div>
+<div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+  <div class="kpi-card" style="border-left-color:${cor}">
+    <div class="kpi-lbl">JORNADA NORMAL</div>
+    <div class="kpi-val" style="color:${cor}">${r(U.jorn)} <span style="font-size:13px">UEP</span></div>
+    <div class="kpi-sub">${fmtP(U.pct)} da meta de ${r(U.meta)} · ${selo}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-lbl">FALTOU NA JORNADA</div>
+    <div class="kpi-val">${U.falta > 0 ? r(U.falta) + ' <span style="font-size:13px">UEP</span>' : '—'}</div>
+    <div class="kpi-sub">${U.falta > 0 ? `${fmtN(U.faltaPorDia)} UEP por dia útil` : 'a jornada bateu a meta'}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-lbl">HORA EXTRA</div>
+    <div class="kpi-val">${U.he > 0 ? '+' + r(U.he) + ' <span style="font-size:13px">UEP</span>' : '—'}</div>
+    <div class="kpi-sub">${U.he > 0 ? `${U.horasHe > 0 ? U.horasHe + 'h · ' : ''}com ela, ${fmtP(U.tot / U.meta * 100)} da meta` : 'sem hora extra'}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-lbl">CAIXAS · FATO</div>
+    <div class="kpi-val">${fmtN(U.cx)}</div>
+    <div class="kpi-sub">${fmtN(U.cx - U.cxHe)} na jornada${U.cxHe > 0 ? ` + ${fmtN(U.cxHe)} em hora extra` : ''}</div>
+  </div>
+</div>
+${P.casc ? _rpCascataHtml('ONDE PERDEMOS — META × PARADAS × RITMO, NA JORNADA', P.casc, '')
+  : `<div class="rp-sec-ttl" style="margin-top:16px">ONDE PERDEMOS</div><div class="rp-note">As paradas da semana não foram lidas: sem elas não dá para separar parada de ritmo (a cascata não sai). O dia a dia abaixo vale.</div>`}
+<div class="rp-sec-ttl" style="margin-top:16px">ONDE PERDEMOS — DIA A DIA</div>
+<table>
+  <thead><tr><th>DIA</th><th>UEP JORNADA</th><th>META</th><th>% DA META</th><th>DIFERENÇA</th><th>PARADAS · UEP</th><th>PRINCIPAL PARADA</th><th>STATUS</th></tr></thead>
+  <tbody>${dias}</tbody>
+  <tfoot><tr><td class="tf-lbl">SEMANA</td><td class="td-bold">${r(U.jorn)}</td><td class="td-mono" style="color:${INK2}">${r(U.meta)}</td>
+    <td class="td-bold">${fmtP(U.pct)}</td><td class="td-bold">${sinal(U.jorn - U.meta)}</td>
+    <td class="td-mono">${P.casc ? `−${r(P.casc.perdaPar)} <span style="color:${INK2}">· ${_fmtMinPar(Math.round(P.minNP))}</span>` : '—'}</td>
+    <td class="tf-lbl" colspan="2">${U.bateu} de ${plural(U.nComMeta, 'dia útil', 'dias úteis')} na meta</td></tr></tfoot>
+</table>
+${mot.length ? `<div class="rp-sec-ttl" style="margin-top:16px">ONDE PERDEMOS — PARADAS POR MOTIVO</div>
+<table>
+  <thead><tr><th>MOTIVO</th><th style="text-align:right">Nº</th><th style="text-align:right">TEMPO</th><th style="text-align:right">UEP PERDIDAS</th><th style="text-align:right">% DA META</th></tr></thead>
+  <tbody>${P.top.map(linhaM).join('')}${R ? `<tr><td style="color:${INK2}">demais ${plural(R.n, 'motivo', 'motivos')}</td>
+    <td class="td-mono" style="text-align:right">${fmtN(R.qtd)}</td><td class="td-mono" style="text-align:right">${_fmtMinPar(Math.round(R.min))}</td>
+    <td class="td-bold" style="text-align:right">−${r(R.perd)}</td><td class="td-mono" style="text-align:right;color:${INK2}">${fmtP(R.perd / U.meta * 100)}</td></tr>` : ''}</tbody>
+  <tfoot><tr><td class="tf-lbl">TOTAL NÃO PROGRAMADO</td><td class="td-mono" style="text-align:right">${fmtN(P.nParadas)}</td>
+    <td class="td-mono" style="text-align:right">${_fmtMinPar(Math.round(P.minNP))}</td><td class="td-bold" style="text-align:right">−${r(P.casc ? P.casc.perdaPar : 0)}</td>
+    <td class="td-mono" style="text-align:right;color:${INK2}">${fmtP((P.casc ? P.casc.perdaPar : 0) / U.meta * 100)}</td></tr></tfoot>
+</table>` : ''}
+<div style="font-size:9.5px;color:${INK2};margin-top:8px;line-height:1.55">
+  <b>UEP</b> = caixas × UEP por caixa do cadastro, gravada no fechamento de cada dia; a meta é da jornada normal, e a hora extra fica à parte.
+  <b>Paradas</b>: só as não programadas dos dias úteis, valoradas pela meta de UEP do dia (minutos × meta ÷ minutos produtivos) — a mesma conta da aba PARADAS.
+  <b>Ritmo</b>: o que sobra (meta − paradas − jornada); inclui microparadas não apontadas.${U.semUep ? ` ${plural(U.semUep, 'dia sem UEP gravada fica', 'dias sem UEP gravada ficam')} fora.` : ''}${(e => e ? `<br><b style="color:#B26A00">${e}</b>` : '')(_uepEscalaNota(U.datasUep))}
+</div>
+
+${o.tabelaCx}`;
+}
+
 async function gerarRelatorioSemanal(ateArg){
   // Abrir janela ANTES do await (evita bloqueio de pop-up)
   const win=window.open('','_blank','width=960,height=720');
@@ -22278,10 +22408,13 @@ async function gerarRelatorioSemanal(ateArg){
   }
 
   // KPIs da semana (conta pura, testável — ver _relSemanalKPIs)
+  const kSem = _relSemanalKPIs(diasSem);
   const {totReal, totMeta, efMedia, efMediaSemHE, mediaReal, mediaMeta, mediaNormal, mediaHE, nBase,
          totHE, totHoras, temHE, semHE, comMeta, nComMeta, melhorDia, piorDia,
          fechados, abertos,
-         efTotal, efTotalSemHE, soComHE, faltouSemHE} = _relSemanalKPIs(diasSem);
+         efTotal, efTotalSemHE, soComHE, faltouSemHE} = kSem;
+  // v7.251.0: a UEP na frente — a MESMA montagem do bloco da tela (null = semana sem UEP: o papel de antes)
+  const U = _gsemUepMontar(diasSem, kSem);
   const SM=_relSemMeta(diasSem);   // os dias sem meta: fim de semana × dia útil sem meta gravada
 
   /* ── Paradas da semana ────────────────────────────────────────────────────
@@ -22293,12 +22426,14 @@ async function gerarRelatorioSemanal(ateArg){
      relatório sai SEM a seção — a mesma regra da cascata dos relatórios de
      produção. Meio relatório é melhor que relatório nenhum, e um número de
      parada inventado seria pior que os dois. */
-  let stPar=null;
+  let stPar=null, stUep=null;
   if(CFG.sheetsUrl && _rpOk()){
     try{
       const _p=await _pgBuscarDados(dtToStr(seg), dtToStr(sex));
       if(_p) stPar=_paradasStats(_p.paradas, _p.metaByDay,
                                  {realByDay:_p.realByDay, de:dtToStr(seg), ate:dtToStr(sex)});
+      // v7.251.0: as MESMAS paradas valoradas em UEP (a cascata do ONDE PERDEMOS)
+      if(_p && U) stUep=_relParadasUep(_p, diasSem, dtToStr(seg), dtToStr(sex));
     }catch(e){ console.warn('[RelSemanal] paradas não vieram:', e.message); }
   }
 
@@ -22350,6 +22485,66 @@ async function gerarRelatorioSemanal(ateArg){
     ? `PARCIAL · ${fechados} de ${diasSem.length} ${diasSem.length===1?'dia fechado':'dias fechados'}`
     : (soComHE ? '⚠ META BATIDA COM HORA EXTRA' : badge(efTotal));
 
+  // A tabela das CAIXAS por dia: o corpo do papel sem a UEP, e o ANEXO do papel com a UEP
+  // na frente (v7.251.0; aí sem a coluna STATUS — o veredito é o da UEP).
+  const tabelaCx=`<!-- TABELA DETALHADA -->
+<div class="rp-sec-ttl"${U?' style="page-break-before:always"':''}>${U?'ANEXO — CAIXAS POR DIA · FATO, SEM VEREDITO':'DETALHAMENTO POR DIA'}</div>
+<table>
+  <thead>
+    <tr><th>DATA</th><th>REALIZADO</th>${temHE?'<th>H. NORMAL</th><th>H. EXTRA</th>':''}<th>META</th><th>META/H</th><th>EFICIÊNCIA</th>${temHE?'<th>EF. S/ HE</th>':''}<th>MELHOR H.</th><th>PIOR H.</th>${U?'':'<th>STATUS</th>'}<th>FECHAMENTO</th></tr>
+  </thead>
+  <tbody>
+    ${diasSem.map(d=>`
+    <tr>
+      <td class="td-mono">${d.data}</td>
+      <td class="td-bold">${d.real.toLocaleString('pt-BR')}</td>
+      ${temHE?`<td class="td-mono">${_heIndef(d)?'—':(d.real-d.heCx).toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:${INK2}">${_heCel(d)}</td>`:''}
+      <td class="td-mono" style="color:${INK2}">${_diaComMeta(d)||!d.fds?d.meta.toLocaleString('pt-BR'):'—'}</td>
+      <td class="td-mono" style="color:${INK2}">${metaHoraDia(d)?fmtN(metaHoraDia(d)):'—'}</td>
+      <td class="td-bold">${_diaComMeta(d)?fmtP(d.ef):'—'}</td>
+      ${temHE?`<td class="td-bold" style="color:${_heIndef(d)||!_diaComMeta(d)?INK2:''}">${_heIndef(d)||!_diaComMeta(d)?'—':fmtP(_efSemHE(d))}</td>`:''}
+      <td class="td-mono" style="color:${INK2}">${d.fds?'—':d.melhor.toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:${INK2}">${d.fds?'—':d.pior.toLocaleString('pt-BR')}</td>
+      ${U?'':`<td>${_diaComMeta(d)?`<span class="sbadge ${d.ef>=96?'s-ok':d.ef>=90?'s-warn':'s-red'}">${d.ef>=96?'NA META':d.ef>=90?'ATENÇÃO':'ABAIXO'}</span>`:`<span class="sbadge">${d.fds?'HORA EXTRA':'SEM META'}</span>`}</td>`}
+      <td class="td-mono" style="color:${INK2}">${d.fechado?(()=>{const f=fmtFechadoEm(d.fechadoEm,d.data);return f==='SIM'?'✓':'✓ '+f.substring(0,5);})():'—'}</td>
+    </tr>`).join('')}
+  </tbody>
+  <tfoot>
+    <tr>
+      <td class="tf-lbl">MÉDIA / DIA</td>
+      <td class="td-bold">${Math.round(mediaReal).toLocaleString('pt-BR')}</td>
+      ${temHE?`<td class="td-mono">${Math.round(mediaNormal).toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:${INK2}">${Math.round(mediaHE).toLocaleString('pt-BR')}</td>`:''}
+      <td class="td-mono" style="color:${INK2}">${mediaMeta!=null?Math.round(mediaMeta).toLocaleString('pt-BR'):'—'}</td>
+      <td class="td-mono" style="color:${INK2}">${mediaMeta!=null?fmtN(Math.round(mediaMeta/hTurno)):'—'}</td>
+      <td class="td-bold">${efMedia!=null?fmtP(efMedia):'—'}</td>
+      ${temHE?`<td class="td-bold">${efMediaSemHE!=null?fmtP(efMediaSemHE):'—'}</td>`:''}
+      <td class="td-mono" style="color:${INK2}">${_slotMaisFreq(diasSem,'melhor')}</td>
+      <td class="td-mono" style="color:${INK2}">${_slotMaisFreq(diasSem,'pior')}</td>
+      <td class="tf-lbl" colspan="${U?1:2}">base: ${plural(nBase,'dia','dias')} ${nComMeta?'com meta':'com produção'}${nComMeta&&SM.n?` · ${SM.util?'dias sem meta':'fim de semana'} só no total`:''}</td>
+    </tr>
+    <tr>
+      <td class="tf-lbl">TOTAL DA SEMANA</td>
+      <td class="td-bold">${totReal.toLocaleString('pt-BR')}</td>
+      ${temHE?`<td class="td-bold">${(totReal-totHE).toLocaleString('pt-BR')}</td>
+      <td class="td-bold">${totHE.toLocaleString('pt-BR')}${totHoras>0?`<div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:400;color:#a0aec0">${totHoras} h extras</div>`:''}</td>`:''}
+      <td class="td-mono" style="color:${INK2}">${totMeta.toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:${INK2}">${mediaMeta!=null?fmtN(Math.round(mediaMeta/hTurno)):'—'}</td>
+      <td class="td-bold">${totMeta?fmtP(totReal/totMeta*100):'—'}</td>
+      ${temHE?`<td class="td-bold">${totMeta?fmtP((totReal-totHE)/totMeta*100):'—'}</td>`:''}
+      <td class="tf-lbl" colspan="${U?3:4}">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx${semHE?` · ${plural(semHE,'dia','dias')} sem separação de hora extra`:''}</td>
+    </tr>
+  </tfoot>
+</table>
+
+${U?'':_relUepSemanaHtml(diasSem)}
+
+<div style="font-size:9.5px;color:#5B6470;margin-top:6px;line-height:1.55">
+  <b>META/H</b> = meta do dia ÷ ${plural(hTurno,'hora','horas')} do turno (jornada normal ${_rpEsc(CFG.turnoInicio)}–${_rpEsc(CFG.turnoFim)}).
+  É a régua das colunas MELHOR H. e PIOR H., que trazem a maior e a menor hora do dia em caixas.
+</div>
+`;
   // Gerar HTML do relatório
   const html=`<!DOCTYPE html>
 <html lang="pt-BR">
@@ -22380,6 +22575,9 @@ ${_RP_FONTS}
   /* HEADER */
 ${_RP_HEADER_CSS}
   .rp-semana{ font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:#FF5C1F; }
+  /* a cascata do ONDE PERDEMOS (v7.251.0) — a mesma pele dos relatórios de produção */
+${_RP_CASC_CSS}
+  .rp-note{ font-size:9.5px; color:#5B6470; margin-top:6px; line-height:1.55; }
 
   /* ── Paleta do DOCUMENTO ───────────────────────────────────────────────
      Papel de reunião, não painel de chão de fábrica: o corpo é grafite sobre
@@ -22447,7 +22645,7 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
     ${parcial?`<div style="color:#B4650A;font-weight:700">PARCIAL · ${fechados} de ${diasSem.length} ${diasSem.length===1?'dia fechado':'dias fechados'}</div>`:''}
     <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>`)}
 
-<!-- KPIs SEMANA -->
+${U?_relSemUepCorpoHtml(U, _relSemUepPerdas(U, stUep), { parcial, fechados, nDias:diasSem.length, tabelaCx }):`<!-- KPIs SEMANA -->
 <div class="rp-sec-ttl">RESUMO DA SEMANA</div>
 <div class="kpi-grid" style="grid-template-columns:repeat(${temHE?6:5},1fr)">
   <div class="kpi-card">
@@ -22515,63 +22713,7 @@ ${_rpUepFaixaHtml(diasSem)}
   ${_svgBarChart(diasSem)}
 </div>
 
-<!-- TABELA DETALHADA -->
-<div class="rp-sec-ttl">DETALHAMENTO POR DIA</div>
-<table>
-  <thead>
-    <tr><th>DATA</th><th>REALIZADO</th>${temHE?'<th>H. NORMAL</th><th>H. EXTRA</th>':''}<th>META</th><th>META/H</th><th>EFICIÊNCIA</th>${temHE?'<th>EF. S/ HE</th>':''}<th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th><th>FECHAMENTO</th></tr>
-  </thead>
-  <tbody>
-    ${diasSem.map(d=>`
-    <tr>
-      <td class="td-mono">${d.data}</td>
-      <td class="td-bold">${d.real.toLocaleString('pt-BR')}</td>
-      ${temHE?`<td class="td-mono">${_heIndef(d)?'—':(d.real-d.heCx).toLocaleString('pt-BR')}</td>
-      <td class="td-mono" style="color:${INK2}">${_heCel(d)}</td>`:''}
-      <td class="td-mono" style="color:${INK2}">${_diaComMeta(d)||!d.fds?d.meta.toLocaleString('pt-BR'):'—'}</td>
-      <td class="td-mono" style="color:${INK2}">${metaHoraDia(d)?fmtN(metaHoraDia(d)):'—'}</td>
-      <td class="td-bold">${_diaComMeta(d)?fmtP(d.ef):'—'}</td>
-      ${temHE?`<td class="td-bold" style="color:${_heIndef(d)||!_diaComMeta(d)?INK2:''}">${_heIndef(d)||!_diaComMeta(d)?'—':fmtP(_efSemHE(d))}</td>`:''}
-      <td class="td-mono" style="color:${INK2}">${d.fds?'—':d.melhor.toLocaleString('pt-BR')}</td>
-      <td class="td-mono" style="color:${INK2}">${d.fds?'—':d.pior.toLocaleString('pt-BR')}</td>
-      <td>${_diaComMeta(d)?`<span class="sbadge ${d.ef>=96?'s-ok':d.ef>=90?'s-warn':'s-red'}">${d.ef>=96?'NA META':d.ef>=90?'ATENÇÃO':'ABAIXO'}</span>`:`<span class="sbadge">${d.fds?'HORA EXTRA':'SEM META'}</span>`}</td>
-      <td class="td-mono" style="color:${INK2}">${d.fechado?(()=>{const f=fmtFechadoEm(d.fechadoEm,d.data);return f==='SIM'?'✓':'✓ '+f.substring(0,5);})():'—'}</td>
-    </tr>`).join('')}
-  </tbody>
-  <tfoot>
-    <tr>
-      <td class="tf-lbl">MÉDIA / DIA</td>
-      <td class="td-bold">${Math.round(mediaReal).toLocaleString('pt-BR')}</td>
-      ${temHE?`<td class="td-mono">${Math.round(mediaNormal).toLocaleString('pt-BR')}</td>
-      <td class="td-mono" style="color:${INK2}">${Math.round(mediaHE).toLocaleString('pt-BR')}</td>`:''}
-      <td class="td-mono" style="color:${INK2}">${mediaMeta!=null?Math.round(mediaMeta).toLocaleString('pt-BR'):'—'}</td>
-      <td class="td-mono" style="color:${INK2}">${mediaMeta!=null?fmtN(Math.round(mediaMeta/hTurno)):'—'}</td>
-      <td class="td-bold">${efMedia!=null?fmtP(efMedia):'—'}</td>
-      ${temHE?`<td class="td-bold">${efMediaSemHE!=null?fmtP(efMediaSemHE):'—'}</td>`:''}
-      <td class="td-mono" style="color:${INK2}">${_slotMaisFreq(diasSem,'melhor')}</td>
-      <td class="td-mono" style="color:${INK2}">${_slotMaisFreq(diasSem,'pior')}</td>
-      <td class="tf-lbl" colspan="2">base: ${plural(nBase,'dia','dias')} ${nComMeta?'com meta':'com produção'}${nComMeta&&SM.n?` · ${SM.util?'dias sem meta':'fim de semana'} só no total`:''}</td>
-    </tr>
-    <tr>
-      <td class="tf-lbl">TOTAL DA SEMANA</td>
-      <td class="td-bold">${totReal.toLocaleString('pt-BR')}</td>
-      ${temHE?`<td class="td-bold">${(totReal-totHE).toLocaleString('pt-BR')}</td>
-      <td class="td-bold">${totHE.toLocaleString('pt-BR')}${totHoras>0?`<div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:400;color:#a0aec0">${totHoras} h extras</div>`:''}</td>`:''}
-      <td class="td-mono" style="color:${INK2}">${totMeta.toLocaleString('pt-BR')}</td>
-      <td class="td-mono" style="color:${INK2}">${mediaMeta!=null?fmtN(Math.round(mediaMeta/hTurno)):'—'}</td>
-      <td class="td-bold">${totMeta?fmtP(totReal/totMeta*100):'—'}</td>
-      ${temHE?`<td class="td-bold">${totMeta?fmtP((totReal-totHE)/totMeta*100):'—'}</td>`:''}
-      <td class="tf-lbl" colspan="4">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx${semHE?` · ${plural(semHE,'dia','dias')} sem separação de hora extra`:''}</td>
-    </tr>
-  </tfoot>
-</table>
-
-${_relUepSemanaHtml(diasSem)}
-
-<div style="font-size:9.5px;color:#5B6470;margin-top:6px;line-height:1.55">
-  <b>META/H</b> = meta do dia ÷ ${plural(hTurno,'hora','horas')} do turno (jornada normal ${_rpEsc(CFG.turnoInicio)}–${_rpEsc(CFG.turnoFim)}).
-  É a régua das colunas MELHOR H. e PIOR H., que trazem a maior e a menor hora do dia em caixas.
-</div>
+${tabelaCx}
 
 ${(()=>{
   const slotsP=Object.keys(MEDIA_HORAS)
@@ -22601,6 +22743,7 @@ ${(()=>{
 })()}
 
 ${_relParadasSemanaHtml(stPar, totMeta)}
+`}
 
 <!-- RODAPÉ -->
 <div class="rp-footer">

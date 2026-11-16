@@ -62,6 +62,7 @@ de tema entra aqui também.
 - Relatórios em popup (peças comuns)
 - O relatório semanal é DOCUMENTO, não painel
 - Enxugamento das telas (v7.118.0 em diante)
+- O RELATÓRIO SEMANAL COM A UEP NA FRENTE: ONDE PERDEMOS (v7.251.0)
 
 ## Gerencial do PC, do celular e diretoria — `gerencial.md`
 - PRODUTOS EMBALADOS HOJE — gerencial do celular (mobile 1.39.0) e do PC (v7.201.0)

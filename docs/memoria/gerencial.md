@@ -490,7 +490,8 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
 - **Só o gerencial** (`pintar('gsem-')`). A Tela D da TV (`tvd-`) continua em
   caixas: a TV ainda julga em caixas nas telas A/B, e duas réguas no mesmo
   carrossel seriam dois vereditos. O 🖨 IMPRIMIR SEMANA (relatório semanal)
-  também segue em caixas — passar o papel é o passo seguinte, se o PPCP pedir.
+  seguiu em caixas até a v7.251.0, quando passou a ONDE PERDEMOS em UEP com a
+  mesma montagem (ver `relatorios.md`).
 - **A conta é UMA, pura**: `_gsemUepMontar(dias, k)` (a UEP do `uepHistResumo`,
   o selo pela `_relMetaHE` em UEP, a tarja de cada dia, as caixas como fato);
   o desenho é o `_pintarUep` dentro do RP_SEMANA, sem conta (o teste prende).

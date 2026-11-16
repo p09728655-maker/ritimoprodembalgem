@@ -166,3 +166,42 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   diz "NO RITMO · X de Y esperadas · meta Z" — o teste prende o começo.
 - ⚠ Na diretoria a `getProgramacaoDetalhada` espera 60 s por tentativa
   (`jsonpFetch(url, _modoDir()?60000:…)`); nas outras telas continua 25 s.
+
+## O RELATÓRIO SEMANAL COM A UEP NA FRENTE: ONDE PERDEMOS (v7.251.0)
+- PPCP, 16/11/2026, logo depois do bloco da tela com a UEP na frente (v7.250.0):
+  *"a impressão não mudou?"* → *"deixar limpo, fácil compreensão, direto ao
+  ponto onde perdemos"* → prévia em PDF (antes × depois, semana 46).
+- **A 1ª folha responde uma pergunta**: a jornada fez X UEP contra a meta — onde
+  ficou o que faltou? RESULTADO (4 cards: JORNADA NORMAL com o selo, FALTOU NA
+  JORNADA, HORA EXTRA, CAIXAS · FATO) → a CASCATA META − IMPACTO DE PARADAS − GAP
+  DE RITMO = JORNADA, em UEP (o `_rpCascataHtml` dos relatórios de produção, com a
+  unidade `c.un`) → o DIA A DIA (UEP, meta, %, diferença, UEP paradas, a principal
+  parada, STATUS) → as PARADAS POR MOTIVO (`REL_UEP_MOTIVOS` = 6 com linha
+  própria, o resto somado). A 2ª folha é o ANEXO das caixas por dia, sem STATUS.
+- **Uma montagem para a tela e o papel**: o `_gsemUepMontar` (o mesmo do bloco
+  da tela) dá o resultado e o veredito, com as mesmas palavras. Antes o papel
+  tinha DOIS vereditos que discordavam: a EFICIÊNCIA em caixas e a faixa de UEP
+  (`_rpUepFaixaHtml`, régua 100/90%, sem a hora extra) — semana 46: *META
+  BATIDA COM HORA EXTRA* × *ATENÇÃO*.
+- **Paradas em UEP** (`_relParadasUep`): a MESMA conta do `RP_PARADAS.stats`, com
+  a meta de UEP de cada dia no `metaByDay` — perda = minutos × meta UEP do dia ÷
+  minutos produtivos. Só os dias úteis com UEP: a cascata é da jornada, e a
+  parada de sábado (todo hora extra) não tirou nada da meta. `metaDia` 0 no
+  `cfg` da chamada, para nenhum dia cair na meta de CAIXAS. ⚠ Paradas fora do
+  turno num dia útil (05:00–07:00) ainda entram — o `paradas-calc` só recorta o
+  almoço. A leitura é a mesma do papel (`_pgBuscarDados`), nenhuma chamada nova.
+- **Sem as paradas lidas, a cascata não sai** (`_relSemUepPerdas` devolve `casc`
+  null): sem elas todo o faltante viraria GAP DE RITMO, um número inventado. O
+  dia a dia sai, sem a coluna de paradas.
+- **Saíram do papel com UEP**: o gráfico, o MELHOR/PIOR DIA (em caixas, o 11/11
+  da semana 46 era o melhor com 125,3% e em UEP é o pior com 86,2%), a análise
+  por horário (média histórica de caixas), o quadro de paradas em caixas (com a
+  disponibilidade) e a faixa de UEP. Semana sem UEP gravada: o papel de antes,
+  igual (o teste prende).
+- Conta × desenho: `_relParadasUep` e `_relSemUepPerdas` são conta pura;
+  `_relSemUepCorpoHtml` só desenha (o teste reprova reduce/filter/sort nele). A
+  tabela das caixas virou a peça `tabelaCx` do `gerarRelatorioSemanal`, usada
+  pelo papel sem UEP e pelo anexo.
+- Medido: o PDF A4 sai em 2 folhas (a 1ª com todo o ONDE PERDEMOS, a 2ª o
+  anexo).
+
