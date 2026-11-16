@@ -45,31 +45,22 @@ function ok(nome, real, esperado) {
 global.window = global;
 require('vm').runInThisContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'));
 ['UEP_MIN_DIAS', 'UEP_BASE', 'UEP_TRAVADA_DESDE', 'APP_NOME', 'APP_NOME_CX', 'GPX_DIAS',
- 'FILA_AMOSTRA_DE',
  'CXU_DIAS', 'CXU_FOLGA', '_CXU_PORQUE', '_filaN2br', 'CXU_FORA_MIN', 'CXU_COR', 'DIR_COB_MIN', 'UEP_REF_STATUS', 'UEP_REF_MOTIVO']
   .forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
 ['function _uepEhBase(', 'function _taktUep(', 'function _taktTxt(', 'function _rpEsc(', 'function _cartNum(', 'function _qpRealDia(', 'function _capVol(', 'function _capNome(',
- 'function _cartQtdAberta(', 'function _tvF2(', 'function _filaAmostraDeItens(',
+ 'function _cartQtdAberta(', 'function _tvF2(',
  'function _qpOscilacao(', 'function _cxuJanela(', 'function _cxuPtsDoPeriodo(',
  'function _cxUepMontar(', 'function _cxuSvg(', 'function _cxuTese(', 'function _cxuProva(', 'function _cxUepHtml(', 'function _cxuCxPorProduto(',
  'function _cxuResumoHtml(', 'function _cxuRefTrechos(', 'function _cxuRefHtml(', 'function _cxuConclusoes(', 'function _cxuCapTese(', 'function _cxuDecidir(']
   .forEach(f => eval.call(global, pegaJs(f)));
 
 // ════════════════════════════════════════════════════════════════════════════
-console.log('\n── a amostra do GRAVAR (a régua das 📏 RÉGUAS) ──');
+console.log('\n── a FILA antiga e a amostra dela saíram ──');
 // v7.216.0: a 🖨 FILA DE CRONOANÁLISE antiga (provisória, estimada, no limite da esteira,
 // família incoerente) saiu — a impressão é a AGENDA DA CRONOANÁLISE (o O QUE MEDIR, abaixo).
-// Ficou a amostra, que a régua usa.
+// v7.248.2: a amostra (01/07 → trava) saiu também — o único leitor era a FILA antiga.
 ok('a FILA antiga saiu (a conta, o desenho e os motivos)', [/function _filaCronoMontar\(|function _filaCronoHtml\(|const FILA_MOTIVOS|function _filaUteis\(/.test(JS)], [false]);
-ok('a amostra conta DIAS distintos e soma as caixas (cores juntas)',
-   _filaAmostraDeItens([{ data: '01/10/2026', modelo: '501059', nome: 'PENTEADEIRA CAMARIM STRASS', caixas: 100 },
-                        { data: '01/10/2026', modelo: '501059', nome: 'PENTEADEIRA CAMARIM STRASS', caixas: 50 },
-                        { data: '02/10/2026', modelo: '501059', nome: 'PENTEADEIRA CAMARIM STRASS', caixas: 30 }]),
-   { '501059|PENTEADEIRA CAMARIM STRASS': { dias: 2, cx: 180 } });
-const A = pegaJs('async function _filaAmostra(');
-ok('a amostra guarda e devolve o PREP_PERIODO e o PH_UEP_PROD da aba PRODUÇÃO/HORA',
-   /const prep = PREP_PERIODO, uepProd = PH_UEP_PROD/.test(A) && /finally\{ PREP_PERIODO = prep; PH_UEP_PROD = uepProd; \}/.test(A), true);
-ok('a amostra vai do começo do log até a TRAVA, com cache de um dia', [/UEP_TRAVADA_DESDE \|\| hojeStr\(\)/.test(A), /FILA_LS_TTL/.test(A)], [true, true]);
+ok('e a amostra saiu (sem chamador desde a FILA antiga, v7.216.0)', /function _filaAmostra|FILA_AMOSTRA_DE|rpe_fila_amostra/.test(JS), false);
 
 // ════════════════════════════════════════════════════════════════════════════
 console.log('\n── CAIXAS × UEP: os 18 dias reais de 21/09 a 16/10/2026 ──');

@@ -8,7 +8,7 @@
 // `ritmoprod_mobile.html`. É a troca do nome do cache que faz o navegador
 // instalar o SW novo — e é isso que dispara o aviso "Nova versão disponível"
 // para quem está com o app instalado.
-const CACHE = 'ritmoprod-mobile-v61';   // APP_VER 1.51.1
+const CACHE = 'ritmoprod-mobile-v62';   // APP_VER 1.51.2
 
 self.addEventListener('install', e => {
   self.skipWaiting();

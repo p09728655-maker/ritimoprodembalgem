@@ -3659,7 +3659,7 @@ ok('o log de produto tem cache por período e requisição em voo compartilhada'
    /_cartMixCache\.key === key/.test(_cartRit) && /_cartMixVoo\.key === key && _cartMixVoo\.p/.test(_cartRit), true);
 ok('e reaproveita o período que o comparativo por modelo já buscou', /_phCache\.key === key/.test(_cartRit), true);
 // ⚠ a leitura publica PREP_PERIODO, que é da aba PRODUÇÃO/HORA e de OUTRO período
-ok('a leitura devolve o PREP_PERIODO da outra aba', /finally\{ PREP_PERIODO = prepAntes; \}/.test(_cartRit), true);
+ok('a leitura devolve o PREP_PERIODO e o PH_UEP_PROD da outra aba (v7.248.2)', /finally\{ PREP_PERIODO = prepAntes; PH_UEP_PROD = uepAntes; \}/.test(_cartRit), true);
 ok('com CAIXAS CRUAS não há busca', /\(modo \|\| QP_MIX\) !== 'mix'\) return null;/.test(_cartRit), true);
 // ⚠ O MODO É LIDO UMA VEZ, NO COMEÇO DA MONTAGEM. Trocando o seletor no meio da
 // busca (que leva minutos no cold start), o `QP_MIX` mudava debaixo dela e a
@@ -5972,9 +5972,9 @@ console.log('\n── estudo de UEP ──');
   ok('a tabela do HISTÓRICO mostra as duas colunas pela mesma decisão do cabeçalho',
      [/const temMetaComp=_histTemMetaComp\(dias\)/.test(rh), /\.th-hist-mcomp/.test(rh), /\$\{temMetaComp\?/.test(rh),
       (src.match(/class="th-hist-mcomp"/g) || []).length], [true, true, true, 2]);
-  ok('o Excel do histórico leva o cabeçalho das colunas visíveis, não uma lista fixa',
-     [/thead th'\)\]\.filter\(th=>th\.style\.display!=='none'\)/.test(pega('function exportarExcel(')),
-      /\['Data','Realizado','Meta'/.test(pega('function exportarExcel('))], [true, false]);
+  // o Exportar Excel do HISTÓRICO saiu na v7.248.2 (sem botão desde antes de
+  // 06/11/2026; PPCP: o botão não volta)
+  ok('o Exportar Excel do HISTÓRICO saiu', /function exportarExcel\(/.test(JS), false);
 }
 
 // ── v7.203.0 / mobile 1.42.0 / .gs v5.56: SOMAR ATRASO na CONFIG_PAINEL ────
@@ -6041,11 +6041,104 @@ console.log('\n── estudo de UEP ──');
       /<span id="ftr-gs" class="ftr-hide-mobile" style="display:none"><\/span>/.test(src)], [true, true]);
 }
 
+// ── v7.248.2: a UEP/CX e as preparações da PRODUÇÃO/HORA não podem ser as de
+// outra leitura. A carteira (aba PLANO) lê OUTRO período e publica PH_UEP_PROD
+// e PREP_PERIODO; terminando no meio de um await da tela ou do 🖨 desta aba,
+// a conta seguia com o mix de outro período (e "sem UEP" no produto que não
+// rodou lá). Investigado a pedido do PPCP depois da revisão do /revisor-codigo.
+console.log('\n── PRODUÇÃO/HORA: o mapa da UEP e as preparações voltam do cache da aba ──');
+{
+  const vm = require('vm');
+  const C = vm.createContext({ console, Promise, setImmediate });
+  vm.runInContext(`var PH_UEP_PROD=null, PREP_PERIODO=null, CAMPOS={'ph-de':'01/10/2026','ph-ate':'30/10/2026'};
+    function dGet(id){ return CAMPOS[id]; }
+    var _phCache={key:null, itens:null};`, C);
+  vm.runInContext(pega('function _phPeriodoVolta('), C);
+  // o cache da aba guarda o período dela; a carteira deixou outro mapa e outras preparações
+  vm.runInContext(`_phCache={key:'01/10/2026|30/10/2026', itens:[1], uepProd:{A:1.5}, prep:[{data:'01/10/2026', prep:3}]};
+    PH_UEP_PROD={B:2}; PREP_PERIODO=[{data:'02/09/2026', prep:9}]; _phPeriodoVolta();`, C);
+  ok('depois de um await, os dois voltam do cache da aba', vm.runInContext('[PH_UEP_PROD, PREP_PERIODO]', C),
+     [{A:1.5}, [{data:'01/10/2026', prep:3}]]);
+  vm.runInContext(`CAMPOS['ph-de']='01/09/2026'; PH_UEP_PROD={B:2}; _phPeriodoVolta();`, C);
+  ok('com o período trocado na barra, o cache é de outro período: não mexe', vm.runInContext('PH_UEP_PROD', C), {B:2});
+  vm.runInContext(`CAMPOS['ph-de']='01/10/2026'; _phCache={key:'01/10/2026|30/10/2026', itens:[1], uepProd:null}; PH_UEP_PROD={B:2}; _phPeriodoVolta();`, C);
+  ok('cache sem mapa (backend antigo): não apaga o que está lá', vm.runInContext('PH_UEP_PROD', C), {B:2});
+  // A ORDEM: em cada função da aba, todo uso dos dois vem depois do último
+  // await ou de um _phPeriodoVolta() posterior a ele (a espera do próprio
+  // _phItensPeriodo já volta os dois).
+  const ordem = fn => {
+    const t = pega('async function ' + fn + '(').replace(/\/\/[^\n]*/g, '');
+    const aw = [...t.matchAll(/await /g)].map(m => m.index);
+    const vo = [...t.matchAll(/_phPeriodoVolta\(\)/g)].map(m => m.index);
+    const errados = [];
+    for (const m of t.matchAll(/PH_UEP_PROD|PREP_PERIODO|_phUepPorGrupo\(|_phUepTotal\(|_phAdd\(|_phPrepInfo\(/g)) {
+      const a = aw.filter(x => x < m.index).pop();
+      if (a == null || t.startsWith('await _phItensPeriodo', a)) continue;
+      if (!vo.some(v => v > a && v < m.index)) errados.push(m[0] + ' @' + t.slice(0, m.index).split('\n').length);
+    }
+    return errados;
+  };
+  ok('a tela não usa os dois depois de um await sem voltar o da aba', ordem('renderModeloPeriodo'), []);
+  ok('nem o 🖨 do período', ordem('gerarRelatorioProducaoHora'), []);
+  ok('o cache da aba guarda as preparações junto com o mapa',
+     /_phCache=\{key, itens, uepProd:PH_UEP_PROD, prep:PREP_PERIODO\}/.test(pega('async function _phItensPeriodo(')), true);
+  ok('a diretoria também devolve os dois',
+     /finally \{ PREP_PERIODO = prep; PH_UEP_PROD = uepProd; \}/.test(pega('async function _dirCarregar(')), true);
+}
+_assincronos.push(async () => {
+  console.log('\n── a carteira termina no meio da espera da PRODUÇÃO/HORA ──');
+  const vm = require('vm');
+  const C = vm.createContext({ console, Promise, setImmediate, Date, JSON, Object, Array });
+  // a carteira lê 60 dias; a leitura PUBLICA os dois globais (como a real) e
+  // só termina quando o teste solta
+  vm.runInContext(`var PH_UEP_PROD={A:1.5}, PREP_PERIODO=['p-aba'], PH_FALHA=null, CART_MIX_TTL=300000;
+    var CFG={sheetsUrl:'https://x/exec'}, QP_MIX='mix';
+    var _cartMixCache={key:null}, _cartMixVoo={key:null, p:null}, _phCache={key:null, itens:null};
+    var soltar;
+    function _cartMixPeriodo(){ return {de:'01/09/2026', ate:'30/10/2026', dias:60}; }
+    function _mixRitmos(){ return {ok:1}; }
+    function lerProducaoModeloPeriodo(){ return new Promise(r => { soltar = () => { PH_UEP_PROD={C:9}; PREP_PERIODO=['p-carteira']; r([{}]); }; }); }`, C);
+  vm.runInContext(pega('async function _cartRitmos('), C);
+  const p = vm.runInContext(`_cartRitmos('mix')`, C);
+  await new Promise(r => setImmediate(r));
+  vm.runInContext('soltar()', C);
+  await p;
+  ok('a carteira devolve o mapa e as preparações da PRODUÇÃO/HORA', vm.runInContext('[PH_UEP_PROD, PREP_PERIODO]', C), [{A:1.5}, ['p-aba']]);
+});
+
+// ── v7.248.2: o FECHAR DIA grava no Sheets mesmo sem o Excel. A XLSX vem do
+// cdnjs; sem ela (firewall, rede), o exportarExcelDia lançava ANTES do
+// salvarDiaSheets e o dia ficava fechado só no navegador. Achado na revisão
+// dos resumos da memória (16/11/2026).
+console.log('\n── FECHAR DIA: o Excel que falha não impede a gravação no Sheets ──');
+{
+  const vm = require('vm');
+  const C = vm.createContext({ console, Date });
+  vm.runInContext(`var enviou=[], avisos=[], local=[], CFG={sheetsUrl:'https://x/exec'};
+    function hojeStr(){ return '16/11/2026'; } function getDadosHoje(){ return [{}]; }
+    function confirm(){ return true; } function alert(m){ avisos.push(m); }
+    function calcKPIs(){ return { meta:1500, allHoje:[{ horario:'07:00', producaoHora:100, metaHora:150 }] }; }
+    function salvarDiaLocal(d){ local.push(d); }
+    var exportarExcelDia = function(){ throw new ReferenceError('XLSX is not defined'); };
+    function salvarDiaSheets(d){ enviou.push(d); }
+    function invalidarHistoricoCache(){} function renderAll(){} function renderHist(){}`, C);
+  vm.runInContext(pega('function fecharDia('), C);
+  let erro = null;
+  try { vm.runInContext('fecharDia()', C); } catch (e) { erro = e.message; }
+  ok('sem a XLSX: não lança, grava local e no Sheets, e avisa que o Excel não saiu',
+     [erro, vm.runInContext('local', C), vm.runInContext('enviou', C), vm.runInContext('avisos.length===1 && /Excel não foi gerado/.test(avisos[0])', C)],
+     [null, ['16/11/2026'], ['16/11/2026'], true]);
+  vm.runInContext(`enviou=[]; avisos=[]; exportarExcelDia=function(){};`, C);
+  vm.runInContext('fecharDia()', C);
+  ok('com a XLSX: grava no Sheets e não avisa nada', [vm.runInContext('enviou', C), vm.runInContext('avisos', C)], [['16/11/2026'], []]);
+}
+
 // Se um teste assíncrono não terminar (promessa que nunca resolve), o processo
 // sai sozinho com a fila pela metade — e sairia 0 com falha na tela.
 process.exitCode = 1;
 process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não terminou\n'));
 (async () => {
+
   for (const f of _assincronos) await f();
   // ── CARD ATRASO no gerencial do celular (1.43.0) ──────────────────────────────
 // PPCP, 11/11/2026: "essa card do atraso pode ir para app gerencial" → "celular" → "no mobile deixar bem à vista" → "atraso"
@@ -6198,7 +6291,7 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
   vm.runInContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'), C);
   ['function _rpEsc(', 'function _fmtHM(', 'function _horaEhHE(', 'function _uepAbaHoras(', 'function _uepAbaProj(', 'function _gerMinTxt(',
    'function _gerHoraJulga(', 'function _gerHoraLinha(', 'function _gerAtrasoKpi(', 'function _gerUepCards(', 'function _gerCxCards(', 'function _metaPartes(',
-   'function _metaPartesTxt(', 'function _gerAnaliseUep(', 'function _gerCxComHora(', 'function _gerKpiHtml(', 'function _gerUepModelo(',
+   'function _metaPartesTxt(', 'function _gerAnaliseUep(', 'function _gerKpiHtml(', 'function _gerUepModelo(',
    'function _uepCardLeitura(', 'function _tvUepMontar(', 'function _tvUepDoProduto(', 'function _gerHorasHist(', 'function _gerInfoImpressao(',
    'function parseBR(', 'function _fdsNome(', 'function _progHojeCx(', 'function _gerAnaliseUepHtml(']
     .forEach(f => vm.runInContext(pega(f), C));
@@ -6364,7 +6457,7 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
   ok('.gs sem o atraso por código: as caixas do atrasoTotal; sem atraso, sem card',
      [R('_gerAtrasoKpi()').v, (R(`PONTOS_DIA.programacao = { lista:[{ codigo:'1', falta:5, atraso:0 }], atrasoTotal:0 }`), R('_gerAtrasoKpi()'))], ['300 <small>cx</small>', null]);
   ok('as caixas COM UEP de cada hora (META EM CX sai do peso delas)',
-     R('_gerCxComHora(_p)', { _p:[{ hora:'09:00', caixas:47, uep:78.5 }, { hora:'09:00', caixas:20, uep:0 }, { hora:'09:00-10:00', caixas:113, uep:197.8 }, { hora:'', caixas:5, uep:9 }] }), { '09:00':160 });
+     R('uepCxComHora(_p)', { _p:[{ hora:'09:00', caixas:47, uep:78.5 }, { hora:'09:00', caixas:20, uep:0 }, { hora:'09:00-10:00', caixas:113, uep:197.8 }, { hora:'', caixas:5, uep:9 }] }), { '09:00':160 });
   // ── o dia passado: sábado e domingo são TODO hora extra (v7.248.0 / .gs v5.68;
   // revoga a meta pelas horas trabalhadas da v5.60 — PPCP, 16/11/2026: "aos
   // sábados é horas extra total"). Mesmo com a META UEP 1.257 gravada pela v5.60.

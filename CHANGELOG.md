@@ -11,6 +11,64 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.248.2 · mobile 1.51.2 — 16/11/2026 · código no padrão; revisor do projeto
+
+PPCP: *"precisamos fazer um alinhamento no código, deixa padrão"* →
+*"deixar o revisor com padrão nesse projeto"*. **Nada muda na tela, no papel,
+nos números nem no `.gs`** (não precisa re-deploy).
+
+- **O padrão do código está escrito** em `docs/padrao-codigo.md`. São as
+  regras que o código já segue: onde cada coisa mora, nomes, a conta separada
+  do desenho, zero diferente de vazio, uma chamada por vez ao Apps Script,
+  escape do HTML, versões e testes. Cada regra tem um código (A1, E2…).
+- **O revisor deste projeto é o `/revisor-codigo`.** Ele roda os testes,
+  confere o que mudou contra o padrão e devolve o que bloqueia e o que ajustar,
+  com arquivo, linha e o caso que quebra. O revisor de código que existia era
+  de React, do app de cronoanálise, e não servia para este painel.
+- **`node testes.js`** roda as 20 suítes e a verificação automática de uma vez.
+- **A verificação automática (`lint-js.js`) cobre mais**:
+  - antes ela olhava só os dois HTMLs, e só procurava nome que não existe;
+  - agora olha também o `rp-core.js`, o `paradas-calc.js`, o `sw-mobile.js` e
+    o `.gs`;
+  - acusa ainda função e constante sem uso, declaração repetida, chave
+    repetida e variável calculada e nunca usada;
+  - erro do próprio eslint reprova; só a falta de rede pula;
+  - diz a linha do próprio arquivo.
+- **Código morto removido** (nenhum uso, conferido um a um):
+  - 8 funções no PC;
+  - a amostra da FILA de cronoanálise antiga (2 funções e 3 constantes), sem
+    leitor desde que a FILA saiu, na v7.216.0;
+  - 2 constantes de regra que não valiam mais (`TKS_N_SEM`, `PAR_PLANEJADA`);
+  - 3 funções no celular;
+  - 21 variáveis calculadas e nunca usadas.
+- **A memória do projeto foi reorganizada.**
+  - O `CLAUDE.md` caiu de 641 KB para uns 28 KB: ficou o que vale hoje, as
+    armadilhas e o mapa dos temas.
+  - O detalhe de cada tema foi para `docs/memoria/<tema>.md`: 14 arquivos, 86
+    seções movidas inteiras, mais um índice. Os resumos foram conferidos por
+    uma revisão independente contra o detalhe e o código (13 correções).
+  - O padrão do código e o revisor mandam ler o arquivo da área antes de mexer.
+- **Corrigido — FECHAR DIA sem o Excel não ia para a planilha.** O botão gera
+  o Excel do fechamento antes de gravar no Google Sheets, e a biblioteca do
+  Excel vem da internet (cdnjs). Sem ela (firewall, rede), o erro parava o
+  fechamento: o dia ficava fechado só naquele navegador. Agora o Excel que falha
+  só avisa, e a gravação segue. O fechamento automático das 17:05 não passava
+  por ali.
+- **O Exportar Excel do HISTÓRICO saiu.** A função existia, mas nenhum botão a
+  chamava desde antes de 06/11/2026. PPCP: o botão não volta.
+- **Corrigido — PRODUÇÃO/HORA com a UEP de outro período.** A leitura da
+  carteira (aba PLANO) troca o mapa de UEP por produto e as preparações. Se
+  ela terminasse enquanto a PRODUÇÃO/HORA esperava outra leitura, a conta
+  seguia com o mapa da carteira:
+  - na tela, só a coluna UEP/CX;
+  - no 🖨 do período em UEP, todos os números de UEP e a nota da troca.
+  Hoje a aba volta os dados dela depois de cada espera, e a carteira e a
+  diretoria devolvem o que trocaram.
+- **Atenção — números que mudam:** só no caso acima, que era raro. A coluna
+  UEP/CX e o 🖨 em UEP saíam com o mix de outro período (diferença pequena), e
+  um produto que não rodou no período da carteira aparecia como "sem UEP".
+  Agora saem sempre com o período da aba.
+
 ## v7.248.1 · mobile 1.51.1 — 16/11/2026 · WhatsApp sai; correções da 4ª revisão
 
 - **O resumo do WhatsApp saiu** (PPCP: *"watsap esqueça, pode tirar"*): os botões

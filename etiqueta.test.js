@@ -2,7 +2,7 @@
 //   node etiqueta.test.js
 //
 // O teste roda o código REAL: `eanPartes`, `eanCore`, `eanVolTxt`, `eanAchar`,
-// `eanFalhaTxt`, `produtoPorEan` e `processarBipe` são extraídos do
+// `eanFalhaTxt` e `processarBipe` são extraídos do
 // ritmoprod_mobile.html e avaliados aqui.
 //
 // O caso (12/11/2026, PPCP: "como está lendo hoje a entrada pela etiqueta"): a
@@ -44,7 +44,7 @@ let PRODUTOS = [];
 // eval direto, no nível do módulo: dentro de um forEach as funções ficariam
 // presas ao escopo da arrow.
 eval(['function eanPartes(', 'function eanCore(', 'function eanVolTxt(', 'function eanAchar(',
-      'function eanFalhaTxt(', 'function produtoPorEan(', 'function processarBipe(']
+      'function eanFalhaTxt(', 'function processarBipe(']
   .map(f => pega(MJS, f)).join('\n'));
 
 // Linhas reais da PRODUTO_CODIGO (12/11/2026): código, descrição, cor, EAN 128.
@@ -143,7 +143,6 @@ processarBipe('7898599078424');
 ok('bipe ambíguo: não seleciona nada, aviso vermelho com o motivo, bipe grave, não abre a hora',
    [sel, toasts, sons, abriu],
    [[], [['Etiqueta sem volume: o EAN 7898599078424 serve para 2 códigos — escolha na lista', false]], [false], 0]);
-ok('produtoPorEan (o atalho) lê o mesmo que o bipe', produtoPorEan('(8006)78985990784240202').codigo, '501060004');
 
 console.log('\n── o produto à vista no lançamento ("quando bipa não aparece o código") ──');
 {
