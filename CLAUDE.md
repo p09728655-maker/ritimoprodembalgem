@@ -4065,9 +4065,16 @@ feito e dá ar de verdade ao que sobrou.
     (antes o 07/11 entrava com 465 cx — a pendência da v7.222.0 se resolveu).
   - Paradas num sábado: dia sem meta → `metaPadrao` (a regra de sempre do
     RP_PARADAS), contado no `diag` como dia sem meta.
-  - ⚠ **Ainda em caixas e não mexido**: a META DO DIA ao vivo no sábado (TV,
-    celular) é a da programação + atraso (`CFG.metaDia`); o selo de ritmo em
-    caixas da TV e do % DA META do celular continua — decisão do PPCP.
+  - **Ao vivo em caixas, também sem meta** (PPCP, na mesma conversa: *"sábado
+    todas horas são extras"*): TV (`renderTV`, `fds`): `s`='warn', selo *TODO
+    HORA EXTRA*, % DA META '—' com *SÁBADO · TODO HORA EXTRA · SEM META*,
+    NECESSÁRIO '—', o *FALTAM* vira *SÁBADO — TODO HORA EXTRA, SEM META*
+    (`.tv-falta.he`), a barra é o feito × o PROGRAMADO (`k.meta` = a programação
+    do dia; 0 → '—'). Celular: % DA META '—' sem selo, META DO DIA vira
+    PROGRAMADO HOJE. PC: `_gerCxCards` sem cor no fim de semana (mesmo sem UEP).
+    ⚠ A TABELA hora a hora da TV continua julgando a hora pela meta da hora (o
+    ritmo do operador — a regra da HE na TV desde 01/09/2026). O `k.meta`/
+    `CFG.metaDia` do sábado não foi zerado: é o programado, mostrado como fato.
 - **Testes**: a data de "hoje" ficou FIXA nos testes que dependem dela
   (`hora-extra.test.js`: `HOJE_TESTE`; `relatorios.test.js`: a aba UEP, a
   diretoria e o gerencial). Conferido rodando a suíte inteira com o relógio

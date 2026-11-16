@@ -3751,7 +3751,9 @@ function renderGerencial(){
   const k = calcKPIs();
   // Verde/vermelho pela META DO DIA (efRitmo), a MESMA régua da TV e do
   // gerencial do desktop.
-  const s = sc(k.efRitmo);
+  // sábado e domingo (1.50.0, PPCP: "sábado todas horas são extras"): sem meta e sem veredito
+  const fds = uepFimDeSemana(hojeStr());
+  const s = fds ? 'acc' : sc(k.efRitmo);
   // NEC. P/ META: nas horas restantes mostra o ritmo (cx/h) necessário.
   // Na última hora (sem horas futuras) não repete o GAP — mostra que o
   // turno encerrou (ou META OK se já atingida).
@@ -3812,11 +3814,13 @@ function renderGerencial(){
     ...(k.nHE?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(k.realHE), sub:`${plural(k.nHE,'hora','horas')} de HE`, c:'acc'}]:[]),
     // META DO DIA: mesma fonte/lógica do painel HTML (k.meta = CFG.metaDia,
     // vindo da PROGRAMAÇÃO via aplicarMetaDiaAutomatica). Garante valor idêntico.
-    {l:'META DO DIA',    v:fmtN(k.meta),  sub:k.gap<=0?'META ATINGIDA':'faltam '+fmtN(k.gap)+' cx', c:k.gap<=0?'ok':'acc'},
+    fds ? {l:'PROGRAMADO HOJE', v:k.meta>0?fmtN(k.meta):'—', sub:'sem meta — todo hora extra', c:'acc'}
+        : {l:'META DO DIA',    v:fmtN(k.meta),  sub:k.gap<=0?'META ATINGIDA':'faltam '+fmtN(k.gap)+' cx', c:k.gap<=0?'ok':'acc'},
     // O número é FATO (quanto da meta do dia já saiu) e o VEREDITO é a palavra
     // do sub + a cor, que falam de RITMO. Mesma troca do desktop e da TV
     // (01/09/2026): dois "%" na mesma célula confundiam quem lia.
-    {l:'% DA META DO DIA', v:fmtP(k.efDia), sub:slRitmo(k.efRitmo)+' · '+fmtN(k.real)+' de '+fmtN(Math.round(k.metaAteAgora))+' até agora', c:s},
+    fds ? {l:'% DA META DO DIA', v:'—', sub:(new Date().getDay()===0 ? 'domingo' : 'sábado')+': todo hora extra, sem meta', c:'acc'}
+        : {l:'% DA META DO DIA', v:fmtP(k.efDia), sub:slRitmo(k.efRitmo)+' · '+fmtN(k.real)+' de '+fmtN(Math.round(k.metaAteAgora))+' até agora', c:s},
     // UEP DO DIA: a MESMA conta e o MESMO texto do gerencial do desktop
     // (uepCard, rp-core). A UEP por caixa é parâmetro do cadastro.
     uepCard(PONTOS_DIA.uep, PONTOS_DIA.metaUep, k.minNorm, hojeStr()),   // sábado/domingo: todo hora extra, sem meta

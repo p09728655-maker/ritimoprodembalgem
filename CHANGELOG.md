@@ -32,6 +32,17 @@ foi: *"aos sábados é horas extra total"*.
 - **Gerencial e celular, ao vivo num sábado:** o card UEP DO DIA mostra a UEP
   toda em hora extra, sem selo. Saem RITMO, PROJEÇÃO e PARA A META, porque os
   três são contra a meta.
+- **Em caixas, ao vivo, também sem meta** (PPCP, na mesma conversa: *"sábado
+  todas horas são extras"*).
+  - **TV:** o selo diz *TODO HORA EXTRA* em âmbar, sem ritmo. O % DA META DO
+    DIA, o NECESSÁRIO e o *FALTAM X CX* dão lugar a *SÁBADO — TODO HORA EXTRA,
+    SEM META*. A barra mostra o feito contra o programado do dia.
+  - **Celular:** o % DA META DO DIA fica sem número e sem selo, e o card da
+    meta vira *PROGRAMADO HOJE*.
+  - **Gerencial do PC:** a linha das caixas fica sem cor, também quando não há
+    UEP.
+  - A tabela hora a hora da TV continua com a meta da hora (o ritmo do
+    operador), como já valia para a hora extra desde 01/09.
 - **Dia passado, HISTÓRICO, relatórios do histórico e da semana, Tela D,
   diretoria, resumo do WhatsApp e histórico do celular:** o fim de semana
   aparece como **HORA EXTRA**, sem eficiência, sem selo ABAIXO e sem

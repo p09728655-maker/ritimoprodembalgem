@@ -1466,6 +1466,7 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tv-status-badge.red {background:rgba(244,67,54,.12); color:var(--red); border:1px solid rgba(244,67,54,.35);animation:piscar 1.4s infinite}
 .tv-falta{margin-top:2px;font-family:var(--font-h);font-weight:700;font-size:clamp(16px,1.9vw,26px);letter-spacing:1.5px;text-align:center;padding:10px 12px;border-radius:6px;background:rgba(244,67,54,.1);border:1px solid rgba(244,67,54,.35);color:var(--red)}
 .tv-falta.ok{background:rgba(76,175,80,.12);border-color:rgba(76,175,80,.35);color:var(--ok)}
+.tv-falta.he{background:rgba(255,152,0,.12);border-color:rgba(255,152,0,.35);color:var(--warn)}
 @keyframes piscar{0%,100%{opacity:1}50%{opacity:.35}}
 /* Scan line anti-sleep: muda pixels reais na tela para impedir screen-off do WebOS */
 @keyframes tv-scan{0%{transform:translateX(-220px)}100%{transform:translateX(100vw)}}
@@ -13465,6 +13466,15 @@ function _gerAtrasoKpi(){
 // UEP nenhuma (backend ou cadastro) o card das caixas volta a julgar.
 function _gerCxCards(k, semUep){
   const p=_metaPartes(k.meta, _metaDiaAba());
+  // sábado e domingo (v7.247.0): todo hora extra — as caixas sem veredito, o programado como fato
+  if(uepFimDeSemana(hojeStr())) return [
+    { l:'CAIXAS', v:fmtN(k.real), c:'', sub:'todas em hora extra' },
+    { l:'CAIXAS PROGRAMADAS', v:k.meta>0?fmtN(k.meta):'—', c:'', sub:(k.meta>0?`${fmtP(k.efDia)} feito · `:'')+'sem meta — '+_fdsNome(hojeStr()).toLowerCase()+' é todo hora extra',
+      t:'Sábado e domingo não têm meta (PPCP, 16/11/2026): o programado do dia aparece como fato, sem cor.' },
+    { l:'RITMO · CX/HORA', v:fmtN(k.ritmo), c:'', sub:'média no turno', t:'caixas ÷ horas lançadas' },
+    { l:'PONTOS', v:fmtN(PONTOS_DIA.pontos), c:'', sub:'pts', t:'caixas × pontos do produto' },
+    { l:'PESO', v:fmtN(Math.round(PONTOS_DIA.pesoKg))+' kg', c:'', sub:'', t:'caixas × peso bruto do produto' }
+  ];
   return [
     { l:'CAIXAS', v:fmtN(k.real), c:'', sub:k.nHE?`${fmtN(k.realNormal)} normal + ${fmtN(k.realHE)} em hora extra`:'no turno',
       t:k.nHE?`${plural(k.nHE,'hora','horas')} de hora extra lançada${k.nHE>1?'s':''}`:'' },
@@ -17434,7 +17444,10 @@ function renderTV(){
   const k=calcKPIs(dh);
   // Verde/vermelho pela META DO DIA (efRitmo), a mesma que a tela mostra ao
   // lado — e não pela meta/hora da planilha, que pode estar pedindo outra coisa.
-  const s=sc(k.efRitmo);
+  // Sábado e domingo (v7.247.0, PPCP: "sábado todas horas são extras"): sem
+  // meta e sem veredito — âmbar de hora extra, nada de ritmo, falta ou % da meta.
+  const fds=uepFimDeSemana(hojeStr());
+  const s=fds?'warn':sc(k.efRitmo);
   TV_TURNO_INFO = { slotsRest: k.slotsRest, metaH: k.metaH };
 
   // ⚠ Atraso da PROGRAMAÇÃO: visível na TV pra deixar claro o quanto está
@@ -17482,28 +17495,32 @@ function renderTV(){
      semanal. Quem julga é o selo, e ele fala de RITMO, não de meta. A conta do
      ritmo (efNoRitmo) não mudou: ela pinta o selo e a barra. */
   const ee=document.getElementById('tv-ef');
-  ee.textContent = k.meta>0 ? fmtP(k.efDia) : '—';
+  ee.textContent = k.meta>0 && !fds ? fmtP(k.efDia) : '—';
   ee.className='tv-ef-val';
   const es=document.getElementById('tv-ef-sub');
-  if(es) es.textContent = (k.meta>0 && k.metaAteAgora>0)
-    ? `${fmtN(k.real)} DE ${fmtN(Math.round(k.metaAteAgora))} CX ESPERADAS ATÉ AGORA` : '';
+  if(es) es.textContent = fds ? `${_fdsNome(hojeStr())} · TODO HORA EXTRA · SEM META`
+    : (k.meta>0 && k.metaAteAgora>0) ? `${fmtN(k.real)} DE ${fmtN(Math.round(k.metaAteAgora))} CX ESPERADAS ATÉ AGORA` : '';
 
   const be=document.getElementById('tv-badge');
-  be.textContent='● '+slRitmo(k.efRitmo); be.className=`tv-status-badge ${s}`;
+  be.textContent='● '+(fds?'TODO HORA EXTRA':slRitmo(k.efRitmo)); be.className=`tv-status-badge ${s}`;
 
-  const pct=Math.min(100,(k.real/k.meta)*100);
+  // no fim de semana a barra é o feito contra o PROGRAMADO do dia (sem meta)
+  const pct=k.meta>0?Math.min(100,(k.real/k.meta)*100):0;
   const fill=document.getElementById('tv-prog-fill');
   fill.style.width=pct+'%';
   fill.style.background=s==='ok'?'var(--ok)':s==='warn'?'var(--warn)':'var(--red)';
-  document.getElementById('tv-prog-pct').textContent=fmtP(pct);
-  document.getElementById('tv-meta-lbl').textContent='META: '+fmtN(k.meta);
+  document.getElementById('tv-prog-pct').textContent=k.meta>0?fmtP(pct):'—';
+  document.getElementById('tv-meta-lbl').textContent=fds?(k.meta>0?'PROGRAMADO: '+fmtN(k.meta):'SEM META · HORA EXTRA'):'META: '+fmtN(k.meta);
   const md=document.getElementById('tv-meta-dest'); if(md) md.textContent=fmtN(k.meta);
   document.getElementById('tv-ritmo').textContent=fmtN(k.ritmo);
   // NECESSÁRIO: nas horas restantes, mostra o ritmo (cx/hora) p/ bater a meta.
   // Na última hora (sem horas futuras), mostra quanto ainda FALTA para a meta.
   const necEl=document.getElementById('tv-nec');
   const necUnit=document.getElementById('tv-nec-unit');
-  if(k.slotsRest>0){
+  if(fds){
+    necEl.textContent='—';
+    if(necUnit) necUnit.textContent='SEM META';
+  }else if(k.slotsRest>0){
     necEl.textContent=fmtN(k.nec);
     if(necUnit) necUnit.textContent='CX/HORA';
   }else{
@@ -17521,11 +17538,12 @@ function renderTV(){
     const fimTurno=(ultimo&&ultimo.fim)?toMin(ultimo.fim):toMin(CFG.turnoFim);
     const ag=new Date(); const nmAg=ag.getHours()*60+ag.getMinutes();
     const turnoAcabou=nmAg>=fimTurno;
-    if(falta>0){ fe.textContent=`${turnoAcabou?'FALTARAM':'FALTAM'} ${fmtN(falta)} CX PARA BATER A META`; fe.className='tv-falta'; }
+    if(fds){ fe.textContent=`${_fdsNome(hojeStr())} — TODO HORA EXTRA, SEM META`; fe.className='tv-falta he'; }
+    else if(falta>0){ fe.textContent=`${turnoAcabou?'FALTARAM':'FALTAM'} ${fmtN(falta)} CX PARA BATER A META`; fe.className='tv-falta'; }
     else { fe.textContent='✓ META BATIDA'; fe.className='tv-falta ok'; }
     // Espelha o valor para o KPI "FALTA P/ META" da Tela B
     const tbf=document.getElementById('tvb-falta');
-    if(tbf){ tbf.textContent = falta>0?fmtN(falta):'0'; tbf.style.color = falta>0?'var(--warn)':'var(--ok)'; }
+    if(tbf){ tbf.textContent = fds?'—':falta>0?fmtN(falta):'0'; tbf.style.color = fds?'var(--txt2)':falta>0?'var(--warn)':'var(--ok)'; }
   }
   const elEmp=document.getElementById('tv-empresa'); if(elEmp) elEmp.textContent=`${CFG.empresa} · ${CFG.unidade}`;
   document.getElementById('tv-setor').textContent=CFG.setor;

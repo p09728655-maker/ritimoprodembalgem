@@ -2845,11 +2845,20 @@ const _v7 = fs.readFileSync(path.join(__dirname, 'ritmoprod_embalagem_v7.html'),
 // pessoas"). Agora o NÚMERO é o fato que qualquer um confere de cabeça (780 de
 // 2.700 = 28,9%) e o VEREDITO é o selo, que fala de RITMO.
 ok('TV: o número grande é o % da META DO DIA',
-   /tv-ef'\);\s*\n\s*ee\.textContent = k\.meta>0 \? fmtP\(k\.efDia\)/.test(_v7), true);
+   /tv-ef'\);\s*\n\s*ee\.textContent = k\.meta>0 && !fds \? fmtP\(k\.efDia\)/.test(_v7), true);
 ok('TV: e ele sai em tinta, sem cor de status',
    /ee\.className='tv-ef-val';/.test(_v7), true);
 ok('TV: quem julga é o selo, e ele fala de ritmo',
-   /be\.textContent='● '\+slRitmo\(k\.efRitmo\)/.test(_v7), true);
+   /be\.textContent='● '\+\(fds\?'TODO HORA EXTRA':slRitmo\(k\.efRitmo\)\)/.test(_v7), true);
+// v7.247.0 (PPCP, 16/11/2026: "sábado todas horas são extras"): no fim de semana a
+// TV, o gerencial e o celular não julgam caixas contra meta nenhuma
+ok('sábado e domingo ao vivo: a TV não julga (âmbar, TODO HORA EXTRA, sem falta nem necessário); o PC e o celular sem selo nas caixas',
+   [/const fds=uepFimDeSemana\(hojeStr\(\)\);\s*\n\s*const s=fds\?'warn':sc\(k\.efRitmo\);/.test(_v7),
+    /if\(fds\)\{ fe\.textContent=`\$\{_fdsNome\(hojeStr\(\)\)\} — TODO HORA EXTRA, SEM META`; fe\.className='tv-falta he'; \}/.test(_v7),
+    /if\(fds\)\{\s*necEl\.textContent='—';/.test(_v7),
+    /if\(uepFimDeSemana\(hojeStr\(\)\)\) return \[/.test(_v7),
+    /const fds = uepFimDeSemana\(hojeStr\(\)\);\s*\n\s*const s = fds \? 'acc' : sc\(k\.efRitmo\);/.test(fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8'))],
+   [true, true, true, true, true]);
 ok('TV: a palavra META não volta para o lado do %', /sl\(k\.efRitmo\)/.test(_v7), false);
 ok('TV: a linha de apoio traz caixas, não um segundo %',
    /id="tv-ef-sub"/.test(_v7) && /CX ESPERADAS ATÉ AGORA/.test(_v7), true);
@@ -6063,6 +6072,10 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
     ok('o dia passado de sábado na impressão: todo hora extra, sem a meta gravada pela v5.60',
        R('_gerInfoImpressao(null, null, _H, "agora")', { _H:{ data:'14/11/2026', dia:{ real:690, meta:524, uep:894, uepHe:546, metaUep:1257 } } }).split('\n')[0],
        'Dia 14/11/2026 (sábado) — todo hora extra, sem meta  |  UEP: 1.440');
+    const CS = R('_gerCxCards(_k, true)', { _k:K });
+    ok('sábado ao vivo: a linha das caixas sem cor nem selo, mesmo sem UEP; o programado como fato, "sem meta"',
+       [CS.map(c => c.c), CS[1].v, /sem meta — sábado é todo hora extra/.test(CS[1].sub), /RITMO|ABAIXO/.test(CS[1].sub)],
+       [['', '', '', '', ''], '1.800', true, false]);
     R(`_HOJE_TESTE = '13/11/2026';`); }
   ok('a meta é a da CONFIG_PAINEL (2.761), não o padrão do código — o esperado muda com ela',
      Math.round(R('PONTOS_DIA = Object.assign({}, _pd, { metaUep:2530 }); _gerUepModelo(_k, 982).card.esperado', { _pd:PD, _k:K })), 2247);
