@@ -24,10 +24,12 @@ via Google Apps Script (JSONP).
   apagar o histórico linha a linha do git.
 - **Função sem uso que fica de propósito** entra no `SEM_USO_OK` do
   `lint-js.js`, com o porquê. Hoje: o Excel local (`selecionarPasta`,
-  `triggerImport`) e o Exportar Excel do HISTÓRICO (`exportarExcel` — sem botão
-  desde antes de 06/11/2026; **decisão do PPCP pendente**: o botão volta ou a
-  função sai), as rotinas de editor do `.gs` e o `_soLetras` (sem uso; sai na
-  próxima versão do `.gs` — mexer no `.gs` pede re-deploy).
+  `triggerImport`), as rotinas de editor do `.gs` e o `_soLetras` (sem uso; sai
+  na próxima versão do `.gs` — mexer no `.gs` pede re-deploy).
+- **O Exportar Excel do HISTÓRICO saiu** (`exportarExcel`): nenhum botão o
+  chamava desde antes de 06/11/2026 — a correção do cabeçalho da v7.202.0 foi
+  feita numa função que ninguém podia usar. PPCP, 16/11/2026: o botão não volta.
+  A biblioteca XLSX fica: o fechamento do dia e a importação ainda a usam.
 - Saiu na v7.248.2, sem uso: `exportarExcelHist`, `toISO`,
   `updateRefreshBadge`, `_gerCxComHora`, `_phTrocaTxt`, `_durMinPar`,
   `_diasTrabalhadosPar`, `_svgDiaHora`, as constantes `TKS_N_SEM` e
@@ -2707,8 +2709,18 @@ via Google Apps Script (JSONP).
   - Régua do UEP/H: `_phRitmoMetaUep()` = META UEP ÷ `UEP_MIN_DIA` × 60 (~288),
     a do card UEP DO DIA; `_phCorRitmo(…, meta)` só troca o texto da nota.
     Teto da esteira e simulador continuam só no cx/h.
-  - ⚠ O `PH_UEP_PROD` é de quem leu por último (estudo, bloco 7): o `_phCache`
-    guarda o `uepProd` do período e o devolve no acerto do cache.
+  - ⚠ O `PH_UEP_PROD` (e o `PREP_PERIODO`) são de quem leu por último: o
+    `_phCache` guarda os dois do período (`uepProd`, `prep`) e o
+    `_phPeriodoVolta()` os devolve no acerto do cache **e depois de todo await**
+    da tela e do 🖨 (v7.248.2). Antes, a leitura da carteira (aba PLANO, outro
+    período) que terminava durante a espera do histórico (tela) ou das paradas
+    de troca (🖨) deixava a coluna UEP/CX, o 🖨 em UEP e a nota da troca com o
+    mix de outro período — e "sem UEP" no produto que não rodou lá. O "guarda e
+    devolve" de quem lê outro período (carteira, diretoria, `_cxuPtsLer`)
+    continua, mas sozinho não basta: se esta aba leu no meio, ele devolve o
+    valor de antes dela. O `relatorios.test.js` prende a ordem (nenhum uso
+    depois de um await sem o `_phPeriodoVolta()`) e roda a carteira terminando
+    no meio (5 de 5 mutações). Achado na estreia do `/revisor-codigo`.
   - Sem o mapa (backend antes da v5.14) a tela e o PDF dizem que a leitura não
     trouxe a UEP. Mesma limitação do cx/h: hora dividida conta para os dois.
 
@@ -4128,8 +4140,8 @@ feito e dá ar de verdade ao que sobrou.
   e **ATRASO META** depois da META, só quando algum dia do período tem a META
   diferente da META DIA (`_histTemMetaComp`; regra da H. EXTRA). Dia fechado
   antes da v5.55 sai "—".
-  - O Excel do HISTÓRICO tira o cabeçalho das colunas visíveis: a lista fixa de
-    7 títulos estava desalinhada desde a H. NORMAL / H. EXTRA.
+  - ~~O Excel do HISTÓRICO tira o cabeçalho das colunas visíveis~~ — a função
+    não tinha botão; saiu na v7.248.2.
 - ⚠ **Às 17:05 TODO painel do PC aberto (TV, gerencial) roda o
   `fecharDiaAutomatico`** com a config dele; o `saveDay` é upsert, a ÚLTIMA
   gravação vence. Por isso a META gravada não pode depender do computador:

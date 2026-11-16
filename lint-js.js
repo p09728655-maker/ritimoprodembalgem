@@ -94,7 +94,6 @@ const SEM_USO_OK = {
     // Sheets) e as funções ficaram, por decisão registrada no CLAUDE.md
     selecionarPasta: 'importar Excel local — sem botão desde que os dados vêm só do Sheets',
     triggerImport:   'importar Excel local — sem botão desde que os dados vêm só do Sheets',
-    exportarExcel: 'Excel do HISTÓRICO sem botão na tela (sumiu antes de 06/11/2026). Decisão do PPCP: o botão volta ou a função sai.',
   },
   // .gs: o Apps Script chama doGet/onEdit, e as demais rodam pelo editor
   // (botão Executar) — ninguém no código as chama, e é para ser assim.

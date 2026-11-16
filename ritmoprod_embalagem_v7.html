@@ -14458,13 +14458,28 @@ function phEsteiraReset(){
 // ou métrica reusa os mesmos dados).
 let _phCache={key:null, itens:null};
 let _phVoo={key:null, p:null};   // busca do mesmo período já em andamento
+// OS DADOS DO PERÍODO DESTA ABA VOLTAM DO CACHE (v7.248.2). PH_UEP_PROD (a
+// UEP/CX por produto) e PREP_PERIODO (as preparações) são de quem leu por
+// último: a leitura da carteira (aba PLANO, outro período) que termina
+// enquanto a tela ou o 🖨 desta aba espera outra coisa (o histórico, as
+// paradas de troca) trocava os dois no meio da conta — a coluna UEP/CX, o papel
+// em UEP e a nota da troca saíam com outro período, e o produto que não rodou
+// lá, "sem UEP". O "guarda e devolve" de quem lê outro período não basta: se
+// esta aba leu no meio, ele devolve o valor de ANTES dela. Chamar depois de
+// TODO await e antes de usar os dois.
+function _phPeriodoVolta(){
+  const key=dGet('ph-de')+'|'+dGet('ph-ate');
+  if(_phCache.key!==key || _phCache.itens==null) return;
+  if(_phCache.uepProd) PH_UEP_PROD=_phCache.uepProd;
+  if('prep' in _phCache) PREP_PERIODO=_phCache.prep;
+}
 async function _phItensPeriodo(onTent){
   const de=dGet('ph-de');
   const ate=dGet('ph-ate');
   const key=de+'|'+ate;
   // o mapa da UEP volta junto (v7.176.0): o PH_UEP_PROD é de quem leu por
   // último (o estudo e o bloco 7 da aba UEP leem outros períodos)
-  if(_phCache.key===key && _phCache.itens!=null){ if(_phCache.uepProd) PH_UEP_PROD=_phCache.uepProd; return _phCache.itens; }
+  if(_phCache.key===key && _phCache.itens!=null){ _phPeriodoVolta(); return _phCache.itens; }
   // Duas chamadas para o MESMO período — trocar a métrica no meio de uma busca
   // lenta, tocar TENTAR DE NOVO duas vezes, pedir o PDF enquanto a tela carrega
   // — compartilham a MESMA requisição: com 3 tentativas de 25s a janela ficou
@@ -14474,7 +14489,7 @@ async function _phItensPeriodo(onTent){
   const p=(async()=>{
     try{
       const itens=await lerProducaoModeloPeriodo(de,ate,onTent);
-      if(itens!=null) _phCache={key, itens, uepProd:PH_UEP_PROD};
+      if(itens!=null) _phCache={key, itens, uepProd:PH_UEP_PROD, prep:PREP_PERIODO};
       return itens;
     } finally { if(_phVoo.key===key) _phVoo={key:null, p:null}; }
   })();
@@ -14610,6 +14625,7 @@ async function renderModeloPeriodo(){
     cobTela=_phCobertura(grandAcc.caixas,
       _phTotaisPeriodo(diasHc, dGet('ph-de'), dGet('ph-ate')).realTotAll);
   }catch(e){ cobTela=null; }
+  _phPeriodoVolta();   // o await acima pode ter deixado os dados de outra leitura
   const cobBaixa = cobTela!=null && cobTela<80;
   const cobTxt = cobTela==null ? ''
     : ` · ${cobBaixa?'⚠ ':''}${fmtP(cobTela)} do realizado`;
@@ -15753,6 +15769,7 @@ async function gerarRelatorioProducaoHora(){
   // não tem como se redesenhar depois, e sair com o valor nominal da planilha
   // seria imprimir uma régua diferente da que está na tela.
   await carregarTrocaObs();
+  _phPeriodoVolta();   // o await acima pode ter deixado os dados de outra leitura
   const _tl=_phPrepInfo(itens,PREP_PERIODO);
   const {ehFam,ehCor,keyOf,labelOf,keyFil,labelFil,Termo,TermoFil}=_phAgrup();
   const sel=(document.getElementById('ph-modelo')||{}).value||'';
@@ -15973,7 +15990,7 @@ ${additive?'':`<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px
   </tfoot>
 </table>
 
-${temTeto?_phNotaTrocaHtml(_phPrepInfo(itens,PREP_PERIODO), obsT, false):''}
+${temTeto?_phNotaTrocaHtml(_tl, obsT, false):''}
 ${_rpCascataHtml('CASCATA DO PERÍODO — ONDE FICARAM AS CAIXAS', casc, cascNota)}
 ${cobertura!=null?`<div class="rp-note">${cobertura<80?'⚠ ':''}APONTAMENTO POR PRODUTO: <b>${fmtP(cobertura)}</b> do realizado do período${cobertura<80?' — a análise por modelo é uma AMOSTRA, não o período inteiro':''}.</div>`:''}
 ${ganhoDemo>0?`<div class="rp-note">▲ GANHO JÁ DEMONSTRADO: ~<b>+${fmtN(Math.round(ganhoDemo))} cx</b> no período se cada modelo repetisse o próprio MELHOR DIA nas mesmas horas (estimativa; melhor dia limitado ao teto físico). É o alvo acionável — o teto da esteira é régua, não meta.</div>`:''}
@@ -18073,26 +18090,6 @@ function renderAnaliseHorario(){
 }
 
 // ════════════════════════════════════════════════
-// EXPORT EXCEL
-// ════════════════════════════════════════════════
-function exportarExcel(){
-  // O cabeçalho sai das colunas VISÍVEIS da própria tabela (v7.202.0). Era uma
-  // lista fixa de 7 títulos para linhas de 12+ células: desde a H. NORMAL /
-  // H. EXTRA cada coluna do arquivo vinha com o título de outra.
-  const tb=document.getElementById('hist-tbl-body');
-  const ths=tb&&tb.closest('table')?[...tb.closest('table').querySelectorAll('thead th')].filter(th=>th.style.display!=='none'):[];
-  const rows=[ths.map(th=>th.textContent.trim())];
-  document.querySelectorAll('#hist-tbl-body tr').forEach(tr=>{
-    const tds=tr.querySelectorAll('td');
-    if(tds.length>=7) rows.push([...tds].map(td=>td.textContent.trim()));
-  });
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-  const wb2=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb2,ws,'Histórico');
-  XLSX.writeFile(wb2,`ritmoprod_historico_${hojeStr().replace(/\//g,'_')}.xlsx`);
-}
-
-// ════════════════════════════════════════════════
 // CONFIG MODAL
 // ════════════════════════════════════════════════
 function openCfg(){
@@ -19795,13 +19792,14 @@ async function _cartRitmos(modo){
     try{
       let itens = (_phCache.key === key && _phCache.itens != null) ? _phCache.itens : null;
       if(itens == null){
-        // ⚠ `lerProducaoModeloPeriodo` publica PREP_PERIODO (as preparações
-        // do período que a aba PRODUÇÃO/HORA está mostrando). Esta leitura é
-        // de OUTRO período: guarda e devolve, senão a outra aba passaria a
-        // contar preparações de 60 dias num quadro de 30.
-        const prepAntes = PREP_PERIODO;
+        // ⚠ `lerProducaoModeloPeriodo` publica PREP_PERIODO (as preparações)
+        // e PH_UEP_PROD (a UEP/CX por produto) do período que a aba
+        // PRODUÇÃO/HORA está mostrando. Esta leitura é de OUTRO período:
+        // guarda e devolve OS DOIS (a UEP/CX desde a v7.248.2), senão a outra
+        // aba passaria a contar preparações de 60 dias num quadro de 30.
+        const prepAntes = PREP_PERIODO, uepAntes = PH_UEP_PROD;
         try{ itens = await lerProducaoModeloPeriodo(per.de, per.ate); }
-        finally{ PREP_PERIODO = prepAntes; }
+        finally{ PREP_PERIODO = prepAntes; PH_UEP_PROD = uepAntes; }
       }
       const ritmos = _mixRitmos(itens);
       const r = { key, ts:Date.now(), itens, ritmos, dias:per.dias, de:per.de, ate:per.ate,
@@ -21034,14 +21032,15 @@ async function _dirCarregar(){
     const semHe = DIR_PTS.soma && DIR_PTS.soma.ptsHe == null;   // leitura sem pontosHe (antes do .gs v5.20): confere de novo em 5 min
     const vencido = DIR_PTS.key !== key || (DIR_PTS.soma ? Date.now() - DIR_PTS.ts > (semHe ? 5*60000 : DIR_PTS_TTL) : Date.now() - DIR_PTS.ts > 5*60000);
     if(vencido){
-      // essa leitura publica PREP_PERIODO, que é de outra aba: guarda e devolve
-      const prep = PREP_PERIODO;
+      // essa leitura publica PREP_PERIODO e PH_UEP_PROD, que são de outra aba:
+      // guarda e devolve os dois
+      const prep = PREP_PERIODO, uepProd = PH_UEP_PROD;
       try{
         const itens = await lerProducaoModeloPeriodo(de, ate);
         const ok = Array.isArray(itens);
         DIR_PTS = { key, soma: ok ? _dirSomaPts(itens) : (DIR_PTS.key === key ? DIR_PTS.soma : null), ts:Date.now(), falha:!ok };
         if(ok){ try{ localStorage.setItem(DIR_PTS_LS, JSON.stringify({ key, soma:DIR_PTS.soma, ts:DIR_PTS.ts, r:DIR_PTS_REGRA })); }catch(e){} }
-      } finally { PREP_PERIODO = prep; }
+      } finally { PREP_PERIODO = prep; PH_UEP_PROD = uepProd; }
       renderDir();
     }
   }catch(e){ console.warn('[DIRETORIA] leitura:', e.message); }

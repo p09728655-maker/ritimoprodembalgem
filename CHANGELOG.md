@@ -41,9 +41,20 @@ nos números nem no `.gs`** (não precisa re-deploy).
   - 2 constantes de regra que não valiam mais (`TKS_N_SEM`, `PAR_PLANEJADA`);
   - 3 funções no celular;
   - 21 variáveis calculadas e nunca usadas.
-- **Pendente, decisão do PPCP**: o **Exportar Excel do HISTÓRICO** existe no
-  código, mas **nenhum botão chama** (sumiu antes de 06/11/2026). Fica até a
-  decisão: o botão volta ou a função sai.
+- **O Exportar Excel do HISTÓRICO saiu.** A função existia, mas nenhum botão a
+  chamava desde antes de 06/11/2026. PPCP: o botão não volta.
+- **Corrigido — PRODUÇÃO/HORA com a UEP de outro período.** A leitura da
+  carteira (aba PLANO) troca o mapa de UEP por produto e as preparações. Se
+  ela terminasse enquanto a PRODUÇÃO/HORA esperava outra leitura, a conta
+  seguia com o mapa da carteira:
+  - na tela, só a coluna UEP/CX;
+  - no 🖨 do período em UEP, todos os números de UEP e a nota da troca.
+  Hoje a aba volta os dados dela depois de cada espera, e a carteira e a
+  diretoria devolvem o que trocaram.
+- **Atenção — números que mudam:** só no caso acima, que era raro. A coluna
+  UEP/CX e o 🖨 em UEP saíam com o mix de outro período (diferença pequena), e
+  um produto que não rodou no período da carteira aparecia como "sem UEP".
+  Agora saem sempre com o período da aba.
 
 ## v7.248.1 · mobile 1.51.1 — 16/11/2026 · WhatsApp sai; correções da 4ª revisão
 
