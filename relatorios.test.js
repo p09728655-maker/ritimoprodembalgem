@@ -420,7 +420,7 @@ const _st = { dados: null };
 let _buscas = 0;
 function carregar() { _buscas++; }                       // a busca de verdade é assíncrona
 const _DIA_SEM = ['DOMINGO','SEGUNDA','TERÇA','QUARTA','QUINTA','SEXTA','SÁBADO'];
-eval(pega('function pintar('));
+eval(pega('function _gsemUepMontar(')); eval(pega('function _pintarUep(')); eval(pega('function pintar('));
 
 // Sem semana carregada não se desenha nada: a Tela D fica fora do ciclo e o
 // bloco do gerencial se esconde — nenhum dos dois aparece vazio.
@@ -452,6 +452,62 @@ ok('desenhar o gerencial não escreve na TV', _dom['tvd-total'].textContent, '')
 pintar('tvd-');
 ok('a mesma função desenha a Tela D', _dom['tvd-total'].textContent, '8.681');
 ok('desenhar pede a busca (que tem cache de 30 min lá dentro)', _buscas > 0, true);
+
+// ── v7.250.0: o gerencial com a UEP na frente (PPCP, 16/11/2026, com o print do bloco:
+// "nessa tbm passar para uep como informação principal"). A semana 46 do print: 9.879 cx em
+// destaque, a UEP num canto (13.068 · 94,7% da meta de 13.805 · +3.275 em HE).
+{ const S46 = [
+    { data:'09/11/2026', real:2441, meta:2800, heCx:0,   heCount:0, uep:2596, uepHe:0,   metaUep:2761 },
+    { data:'10/11/2026', real:1740, meta:1800, heCx:356, heCount:3, uep:2867, uepHe:584, metaUep:2761 },
+    { data:'11/11/2026', real:1480, meta:1181, heCx:292, heCount:2, uep:2380, uepHe:479, metaUep:2761 },
+    { data:'12/11/2026', real:1482, meta:1450, heCx:292, heCount:2, uep:2617, uepHe:479, metaUep:2761 },
+    { data:'13/11/2026', real:1591, meta:1819, heCx:178, heCount:1, uep:2608, uepHe:293, metaUep:2761 },
+    // o sábado como o .gs v5.68 grava: todo hora extra, sem meta
+    { data:'14/11/2026', real:1145, meta:0,    heCx:1145, heCount:6, uep:0,  uepHe:1440, metaUep:0 }].map(histDiaFds);
+  ['unidade', 'normal-lbl', 'extra-lbl', 'uep-lbl', 'uep-fio', 'linha-uep', 'uep', 'uep-pct', 'uep-sub'].forEach(c => { _dom['gsem-' + c] = _novoEl(); });
+  ['gsem-', 'tvd-'].forEach(p => CAMPOS.forEach(c => { _dom[p + c] = _novoEl(); }));
+  const k46 = _relSemanalKPIs(S46);
+  _st.dados = { semStr: '09/11/2026 a 15/11/2026', numSem: 46, dias: S46, k: k46 };
+  pintar('gsem-');
+  const g = c => _dom['gsem-' + c];
+  ok('semana 46 no gerencial: o número grande é a UEP da semana (jornada + hora extra), em UEP',
+     [g('total').textContent, g('unidade').textContent, g('soma').textContent], ['16.343', 'UEP NA SEMANA', '= soma dos 6 dias fechados ↓']);
+  ok('a jornada em UEP contra a soma das metas dos dias úteis; o que faltou em UEP e por dia',
+     [g('normal-lbl').textContent, g('normal').textContent, g('normal-pct').innerHTML, g('normal-falta').textContent],
+     ['UEP · JORNADA', '13.068', '94,7%<i>da meta</i>', 'faltaram 737\u00a0UEP (147\u00a0UEP/dia)']);
+  ok('a hora extra em UEP (o sábado inteiro dentro), com as horas e os dias',
+     [g('extra-lbl').textContent, g('extra').textContent, g('extra-pct').textContent, g('linha-extra').style.display],
+     ['UEP · HORA EXTRA', '3.275', '14 horas em 5 dias', '']);
+  ok('UM veredito, o da UEP: a jornada não bateu, com a hora extra bateu → âmbar',
+     [g('selo').className, g('selo').textContent], ['tvd-selo he', '⚠ META BATIDA COM HORA EXTRA']);
+  ok('as caixas viram fato: o total, a jornada contra a meta de caixas e a hora extra — sem cor (fio neutro)',
+     [g('uep-lbl').textContent, g('uep').textContent, g('uep-pct').innerHTML, g('uep-sub').textContent, g('uep-fio').style.background, g('linha-uep').style.display],
+     ['CAIXAS', '9.879', '', '7.616 na jornada · 84,2% da meta · 2.263 em hora extra', 'var(--txt3)', '']);
+  ok('a barra e a marca em UEP',
+     [Math.round(parseFloat(g('bar-normal').style.width) * 10) / 10, Math.round(parseFloat(g('bar-extra').style.width) * 10) / 10, g('marca-lbl').textContent],
+     [Math.round(13068 / 16343 * 1000) / 10, Math.round(3275 / 16343 * 1000) / 10, 'META 13.805 UEP']);
+  const cards = g('dias').innerHTML.split('<div class="tvd-dia ').slice(1);
+  ok('os dias em UEP: a tarja pela UEP (jornada ≥ meta verde; só com a hora extra âmbar; abaixo vermelho; sábado âmbar, todo hora extra)',
+     cards.map(c => [c.slice(0, c.indexOf('"')), (c.match(/tvd-dia-num">([^<]*)</) || [])[1], (c.match(/tvd-dia-pct"[^>]*>([^<]*)</) || [])[1]]),
+     [['ruim', '2.596', '94,0% da meta'], ['ok', '2.867', '103,8% da meta'], ['he', '2.380', '86,2% da meta'], ['he', '2.617', '94,8% da meta'],
+      ['he', '2.608', '94,5% da meta'], ['he', '1.440', 'todo hora extra']]);
+  ok('cada dia diz a hora extra em UEP e as caixas como fato (o 11/11 de 125% em caixas é 86% em UEP)',
+     [/\+479 UEP em hora extra/.test(cards[2]), />1\.480 cx · 125,3% da meta</.test(cards[2]), /tvd-dia-he vazio">sem hora extra</.test(cards[0]),
+      />1\.145 cx em hora extra</.test(cards[5])], [true, true, true, true]);
+  // a TV não muda: a mesma semana na Tela D continua em caixas (a TV julga em caixas nas telas A/B)
+  pintar('tvd-');
+  ok('a Tela D da TV continua em caixas, com o selo das caixas',
+     [_dom['tvd-total'].textContent, _dom['tvd-normal'].textContent, _dom['tvd-selo'].textContent, _dom['tvd-marca-lbl'].textContent],
+     ['9.879', '7.616', '⚠ META BATIDA COM HORA EXTRA', 'META 9.050']);
+  // a semana sem UEP gravada (histórico antigo): o bloco do gerencial volta às caixas, com os rótulos de antes
+  _st.dados = { semStr: '10/08/2026 a 16/08/2026', numSem: 33, dias, k };
+  pintar('gsem-');
+  ok('semana sem UEP: o gerencial em caixas (as caixas julgam), com os rótulos de antes',
+     [g('total').textContent, g('unidade').textContent, g('normal-lbl').textContent, g('uep-lbl').textContent, g('linha-uep').style.display, g('uep-fio').style.background, g('normal-pct').innerHTML],
+     ['8.681', 'CAIXAS NA SEMANA', 'JORNADA NORMAL', 'UEP · JORNADA', 'none', 'var(--acc)', '99,2%<i>da meta</i>']);
+  ok('a montagem é conta pura, o desenho não conta (D1)',
+     [/uepHistResumo|_relMetaHE|uepDiaMeta|uepDiaHe|\.reduce\(|\.filter\(/.test(pega('function _pintarUep(')), _gsemUepMontar(dias, k)], [false, null]);
+}
 
 console.log('\n── comparativo por modelo: média aparada e teto da esteira ──');
 // A MÉD.PERÍODO descarta o melhor e o pior dia do próprio grupo (3+ dias):

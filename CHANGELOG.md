@@ -11,6 +11,35 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.250.0 — 16/11/2026 · fechamento da semana com a UEP na frente
+
+O PPCP pediu, com o print do bloco FECHAMENTO DA SEMANA PASSADA do gerencial
+(9.879 caixas em destaque, a UEP num canto): *"nessa tbm passar para uep como
+informação principal"*.
+
+- **Gerencial do PC:** o número grande é a **UEP da semana** (jornada + hora
+  extra). As duas colunas ao lado são a UEP da jornada (com o % da meta e o que
+  faltou em UEP e por dia) e a UEP em hora extra. A barra, a marca da meta e os
+  cartões dos dias também são em UEP.
+- **Um veredito, o da UEP**, com a mesma régua de antes: verde só quando a
+  jornada bateu a meta; âmbar quando só bateu com a hora extra; vermelho, o que
+  faltou. No dia: verde, âmbar ou vermelho pela UEP do dia; sábado e domingo
+  âmbar, todo hora extra.
+- **As caixas viram fato**, sem cor: o total, a jornada contra a meta de caixas e
+  a hora extra numa coluna neutra; em cada dia, as caixas e o % da meta de
+  caixas embaixo.
+- Semana sem UEP gravada (histórico antigo): o bloco fica em caixas, como era.
+- O texto ao lado dos números quebra linha em vez de cortar com "…" (a 1366 o
+  *faltaram … cx/dia* saía pela metade).
+- **Não muda:** a Tela D da TV (continua em caixas: a TV ainda julga em caixas)
+  e o papel do 🖨 IMPRIMIR SEMANA (relatório semanal, em caixas).
+- **Atenção:** muda o número em destaque e as cores. Na semana 46: antes 9.879
+  caixas, agora 16.343 UEP; o 11/11 tinha tarja verde (125,3% da meta de
+  caixas) e passa a âmbar (86,2% da meta de UEP na jornada, bateu com a hora
+  extra); o 10/11 passa de vermelho (96,7% em caixas) a verde (103,8% em UEP).
+
+---
+
 ## v7.249.0 · mobile 1.52.0 · rp-core 1.20.0 — 16/11/2026 · o atraso também em pontos
 
 O PPCP pediu o atraso em pontos (*"em pontos qtdes de atraso?"*), conferiu a

@@ -482,3 +482,40 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   PONTOS*) e `relatorios.test.js` (card do PC, do celular, quadro = card, a
   guarda); 7 de 7 mutações pegas (a 8ª era equivalente).
 
+## FECHAMENTO DA SEMANA PASSADA COM A UEP NA FRENTE (v7.250.0)
+- PPCP, 16/11/2026, com o print do bloco do gerencial (9.879 caixas em
+  destaque, *13.068 UEP · 94,7%* num canto): *"nessa tbm passar para uep como
+  informação principal"*. É a semana entrando na UEP NA FRENTE (v7.243.0, que
+  deixou *semana/Tela D* para depois).
+- **Só o gerencial** (`pintar('gsem-')`). A Tela D da TV (`tvd-`) continua em
+  caixas: a TV ainda julga em caixas nas telas A/B, e duas réguas no mesmo
+  carrossel seriam dois vereditos. O 🖨 IMPRIMIR SEMANA (relatório semanal)
+  também segue em caixas — passar o papel é o passo seguinte, se o PPCP pedir.
+- **A conta é UMA, pura**: `_gsemUepMontar(dias, k)` (a UEP do `uepHistResumo`,
+  o selo pela `_relMetaHE` em UEP, a tarja de cada dia, as caixas como fato);
+  o desenho é o `_pintarUep` dentro do RP_SEMANA, sem conta (o teste prende).
+  null = semana sem UEP gravada → o bloco desenha em caixas, como era, e os
+  rótulos voltam (`gsem-unidade`, `-normal-lbl`, `-extra-lbl`, `-uep-lbl`,
+  `-uep-fio`).
+- **A régua**: o número grande é jornada + hora extra (a do fim de semana
+  dentro), como era o das caixas. Selo: verde só com a JORNADA ≥ a soma das
+  metas dos dias com UEP; âmbar quando só bateu com a hora extra; vermelho
+  *FALTARAM N UEP*. Dia: verde jornada ≥ meta do dia; âmbar jornada + HE ≥
+  meta; vermelho abaixo; sábado/domingo âmbar, *todo hora extra*. As caixas
+  (total, jornada × meta de caixas, HE) ficam numa coluna de fio neutro, e em
+  cada dia na última linha — fato, sem cor.
+- ⚠ **A cor dos dias muda de sentido**: na semana 46, o 11/11 era verde em
+  caixas (125,3%) e é âmbar em UEP (86,2% na jornada — mix leve, muita caixa
+  e pouca UEP); o 10/11 era vermelho em caixas (96,7%) e é verde em UEP
+  (103,8%). É o motivo de a UEP julgar: ela desconta o peso de cada caixa.
+- **Layout**: no gerencial o texto das colunas quebra linha
+  (`#ger-semana .tvd-split-txt span{white-space:normal}`) em vez de cortar com
+  "…" — o *faltaram 1.434 cx · 287 cx/dia* já saía pela metade a 1366. A
+  coluna tem a largura do rótulo (~16 caracteres): o que faltou vai como
+  *faltaram 737 UEP (147 UEP/dia)*, número e unidade presos com `\u00a0`.
+  Medido no Chromium a 1280, 1366 e 1920: nada cortado, a altura do bloco não
+  mudou (429 px). A TV segue com a linha única.
+- Testes em `relatorios.test.js` (*fechamento da semana*): a semana 46 do
+  print, a TV em caixas com a mesma semana, a semana sem UEP voltando às
+  caixas e os rótulos, e o desenho sem conta.
+

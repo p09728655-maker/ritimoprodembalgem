@@ -581,8 +581,10 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   (`_phUepTotal`, todas as horas e só as caixas apontadas; não é a UEP de
   jornada). O bloco da semana ganhou `gsem-linha-uep` e a linha de UEP por
   dia (`comUep`, só com o prefixo `gsem-`). ⚠ O `pintar` é o mesmo da Tela D,
-  e a TV não mostra UEP porque não tem esses ids. WhatsApp: linha própria, sem
-  emoji. Paradas, perdas e simulador continuam em caixas.
+  e a TV não mostra UEP porque não tem esses ids. (v7.250.0: no gerencial a UEP
+  passou a ser o número grande e esta linha virou a das CAIXAS — ver
+  *FECHAMENTO DA SEMANA PASSADA COM A UEP NA FRENTE* em `gerencial.md`.)
+  WhatsApp: linha própria, sem emoji. Paradas, perdas e simulador continuam em caixas.
 - **R$ POR UEP SAIU DOS CARDS** (v7.100.0, PPCP 25/09/2026: *"pode tirar
   esse valor em reais daí, precisa ser em um lugar estratégico"*). O
   `_uepComCusto` foi apagado; o `uepCusto` fica no rp-core, testado, até o
