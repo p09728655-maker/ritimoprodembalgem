@@ -179,7 +179,7 @@ via Google Apps Script (JSONP).
   olhar nas três telas e o PARA FECHAR numa linha sem repetir as caixas; e
   (v7.242.0) o PRECISA em partes (atraso · hoje · dias que vêm, o retrato real
   de 13/11, o arredondamento do acumulado, 4.000 sorteios, a tela e o 🖨); e
-  (v7.244.0) o vencido de antes da segunda e o lote de hoje no PRECISA, com o
+  (v7.245.0) o vencido de antes da segunda e o lote de hoje no PRECISA, com o
   retrato real de 16/11 06:54 (FECHA sobram 3h39 → NÃO FECHA faltam 6h07; as
   quatro partes; o não lido avisado; as 4 SEMANAS com o mesmo número; 9 de 10
   mutações — a 10ª é equivalente): `node takt-semana.test.js`.
@@ -3603,7 +3603,11 @@ feito e dá ar de verdade ao que sobrou.
   (`page-break-after:avoid`) e KPIs, faixa de alerta e gráfico não partem ao
   meio — mesma regra já documentada para o relatório de paradas.
 
-## GERENCIAL DO PC: A UEP NA FRENTE (v7.243.0 / rp-core 1.17.0)
+## GERENCIAL DO PC: A UEP NA FRENTE (v7.243.0 / rp-core 1.17.0; revisão na v7.244.0 / rp-core 1.17.1)
+- ⚠ **A v7.243.0 entrou na `main` antes de a revisão terminar** (o PPCP pediu o
+  merge). A revisão achou 3 bloqueios e 6 ajustes; as correções são a v7.244.0,
+  num PR aberto sem merge (combinado: o PPCP confere antes). Ver *A REVISÃO
+  (v7.244.0)* no fim desta seção.
 - PPCP, 13/11/2026: *"precisamos ir adaptando a tela gerencial para priorizar
   as UEPs"* → *"e também o painel tb… tv"* → três decisões (o 2.761 vira a
   **META oficial**; na TV o selo virá da UEP, dito em minutos e caixas do produto
@@ -3671,6 +3675,46 @@ feito e dá ar de verdade ao que sobrou.
   real de 13/11: os cards, um selo só, as horas 09:00/12:12/15:00/HE/agora/sem UEP,
   a análise, o ATRASO, a leitura do cadastro) e `produtos-dia.test.js` (o resumo,
   as colunas, o `uepHe`, a faixa pela UEP e o celular igual).
+- **A REVISÃO (v7.244.0)** — o que mudou:
+  - **Uma regra para julgar a hora: `_gerHoraJulga(h, cx, cxCom)`** (tabela,
+    análise, gráfico, ao vivo e dia passado). Não julga: hora extra, a hora de
+    agora, sem lançamento, sem meta, só caixas sem UEP. **Hora fechada em ZERO
+    caixas é julgada** (0%, ABAIXO, entra no vale — era "SEM UEP" e sumia: o caso
+    de 28/08). **Parte das caixas sem UEP** (código sem UEP, ou lançada sem
+    produto: caixas da HORA_A_HORA > caixas do registro) → `parte`: o % com `*`,
+    PARTE SEM UEP, sem cor.
+  - **O modelo (`_gerUepModelo(k, agoraMin)`)** guarda `cx` e `min` de cada hora
+    e o `minRest` (o que resta de jornada) — sem depender do `_tvUepMontar`, que
+    não monta antes do 1º lançamento de jornada (era "jornada encerrada" de
+    manhã). Às 16:22 de 13/11 restam 37 min → o ritmo necessário é **738 UEP/h**
+    (o "463" da v7.243.0 era de um modelo escrito à mão no teste).
+  - **`semUep = !G.ok`**: sem a UEP do dia (lendo, falhou, backend, cadastro), as
+    caixas programadas julgam; as horas lançadas dizem LENDO… (`G.lendo`) ou NÃO
+    LIDA (`PONTOS_LEIT.falha`), e NÃO pintam o % — nem a que fechou em zero
+    (`o.est` desliga o `_gerHoraJulga`; o gráfico recebe `!G.ok`). Nunca uma tela
+    sem veredito, nunca dois.
+  - **A hora que acabou de fechar ainda aceita lançamento** (`GER_TOL_MIN` = 15 =
+    o `LANC_TOLERANCIA_MIN` do celular; o teste confere): com 0 caixas e até 15
+    min depois do fim, `h.tol` → AINDA ACEITA, sem veredito e fora do vale. Sem
+    isso o vale do dia era sempre a última hora fechada (2ª revisão).
+  - **Dia passado: `_gerHorasHist(horas, metaDia, uepHH, data)`** — em sábado e
+    domingo a meta da hora é a META UEP gravada ÷ os minutos de jornada com
+    produção (a gravada já é a das horas trabalhadas desde o `.gs` v5.60: 07/11 =
+    1.257 em 240 min → 314/h, não 143); dia útil ÷ 527; o 16:00-16:59 vale 59. A
+    célula de UEP diz *pelo cadastro de hoje* (o total do card é o gravado).
+    Só horas com produção chegam aqui (o `arquivarHorasDoDia` grava `real > 0`).
+  - **`GER_CAT_FALHA`**: a leitura do cadastro que falhou faz o ATRASO dizer
+    *cadastro não lido*, nunca "lendo" para sempre.
+  - **Impressão** (`_gerInfoImpressao`): o cabeçalho diz a UEP com o selo e as
+    caixas como fato; no dia passado, o dia da tela.
+  - rp-core 1.17.1: o `uepHe` do produto vem SEM arredondar (o desenho escreve
+    *<1* abaixo de 0,5). `renderChartHora`/`renderChartComp` apagados (sem uso).
+  - Testes rodam a montagem real (`_gerUepModelo` + `_tvUepMontar`), a hora em
+    zero, a parte sem UEP, o sábado de 07/11, a manhã sem jornada, o LENDO…, o
+    cadastro que falhou, a impressão, a hora em tolerância e o NÃO LIDA. 14 de 14
+    mutações pegas.
+  - Em aberto (menor): o resumo do PRODUTOS EMBALADOS pode dizer *586 em hora
+    extra* com a coluna somando 587 (arredondamento das três partes).
 
 ## EFICIÊNCIA: uma régua só, e é a META DO DIA
 - **O cartão mostrava um número de uma conta com a cor de OUTRA.** O número era
@@ -7200,7 +7244,7 @@ feito e dá ar de verdade ao que sobrou.
   com o quadro aberto e rola até ele. Borda vermelha com atraso
   (`.uep-sb-atr.red`). Só o VENCIDO: o programado de hoje continua fora (v7.156.0).
   - ~~⚠ **O NÃO FECHA da TAKT ESTA SEMANA não soma o vencido de antes da
-    segunda**~~ — **soma desde a v7.244.0** (ver *O ATRASO E O LOTE DE HOJE NO
+    segunda**~~ — **soma desde a v7.245.0** (ver *O ATRASO E O LOTE DE HOJE NO
     PRECISA*). Em 11/11/2026 o cartão dizia 3h45 e o TAKT faltam 5h47 sem o
     1h44 do 25396 (06/11).
   - Medido no Chromium: 1920, uma linha (o cartão com 228 px, texto inteiro);
@@ -7261,7 +7305,7 @@ feito e dá ar de verdade ao que sobrou.
     `<small id="uep-sb-atr-s" style="display:none">` (nasce escondida: sem
     isso a faixa cresce 2 px antes do 1º desenho), texto do `_uepAtrSub(venc,
     hojeN)` (puro, pelo `A.venc`): *já está no PRECISA do TAKT* (todo vencido
-    com UEP — desde a v7.244.0 também o de antes da segunda; as frases *antes de
+    com UEP — desde a v7.245.0 também o de antes da segunda; as frases *antes de
     dd/mm: fora do TAKT* e *fora do TAKT desta semana* saíram) · *sem UEP: fora
     do TAKT* / *sem UEP (\*): fora do TAKT* (só o código sem UEP fica fora). Até 30
     caracteres (o card tem ~166 px a 1280; a 1ª versão, *"o de antes de 09/11
@@ -7612,7 +7656,7 @@ feito e dá ar de verdade ao que sobrou.
     partes, também com o *"(com hora extra)"* — a legenda do papel começa na
     margem, embaixo do rótulo PRECISA; alinhada com a barra ela quebrava em 2
     linhas e a folha ia a 716); tela 1920 e 1366 sem passar da largura.
-  - **O ATRASO E O LOTE DE HOJE NO PRECISA (v7.244.0 / `.gs` v5.66**, PPCP
+  - **O ATRASO E O LOTE DE HOJE NO PRECISA (v7.245.0 / `.gs` v5.66**, PPCP
     16/11/2026 06:54, com o card ATRASO *6h04 · 800 cx · desde 10/11* e o TAKT
     na tela: *"6h04 não contempla o lote de hj?"* → prévia com os dados do dia
     → *"sim faz as duas"*). Duas coisas ficavam fora do PRECISA da ESTA SEMANA,
@@ -7684,7 +7728,7 @@ feito e dá ar de verdade ao que sobrou.
       *16/11–19/11 (20/11 feriado · 19/11 sem programação — fora)* e a frase
       fecha no último dia PROGRAMADO (*"chega a 18/11"*), nunca no domingo.
     - Desenho `_taktSemanasHtml` (sem conta), toque abre o dia a dia (`TKS4_AB`).
-      ~~Não soma o vencido de antes desta segunda~~ — soma desde a v7.244.0 (a
+      ~~Não soma o vencido de antes desta segunda~~ — soma desde a v7.245.0 (a
       1ª semana, linha *vencidos antes de dd/mm (o card ATRASO)* no dia a dia).
     - Revisões: a 1ª versão (o `_tkaCorrente` inteiro) contava o vencido em dobro
       (o `falta` do `getProgramacaoDetalhada` é POR CÓDIGO — e o `_tkaPainel` do

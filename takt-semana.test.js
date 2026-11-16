@@ -42,7 +42,7 @@ global._rpEsc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/
  'function _taktHerancaHtml(', 'function _taktExcessoHtml(',
  // v7.224.0: a faixa do takt (os volumes para o app de cronoanálise)
  'function _taktSetup(', 'function _setupLer(', 'function _setupCfgTxt(', 'function _setupErro(', 'function _setupEnviar(', 'function _setupDaConfig(', 'function _setupResposta(', 'function _taktApp(', 'function _taktFaixa(', 'function _taktFaixaHtml(',
- // v7.244.0: o vencido de antes da segunda no TAKT
+ // v7.245.0: o vencido de antes da segunda no TAKT
  'function _taktAntesAviso(', 'function _taktAntesForaTxt(', 'function _taktAntesSoma('].forEach(f => eval.call(global, pega(f)));
 ['EIXO_PASSOS', '_tkS', 'TKS_DOW', 'CRONO_APP_GRUPO', '_taktFProd', '_tkDec', '_tkM', 'TKS_DOC_SVG_W', 'UEP_REF_STATUS', 'TKS_RITMO_DESVIO', 'SETUP_TROCAS_MAX', 'SETUP_MIN_MAX', 'EF_EMB_PADRAO'].forEach(c => eval.call(global, pegaConst(c).replace(/^const /, 'global.').replace(/^global\.(\w+)\s*=/, 'global.$1 =')));
 
@@ -1351,20 +1351,20 @@ eval.call(global, pega('function _tkaVencidoAntes('));
      [false, true, false, false, 0]);
   ok('revisão: a 🖨 espera a fila da aba antes de ler; o AVALIAR só usa o vencido da programação detalhada DE HOJE (e lê de novo se for de outro dia)',
      [/if\(_uepLendo\(\)\)\{ msg\('Esperando a outra leitura terminar…'\); await new Promise\(ok=>_uepDepoisDe\(_uepLendo, ok\)\); \}/.test(G4),
-      /if\(_progDetHoje\(\)\) lin\.push\(\.\.\._tkaVencidoAntes\(/.test(pega('function _tkaPainel(')), /if\(!Array\.isArray\(TKS && TKS\.vencidoAntes\) && !_progDetHoje\(\)\) await carregarProgramacaoDetalhada\(\);/.test(pega('function _tkaPainelCarregar('))],   // v7.244.0: só sem o vencidoAntes da semana
+      /if\(_progDetHoje\(\)\) lin\.push\(\.\.\._tkaVencidoAntes\(/.test(pega('function _tkaPainel(')), /if\(!Array\.isArray\(TKS && TKS\.vencidoAntes\) && !_progDetHoje\(\)\) await carregarProgramacaoDetalhada\(\);/.test(pega('function _tkaPainelCarregar('))],   // v7.245.0: só sem o vencidoAntes da semana
      [true, true, true]);
   ok('🖨 a janela abre no clique, lê o que faltar (histórico, esta semana, a que vem, a faixa) e monta pela MESMA montagem da tela; no menu 🖨 IMPRIMIR ▾',
      [G4.indexOf('window.open(') < G4.indexOf('await '), /await _taktProxCarregar\(true\)/.test(G4) && /await _taktSemanas4Carregar\(true\)/.test(G4),
       /_taktSemanasDoPainel\(T0, hojeN, D\.meta, /.test(G4), /_taktSemanasHtml\(C, \{ papel:true \}\)/.test(G4), /_TKS4_DOC_SKIN/.test(G4),
       /onclick="_uepImpFecha\(\);gerarRelatorio4Semanas\(\)"/.test(html)],
      [true, true, true, true, true, true]); }
-// v7.244.0 / .gs v5.66 (PPCP 16/11/2026 06:54, com o card ATRASO "6h04 · 800 cx · desde 10/11" e o
+// v7.245.0 / .gs v5.66 (PPCP 16/11/2026 06:54, com o card ATRASO "6h04 · 800 cx · desde 10/11" e o
 // TAKT na tela: "6h04 é não contempla o lote de hj?" → prévia com os dados do dia → "sim faz as duas").
 // Duas coisas ficavam fora do PRECISA da ESTA SEMANA: o vencido de antes da segunda (o card ATRASO)
 // e — até o 1º lançamento do dia — o lote de HOJE (PRODUZIDO e SALDO vazios: saldo null). O veredito
 // dizia FECHA, sobram 3h39; o certo era NÃO FECHA, faltam 6h07. O retrato é o da planilha de 16/11
 // (PROGRAMACAO e a UEP da PRODUTO_CODIGO), lido pela API naquela manhã.
-console.log('\n── v7.244.0: o vencido de antes da segunda e o lote de hoje no TAKT (o retrato real de 16/11 06:54) ──');
+console.log('\n── v7.245.0: o vencido de antes da segunda e o lote de hoje no TAKT (o retrato real de 16/11 06:54) ──');
 {
   // [lote, data, código, qtde, PRODUZIDO, SALDO, UEP/cx]
   const R = [

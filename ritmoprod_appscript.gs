@@ -6639,7 +6639,7 @@ function getProgramacaoSemana(p) {
   // é dela). Vem da MESMA leitura das linhas da semana — o painel somava o `falta` da
   // programação detalhada (lida a cada 15 min) menos o saldo desta leitura (a cada 5):
   // um lançamento entre as duas punha caixa que já tinha saído no TAKT (revisão da
-  // v7.244.0). Arquivada, encerrada e fora da esteira não entram (saldo 0).
+  // v7.245.0). Arquivada, encerrada e fora da esteira não entram (saldo 0).
   let vencidoAntes;
   if (deNum <= hojeNum && hojeNum <= ateNum) {
     vencidoAntes = [];

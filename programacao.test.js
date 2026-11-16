@@ -996,7 +996,7 @@ console.log('\n── v5.66: o lote de hoje antes do 1º lançamento ──');
   const sem = (args) => vm.runInContext(`(function(){ _invalidarValores(); return getProgramacaoSemana(${JSON.stringify(args || {})}); })()`, m.ctx);
   const r = sem();
   const de = cod => (r.linhas.find(x => x.codigo === cod) || {}).saldo;
-  // o VENCIDO DE ANTES DA SEMANA, da MESMA leitura (revisão da v7.244.0: o painel somava o `falta` da
+  // o VENCIDO DE ANTES DA SEMANA, da MESMA leitura (revisão da v7.245.0: o painel somava o `falta` da
   // programação detalhada, lida em outra hora, menos o saldo desta — um lançamento entre as duas errava)
   ok('o vencidoAntes: as linhas ABERTAS com data antes da segunda, a mais antiga primeiro, com o SALDO da própria linha (o ERP colado por cima, null); encerrada e arquivada fora',
      (r.vencidoAntes || []).map(x => [x.data, x.codigo, x.saldo]),
