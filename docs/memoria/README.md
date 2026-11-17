@@ -105,6 +105,7 @@ de tema entra aqui também.
 - NA PRODUÇÃO: % DO PADRÃO NA CRONOANÁLISE (v7.160.0 / `.gs` v5.35)
 - PRINCIPAIS PARA ANÁLISE DE TEMPO (v7.189.0) → O QUE MEDIR: A AGENDA (v7.216.0)
 - SUB-ABAS DA ⏱ CRONOANÁLISE (v7.197.0)
+- REMEDIR A MADERO ANTES DE OFICIALIZAR AS UEPs (decisão de 17/11/2026)
 - ONDE O TEMPO VAI — estudo × produção × meta (v7.194.0)
 
 ## Plano e carteira — `plano-e-carteira.md`

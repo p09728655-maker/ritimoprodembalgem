@@ -409,6 +409,10 @@ via Google Apps Script (JSONP).
   `CRONO_EXCLUIDOS` antes de apagar. ⚠ O app chega pela
   `PAINEL_APPS_SCRIPT_URL` da Vercel dele: implantação nova do `.gs`, trocar lá
   também.
+- ⚠ **As UEPs ainda NÃO são oficiais** (PPCP, 17/11/2026): remedir a MADERO
+  (protocolo e decisão em `cronoanalise.md`) e definir a base e a regra das
+  lacunas antes de oficializar. A base de 6,7 s veio de uma medição com 15,2% de
+  lacunas.
 - **A TRAVA DA UEP**: medição válida (30+ volumes, lacunas até 15%); 2 válidas
   somando 100 volumes cumprem a regra; dentro de 90–110% FICA, fora TROCA.
   **Quem decide e trava é o PPCP**, com o código dele (`PPCP_CODIGO` nas

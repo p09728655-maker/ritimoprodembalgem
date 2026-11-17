@@ -1070,3 +1070,54 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   - Medido (Chromium, dados de 03/11): 1920, 1366 e 1280 sem nada passar da
     largura; a barra de abas fica com a mesma altura de antes (39 px a 1920,
     52 a 1366/1280 — lá ela já quebrava em duas linhas antes da aba nova).
+
+## REMEDIR A MADERO ANTES DE OFICIALIZAR AS UEPs (decisão de 17/11/2026)
+- PPCP: *"vamos pegar de novo o madero, aí define, porque hoje ainda as UEPs
+  não é oficial"*.
+  - **As UEPs do cadastro ainda NÃO são oficiais.** A trava existe e já foi
+    usada, mas a base e a regra das lacunas se definem antes de oficializar.
+  - ⚠ Não tratar os 6,7 s como fechados nem propor oficializar antes da
+    remedição.
+- **O que levou a isso** (o app de cronoanálise, v2.111.1, com os prints do
+  PPCP):
+  - **A MADERO de 20/10, 13:27** (37 volumes): rodando 7,7 s, sem lacunas 6,5 s.
+    - Paradas marcadas: < 1 min, só o setup de 55,8 s, fora dos toques.
+    - 4 lacunas, somando 42,1 s além do normal, ou seja ~17 s cada: demoras
+      curtas, não paradas.
+  - **A base** (`UEP_BASE_MEDIDA`, 6,7 s) é a de 20/10, 13:35, *"Maduro depois
+    plástico"*: 60 volumes, rodando 7,9 s, 15,2% de lacunas. **Pela regra de
+    validade de hoje (lacunas até 15%), ela não valeria.**
+  - **A MADERO de 22/10, 09:45** fez 59 volumes sem parada marcada, a 521
+    vol/h: ~6,9 s por volume com tudo dentro. Num trecho limpo, a MADERO roda
+    perto de 6,7 s.
+  - **Hipótese mais provável para a régua ficar +12% acima da produção:** a
+    regra das lacunas ("> 2× o normal" DO PRÓPRIO produto) é assimétrica.
+    - Na MADERO, um intervalo de 17 s sai da conta (limite 13 s).
+    - Num produto lento, com normal de 15 s, o mesmo intervalo fica (limite
+      ~30 s).
+    - A demora curta sai da base e fica no produto lento, e a UEP dele sobe.
+    - Ainda não verificada: falta comparar os gráficos de intervalos da MADERO
+      e de 2 ou 3 produtos lentos.
+- **Protocolo combinado para a remedição:**
+  - 2 ou 3 medições de 60+ volumes (100+ no total), em dias ou horários
+    diferentes, com a equipe e o material de sempre;
+  - começar com a linha estabilizada, nunca logo depois de setup ou troca;
+  - marcar TODA parada na hora;
+  - no mesmo dia, 1 ou 2 produtos lentos (ELOA, STRASS, PRINCESA) do mesmo
+    jeito;
+  - olhar o rodando, o sem lacunas, o % de lacunas e o tamanho de cada lacuna.
+- **Como decidir:**
+
+  | Resultado | Decisão |
+  |---|---|
+  | Poucas lacunas e o sem-lacunas entre 90% e 110% de 6,7 s | base confirmada |
+  | Poucas lacunas, fora da faixa | base nova: fator = novo ÷ 6,7 em todas as UEPs, antes de oficializar (o procedimento da TROCA DE ESCALA, em `uep.md`) |
+  | Lacunas curtas cortadas na MADERO e mantidas nos lentos | corrigir a regra das lacunas NO APP (limite em segundos igual para todos, ou o mesmo critério estatístico); a base sozinha não resolve |
+
+- **No painel**, a aba CRONOANALISE só tem o resumo de cada medição (S_RODANDO,
+  S_SEM_LACUNAS, volumes). O detalhe dos intervalos e das lacunas mora no app.
+  - Oferecido: uma **conferência da base** na aba Cronoanálise (as medições da
+    MADERO, a regra das 2 válidas, a comparação com os 6,7 s e com a MADERO NA
+    PRODUÇÃO, e o veredito FICA ou ESCALA), para quando as medições novas
+    chegarem.
+  - Hoje a TRAVA DA UEP trata a MADERO como "✓ BASE", fixa em 1,00.
