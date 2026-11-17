@@ -186,13 +186,28 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     94,6%, **ATENÇÃO** (era ABAIXO DO RITMO);
   - **na TV, nada do que se compara com a meta conta a hora extra**: o % DA
     META DO DIA e a barra (`efDiaJ` = caixas da jornada ÷ meta: **88,0%**), o
-    FALTAM e o banner (`gapJ`: 162), o NECESSÁRIO (`necJ`: as horas de jornada
-    sem lançamento) e a PROJEÇÃO (`projJ`);
+    FALTAM e o banner (`gapJ`: 162), o NECESSÁRIO (`necJ`) e a PROJEÇÃO
+    (`projJ`);
+  - **o NECESSÁRIO é o RITMO NECESSÁRIO da UEP em caixas** (`_gerAnaliseUep`):
+    o que falta da jornada ÷ os minutos de jornada que restam A PARTIR DE AGORA
+    (`minRestJ`, o almoço fora) × 60 — às 16:22, 162 ÷ 37 min = **263 cx/h**.
+    Na 1ª versão desta mudança ele dividia pelas horas sem lançamento; a
+    revisão mostrou que às 14:05, com a hora 14:00 em 10 cx, isso dava 250 cx/h
+    (500 ÷ 2) onde restavam 2h54 (173), e que uma hora esquecida de manhã
+    contava como hora pela frente às 17:10. Jornada encerrada (`minRestJ` 0): a
+    tela diz o que faltou (*CX P/ META*), nunca um ritmo;
   - **a PROJEÇÃO da TV é a régua do selo**: caixas da jornada × minutos de
     jornada do turno ÷ minutos de jornada decorridos (1.188 × 527 ÷ 490 =
     **1.278**). Projeção ÷ meta é sempre o % do selo — as duas não se contradizem.
     Sem minuto de jornada (só a madrugada), "—". Ela também deixou de dar a
-    hora em andamento por encerrada (antes, às 16:22, projeção = realizado);
+    hora em andamento por encerrada (antes, às 16:22, projeção = realizado).
+    É a conta do `uepProj` (PROJEÇÃO · UEP), em caixas — inclusive nos dois
+    defeitos que as duas têm e ficaram para depois: ⚠ nos primeiros minutos
+    da jornada ela oscila (07:03 com 12 cx: 2.108; firma por volta das 07:10;
+    o selo, no mesmo instante, NO RITMO com "12 DE 8") e ⚠ uma hora de
+    jornada esquecida (sem lançamento) é projetada como se fosse ser lançada
+    no mesmo ritmo, mesmo com a jornada encerrada. Corrigir num lugar só
+    deixaria UEP e caixas com duas réguas: mexer nas duas juntas;
   - com hora extra no dia, a unidade da PROJEÇÃO e do FALTAM diz **CAIXAS NA
     JORNADA** (`tvb-proj-unit`, `tvb-falta-unit`; Tela A: *CX NA JORNADA*):
     depois da madrugada a projeção da jornada fica menor que a PRODUÇÃO
@@ -203,7 +218,13 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     programado e a projeção de sempre), o RITMO ATUAL (todas as horas), e fora da
     TV o `efDia`, o `gap`, o `nec` e o `proj` (o card CAIXAS PROGRAMADAS fala do
     PROGRAMADO, e a caixa da hora extra atende o lote; o resumo do WhatsApp e a
-    análise em caixas do gerencial não foram mexidos).
+    análise em caixas do gerencial não foram mexidos). ⚠ Por isso, sem a UEP
+    do dia, o mesmo nome dá números diferentes: *Projeção* do WhatsApp 1.461 ×
+    TV 1.278; RITMO NECESSÁRIO da análise em caixas (por horas, com a hora
+    extra) × NECESSÁRIO da TV. Pendente — levar a régua da TV para lá é decisão
+    do PPCP;
+  - **o selo novo vale onde o selo em caixas aparece**: TV, e o card CAIXAS
+    PROGRAMADAS dos dois gerenciais quando falta a UEP do dia.
 - **Medido no Chromium** (Tela B, o caso de 17/11, TV 1920×1080 e 1366×768,
   com os cartões da fábrica e com o padrão): *CAIXAS NA JORNADA* numa linha só
   (29 px a 1920, 22 px a 1366 — a mesma altura de *CAIXAS*), sem estouro de
@@ -569,7 +590,8 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     (`efDia`) continua com
     todas as caixas: a hora extra conta para a meta do dia como sempre contou.~~
     — **revogado na TV na v7.265.0** (ver *A TV SEM A HORA EXTRA*, abaixo); o
-    `efDia` ficou só no *% feito* do card CAIXAS PROGRAMADAS, que é do programado.
+    `efDia` ficou no *% feito* do card CAIXAS PROGRAMADAS, que é do programado, e
+    no resumo do WhatsApp.
     ⚠ O RITMO ATUAL (`k.ritmo`) ainda é de todas as horas lançadas, e a
     projeção também, fora da TV (gerencial, resumo do WhatsApp) — a cascata do 🖨
     do dia compara esse ritmo com o necessário só da jornada num dia com

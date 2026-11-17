@@ -5765,7 +5765,8 @@ function calcKPIs(dh){
     return soma + ((reg&&reg.producaoHora!=null) ? (sl.min||60) : 0);
   },0)/60;
   // Minutos de JORNADA NORMAL com lançamento — a régua do card UEP DO DIA e da
-  // aba ⚖ UEP (a hora extra fica fora). A hora EM ANDAMENTO conta só os minutos
+  // aba ⚖ UEP (a hora extra fica fora) e, desde a v7.265.0, também do selo em
+  // caixas e da projeção da TV (`projJ`). A hora EM ANDAMENTO conta só os minutos
   // que já passaram (minSlotDecorrido, v7.114.0): às 14:10 ela cobrava os 60.
   const agoraMin=(()=>{ const a=new Date(); return a.getHours()*60+a.getMinutes(); })();
   const minNorm=effSlots.reduce((soma,sl)=>{
@@ -5824,17 +5825,24 @@ function calcKPIs(dh){
      PROGRAMADO, e a caixa embalada na hora extra atende o lote.
      A projeção é a da régua do selo (minutos de jornada, hora em andamento pelo
      que já passou): projJ ÷ meta é sempre o % do selo, as duas não se
-     contradizem. Sem minuto de jornada, não há projeção (null → "—"). */
+     contradizem — é a conta do `uepProj` da UEP, em caixas. Sem minuto de
+     jornada, não há projeção (null → "—").
+     O NECESSÁRIO é o RITMO NECESSÁRIO da UEP em caixas: o que falta ÷ os minutos
+     de jornada que restam A PARTIR DE AGORA (o almoço fica fora) × 60. Contando
+     horas sem lançamento, às 14:05 com a hora 14:00 em 10 cx ele dizia 250 cx/h
+     (500 ÷ 2 horas) quando restavam 2h54; e uma hora esquecida de manhã contava
+     como hora pela frente às 17:10, com a jornada encerrada. */
   const efDiaJ=meta>0?(realNormal/meta)*100:0;
   const gapJ=meta-realNormal;
   const projJ=minNorm>0?realNormal*minTurno/minNorm:null;
-  const slotsRestJ=effSlots.filter(sl=>{
-    const reg=allHoje.find(d=>d.horario===sl.inicio);
-    return !_slHE(sl) && !(reg&&reg.producaoHora!=null);
-  }).length;
-  const necJ=slotsRestJ>0?Math.max(0,Math.ceil(gapJ/slotsRestJ)):0;
+  const minRestJ=effSlots.reduce((soma,sl)=>{
+    if(_slHE(sl)) return soma;
+    const ini=toMin(sl.inicio), fim=ini+(sl.min||60);
+    return soma + (fim>agoraMin ? fim-Math.max(ini,agoraMin) : 0);
+  },0);
+  const necJ=minRestJ>0?Math.max(0,Math.ceil(gapJ/minRestJ*60)):0;
 
-  return{real,realHE,realNormal,nHE,meta,ef,efDia,efRitmo,metaAteAgora,gap,ritmo,proj,nec,efDiaJ,gapJ,projJ,slotsRestJ,necJ,melhor,pior,nNorm,hProd,minNorm,metaH,metaHE,slotsRest,n,slots:effSlots,allHoje,atrasoHoras};
+  return{real,realHE,realNormal,nHE,meta,ef,efDia,efRitmo,metaAteAgora,gap,ritmo,proj,nec,efDiaJ,gapJ,projJ,minRestJ,necJ,melhor,pior,nNorm,hProd,minNorm,metaH,metaHE,slotsRest,n,slots:effSlots,allHoje,atrasoHoras};
 }
 function sl(ef){ return ef>=96?'DENTRO DA META':ef>=90?'ATENÇÃO':'ABAIXO DO PLANEJADO'; }
 
@@ -17988,8 +17996,8 @@ function renderTV(){
   if(fds){
     necEl.textContent='—';
     if(necUnit) necUnit.textContent='SEM META';
-  }else if(k.slotsRestJ>0){
-    // o que a JORNADA ainda precisa, nas horas de jornada sem lançamento (v7.265.0)
+  }else if(k.minRestJ>0){
+    // o que a JORNADA ainda precisa por hora, no tempo de jornada que resta (v7.265.0)
     necEl.textContent=fmtN(k.necJ);
     if(necUnit) necUnit.textContent='CX/HORA';
   }else{

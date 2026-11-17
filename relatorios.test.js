@@ -3171,9 +3171,22 @@ console.log('\n── hora extra sem meta: a CONTA de verdade (calcKPIs do PC e 
      [t17.badge, t17.sub, +t17.k.efRitmo.toFixed(2)], ['● ATENÇÃO', '1.188 DE 1.255 CX ESPERADAS ATÉ AGORA', 94.64]);
   ok('17/11 16:22, celular: o mesmo selo do PC (ritmo e esperado)',
      [+m17.k.efRitmo.toFixed(2), Math.round(m17.k.metaAteAgora)], [94.64, 1255]);
-  ok('17/11 16:22: o % da meta, a barra, FALTAM e NECESSÁRIO sem a hora extra — 88,0% (era 108,2%), faltam 162; a PRODUÇÃO ACUMULADA segue com ela (1.461)',
-     [t17.k.real, t17.ef, t17.pct, t17.faltaB, t17.falta, t17.nec],
-     [1461, '88,0%', '88,0%', '162', 'FALTAM 162 CX PARA BATER A META', '162 CX P/ META']);
+  ok('17/11 16:22: o % da meta, a barra e FALTAM sem a hora extra — 88,0% (era 108,2%), faltam 162; a PRODUÇÃO ACUMULADA segue com ela (1.461)',
+     [t17.k.real, t17.ef, t17.pct, t17.faltaB, t17.falta],
+     [1461, '88,0%', '88,0%', '162', 'FALTAM 162 CX PARA BATER A META']);
+  // O NECESSÁRIO é o RITMO NECESSÁRIO da UEP em caixas: o que falta da JORNADA ÷
+  // os minutos de jornada que restam a partir de agora × 60 (o almoço fora).
+  // Revisão da v7.265.0: o teste das 16:22 caía no ramo "CX P/ META" e o ramo do
+  // ritmo nunca rodava — trocar necJ por nec (com a hora extra) passava verde.
+  const n1030 = roda('pc', { hoje:D, agora:'10:30', c3:5, meta:1350, lanc:L17 }),
+        n1405 = roda('pc', { hoje:D, agora:'14:05', c3:5, meta:1350, lanc:{ ...L17, '14:00':10, '15:00':undefined, '16:00':undefined } }),
+        n1710 = roda('pc', { hoje:D, agora:'17:10', c3:5, meta:1350, lanc:L17 });
+  ok('NECESSÁRIO só da jornada, pelos minutos que restam: 10:30 (585 na jornada, 273 de hora extra) → 765 ÷ 317 min = 145 cx/h; 16:22 → 162 ÷ 37 min = 263 cx/h',
+     [n1030.k.realNormal, n1030.nec, t17.nec], [585, '145 CX/HORA', '263 CX/HORA']);
+  ok('NECESSÁRIO às 14:05 com a hora 14:00 em 10 cx: 500 ÷ 2h54 = 173 cx/h (contando horas dava 250: 500 ÷ 2)',
+     [n1405.k.realNormal, n1405.nec], [850, '173 CX/HORA']);
+  ok('jornada encerrada (17:10): o NECESSÁRIO vira o que faltou, nunca um ritmo',
+     [n1710.k.minRestJ, n1710.nec], [0, '162 CX P/ META']);
   ok('17/11 16:22: a projeção é a da jornada pela régua do selo (1.188 × 527 ÷ 490 = 1.278; projeção ÷ meta = o % do selo), com a unidade NA JORNADA',
      [t17.proj, t17.projU, t17.faltaU, +(t17.k.projJ / 1350 * 100).toFixed(2)], ['1.278', 'CAIXAS NA JORNADA', 'CAIXAS NA JORNADA', 94.64]);
   ok('dia sem hora extra: as unidades continuam CAIXAS; sem minuto de jornada (06:45, só a madrugada), a projeção é "—", nunca 0',

@@ -13,7 +13,7 @@ Unidade padrão: **caixa (cx)**. Não existe "peça" no vocabulário do produto.
 | **PRODUÇÃO REAL** | soma do realizado das horas já lançadas | cx | `v7:3609` |
 | **META DO DIA** | meta da PROGRAMAÇÃO (ou ajuste manual). A hora extra não tem meta: a do ⚙ HORA EXTRA não soma (v7.248.0) | cx | `v7:calcKPIs` (`meta=metaBase`) |
 | **RITMO ATUAL** | realizado ÷ nº de horas já lançadas | cx/h | `v7:3644` |
-| **RITMO NECESSÁRIO** | (meta − realizado) ÷ horas restantes, nunca negativo. **Na TV, só a jornada** (v7.265.0): (meta − caixas da jornada) ÷ horas de jornada ainda sem lançamento (`necJ`); sem hora restante, a TV diz o que falta | cx/h | `v7:3652` · TV `v7:calcKPIs` (`necJ`) |
+| **RITMO NECESSÁRIO** | (meta − realizado) ÷ horas restantes, nunca negativo. **Na TV** (v7.265.0), a régua do RITMO NECESSÁRIO da UEP em caixas: (meta − caixas da jornada) ÷ minutos de jornada que restam **a partir de agora** (almoço fora) × 60 (`necJ`, `minRestJ`); com a jornada encerrada, a TV diz o que faltou | cx/h | `v7:3652` · TV `v7:calcKPIs` (`necJ`) |
 | **META/HORA** | média da meta das horas **de jornada** já lançadas (a hora extra não tem meta) | cx/h | `v7:calcKPIs` |
 | **PROJEÇÃO** | realizado + ritmo atual × horas restantes | cx | `v7:3647` |
 | **PROJEÇÃO FINAL** (TV, v7.265.0) | caixas da jornada × minutos de jornada do turno ÷ minutos de jornada já decorridos (a hora em andamento pelo que já passou) — a régua do selo: projeção ÷ meta = o % do selo. Hora extra fora; com hora extra no dia, a unidade diz *CAIXAS NA JORNADA*. Sem minuto de jornada: "—" | cx | `v7:calcKPIs` (`projJ`) |
@@ -65,7 +65,7 @@ julgado em caixas.
 | Termo | Fórmula | Unidade | Onde está |
 |---|---|---|---|
 | **% DA META DO DIA** (o número grande da TV) | caixas **da jornada** ÷ meta do **dia inteiro** × 100. A hora extra fica fora desde a v7.265.0 (era o realizado com ela: 108,2% ao lado de ABAIXO DO RITMO em 17/11/2026). A barra enche pelo mesmo número | % | `v7:calcKPIs` (`efDiaJ`) |
-| **% feito** (card CAIXAS PROGRAMADAS do gerencial) | realizado **com** a hora extra ÷ meta do dia × 100 — fala do PROGRAMADO: a caixa da hora extra atende o lote | % | `v7:calcKPIs` (`efDia`) |
+| **% feito** (card CAIXAS PROGRAMADAS do gerencial; *Eficiência* do resumo do WhatsApp) | realizado **com** a hora extra ÷ meta do dia × 100 — fala do PROGRAMADO: a caixa da hora extra atende o lote | % | `v7:calcKPIs` (`efDia`) |
 | **META ATÉ AGORA** (a linha de apoio) | meta do dia × (minutos **de jornada** já lançados ÷ minutos de jornada do turno). A hora extra fica fora (v7.248.0); a hora em andamento conta só os minutos que já passaram (`minNorm`, v7.265.0 — antes, a hora inteira no 1º lançamento) | cx | `rp-core.js:efNoRitmo` |
 | **RITMO** (o selo e a cor) | caixas **da jornada** ÷ meta até agora × 100 → `NO RITMO` · `ATENÇÃO` · `ABAIXO DO RITMO`. Sem minuto de jornada lançado: `AGUARDANDO`, sem cor | % | `rp-core.js:slRitmo` |
 

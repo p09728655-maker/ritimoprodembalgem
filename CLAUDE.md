@@ -164,7 +164,9 @@ via Google Apps Script (JSONP).
   meta conta a hora extra: % DA META DO DIA e barra (`efDiaJ`), FALTAM
   (`gapJ`), NECESSÁRIO (`necJ`), PROJEÇÃO (`projJ`, a régua do selo; com HE no
   dia, *CAIXAS NA JORNADA*). A hora extra fica na PRODUÇÃO ACUMULADA, separada.
-  O `efDia` (com a HE) ficou só no *% feito* do CAIXAS PROGRAMADAS (programado).
+  O NECESSÁRIO é o da UEP em caixas (falta ÷ minutos de jornada que restam).
+  O `efDia` (com a HE) ficou no *% feito* do CAIXAS PROGRAMADAS (programado) e
+  no resumo do WhatsApp.
 - EFICIÊNCIA na TV (telas A e B; nos gerenciais o selo é a UEP e o % é fato
   no card CAIXAS PROGRAMADAS): o número grande é o % da META DO DIA (só a
   jornada), em tinta; o
