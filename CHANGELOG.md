@@ -11,6 +11,27 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.259.0 · mobile 1.54.0 · rp-core 1.21.0 — 17/11/2026 · a falta para a meta só em UEP
+
+O PPCP viu na TV, às 08:53, *"2.603 caixas · MESA CENTRO SLIM"* no cartão FALTA
+PARA A META: *"isso não está na programação, pode confundir"*.
+
+- O número era a falta em UEP dividida pela UEP por caixa do produto que está
+  rodando agora (2.316 ÷ 0,89), como se a linha fosse rodar só esse produto até
+  a meta. No fim da tarde dava certo; de manhã, não.
+- **Tela G da TV**: o cartão passa a mostrar **só a UEP** (*FALTA PARA A META
+  · 2.316 UEP*), em número maior. Saíram as caixas e o nome do produto.
+- **Gerencial do PC e do celular**: o card PARA A META deixou de dizer *"≈ N cx
+  de PRODUTO"*. O resto do texto fica igual.
+
+**Atenção** (antes → depois):
+- Tela G, FALTA PARA A META: `2.316 UEP` + `2.603 caixas` + `MESA CENTRO SLIM`
+  → `2.316 UEP`.
+- Gerencial (PC e celular), PARA A META: `≈ 659 cx de VOL 1/2 HOME RIPADO
+  ANTARES 1.4 · não cabe até 17:00…` → `não cabe até 17:00…`.
+
+---
+
 ## v7.258.1 — 17/11/2026 · Tela C: correções da revisão
 
 O revisor do projeto conferiu a v7.258.0 depois do merge e achou dois

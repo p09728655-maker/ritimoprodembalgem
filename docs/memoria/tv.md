@@ -218,7 +218,8 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     esperado), RODANDO AGORA (*1 caixa = X UEP*, cor no rótulo), PESO MÉDIO DA
     CAIXA HOJE contra o normal, hora a hora em UEP com a meta da hora.
   - **G = CORRIDA DO DIA**: UEP acumulada × esperado (SVG), **minutos** à
-    frente/atrás, FALTA PARA A META em UEP **e em caixas do produto de agora**,
+    frente/atrás, FALTA PARA A META em UEP ~~**e em caixas do produto de agora**~~
+    (as caixas saíram na v7.259.0 — ver *A FALTA SÓ EM UEP*, abaixo),
     e ~~A META SAI ÀS (mantendo 288 UEP/h)~~ (o cartão saiu na v7.256.0 — ver
     *UM VEREDITO SÓ NA G*, abaixo). Fala em tempo e caixas — é a que se lê sem
     entender UEP.
@@ -458,10 +459,10 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     do cartão na cor do selo, os minutos enormes (`.tvg-min`, até 230 px) e o
     sentido logo abaixo, também grande (`.tvg-dir`, À FRENTE / ATRÁS / NO
     TEMPO). Embaixo, *DO ESPERADO · N UEP*. Sem o selo (o padrão), nada de cor.
-  - **2º cartão**: FALTA PARA A META com **UEP e caixas, os dois no número
+  - **2º cartão**: FALTA PARA A META com ~~**UEP e caixas, os dois no número
     grande** (`.tvg-falta`; em 1920 eles empilham), e o produto sozinho na
-    linha `.tvg-prod.tvu-nome`. JORNADA ENCERRADA e META DO DIA ALCANÇADA no
-    mesmo desenho.
+    linha `.tvg-prod.tvu-nome`~~ (v7.259.0: só a UEP — ver *A FALTA SÓ EM
+    UEP*). JORNADA ENCERRADA e META DO DIA ALCANÇADA no mesmo desenho.
   - **Gráfico**:
     - FEITO 18 (halo 28), ESPERADO 10 tracejado `28 16`.
     - **META 7, LARANJA (`--acc`), com o rótulo laranja (`.tvg-tm`)**: a
@@ -530,6 +531,32 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     âmbar do selo (com ABAIXO DO RITMO, o laranja e o vermelho se aproximam), e
     sem o selo o *META DO DIA 2.761* é o único número em cor. Foi pedido dele
     ("cores bem contrastantes"); trocar só com o print na mão.
+- **A FALTA SÓ EM UEP (v7.259.0 · mobile 1.54.0 · rp-core 1.21.0, PPCP
+  17/11/2026, com o print das 08:53).** Pedido: *"2603 cx slim isso não está
+  na programação, pode confundir"*. Escolhas: *"só a UEP"* e *"alinhar o
+  gerencial"*.
+  - **Causa**: as caixas eram a falta em UEP ÷ a UEP/cx do PRODUTO DE AGORA
+    (2.316 ÷ 0,89 da MESA CENTRO SLIM = 2.603), como se a linha fosse rodar só
+    ele até a meta. No fim da tarde, com o mesmo produto, servia; de manhã era
+    um número que a programação não tem. Vinha desde a v7.138.0 (e a v7.257.0
+    o pôs no número grande).
+  - **Tela G**: o cartão é *FALTA PARA A META · 2.316 UEP*, o número do
+    tamanho dos minutos (`.tvg-falta.so`). Saíram as caixas, o nome do produto
+    e o aviso de produto sem UEP (o cartão não depende mais do produto). O
+    `faltaCx` saiu do `_tvUepMontar`; o `prod` fica (a Tela F usa).
+  - **Gerenciais (PC `_gerUepCards`, celular)**: o PARA A META perdeu o *≈ N
+    cx de PRODUTO*; ficou o *sai às* / *não cabe até 17:00* (o critério de
+    tolerância zero desse texto continua — ver *UM VEREDITO SÓ NA G*). O
+    `faltaCx` saiu do `uepGerMontar` (rp-core 1.21.0); o `m.prod` fica (a
+    análise e a META EM CX da hora usam a UEP/cx do produto de agora).
+  - Medido no Chromium (o print das 08:53 e os outros 10 casos): a escala da G
+    sobe — TV 1920×1080 a 1,00 (era 0,90), 1366×768 0,95–1,00, janela 1920 a
+    0,95; nada corta.
+  - Testes: `tela-uep.test.js` (o cartão só com a UEP, nem caixas nem nome, no
+    print das 15:58 e no das 08:53, sem produto ou sem UEP o mesmo cartão;
+    `faltaCx` fora do modelo) e `relatorios.test.js` (os textos do PC e do
+    celular sem *≈ cx de*; `faltaCx` fora do `uepGerMontar`). Contra o código
+    anterior: 7 + 4 falhas.
 - Mexeu em texto ou tamanho? Renderizar de novo na TV e no gerencial, nas
   duas resoluções, medindo ALTURA e largura.
 

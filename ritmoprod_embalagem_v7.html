@@ -1690,14 +1690,10 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 #tv-slide-g .tvg-min{font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(80px,min(11vw,19.5vh),230px));line-height:.88;color:var(--txt);font-variant-numeric:tabular-nums;white-space:nowrap}
 #tv-slide-g .tvg-dir{font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(44px,min(6vw,10.6vh),124px));line-height:.95;color:var(--txt);letter-spacing:2px;white-space:nowrap}
 #tv-slide-g .tvg-uep{font-family:var(--font-h);font-weight:600;font-size:calc(var(--tvu-k,1)*clamp(20px,min(2.4vw,4.2vh),48px));color:var(--txt2);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-/* o aviso (produto sem UEP, nenhum produto) QUEBRA linha: em nowrap ele era a
-   linha mais larga do cartão e levava a escala da tela inteira a 0,70 (revisão
-   da v7.257.0) */
-#tv-slide-g .tvg-uep.tvg-aviso{white-space:normal}
 #tv-slide-g .tvg-lbl{font-family:var(--font-h);font-weight:600;font-size:calc(var(--tvu-k,1)*clamp(24px,min(2.8vw,4.9vh),56px));letter-spacing:4px;color:var(--txt);white-space:nowrap}
 #tv-slide-g .tvg-falta{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 .5em;font-family:var(--font-h);font-weight:600;color:var(--txt);font-size:calc(var(--tvu-k,1)*clamp(26px,min(3vw,5.3vh),60px))}
 #tv-slide-g .tvg-falta b{font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(64px,min(8.2vw,14.6vh),170px));line-height:.92;margin-right:.08em;font-variant-numeric:tabular-nums}
-#tv-slide-g .tvg-prod{font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(26px,min(3.1vw,5.5vh),62px));color:var(--txt);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tv-slide-g .tvg-falta.so b{font-size:calc(var(--tvu-k,1)*clamp(80px,min(11vw,19.5vh),230px))}   /* só a UEP (v7.259.0): o número do tamanho dos minutos */
 #tv-slide-c .tvb-hero-num{font-size:clamp(90px,11vw,200px)}
 /* .tv-table/td/th têm fonte gigante (feita pra Tela A, 5 colunas curtas) —
    ajusta pro tamanho certo da Tela C (só CÓDIGO/FALTA, conteúdo curto). */
@@ -4203,7 +4199,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.258.1';
+const APP_VER = '7.259.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -13442,14 +13438,15 @@ function _gerUepCards(G, k, velho){
            sub:p?`${fmtP(p.fim/G.meta*100)} da meta · na média de hoje, só jornada`:'sem hora de jornada lançada',
            t:'UEP feita na jornada + a média por minuto × os minutos de jornada que faltam. É projeção, não veredito — quem julga é o selo do 1º card. A hora extra não entra.' });
   const falta=Math.max(0, G.meta-G.feito), m=G.m;
-  const pr=m&&m.prod;
+  // v7.259.0: sem o "≈ N cx de PRODUTO" (a falta ÷ a UEP/cx do produto de
+  // agora, como se só ele fosse rodar até a meta — o PPCP achou na TV 2.603 cx
+  // de MESA CENTRO SLIM que a programação não tinha). A falta é em UEP.
   L.push(falta<=0
     ? { l:'PARA A META', v:'✓', c:'', sub:'meta de UEP do dia batida', t:'' }
     : { l:'PARA A META', v:fmtN(Math.round(falta))+' <small>UEP</small>', c:'',
-        sub:[pr&&m.faltaCx?`≈ ${fmtN(m.faltaCx)} cx de ${_rpEsc(pr.nome)}`:'',
-             m?(m.chega!=null?`sai às ${fromMin(Math.round(m.chega))} no ritmo da meta`:(m.minRest>0?`não cabe até ${CFG.turnoFim||'17:00'} no ritmo da meta`:'jornada encerrada'))
+        sub:[m?(m.chega!=null?`sai às ${fromMin(Math.round(m.chega))} no ritmo da meta`:(m.minRest>0?`não cabe até ${CFG.turnoFim||'17:00'} no ritmo da meta`:'jornada encerrada'))
               :(G.minRest>0?'':'jornada encerrada')].filter(Boolean).join(' · ')||'meta − UEP feita na jornada',
-        t:'Meta de UEP − UEP feita na jornada. Em caixas: a falta ÷ a UEP por caixa do produto que está rodando agora. "Sai às" anda pelos minutos de jornada que restam (o almoço fica fora), no ritmo da meta.' });
+        t:'Meta de UEP − UEP feita na jornada. "Sai às" anda pelos minutos de jornada que restam (o almoço fica fora), no ritmo da meta.' });
   return L;
 }
 // O ATRASO de lotes vencidos, em horas de linha: o MESMO número do card ATRASO
@@ -27658,7 +27655,7 @@ function _tvUepMontar(D, ctx){
   const difUep = feito - esp;
   return {
     meta, porMin, feito, esp, ef, difUep, difMin: difUep / porMin,
-    falta, faltaCx: falta > 0 && uepCx > 0 ? Math.ceil(falta / uepCx) : null,
+    falta,
     acima: Math.max(0, feito - meta),   // meta batida: quanto passou (a Tela G escreve, não conta)
     he: Number(D.he) || 0,
     // "VOL 1/1" é ruído na TV; "VOL 1/3" fica — a UEP é daquele volume. Nome e
@@ -27908,13 +27905,14 @@ function _tvGHtml(m, selo){
     + (noTempo ? '' : '<div class="tvg-uep">DO ESPERADO · ' + fmtN(Math.round(Math.abs(m.difUep))) + ' UEP</div>') + '</div>';
   let card2;
   if(m.falta > 0 && m.minRest > 0){
-    // ⚠ Número nunca na linha do nome (.tvu-nome corta com "…": na v7.256.0 a
-    // UEP ia no fim dela e "KIT 2 MESA CABECEIRA SLEEP" saía "· 2.05…").
+    // Só a UEP (v7.259.0, PPCP 17/11/2026, com o print das 08:53: *"2603 cx
+    // slim isso não está na programação, pode confundir"*). As caixas eram a
+    // falta ÷ a UEP/cx do produto de agora — como se a linha fosse rodar só ele
+    // até a meta: de manhã, 2.603 caixas de MESA CENTRO SLIM que a programação
+    // não tem. A UEP é a única unidade em que a falta é exata; o tempo está no
+    // 1º cartão.
     card2 = '<div class="tvg-lbl">FALTA PARA A META</div>'
-      + '<div class="tvg-falta"><span><b>' + fmtN(Math.round(m.falta)) + '</b>UEP</span>'
-      + (m.faltaCx ? '<span><b>' + fmtN(m.faltaCx) + '</b>caixas</span>' : '') + '</div>'
-      + (m.faltaCx ? '<div class="tvg-prod tvu-nome">' + _rpEsc(m.prod.nome) + '</div>'
-         : '<div class="tvg-uep tvg-aviso">' + (m.prod ? 'PRODUTO DE AGORA SEM UEP NO CADASTRO' : 'NENHUM PRODUTO SELECIONADO NO APP') + '</div>');
+      + '<div class="tvg-falta so"><span><b>' + fmtN(Math.round(m.falta)) + '</b>UEP</span></div>';
   } else if(m.falta > 0){
     card2 = '<div class="tvg-lbl">JORNADA ENCERRADA</div><div class="tvg-falta"><span><b>' + fmtN(Math.round(m.falta)) + '</b>UEP</span></div>'
       + '<div class="tvg-uep">FALTARAM PARA A META</div>';

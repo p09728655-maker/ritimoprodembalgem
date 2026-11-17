@@ -183,7 +183,9 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   ritmo* pelo `difMin` do `_tvUepMontar`) · ⚠ ATRASO · LOTES VENCIDOS em horas
   (`_gerAtrasoKpi` = o `atrasoVencido` do rp-core, o mesmo do celular; sem cadastro,
   as caixas) · RITMO UEP/H e PROJEÇÃO UEP (`_uepAbaProj`, sem cor) · PARA A META
-  (UEP e ≈ caixas do produto de agora; *sai às* ou *não cabe até 17:00*).
+  (UEP ~~e ≈ caixas do produto de agora~~ — saiu na v7.259.0, as caixas eram
+  a falta ÷ a UEP/cx do produto de agora, fora da programação; *sai às* ou
+  *não cabe até 17:00*). Ver *A FALTA SÓ EM UEP* em `tv.md`.
 - **2ª linha (`#kpi-grid2`, `_gerCxCards`)**: CAIXAS · CAIXAS PROGRAMADAS (a META
   DO DIA em caixas; *80,0% feito* como fato) · RITMO CX/H · PONTOS · PESO — **sem
   cor**. Só sem UEP nenhuma (`semUep`: backend ou cadastro) as caixas programadas

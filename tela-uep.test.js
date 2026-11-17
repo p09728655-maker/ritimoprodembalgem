@@ -82,7 +82,9 @@ const M = _tvUepMontar(D, { agoraMin: 902, prod: PROD, cat: CAT, phm: [], pesoNo
 console.log('\n── a conta das Telas F e G sai da montagem da aba UEP ──');
 ok('feito e esperado são os do card (2.270,9 de 1.958,7)', [r1(M.feito), r1(M.esp)], [2270.9, 1958.7]);
 ok('à frente: +312 UEP = 65 min de linha no ritmo da meta', [Math.round(M.difUep), Math.round(M.difMin)], [312, 65]);
-ok('falta 259 UEP = 250 caixas de BANQUETA (1,04) — arredonda PARA CIMA', [Math.round(M.falta), M.faltaCx], [259, 250]);
+// v7.259.0 (PPCP, 17/11/2026, com o print das 08:53: "2603 cx slim isso não está na
+// programação, pode confundir"): a falta é só em UEP — o modelo não traz mais faltaCx
+ok('falta 259 UEP, sem a conversão em caixas do produto de agora', [Math.round(M.falta), 'faltaCx' in M], [259, false]);
 ok('"VOL 1/1" sai do nome na TV; a cor vem pelo nomeComCor do núcleo', M.prod.rot, 'BANQUETA VERSATIL · BRANCO');
 ok('peso da caixa de hoje = UEP de jornada ÷ caixas de jornada (1,53)', _tvF2(M.peso), '1,53');
 ok('jornada 07:00–16:59 e o almoço como buraco (11:00–12:12)', [fromMin(M.ini), fromMin(M.fim), M.gaps], ['07:00', '16:59', [{ de: 660, ate: 732 }]]);
@@ -197,13 +199,13 @@ ok('Tela F traz o produto, a UEP da caixa e o peso contra o normal',
    [true, true, true, true]);
 ok('Tela F: hora em andamento diz "até HH:MM", a futura sai "—"', [F0.includes('até 15:02'), /tvf-col fut">[\s\S]*?class="tvf-val"[^>]*>—</.test(F0)], [true, true]);
 // v7.257.0 (PPCP, 16/11/2026, a maquete "menos informação, mais visibilidade"):
-// o selo, os minutos enormes e o sentido por extenso; a falta em UEP E em
-// caixas, as duas no número grande, e o produto; a legenda com a META.
-ok('Tela G: minutos e sentido, a falta em UEP e em caixas, o produto, a legenda com a META',
+// o selo, os minutos enormes e o sentido por extenso; a falta em UEP no número
+// grande (v7.259.0: sem as caixas e sem o produto); a legenda com a META.
+ok('Tela G: minutos e sentido, a falta SÓ em UEP (sem caixas, sem produto), a legenda com a META',
    [G0.includes('<div class="tvg-min">1h05</div><div class="tvg-dir">À FRENTE</div>'), G0.includes('<div class="tvg-uep">DO ESPERADO · 312 UEP</div>'),
-    G0.includes('<span><b>259</b>UEP</span><span><b>250</b>caixas</span>'), G0.includes('<div class="tvg-prod tvu-nome">BANQUETA VERSATIL</div>'),
+    G0.includes('<div class="tvg-falta so"><span><b>259</b>UEP</span></div>'), /caixas|BANQUETA/.test(G0.replace(/<svg[\s\S]*<\/svg>/, '')),
     G0.includes('<i class="tvg-sw m"></i>META DO DIA')],
-   [true, true, true, true, true]);
+   [true, true, true, false, true]);
 ok('Tela G sem o rodapé "1 UEP = 1 caixa de …" (PPCP: "pode tirar"); a hora extra continua, fora da meta',
    [/1 UEP = 1 caixa/.test(G0 + G1), /tvu-rod/.test(G0), _tvGHtml(Object.assign({}, M, { he: 87.4 }), false).includes('+87 UEP em hora extra hoje — fora da meta')],
    [false, false, true]);
@@ -221,11 +223,18 @@ ok('sem projeção no gráfico: nenhum pontilhado (0 16) nem horário de meta, e
   const M1558 = _tvUepMontar(D1558, { agoraMin: 958, prod: PEN, cat: CATP });
   const M0920 = _tvUepMontar(montarD(560, { '07:00': 300, '08:00': 290, '09:00': 120 }, { '07:00': 150, '08:00': 145, '09:00': 60 }), { agoraMin: 560, prod: PEN, cat: CATP });
   const G1558 = _tvGHtml(M1558, true);
-  ok('o print das 15:58: −12 UEP, NO RITMO, 2 min ATRÁS, 332 UEP e 156 caixas de PENTEADEIRA',
+  ok('o print das 15:58: −12 UEP, NO RITMO, 2 min ATRÁS, faltam 332 UEP (sem as 156 caixas de PENTEADEIRA desde a v7.259.0)',
      [Math.round(M1558.difUep), slRitmo(M1558.ef), G1558.includes('<span class="tvg-selo ok">NO RITMO</span>'),
       G1558.includes('<div class="tvg-min">2 min</div><div class="tvg-dir">ATRÁS</div>'),
-      G1558.includes('<span><b>332</b>UEP</span><span><b>156</b>caixas</span>'), G1558.includes('>PENTEADEIRA PRINCESA<')],
-     [-12, 'NO RITMO', true, true, true, true]);
+      G1558.includes('<div class="tvg-falta so"><span><b>332</b>UEP</span></div>'), /caixas|PENTEADEIRA/.test(G1558.replace(/<svg[\s\S]*<\/svg>/, ''))],
+     [-12, 'NO RITMO', true, true, true, false]);
+  // o print das 08:53 de 17/11: 2.316 UEP ÷ 0,89 da MESA CENTRO SLIM = "2.603
+  // caixas" que a programação não tinha — o cartão diz só a UEP
+  { const S0853 = _tvUepMontar(montarD(533, { '07:00': 300, '08:00': 145 }, { '07:00': 330, '08:00': 160 }),
+                               { agoraMin: 533, prod: { cod: '501130010', desc: 'VOL 1/1 MESA CENTRO SLIM', cor: 'BRANCO' }, cat: [{ codigo: '501.130.010', uep: 0.89 }] });
+    ok('08:53: a falta só em UEP; nenhuma "caixas" nem MESA CENTRO SLIM no cartão',
+       [/<div class="tvg-falta so"><span><b>[\d.]+<\/b>UEP<\/span><\/div>/.test(_tvGHtml(S0853, true)), /caixas|SLIM/.test(_tvGHtml(S0853, true).replace(/<svg[\s\S]*<\/svg>/, ''))],
+       [true, false]); }
   // A variante A (PPCP, 16/11/2026): o veredito é o selo de sempre, o sentido
   // é FATO (À FRENTE / ATRÁS). ADIANTADO / ATRASADO por minutos fixos diria
   // ATRASADO em vermelho com o gerencial em NO RITMO (16:00, 17 min, 96,3%).
@@ -235,17 +244,13 @@ ok('sem projeção no gráfico: nenhum pontilhado (0 16) nem horário de meta, e
      [M1558, M0920, M, Mt, fimDia, batida].map(mm => [false, true].map(s => /SAI ÀS|NÃO SAI|NÃO CABE|tvu-card[^]*tvu-card[^]*tvu-card/i.test(_tvGHtml(mm, s)))).flat()
        .filter(Boolean).length, 0);
   ok('o sentido vai por extenso, nunca por sinal ("−2 min" ao lado do NO RITMO)', /[−+]\d/.test(G1558.replace(/<svg[\s\S]*<\/svg>/, '')), false);
-  // Revisão de 16/11/2026 (v7.256.1): na v7.256.0 a UEP ia no FIM da linha do
-  // nome, que corta com "…" — "KIT 2 MESA CABECEIRA SLEEP · 2.05…" na TV. E a
-  // linha "feitas · esperadas" tinha saído: na janela pequena o gráfico pode
-  // não pôr um dos dois, e o número sumia da tela.
+  // (v7.256.1 → v7.259.0: o nome do produto, que cortava com "…", saiu do
+  // cartão junto com as caixas — não há mais linha .tvu-nome na G.)
   const MK = _tvUepMontar(montarD(560, { '07:00': 300, '08:00': 290, '09:00': 120 }, { '07:00': 150, '08:00': 145, '09:00': 60 }),
                           { agoraMin: 560, prod: { cod: '502200001', desc: 'VOL 1/1 KIT 2 MESA CABECEIRA SLEEP', cor: 'BRANCO' }, cat: [{ codigo: '502.200.001', uep: 1.3 }] });
   const GK = _tvGHtml(MK, true);
-  ok('nome comprido: a linha que corta (.tvu-nome) só tem o nome — nenhum número nela',
-     [...GK.matchAll(/class="[^"]*tvu-nome[^"]*">([^<]*)</g)].map(x => /\d{2}|UEP/.test(x[1].replace('KIT 2', ''))), [false]);
-  ok('a falta em UEP e em caixas no número grande, fora da linha que corta',
-     GK.includes('<div class="tvg-falta"><span><b>' + fmtN(Math.round(MK.falta)) + '</b>UEP</span><span><b>' + fmtN(MK.faltaCx) + '</b>caixas</span></div>'), true);
+  ok('nome comprido: não aparece mais na G (nenhuma linha .tvu-nome) e a falta é só a UEP',
+     [/tvu-nome/.test(GK), GK.includes('<div class="tvg-falta so"><span><b>' + fmtN(Math.round(MK.falta)) + '</b>UEP</span></div>')], [false, true]);
   // v7.257.0: "feitas · esperadas" e a UEP/cx saíram do cartão (PPCP, "apresentar
   // somente UEP restante, caixas e o produto"); a rede do FEITO passou para o
   // gráfico — sem lugar livre, ele vai encostado numa curva (testado abaixo).
@@ -374,10 +379,13 @@ console.log('\n── o 2º cartão e o NO TEMPO (revisão da v7.257.0) ──')
   ok('meta batida: ALCANÇADA e quanto passou, que vem PRONTO do modelo (acima), sem sinal',
      [batida.acima > 0, g(batida).includes('<b>ALCANÇADA</b>'), g(batida).includes('>' + fmtN(Math.round(batida.acima)) + ' UEP ACIMA DA META<'), /\+\d/.test(g(batida).replace(/<svg[\s\S]*<\/svg>/, ''))],
      [true, true, true, false]);
-  ok('sem UEP do produto de agora: só a UEP grande, e o aviso QUEBRA linha (em nowrap levava a tela a 0,70)',
-     [semCad.faltaCx, g(semCad).includes('<span><b>' + fmtN(Math.round(semCad.falta)) + '</b>UEP</span></div>'), g(semCad).includes('<div class="tvg-uep tvg-aviso">PRODUTO DE AGORA SEM UEP NO CADASTRO</div>'),
-      g(semProd).includes('<div class="tvg-uep tvg-aviso">NENHUM PRODUTO SELECIONADO NO APP</div>'), /#tv-slide-g \.tvg-uep\.tvg-aviso\{white-space:normal\}/.test(html)],
-     [null, true, true, true, true]);
+  // v7.259.0: o cartão não depende mais do produto — sem UEP no cadastro ou
+  // sem produto no app, o MESMO cartão (o aviso da v7.257.1 saiu junto)
+  ok('sem UEP do produto de agora ou sem produto: o mesmo cartão, só a UEP, sem aviso',
+     [g(semCad).includes('<div class="tvg-falta so"><span><b>' + fmtN(Math.round(semCad.falta)) + '</b>UEP</span></div>'),
+      g(semProd).includes('<div class="tvg-falta so"><span><b>' + fmtN(Math.round(semProd.falta)) + '</b>UEP</span></div>'),
+      /tvg-aviso|SEM UEP NO CADASTRO|NENHUM PRODUTO/.test(g(semCad) + g(semProd))],
+     [true, true, false]);
   ok('NO TEMPO (menos de meio minuto): "0 min" e NO TEMPO, sem a linha da distância',
      [Math.abs(noTempo.difMin) < 0.5, g(noTempo).includes('<div class="tvg-min">0 min</div><div class="tvg-dir">NO TEMPO</div>'), /DO ESPERADO ·/.test(g(noTempo))], [true, true, false]);
   ok('desenho sem conta: o ACIMA DA META vem do modelo', /m\.feito - m\.meta/.test(pegaJs('function _tvGHtml(')), false);
@@ -398,7 +406,7 @@ ok('o encaixe reduz a escala até TV_UEP_K_MIN e só refaz quando o tamanho muda
    [/TV_UEP_K_MIN/.test(CABE), /_tvuTam === tam/.test(CABE), /--tvu-k/.test(CABE)], [true, true, true]);
 ok('mede a ALTURA (scrollHeight) — o teste da v7.138.0 só via a largura',
    /scrollHeight > e\.clientHeight/.test(pegaJs('function _tvUepCorta(')), true);
-ok('nome de produto pode cortar com "…" sem encolher a tela', /tvu-nome/.test(pegaJs('function _tvUepCorta(')) && /tvu-prod tvu-nome/.test(F0) && /tvg-prod tvu-nome/.test(G0), true);
+ok('nome de produto pode cortar com "…" sem encolher a tela (Tela F; a G não mostra mais o produto)', /tvu-nome/.test(pegaJs('function _tvUepCorta(')) && /tvu-prod tvu-nome/.test(F0), true);
 const CICLO = JS.slice(JS.indexOf('function _sincSlideUep('), JS.indexOf('function _sincSlideUep(') + 9000);
 ok('o ciclo mede depois de desenhar e depois de MOSTRAR (escondida não tem altura)',
    [/innerHTML = t === 'f'[\s\S]{0,120}_tvUepCabe\(/.test(CICLO), /slides\[t\]\.style\.display = 'flex'; _tvUepCabe\(slides\[t\], true\)/.test(JS)], [true, true]);
