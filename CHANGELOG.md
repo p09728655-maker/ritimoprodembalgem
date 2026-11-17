@@ -11,6 +11,63 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.265.0 · mobile 1.59.0 — 17/11/2026 · TV sem a hora extra na meta, e o selo pelos minutos
+
+O PPCP, com a TV na tela às 16:26: *"108% abaixo do ritmo?"*. Depois: *"tem
+que tirar hora extra"*, e a tela continua em caixas.
+
+O dia tinha 273 cx de hora extra (05:00–07:00) e 1.188 na jornada, com meta de
+1.350. A TV mostrava duas réguas lado a lado:
+- o **% DA META DO DIA** (108,2%), a barra e a **PROJEÇÃO** (1.461) contavam a
+  hora extra;
+- o **selo** contava só a jornada e cobrava a hora 16:00 **inteira**, com 37
+  minutos ainda por vir: *"1.188 DE 1.350 CX ESPERADAS"*, ABAIXO DO RITMO.
+
+O que muda:
+- **Na TV, nada do que se compara com a meta conta a hora extra**, porque
+  hora extra não tem meta:
+  - o % DA META DO DIA e a barra;
+  - o FALTAM e o NECESSÁRIO;
+  - a PROJEÇÃO FINAL.
+- **A hora extra continua na PRODUÇÃO ACUMULADA**, separada: *1.461 CAIXAS ·
+  1.188 NORMAL + 273 EXTRA*.
+- **O selo (TV e app) conta a hora em andamento pelos minutos que já
+  passaram**, a mesma régua da UEP desde a v7.114.0. Antes ele cobrava a hora
+  inteira assim que ela recebia o 1º lançamento.
+- **A PROJEÇÃO FINAL usa a régua do selo**: o que a jornada fez, levado até o
+  fim da jornada pelo mesmo ritmo.
+  - Projeção ÷ meta dá sempre o % do selo, então as duas não se contradizem.
+  - Ela também deixou de tratar como encerrada a hora em andamento.
+- **Com hora extra no dia**, a PROJEÇÃO e o FALTAM dizem *CAIXAS NA JORNADA*.
+  Depois da madrugada a projeção da jornada fica menor que a produção
+  acumulada, e sem essas palavras pareceria erro.
+
+**Atenção** (antes → depois), o caso de 17/11 às 16:22:
+
+| Na TV | Antes | Depois |
+|---|---|---|
+| % DA META DO DIA | 108,2% | **88,0%** (1.188 ÷ 1.350) |
+| barra | cheia, vermelha | 18 de 20 segmentos, âmbar |
+| linha de apoio | 1.188 DE **1.350** CX ESPERADAS ATÉ AGORA | 1.188 DE **1.255** CX ESPERADAS ATÉ AGORA |
+| STATUS | ABAIXO DO RITMO | **ATENÇÃO** (94,6%) |
+| PROJEÇÃO FINAL | 1.461 CAIXAS | **1.278 CAIXAS NA JORNADA** |
+| FALTAM | 0 (META BATIDA) | **162** |
+| PRODUÇÃO ACUMULADA | 1.461 · 1.188 NORMAL + 273 EXTRA | igual |
+
+- Num **dia sem hora extra**, o % e o FALTAM não mudam.
+- O selo e a projeção mudam só enquanto uma hora de jornada está em andamento
+  e já tem lançamento. Daí em diante eles sobem um pouco: antes cobravam a
+  hora inteira.
+- No celular, o selo das CAIXAS PROGRAMADAS (o que aparece sem a UEP do dia)
+  segue a mesma régua nova.
+- O gerencial não muda:
+  - o *% feito* do card CAIXAS PROGRAMADAS continua com a hora extra, porque
+    fala do programado e a caixa da hora extra atende o lote;
+  - o resumo do WhatsApp e a análise em caixas também continuam como estavam.
+- O fim de semana não muda: tudo é hora extra.
+
+---
+
 ## v7.264.0 · mobile 1.58.0 · rp-core 1.24.0 · `.gs` v5.72 — 17/11/2026 · a cor do produto nos itens do lote interno
 
 O PPCP, com os itens do 212/26 abertos, perguntou: *"consegue trazer a cor do

@@ -163,6 +163,59 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   contra a meta/hora digitada na `HORA_A_HORA`. O painel agora acusa a diferença
   em vez de escondê-la atrás de um verde.
 
+## A TV SEM A HORA EXTRA (v7.265.0 · mobile 1.59.0, 17/11/2026)
+- **O caso.** 17/11/2026, 16:22, dia com madrugada (C3 = 5): 273 cx de hora
+  extra, 1.188 na jornada, meta 1.350, a hora 16:00 já com lançamento. A Tela B
+  mostrava **108,2%** DA META DO DIA (1.461 ÷ 1.350), a barra cheia (pintada de
+  vermelho pela cor do selo), PROJEÇÃO FINAL **1.461** contra a meta de 1.350 e,
+  do lado, **ABAIXO DO RITMO** com *"1.188 DE 1.350 CX ESPERADAS ATÉ AGORA"*.
+  PPCP: *"108% abaixo do ritmo?"* → *"tem que ver as réguas"* → *"essa tela
+  está em cx"* → *"tem que tirar hora extra"* → *"nessa apresentação ainda
+  caixa"*.
+- **Eram duas réguas, e uma delas torta:**
+  - o % e a projeção contavam a hora extra; o selo, não (v7.248.0). Hora extra
+    não tem meta: a HE "pagava" uma meta que não é dela;
+  - o selo cobrava a **hora em andamento inteira** assim que ela recebia o 1º
+    lançamento (às 16:22, os 59 min da hora 16:00 — o esperado já era o dia
+    todo). A régua da UEP divide pelos minutos que passaram desde a v7.114.0
+    (`minSlotDecorrido`); o selo em caixas tinha ficado na régua antiga, no PC
+    e no celular.
+- **A regra agora:**
+  - **o selo** (PC e celular): `efNoRitmo(realNormal, meta, minNorm, minTurno)` —
+    os mesmos minutos da UEP (`minNorm`). No caso: 1.188 de **1.255** esperadas,
+    94,6%, **ATENÇÃO** (era ABAIXO DO RITMO);
+  - **na TV, nada do que se compara com a meta conta a hora extra**: o % DA
+    META DO DIA e a barra (`efDiaJ` = caixas da jornada ÷ meta: **88,0%**), o
+    FALTAM e o banner (`gapJ`: 162), o NECESSÁRIO (`necJ`: as horas de jornada
+    sem lançamento) e a PROJEÇÃO (`projJ`);
+  - **a PROJEÇÃO da TV é a régua do selo**: caixas da jornada × minutos de
+    jornada do turno ÷ minutos de jornada decorridos (1.188 × 527 ÷ 490 =
+    **1.278**). Projeção ÷ meta é sempre o % do selo — as duas não se contradizem.
+    Sem minuto de jornada (só a madrugada), "—". Ela também deixou de dar a
+    hora em andamento por encerrada (antes, às 16:22, projeção = realizado);
+  - com hora extra no dia, a unidade da PROJEÇÃO e do FALTAM diz **CAIXAS NA
+    JORNADA** (`tvb-proj-unit`, `tvb-falta-unit`; Tela A: *CX NA JORNADA*):
+    depois da madrugada a projeção da jornada fica menor que a PRODUÇÃO
+    ACUMULADA, e sem a palavra pareceria erro;
+  - a **PRODUÇÃO ACUMULADA** segue com tudo, separada (1.461 · 1.188 NORMAL +
+    273 EXTRA): a hora extra é fato, só não tem meta;
+  - **fica como estava**: o fim de semana (tudo é hora extra; a barra contra o
+    programado e a projeção de sempre), o RITMO ATUAL (todas as horas), e fora da
+    TV o `efDia`, o `gap`, o `nec` e o `proj` (o card CAIXAS PROGRAMADAS fala do
+    PROGRAMADO, e a caixa da hora extra atende o lote; o resumo do WhatsApp e a
+    análise em caixas do gerencial não foram mexidos).
+- **Medido no Chromium** (Tela B, o caso de 17/11, TV 1920×1080 e 1366×768,
+  com os cartões da fábrica e com o padrão): *CAIXAS NA JORNADA* numa linha só
+  (29 px a 1920, 22 px a 1366 — a mesma altura de *CAIXAS*), sem estouro de
+  largura; a coluna da direita ficou da mesma largura do dia sem hora extra
+  (com o 108,2% ela alargava 27 px a 1920). Com o padrão de cartões (com FALTAM
+  e PESO), a coluna passa do pé da tela (1.056 de 1.040 a 1920; 829 de 728 a
+  1366) — **igual na v7.264.0**, não é desta mudança; com os cartões da foto da
+  fábrica (META, PROJEÇÃO, %, STATUS) cabe.
+- `relatorios.test.js` roda o `calcKPIs` e o `renderTV` REAIS com o caso de
+  17/11 (PC e celular); desfazer qualquer uma das correções (hora cheia no selo
+  do PC ou do celular, % / barra / FALTAM com a hora extra) derruba um teste.
+
 ## Dia PASSADO no gerencial: hora extra não tem meta, e a meta não se dilui
 - A `HISTORICO_HORA` guarda **só `data · hora · realizado`** — sem meta e sem
   marca de hora extra. A tela repartia a meta do dia entre **todas** as horas
@@ -512,12 +565,15 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     ESPERADAS"* da TV conta só as normais (o NORMAL da linha das caixas da Tela
     B), sem a palavra NORMAIS: medido no Chromium, ela alargava a coluna da
     direita da Tela B em até 65 px a 1366 (e *"A JORNADA COMEÇA ÀS"*, 100 px —
-    ficou *"JORNADA ÀS 07:00"*, a mesma largura de antes). O % DA META DO DIA
+    ficou *"JORNADA ÀS 07:00"*, a mesma largura de antes). ~~O % DA META DO DIA
     (`efDia`) continua com
-    todas as caixas: a hora extra conta para a meta do dia como sempre contou.
-    ⚠ O RITMO ATUAL (`k.ritmo`) e a projeção ainda são de todas as horas
-    lançadas — a cascata do 🖨 do dia compara esse ritmo com o necessário só da
-    jornada num dia com madrugada (não mexido).
+    todas as caixas: a hora extra conta para a meta do dia como sempre contou.~~
+    — **revogado na TV na v7.265.0** (ver *A TV SEM A HORA EXTRA*, abaixo); o
+    `efDia` ficou só no *% feito* do card CAIXAS PROGRAMADAS, que é do programado.
+    ⚠ O RITMO ATUAL (`k.ritmo`) ainda é de todas as horas lançadas, e a
+    projeção também, fora da TV (gerencial, resumo do WhatsApp) — a cascata do 🖨
+    do dia compara esse ritmo com o necessário só da jornada num dia com
+    madrugada (não mexido).
   - **A parada de sábado vale o mesmo em toda tela**: `_metaByDayPar(dias)`
     (PC) é a meta por dia ÚNICA dos que valoram paradas (aba PARADAS,
     `_pgBuscarDados` → GESTÃO DE PERDAS, SIMULADOR e relatórios, cascata do

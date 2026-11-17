@@ -2961,7 +2961,7 @@ if (_v7Instalado()) _v7EscondeBotao();
         <div class="tv-mini-kpi">
           <div class="tv-kpi-lbl">PROJEÇÃO</div>
           <div class="tv-mini-val" style="color:var(--txt2)" id="tv-proj">—</div>
-          <div class="tv-mini-unit">CX FINAL</div>
+          <div class="tv-mini-unit" id="tv-proj-unit">CX FINAL</div>
         </div>
       </div>
     </div>
@@ -3053,7 +3053,7 @@ if (_v7Instalado()) _v7EscondeBotao();
           <div class="tvb2-info">
             <div class="tvb2-lbl">FALTAM</div>
             <div class="tvb2-val warn" id="tvb-falta">—</div>
-            <div class="tvb2-unit">CAIXAS</div>
+            <div class="tvb2-unit" id="tvb-falta-unit">CAIXAS</div>
           </div>
           <svg class="tvb2-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="m9 14 2 2 4-4"/></svg>
         </div>
@@ -3062,7 +3062,7 @@ if (_v7Instalado()) _v7EscondeBotao();
           <div class="tvb2-info">
             <div class="tvb2-lbl">PROJEÇÃO FINAL</div>
             <div class="tvb2-val" id="tvb-proj">—</div>
-            <div class="tvb2-unit">CAIXAS</div>
+            <div class="tvb2-unit" id="tvb-proj-unit">CAIXAS</div>
           </div>
           <svg class="tvb2-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17 9 11l4 4 8-8"/><path d="M16 6h5v5"/></svg>
         </div>
@@ -4242,7 +4242,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.264.0';
+const APP_VER = '7.265.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -5800,18 +5800,41 @@ function calcKPIs(dh){
      as caixas dela no "feito". É a régua do selo da UEP e do relatório
      (_relMetaHE: verde só quando a jornada normal sozinha bateu). Contando a
      madrugada, às 06:45 a TV dizia ABAIXO DO RITMO antes de a jornada começar,
-     ao lado das linhas "HORA EXTRA · SEM META". A hora corrente segue contada
-     inteira (a régua de sempre do selo em caixas). Sem minuto de jornada lançado,
-     metaAteAgora é 0 e quem desenha mostra AGUARDANDO, nunca ABAIXO. */
+     ao lado das linhas "HORA EXTRA · SEM META". Sem minuto de jornada lançado,
+     metaAteAgora é 0 e quem desenha mostra AGUARDANDO, nunca ABAIXO.
+     ⚠ A HORA EM ANDAMENTO conta só os minutos que já passaram (`minNorm`, a
+     régua da UEP desde a v7.114.0; aqui desde a v7.265.0). Antes o selo cobrava
+     a hora inteira assim que ela recebia o 1º lançamento. Medido em 17/11/2026,
+     16:22: "1.188 DE 1.350 CX ESPERADAS ATÉ AGORA" = 88,0%, ABAIXO DO RITMO,
+     com 37 min de jornada pela frente. Na régua da UEP: 1.255 esperadas, 94,6%,
+     ATENÇÃO. */
   const _slHE=sl=>{ const reg=allHoje.find(d=>d.horario===sl.inicio); return !!((reg&&reg.he)||sl.he); };
   const minTurno=effSlots.reduce((soma,sl)=>soma+(_slHE(sl)?0:(sl.min||60)),0);
-  const minRodadoJ=effSlots.reduce((soma,sl)=>{
-    const reg=allHoje.find(d=>d.horario===sl.inicio);
-    return soma + ((reg&&reg.producaoHora!=null&&!_slHE(sl)) ? (sl.min||60) : 0);
-  },0);
-  const {metaAteAgora, ef:efRitmo}=efNoRitmo(realNormal, meta, minRodadoJ, minTurno);
+  const {metaAteAgora, ef:efRitmo}=efNoRitmo(realNormal, meta, minNorm, minTurno);
 
-  return{real,realHE,realNormal,nHE,meta,ef,efDia,efRitmo,metaAteAgora,gap,ritmo,proj,nec,melhor,pior,nNorm,hProd,minNorm,metaH,metaHE,slotsRest,n,slots:effSlots,allHoje,atrasoHoras};
+  /* ── A TV SEM A HORA EXTRA (v7.265.0, PPCP 17/11/2026: "108% abaixo do
+     ritmo?" → "tem que tirar hora extra") ─────────────────────────────────────
+     A TV mostrava 108,2% DA META DO DIA (1.461 ÷ 1.350, com as 273 cx da
+     madrugada), a barra cheia, a PROJEÇÃO 1.461 contra meta de 1.350 e, do lado,
+     o selo ABAIXO DO RITMO (só a jornada). Hora extra não tem meta, então nada
+     do que a TV compara com a meta conta as caixas dela: % e barra, FALTAM,
+     NECESSÁRIO e PROJEÇÃO. As caixas de hora extra continuam na PRODUÇÃO
+     ACUMULADA, separadas (NORMAL + EXTRA). O `efDia`, o `gap`, o `nec` e o `proj`
+     de cima ficam como estão: o card CAIXAS PROGRAMADAS do gerencial fala do
+     PROGRAMADO, e a caixa embalada na hora extra atende o lote.
+     A projeção é a da régua do selo (minutos de jornada, hora em andamento pelo
+     que já passou): projJ ÷ meta é sempre o % do selo, as duas não se
+     contradizem. Sem minuto de jornada, não há projeção (null → "—"). */
+  const efDiaJ=meta>0?(realNormal/meta)*100:0;
+  const gapJ=meta-realNormal;
+  const projJ=minNorm>0?realNormal*minTurno/minNorm:null;
+  const slotsRestJ=effSlots.filter(sl=>{
+    const reg=allHoje.find(d=>d.horario===sl.inicio);
+    return !_slHE(sl) && !(reg&&reg.producaoHora!=null);
+  }).length;
+  const necJ=slotsRestJ>0?Math.max(0,Math.ceil(gapJ/slotsRestJ)):0;
+
+  return{real,realHE,realNormal,nHE,meta,ef,efDia,efRitmo,metaAteAgora,gap,ritmo,proj,nec,efDiaJ,gapJ,projJ,slotsRestJ,necJ,melhor,pior,nNorm,hProd,minNorm,metaH,metaHE,slotsRest,n,slots:effSlots,allHoje,atrasoHoras};
 }
 function sl(ef){ return ef>=96?'DENTRO DA META':ef>=90?'ATENÇÃO':'ABAIXO DO PLANEJADO'; }
 
@@ -17930,8 +17953,10 @@ function renderTV(){
      28,9%) e sai em TINTA, sem cor de status — é a mesma regra do relatório
      semanal. Quem julga é o selo, e ele fala de RITMO, não de meta. A conta do
      ritmo (efNoRitmo) não mudou: ela pinta o selo e a barra. */
+  // Só a JORNADA (v7.265.0): hora extra não tem meta. Antes era o `efDia`, com
+  // as caixas da hora extra — 108,2% ao lado de ABAIXO DO RITMO (17/11/2026).
   const ee=document.getElementById('tv-ef');
-  ee.textContent = k.meta>0 && !fds ? fmtP(k.efDia) : '—';
+  ee.textContent = k.meta>0 && !fds ? fmtP(k.efDiaJ) : '—';
   ee.className='tv-ef-val';
   const es=document.getElementById('tv-ef-sub');
   // o ritmo é só da jornada: as caixas de hora extra ficam fora do "feito" — o
@@ -17944,9 +17969,10 @@ function renderTV(){
   const be=document.getElementById('tv-badge');
   be.textContent='● '+(fds?'TODO HORA EXTRA':julga?slRitmo(k.efRitmo):'AGUARDANDO'); be.className=`tv-status-badge ${s}`;
 
-  // no fim de semana a barra é o feito contra o PROGRAMADO do dia (sem meta, sem o atraso)
+  // no fim de semana a barra é o feito contra o PROGRAMADO do dia (sem meta, sem o atraso);
+  // no dia útil, a jornada contra a meta — o mesmo número do % ao lado (v7.265.0)
   const prFds=fds?_progHojeCx():0, baseBar=fds?prFds:k.meta;
-  const pct=baseBar>0?Math.min(100,(k.real/baseBar)*100):0;
+  const pct=baseBar>0?Math.min(100,((fds?k.real:k.realNormal)/baseBar)*100):0;
   const fill=document.getElementById('tv-prog-fill');
   fill.style.width=pct+'%';
   fill.style.background=s==='ok'?'var(--ok)':s==='warn'?'var(--warn)':s==='neu'?'var(--txt2)':'var(--red)';
@@ -17962,20 +17988,30 @@ function renderTV(){
   if(fds){
     necEl.textContent='—';
     if(necUnit) necUnit.textContent='SEM META';
-  }else if(k.slotsRest>0){
-    necEl.textContent=fmtN(k.nec);
+  }else if(k.slotsRestJ>0){
+    // o que a JORNADA ainda precisa, nas horas de jornada sem lançamento (v7.265.0)
+    necEl.textContent=fmtN(k.necJ);
     if(necUnit) necUnit.textContent='CX/HORA';
   }else{
-    const falta=Math.max(0,Math.round(k.gap));
+    const falta=Math.max(0,Math.round(k.gapJ));
     necEl.textContent=falta>0?fmtN(falta):'✓';
     if(necUnit) necUnit.textContent=falta>0?'CX P/ META':'META OK';
   }
-  document.getElementById('tv-proj').textContent=fmtN(k.proj);
+  // a projeção da JORNADA (v7.265.0): ao lado da PRODUÇÃO ACUMULADA com a hora
+  // extra ela fica menor que o acumulado — por isso a unidade diz NA JORNADA
+  // nos dias com hora extra. No fim de semana, a de sempre (tudo é hora extra).
+  document.getElementById('tv-proj').textContent = fds ? fmtN(k.proj)
+    : k.projJ!=null ? fmtN(Math.round(k.projJ)) : '—';
+  const naJorn=temHE&&!fds;
+  [['tv-proj-unit', naJorn?'CX NA JORNADA':'CX FINAL'], ['tvb-proj-unit', naJorn?'CAIXAS NA JORNADA':'CAIXAS'],
+   ['tvb-falta-unit', naJorn?'CAIXAS NA JORNADA':'CAIXAS']].forEach(([id,t])=>{
+    const el=document.getElementById(id); if(el) el.textContent=t;
+  });
   // Banner do que falta para bater a meta do dia.
   // Durante o turno: "FALTAM" (presente). Depois do turno encerrado: "FALTARAM".
   const fe=document.getElementById('tv-falta');
   if(fe){
-    const falta=Math.round(k.gap);
+    const falta=Math.round(k.gapJ);
     const ultimo=(k.slots&&k.slots.length)?k.slots[k.slots.length-1]:null;
     const fimTurno=(ultimo&&ultimo.fim)?toMin(ultimo.fim):toMin(CFG.turnoFim);
     const ag=new Date(); const nmAg=ag.getHours()*60+ag.getMinutes();

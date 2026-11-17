@@ -157,11 +157,17 @@ via Google Apps Script (JSONP).
 - ⚠ A janela `HE_JORNADA_*` do `.gs` repete o turno do ⚙: mudou o turno na
   tela, mude as duas constantes.
 - Hora extra não tem meta em dia nenhum (tabela, TV, celular). O selo de ritmo
-  em caixas julga só a jornada (`efNoRitmo(realNormal, …)`; sem minuto de
-  jornada lançado, AGUARDANDO); o % DA META DO DIA (`efDia`) conta todas as
-  caixas.
+  em caixas julga só a jornada (`efNoRitmo(realNormal, meta, minNorm, …)`: a
+  hora em andamento pelos minutos que já passaram, a régua da UEP — v7.265.0;
+  sem minuto de jornada lançado, AGUARDANDO).
+- Na TV (v7.265.0, *"tem que tirar hora extra"*), nada do que se compara com a
+  meta conta a hora extra: % DA META DO DIA e barra (`efDiaJ`), FALTAM
+  (`gapJ`), NECESSÁRIO (`necJ`), PROJEÇÃO (`projJ`, a régua do selo; com HE no
+  dia, *CAIXAS NA JORNADA*). A hora extra fica na PRODUÇÃO ACUMULADA, separada.
+  O `efDia` (com a HE) ficou só no *% feito* do CAIXAS PROGRAMADAS (programado).
 - EFICIÊNCIA na TV (telas A e B; nos gerenciais o selo é a UEP e o % é fato
-  no card CAIXAS PROGRAMADAS): o número grande é o % da META DO DIA, em tinta; o
+  no card CAIXAS PROGRAMADAS): o número grande é o % da META DO DIA (só a
+  jornada), em tinta; o
   veredito é o selo (`slRitmo`: NO RITMO · ATENÇÃO · ABAIXO DO RITMO), pela `efNoRitmo` em
   minutos e só com hora lançada. A projeção não julga.
 - Fim de semana no painel: `histDiaFds` relê as linhas antigas, `uepDiaMeta` 0,

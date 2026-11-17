@@ -3012,8 +3012,11 @@ const _v7 = fs.readFileSync(path.join(__dirname, 'ritmoprod_embalagem_v7.html'),
 // e dois sentidos de META na mesma tela ("essa eficiência está confundindo as
 // pessoas"). Agora o NÚMERO é o fato que qualquer um confere de cabeça (780 de
 // 2.700 = 28,9%) e o VEREDITO é o selo, que fala de RITMO.
-ok('TV: o número grande é o % da META DO DIA',
-   /tv-ef'\);\s*\n\s*ee\.textContent = k\.meta>0 && !fds \? fmtP\(k\.efDia\)/.test(_v7), true);
+// v7.265.0 (PPCP, 17/11/2026: "108% abaixo do ritmo?" → "tem que tirar hora
+// extra"): o % é só da JORNADA — com as caixas da madrugada ele dizia 108,2% ao
+// lado de ABAIXO DO RITMO. A conta de verdade está em "hora extra sem meta: a CONTA".
+ok('TV: o número grande é o % da META DO DIA, só da jornada (efDiaJ)',
+   /tv-ef'\);\s*\n\s*ee\.textContent = k\.meta>0 && !fds \? fmtP\(k\.efDiaJ\)/.test(_v7), true);
 ok('TV: e ele sai em tinta, sem cor de status',
    /ee\.className='tv-ef-val';/.test(_v7), true);
 ok('TV: quem julga é o selo, e ele fala de ritmo',
@@ -3109,8 +3112,8 @@ console.log('\n── hora extra sem meta: a CONTA de verdade (calcKPIs do PC e 
     vm.runInContext(_core, C);
     const sl = slotsDia(o.c3 || 7), nm = hh * 60 + mm, L = o.lanc || {};
     C.DADOS = sl.map(([a, b, m, he]) => ({ data:o.hoje, horario:a, slotFim:b, slotLabel:a + '-' + b,
-      producaoHora: C.toMin(a) <= nm && L[a] != null ? L[a] : null, metaHora:m, metaDia:1800, he }));
-    C.CFG = { metaDia:1800, turnoInicio:'07:00', turnoFim:'17:00', almocoInicio:'11:00', almocoFim:'12:12', setor:'EMB' };
+      producaoHora: C.toMin(a) <= nm && L[a] != null ? L[a] : null, metaHora:m, metaDia:o.meta || 1800, he }));
+    C.CFG = { metaDia:o.meta || 1800, turnoInicio:'07:00', turnoFim:'17:00', almocoInicio:'11:00', almocoFim:'12:12', setor:'EMB' };
     C.MEDIA_HORAS = {}; C.AMOSTRA_HORAS = {}; C.isSheets = true; C.PONTOS_DIA = { programacao:{ programadoHoje:1800 } }; C.TV_TURNO_INFO = null;
     const he = o.heModal ? [{ ini:'17:00', fim:'18:00', label:'HE 17:00-18:00', metaHora:150, producaoHora:o.heModal }] : [];
     if (plat === 'pc') {
@@ -3122,15 +3125,20 @@ console.log('\n── hora extra sem meta: a CONTA de verdade (calcKPIs do PC e 
       const g = id => (C.document.M.get(id) || {});
       return { k, badge:g('tv-badge').textContent, cls:g('tv-badge').className, sub:g('tv-ef-sub').textContent,
                tva:g('tva-status').textContent, band:g('tva-band') && g('tva-band').className, fill:g('tv-prog-fill').style.background,
-               tab:g('tv-tbl-body').innerHTML };
+               tab:g('tv-tbl-body').innerHTML, ef:g('tv-ef').textContent, pct:g('tv-prog-pct').textContent,
+               proj:g('tv-proj').textContent, projU:g('tvb-proj-unit').textContent, faltaB:g('tvb-falta').textContent,
+               faltaU:g('tvb-falta-unit').textContent, falta:g('tv-falta').textContent,
+               nec:g('tv-nec').textContent + ' ' + g('tv-nec-unit').textContent };
     }
     C.getSlots = () => sl.filter(x => !x[3]).map(([a, b]) => ({ inicio:a, fim:b, label:a + '-' + b, min:C.toMin(b) - C.toMin(a) }));
     vm.runInContext(pgS(_mobH, 'calcKPIs'), C);
     return { k: vm.runInContext('calcKPIs()', C) };
   };
   const D = '17/11/2026';   // uma terça
-  const base = roda('pc', { hoje:D, agora:'12:30', c3:7, lanc:LANC }), mad = roda('pc', { hoje:D, agora:'12:30', c3:5, lanc:LANC }),
-        mod = roda('pc', { hoje:D, agora:'12:30', c3:7, lanc:LANC, heModal:120 });
+  // 13:05: o 12:12–13:00 já fechou e o 13:00 ainda não tem lançamento — as horas
+  // contam inteiras. A hora EM ANDAMENTO é o caso de 17/11, logo abaixo.
+  const base = roda('pc', { hoje:D, agora:'13:05', c3:7, lanc:LANC }), mad = roda('pc', { hoje:D, agora:'13:05', c3:5, lanc:LANC }),
+        mod = roda('pc', { hoje:D, agora:'13:05', c3:7, lanc:LANC, heModal:120 });
   const sel = r => [r.k.meta, +r.k.efRitmo.toFixed(2), Math.round(r.k.metaAteAgora), r.k.metaH];
   ok('o selo julga só a jornada: com a madrugada (C3=5) ou a hora extra do modal ⚙, meta, ritmo, esperado e meta/h saem iguais ao dia sem hora extra',
      [sel(mad), sel(mod)], [sel(base), sel(base)]);
@@ -3146,10 +3154,30 @@ console.log('\n── hora extra sem meta: a CONTA de verdade (calcKPIs do PC e 
      [zero.badge, zero.cls, zero.sub], ['● AGUARDANDO', 'tv-status-badge neu', '']);
   ok('a hora da madrugada na TV: HORA EXTRA no card da hora (faixa neutra) e na tabela, sem meta',
      [cedo.tva, cedo.band, /r-he/.test(cedo.tab), (cedo.tab.match(/r-he/g) || []).length], ['HORA EXTRA', 'tva-band he', true, 2]);
-  const mB = roda('mob', { hoje:D, agora:'12:30', c3:7, lanc:LANC }), mM = roda('mob', { hoje:D, agora:'12:30', c3:5, lanc:LANC }),
+  const mB = roda('mob', { hoje:D, agora:'13:05', c3:7, lanc:LANC }), mM = roda('mob', { hoje:D, agora:'13:05', c3:5, lanc:LANC }),
         mC = roda('mob', { hoje:D, agora:'06:45', c3:5, lanc:LANC });
   ok('celular: a MESMA conta do PC (ritmo, esperado e meta/h), com e sem a madrugada; às 06:45, nada a julgar',
      [sel(mB), sel(mM), mC.k.metaAteAgora, mC.k.realHE], [sel(base), sel(base), 0, 250]);
+  // v7.265.0 — o caso de 17/11/2026, 16:22 (C3=5): 273 cx na madrugada, 1.188 na
+  // jornada, meta 1.350, a hora 16:00 lançada até ali. A TV dizia 108,2% DA META
+  // DO DIA ao lado de ABAIXO DO RITMO ("1.188 DE 1.350 CX ESPERADAS"): o % contava
+  // a hora extra e o selo cobrava a hora 16:00 inteira (PPCP: "108% abaixo do
+  // ritmo?" → "tem que tirar hora extra").
+  const L17 = { '05:00':140, '06:00':133, '07:00':150, '08:00':150, '09:00':140, '10:00':145, '12:12':110,
+                '13:00':145, '14:00':140, '15:00':138, '16:00':70 };
+  const t17 = roda('pc', { hoje:D, agora:'16:22', c3:5, meta:1350, lanc:L17 }),
+        m17 = roda('mob', { hoje:D, agora:'16:22', c3:5, meta:1350, lanc:L17 });
+  ok('17/11 16:22: a hora em andamento conta só os 22 min que passaram — 1.188 de 1.255 esperadas, ATENÇÃO (era 1.188 de 1.350, ABAIXO DO RITMO)',
+     [t17.badge, t17.sub, +t17.k.efRitmo.toFixed(2)], ['● ATENÇÃO', '1.188 DE 1.255 CX ESPERADAS ATÉ AGORA', 94.64]);
+  ok('17/11 16:22, celular: o mesmo selo do PC (ritmo e esperado)',
+     [+m17.k.efRitmo.toFixed(2), Math.round(m17.k.metaAteAgora)], [94.64, 1255]);
+  ok('17/11 16:22: o % da meta, a barra, FALTAM e NECESSÁRIO sem a hora extra — 88,0% (era 108,2%), faltam 162; a PRODUÇÃO ACUMULADA segue com ela (1.461)',
+     [t17.k.real, t17.ef, t17.pct, t17.faltaB, t17.falta, t17.nec],
+     [1461, '88,0%', '88,0%', '162', 'FALTAM 162 CX PARA BATER A META', '162 CX P/ META']);
+  ok('17/11 16:22: a projeção é a da jornada pela régua do selo (1.188 × 527 ÷ 490 = 1.278; projeção ÷ meta = o % do selo), com a unidade NA JORNADA',
+     [t17.proj, t17.projU, t17.faltaU, +(t17.k.projJ / 1350 * 100).toFixed(2)], ['1.278', 'CAIXAS NA JORNADA', 'CAIXAS NA JORNADA', 94.64]);
+  ok('dia sem hora extra: as unidades continuam CAIXAS; sem minuto de jornada (06:45, só a madrugada), a projeção é "—", nunca 0',
+     [base.projU, base.faltaU, cedo.proj], ['CAIXAS', 'CAIXAS', '—']);
 }
 
 console.log('\n── a parada de sábado vale o mesmo em toda tela, ao vivo e depois ──');
@@ -4304,8 +4332,9 @@ ok('ritmoprod_mobile.html: o número da projeção continua na tela, em UEP e se
 ok('ritmoprod_embalagem_v7.html: a projeção é em UEP, sem cor de status',
    /l:'PROJEÇÃO · UEP', v:p\?fmtN\(Math\.round\(p\.fim\)\):'—', c:''/.test(pega('function _gerUepCards(')), true);
 // A TV já mostrava só o número — nunca teve este defeito, e não pode ganhar um.
+// v7.265.0: a projeção da TV é a da jornada (projJ) — continua só número.
 ok('a TV segue imprimindo a projeção sem veredito',
-   /getElementById\('tv-proj'\)\.textContent=fmtN\(k\.proj\);/.test(JS), true);
+   /getElementById\('tv-proj'\)\.textContent = fds \? fmtN\(k\.proj\)\s*: k\.projJ!=null \? fmtN\(Math\.round\(k\.projJ\)\) : '—';/.test(JS), true);
 
 // A aba PARADAS pedia o getParadasPeriodo por conta própria, sem cache, logo
 // depois de GESTÃO DE PERDAS/SIMULADOR terem buscado o MESMO período (v7.61.0).
