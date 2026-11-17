@@ -3996,7 +3996,9 @@ ok('régua e faixa redesenham a carteira junto com o retrospecto',
   ok('PLANO: a pele — painel escondido, o aceso aparece com a entrada (marcação fixa: o render não refaz o painel), sem ela com menos movimento; faixa e menu são as peças da cronoanálise',
      [/#sec-plano \.ucv-pn\{display:none\}/.test(src), /#sec-plano \.ucv-pn\.on\{display:block;animation:ucvIn/.test(src),
       /@media \(prefers-reduced-motion:reduce\)\{#sec-plano \.ucv-pn\.on\{animation:none\}\}/.test(src),
-      ['.ucv-sb{', '.ucv-sb.on{', '.ucv-sb.red span{', '.ucv-imp-m{', '.ucv-hdr{', '.ucv-hdr-bts .btn{'].filter(c => !src.includes(',#sec-plano ' + c))],
+      // a faixa também vale para a PROGRAMAÇÃO desde a v7.261.0 (`,#sec-plano .ucv-sb,#sec-programacao .ucv-sb{`)
+      ['.ucv-sb{', '.ucv-sb.on{', '.ucv-sb.red span{', '.ucv-imp-m{', '.ucv-hdr{', '.ucv-hdr-bts .btn{']
+        .filter(c => !src.includes(',#sec-plano ' + c) && !src.includes(',#sec-plano ' + c.slice(0, -1) + ',#sec-programacao ' + c))],
      [true, true, true, []]);
   // _qpSub: acende painel e botão; nada é lido nem recalculado
   { const docA = global.document, el = d => ({ dataset:{ sub:d }, s:new Set(), at:{}, classList:{ toggle(c, on){ on ? this.o.s.add(c) : this.o.s.delete(c); } }, setAttribute(k, v){ this.at[k] = v; } });

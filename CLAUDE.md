@@ -274,14 +274,16 @@ via Google Apps Script (JSONP).
 - ⚠ Meta do dia baixa? Conferir primeiro se linhas sumiram da aba (soma por
   DATA nas duas abas). A aba chama-se `PROGRAMACAO` (sem acento desde
   15/09/2026); não apagar o `acharAbaTolerante`.
-- ATENDIMENTO POR LOTE INTERNO (v7.260.0; aba PROGRAMAÇÃO do PC, card do app,
-  🖨): em CAIXAS, a conta no `loteIntMontar` (rp-core) e as linhas no
+- ATENDIMENTO POR LOTE INTERNO (v7.260.0; 2ª sub-aba da PROGRAMAÇÃO do PC desde
+  a v7.261.0, card do app, 🖨): em CAIXAS, a conta no `loteIntMontar` (rp-core) e as linhas no
   `getAtendimentoLotes` (`.gs` v5.69, as duas abas, 28 dias).
   - Embalado da encerrada = o `prodConf`, nunca `QTDE − SALDO` (o SALDO é 0).
   - O 0 sem lançamento é só da linha de hoje.
   - FICOU ABERTO = encerradas; AINDA EM ABERTO = vencidas na aba; o de hoje,
     em andamento.
   - Sem veredito.
+  - A aba lê a programação e DEPOIS os lotes, em sequência. O `_progSub` só
+    relê os lotes que falharam.
 
 ## Produto, cadastro, cor e comparativo → `docs/memoria/produto-e-comparativo.md`
 - A cor mora na coluna `COR` da `PRODUTO_CODIGO`; as colunas são achadas pelo
