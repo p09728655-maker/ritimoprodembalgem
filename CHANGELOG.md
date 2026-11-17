@@ -11,6 +11,24 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.258.0 — 17/11/2026 · Tela C da TV: o atraso em horas de linha
+
+O PPCP mostrou o card ATRASO do gerencial (*1h56 de linha · 355 cx · desde
+12/11*) e a faixa da aba ⚖ UEP e pediu o mesmo na TV.
+
+- **Tela C da TV, ATRASADO (DIAS ANTERIORES)**: o número grande passa a ser o
+  atraso em **horas de linha**, o mesmo do gerencial e da aba UEP. Embaixo
+  ficam as caixas e desde quando: *DE LINHA · 355 CX · DESDE 12/11*.
+  - Código sem UEP no cadastro fica só nas caixas, com um `*` no número.
+  - Sem o cadastro de UEP no computador da TV, continua em caixas, como era.
+    Para isso não acontecer, a TV com atraso lê o cadastro uma vez e o guarda.
+- PRODUZIR HOJE P/ ZERAR e RITMO P/ ZERAR não mudam (caixas).
+
+**Atenção** (antes → depois, Tela C): `355` / `CAIXAS` → `1h56` / `DE LINHA ·
+355 CX · DESDE 12/11`.
+
+---
+
 ## v7.257.1 — 16/11/2026 · Tela G: ajustes da revisão
 
 O revisor do projeto conferiu a v7.257.0 depois do merge. Não achou número

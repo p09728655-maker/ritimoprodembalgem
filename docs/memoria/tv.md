@@ -8,6 +8,32 @@ as medições e o histórico. É o texto que estava no `CLAUDE.md` até 16/11/20
 Mudou uma regra deste tema? Registre aqui, com a data e o caso, e, se muda o
 que vale, atualize também a linha do resumo no `CLAUDE.md`.
 
+## TELA C da TV — o atraso em horas de linha (v7.258.0)
+- PPCP, 17/11/2026, com os prints do gerencial (card ⚠ ATRASO · LOTES
+  VENCIDOS: *1h56 de linha · 355 cx · desde 12/11*) e da ⚖ UEP: *"não caberia
+  colocar o atraso em horas nessa tela?"* → *"o mesmo dessa"* → TELA C da TV
+  (escolhida entre Tela C e Tela G: na G o atraso dos lotes vencidos brigaria
+  com o *2 min ATRÁS* do dia — dois "atrasos" de sentidos diferentes).
+- O card **ATRASADO (DIAS ANTERIORES)** mostrava só o `atrasoTotal` do `.gs`
+  em CAIXAS. Desde a v7.258.0: **o número grande em horas de linha** (`1h56`)
+  e embaixo *DE LINHA · 355 CX · DESDE 12/11* — o MESMO número do card do
+  gerencial e da faixa da ⚖ UEP: a montagem é UMA (`_atrasoVencidoPc` → o
+  `atrasoVencido` do rp-core), lida pelo `_gerAtrasoKpi` e pelo `_sincSlideC`.
+  As caixas são as mesmas do `atrasoTotal` (Σ do atraso de cada código).
+  - Código sem UEP no cadastro: fica só nas caixas, com o `*` no número e
+    *· \* N SEM UEP* embaixo (como o card).
+  - Sem o cadastro de UEP no computador (nem o guardado): as CAIXAS, como era.
+    Para não ficar assim, a TV com atraso também pede o cadastro UMA vez por
+    sessão (`_gerCatSeFalta`, que antes só lia com o gerencial ao vivo); lido,
+    ele fica guardado no computador (`_capGuardar`) e a TV, que recarrega a
+    cada 28 min, não lê de novo.
+- Sem os PONTOS (o gerencial tem; a TV fica enxuta — ver *O ATRASO TAMBÉM EM
+  PONTOS* em `gerencial.md`). O PRODUZIR HOJE P/ ZERAR e o RITMO P/ ZERAR
+  continuam em caixas (é o número de ação do chão: caixas por hora).
+- Medido no Chromium (TV 1920×1080 e 1366×768, com e sem o cadastro): nada
+  corta. Teste em `relatorios.test.js` (o `_sincSlideC` real contra o card do
+  gerencial: 0h46 = 0h46, o `*` sem UEP, as caixas sem cadastro).
+
 ## TELA D da TV — fechamento da semana passada
 - A mesma leitura aparece em **dois lugares**: a Tela D do carrossel da TV e o
   bloco **FECHAMENTO DA SEMANA PASSADA** no fim da aba **GERENCIAL** (`#ger-semana`)

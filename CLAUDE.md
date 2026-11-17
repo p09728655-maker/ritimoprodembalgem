@@ -187,10 +187,11 @@ via Google Apps Script (JSONP).
   isso o timeout de 25 s e o `lerSheetsComRetry`). Modo DEMO na TV = timeout no
   cold start, não perda de dado.
 - Carrossel: A/B (a que roda é a B, que espelha a A — linha nova na A precisa
-  do espelho no `_sincSlideB`), C (atraso), D (semana passada, `RP_SEMANA.pintar`
-  — um desenho para a TV e o gerencial), E (programação do dia por lote), F e G
-  (UEP, desligadas por padrão e com o selo desligado: dois vereditos na mesma
-  TV).
+  do espelho no `_sincSlideB`), C (atraso; desde a v7.258.0 em horas de linha,
+  o MESMO número do card do gerencial — `_atrasoVencidoPc`; sem cadastro,
+  caixas), D (semana passada, `RP_SEMANA.pintar` — um desenho para a TV e o
+  gerencial), E (programação do dia por lote), F e G (UEP, desligadas por
+  padrão e com o selo desligado: dois vereditos na mesma TV).
 - ⚠ "NO RITMO" é palavra do selo, nunca de rótulo. Chave nova de tela na
   `CONFIG_PAINEL`: o `aplicarConfigPainel` preserva a marcação local quando o
   `.gs` antigo não manda a chave; tela desligada por padrão só liga com

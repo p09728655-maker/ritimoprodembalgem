@@ -3121,7 +3121,7 @@ if (_v7Instalado()) _v7EscondeBotao();
         <div class="tvc-card-info">
           <div class="tvc-card-lbl">ATRASADO (DIAS ANTERIORES)</div>
           <div class="tvc-card-val" id="tvc-atraso">—</div>
-          <div class="tvc-card-unit">CAIXAS</div>
+          <div class="tvc-card-unit" id="tvc-atraso-un">CAIXAS</div>
         </div>
       </div>
       <div class="tvc-card">
@@ -4202,7 +4202,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.257.1';
+const APP_VER = '7.258.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -13457,11 +13457,15 @@ function _gerUepCards(G, k, velho){
 // v7.249.0 (PPCP, 16/11/2026: "em pontos qtdes de atraso?"): os PONTOS do
 // atraso ao lado das caixas — fato, o valor do que está atrasado (o tempo é a
 // UEP). Pelo cadastro de hoje; a conta e o texto são do rp-core, os mesmos do celular.
-function _gerAtrasoKpi(){
+// A montagem é UMA (_atrasoVencidoPc) para este card e a Tela C da TV (v7.258.0).
+function _atrasoVencidoPc(){
   const prog=PONTOS_DIA.programacao||{};
   const cat=_pdiaPcCat();
   const uepDe={}; (cat||[]).forEach(p=>{ if(p&&Number(p.uep)>0) uepDe[p.codigo]=Number(p.uep); });
-  const a=typeof atrasoVencido==='function'?atrasoVencido(prog.lista, uepDe, PONTOS_DIA.metaUep, _taktPtsMapa(cat)):null;
+  return { prog, cat, a:typeof atrasoVencido==='function'?atrasoVencido(prog.lista, uepDe, PONTOS_DIA.metaUep, _taktPtsMapa(cat)):null };
+}
+function _gerAtrasoKpi(){
+  const { prog, cat, a }=_atrasoVencidoPc();
   const l='⚠ ATRASO · LOTES VENCIDOS';
   if(a&&a.n>0){
     const pts=atrasoPtsTxt(a), tPts=pts?' Pontos = as mesmas caixas × os PONTOS do cadastro de hoje: o valor do que está atrasado, não o tempo.':'';
@@ -13518,9 +13522,14 @@ function _gerKpiHtml(kpis){
 // sem nenhum neste computador (nem o guardado), lê UMA vez por sessão, no fim
 // do ciclo — uma leitura de cada vez, só com o gerencial ao vivo na tela. É a
 // mesma leitura (e a mesma marca) do clique no PRODUTOS EMBALADOS HOJE.
+// v7.258.0: também com a TV na tela e atraso vencido — a Tela C diz o atraso
+// em horas de linha, como o gerencial; sem o cadastro ela fica nas caixas.
+// Lido uma vez, ele fica guardado no computador (_capGuardar): a TV, que
+// recarrega a cada 28 min, não lê de novo.
 let GER_CAT_FALHA = false;   // a leitura do cadastro desta sessão falhou: o ATRASO diz isso, não "lendo"
 function _gerCatSeFalta(){
-  if(!_pdiaParPrecisa() || _pdiaPcCat() || PDIA_PC_CATPED) return Promise.resolve(null);
+  const tvAtraso = !!CFG.sheetsUrl && !_modoDir() && _abaOn('tv') && Number((PONTOS_DIA.programacao||{}).atrasoTotal) > 0;
+  if(!(_pdiaParPrecisa() || tvAtraso) || _pdiaPcCat() || PDIA_PC_CATPED) return Promise.resolve(null);
   PDIA_PC_CATPED = true;
   return Promise.resolve(_capBuscar()).catch(() => null)
     .then(() => { GER_CAT_FALHA = !_pdiaPcCat(); if(_pdiaParPrecisa()) renderGerencial(); }).catch(() => null);
@@ -28120,7 +28129,20 @@ const _cicloTV = (function() {
     // ATRASADO (DIAS ANTERIORES): no backend novo o atraso é "vivo" (já abatido
     // pela produção de hoje, alocação FIFO por lote), então o número cai durante o
     // dia conforme o time zera os lotes antigos.
-    set('tvc-atraso', fmtN(prog.atrasoTotal || 0));
+    // v7.258.0 (PPCP, 17/11/2026, com os prints do gerencial e da ⚖ UEP: "o mesmo
+    // dessa"): em HORAS DE LINHA, o MESMO número do card ATRASO do gerencial e
+    // da faixa da ⚖ UEP (_atrasoVencidoPc → atrasoVencido do rp-core), com as
+    // caixas e a data embaixo. Sem o cadastro de UEP neste computador, as caixas
+    // (como era). * = código sem UEP, que fica só nas caixas.
+    const av = _atrasoVencidoPc().a;
+    if (av && av.n > 0 && av.min != null) {
+      set('tvc-atraso', (av.min > 0 ? _fmtHM(av.min) : '<1 min') + (av.semUep ? '*' : ''));
+      set('tvc-atraso-un', 'DE LINHA · ' + fmtN(av.cx) + ' CX' + (av.desde ? ' · DESDE ' + av.desde : '')
+        + (av.semUep ? ' · * ' + av.semUep + ' SEM UEP' : ''));
+    } else {
+      set('tvc-atraso', fmtN(prog.atrasoTotal || 0));
+      set('tvc-atraso-un', 'CAIXAS');
+    }
 
     // PRODUZIR HOJE P/ ZERAR (card) + RITMO P/ ZERAR (cx/hora).
     // Backend NOVO: prog.faltaZerar = atraso vivo + resto da meta de hoje. A

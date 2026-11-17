@@ -40,7 +40,7 @@ META UEP · % DA META · CAIXAS (com a META EM CX embaixo).
 |---|---|---|---|
 | **UEP DO DIA · META** (1º card, o único selo) | UEP de jornada × esperado até agora (`uepCard`); o selo é `slRitmo` do % do esperado | UEP | `v7:_gerUepCards` + `rp-core:uepCard` |
 | **min atrás / à frente do ritmo** | (UEP feita − esperada) ÷ (meta ÷ 527) | min | `rp-core:uepGerMontar` (`m.difMin`) |
-| **⚠ ATRASO · LOTES VENCIDOS** | caixas de lotes vencidos × UEP do código ÷ (meta ÷ 527) — o mesmo do celular e da faixa da ⚖ UEP | h de linha | `rp-core:atrasoVencido` |
+| **⚠ ATRASO · LOTES VENCIDOS** | caixas de lotes vencidos × UEP do código ÷ (meta ÷ 527) — o mesmo do celular, da faixa da ⚖ UEP e, desde a v7.258.0, da Tela C da TV (ATRASADO (DIAS ANTERIORES)); sem o cadastro de UEP no computador, as caixas | h de linha | `rp-core:atrasoVencido` (`v7:_atrasoVencidoPc`) |
 | **pts do ATRASO** (no texto do card e na coluna PTS do ATRASO — CONFERÊNCIA) | Σ caixas vencidas do código × PONTOS do cadastro de hoje (CUSTO REP); código sem pontos fora da soma e dito; nenhum com pontos → não aparece (nunca 0) | pts | `rp-core:atrasoVencido` (`pts`, `semPts`) + `atrasoPtsTxt`; `v7:_gpxAtrasoMontar` |
 | **RITMO · UEP/HORA** | UEP de jornada ÷ minutos de jornada decorridos × 60 | UEP/h | `rp-core:uepProj` |
 | **PROJEÇÃO · UEP** | UEP feita + a média por minuto × minutos de jornada que faltam (número, sem veredito) | UEP | `rp-core:uepProj` |
