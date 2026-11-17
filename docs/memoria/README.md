@@ -52,6 +52,7 @@ de tema entra aqui também.
 - `ATUALIZADO_EM` da PROGRAMACAO é o carimbo DA LINHA
 - Lote concluído sai da PROGRAMACAO (arquivamento)
 - FERIADOS — a aba `FERIADOS` (v7.174.0 / `.gs` v5.38)
+- ATENDIMENTO POR LOTE INTERNO (v7.260.0 / mobile 1.55.0 / rp-core 1.22.0 / `.gs` v5.69)
 
 ## Produto, cadastro, cor e comparativo — `produto-e-comparativo.md`
 - Produto × cor (relatórios por modelo)

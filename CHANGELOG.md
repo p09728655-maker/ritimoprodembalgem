@@ -11,6 +11,57 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.260.0 · mobile 1.55.0 · rp-core 1.22.0 · `.gs` v5.69 — 17/11/2026 · atendimento por lote interno
+
+O PPCP, com a PROGRAMACAO_CONCLUIDA na tela: *"me mostre como podemos
+apresentar percentual de cada lote que ficou aberto"* → *"vamos usar o lote
+interno"*. Depois pediu também no app (*"programação tela"*) e na impressão.
+
+- **Aba PROGRAMAÇÃO do PC**: um bloco novo embaixo, **ATENDIMENTO POR LOTE
+  INTERNO**. Começa fechado; abre no clique do título.
+  - Quatro cartões, sempre sobre os **últimos 10 lotes internos fechados**:
+    - % ATENDIDO;
+    - FICOU ABERTO (o que faltou nas linhas encerradas);
+    - ITENS COMPLETOS (100%);
+    - AINDA EM ABERTO (o que falta nas linhas vencidas que ainda estão na
+      programação).
+  - Uma tabela com uma linha por lote interno. Mostra a data, os lotes do ERP,
+    a COR GPS, o programado e o embalado em caixas, o % e quanto ficou aberto.
+  - O clique na linha abre os itens que não completaram.
+- **🖨 IMPRIMIR** (paisagem): a mesma marcação da tela. Cada lote vai com os
+  seus itens abertos, e a folha nunca parte um lote no meio. O lote de hoje vai
+  sem detalhe, porque ainda está em andamento.
+- **App, gerencial**: card novo, **PROGRAMAÇÃO · LOTES INTERNOS**, com os
+  mesmos números. O toque no lote abre os itens.
+- A conta é uma só, no `rp-core` (`loteIntMontar`), para o PC e o celular.
+  - É em **caixas**, a mesma régua da coluna PERCENTUAL da planilha.
+  - O embalado de uma linha nunca passa do programado dela.
+  - Linha sem a conta do embalado fica fora e é dita, nunca entra como 0.
+- **`.gs` v5.69**: leitura nova, `getAtendimentoLotes`.
+  - Junta as duas abas (PROGRAMACAO + CONCLUIDA), das linhas com lote interno
+    datadas nos últimos 28 dias até hoje.
+  - O FIFO, o saldo, o arquivamento e a meta não mudam.
+
+**O que os números de 17/11 mostram** (lotes 202/26 a 211/26):
+- os lotes internos fecham em **96–99%**, com 97,4% no total (16.579 de 17.020
+  cx);
+- mas só **31 de 118 itens (26%)** completaram;
+- **405 cx em 85 itens** ficaram para trás nas linhas encerradas;
+- **36 cx** ainda estão em aberto (211/26 e 210/26).
+
+O lote fecha quase cheio porque a falta é pequena e espalhada por quase todos
+os itens.
+
+**Atenção**: nenhum número que já existia muda. É um bloco novo, um card novo
+e um relatório novo.
+
+⚠ **re-deploy** do `.gs` v5.69. Até lá:
+- o bloco e o card dizem que o Apps Script ainda não tem esta leitura (falta
+  re-implantar o `.gs` v5.69);
+- o rodapé do painel fica âmbar.
+
+---
+
 ## v7.259.1 · mobile 1.54.1 · rp-core 1.21.1 — 17/11/2026 · ajustes da revisão
 
 O revisor do projeto conferiu a v7.259.0 depois do merge e não achou número

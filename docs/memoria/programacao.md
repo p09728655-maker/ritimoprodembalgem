@@ -455,3 +455,116 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   (o `.gs` inteiro: a aba, a janela, o adiantamento atravessando o feriado, o
   aviso, a lista; conferido por mutação) e `relatorios.test.js` (o print de
   27/10, cartão, total, capacidade, FILA, diretoria).
+
+## ATENDIMENTO POR LOTE INTERNO (v7.260.0 / mobile 1.55.0 / rp-core 1.22.0 / `.gs` v5.69)
+
+### O pedido
+- PPCP, 17/11/2026, com a PROGRAMACAO_CONCLUIDA na tela: *"me mostre como
+  podemos apresentar percentual de cada lote que ficou aberto"*. Depois:
+  - *"vamos usar o lote interno"* → prévia com os lotes reais;
+  - *"SERIA UMA TELA A ONDE?"* → recomendado um bloco na aba PROGRAMAÇÃO →
+    *"isso"*;
+  - depois, *"no app tbm"* / *"programação tela"* e *"tem que pensar em
+    impressão tbm"*.
+- O lote do ERP (`LOTE`) é a linha; o **lote interno** (`LOTE INTERNO`, ex.
+  `210/26`) é o dia de programação.
+  - Um lote interno tem uma COR GPS e vários lotes do ERP.
+  - É a unidade que o PPCP fecha e cobra.
+
+### O que os números de 17/11 mostraram (lotes 202/26–211/26)
+- 97,4% atendido (16.579 de 17.020 cx), e cada lote fechou entre 96 e 99%.
+- Mas só **31 de 118 itens** completaram.
+- **405 cx em 85 itens** ficaram para trás nas linhas encerradas.
+- 36 cx ainda estão em aberto (211/26 e 210/26).
+- O % por caixas esconde a falta espalhada; o **ITENS COMPLETOS** é o número
+  que a mostra. Por isso ele é cartão, não nota.
+
+### As regras
+- **`.gs` (`getAtendimentoLotes`)**: só entrega as linhas, sem a conta.
+  - Lê as duas abas (`lerProgramacao(true)`): a PROGRAMACAO e a CONCLUIDA.
+  - Entram as linhas com data nos últimos `PROG_LI_DIAS` (28) até hoje.
+  - Saem as fora da esteira e as futuras.
+  - Linha sem lote interno vai para a contagem `semLote`.
+- **O embalado da linha**, nesta ordem:
+  1. Encerrada (X ou STATUS `ENCERRADO`) → o PRODUZIDO confiável
+     (`prodConf`).
+     - ⚠ Nunca `QTDE − SALDO`: na encerrada o SALDO é 0 e daria 100%. O teste
+       prende com a linha `saldo: 0, prodConf: 93`.
+  2. Senão, o SALDO confiável → `QTDE − SALDO`.
+  3. Senão, o `prodConf`.
+  4. Linha **de hoje**, na aba, sem lançamento (`saidaVazia`) → 0.
+  5. Senão, `null` (sem conta).
+     - ⚠ O 0 do passo 4 é **só de hoje**: uma linha vencida sem conta é
+       desconhecida, não zerada (o teste prende).
+- **`_lerProgDaAba`** dá agora, em toda linha:
+  - o `prodConf` (o `_produzidoConfiavel`, que antes só a encerrada usava);
+  - a `corGps` (coluna com `GPS` no nome; só para mostrar).
+  - O `produzido` da encerrada, o FIFO, o saldo e o arquivamento não mudam.
+- **A descrição só vai na linha que não completou.** Com todas as linhas, a
+  resposta passaria dos 100 KB do cache do Apps Script.
+- **Cache de leitura** de 120 s:
+  - o lançamento o invalida (`prod`);
+  - o cadastro também (`cat`).
+- **`rp-core` (`loteIntMontar`)**: a conta, uma vez, para os dois painéis.
+  - Agrupa por lote interno, em caixas.
+  - O embalado é limitado à QTDE da linha: a sobra de uma linha não cobre a
+    falta de outra.
+  - Situação de cada item que não completou:
+    - **fechado** (encerrada) → FICOU ABERTO;
+    - **aberto** (ainda na aba e com data < hoje) → AINDA EM ABERTO;
+    - **andamento** (o de hoje).
+  - Os lotes mostrados:
+    - o de hoje;
+    - os `n` (10) fechados mais recentes;
+    - os mais velhos que ainda têm saldo vencido. O atraso velho não some da
+      tela por ter saído dos 10.
+  - O resumo é dos `n` fechados, menos o AINDA EM ABERTO, que é de todos os
+    vencidos.
+  - Ordem: pela data mais nova do lote interno; no empate, pelo número
+    (ano × 10000 + sequência).
+
+### Tela, app e papel
+- **PC**: bloco `#pli` embaixo da aba PROGRAMAÇÃO.
+  - Começa **fechado** (`PLI_ABERTO`) e só lê ao abrir. Depois da 1ª leitura,
+    a troca de aba lê junto com a programação.
+  - Leitura:
+    - 3 tentativas em sequência;
+    - voo compartilhado (`PLI_VOO`);
+    - TTL de 10 min;
+    - falha com causa (`_pliFalhaTxt`: `sem-url`, `sem-endpoint`, `erro`,
+      tempo).
+  - `_pliHtml(M, papel)` só desenha: a tela e o papel usam a mesma marcação.
+  - O CSS é UMA cópia (`_PLI_CSS`): injetado na tela (`_pliCssNaTela`) e posto
+    no `<head>` do relatório. O papel ganha a pele `_PLI_SKIN`.
+  - Na tela o clique leva o **índice** (`_pliExp(i)`). No papel abrem todos os
+    lotes, menos o de hoje.
+  - Cada lote é um `<tbody class="pli-g">` com `break-inside: avoid`. Na 1ª
+    versão o cabeçalho de um lote ficava sozinho no pé da folha.
+- **App**: o card PROGRAMAÇÃO · LOTES INTERNOS do gerencial.
+  - Mesma leitura e mesma conta.
+  - O desenho é próprio, em cartões (`_pliHtmlM`), e o toque leva o índice
+    (`_pliExpM(i)`).
+- Sem veredito (selo ou cor de julgamento): é fato.
+  - A barra é só o %.
+  - O vermelho vai só no AINDA EM ABERTO (> 0), porque é o atraso que ainda
+    cobra.
+
+### Medido e conferido
+- PC renderizado em 1920, 1366 e 1280: sem estouro. Abaixo de 1100 px:
+  - os cartões ficam 2 × 2;
+  - saem as colunas de lotes e de cor.
+- Papel: 4 folhas A4 paisagem, o `thead` repetido.
+- App renderizado em 360, 390 e 430.
+- Teste `lote-interno.test.js`:
+  - a fixture são as 247 linhas reais de 17/11;
+  - roda o `getAtendimentoLotes` de verdade numa vm;
+  - pegou 9 de 9 mutações (a conta, as duas regras do embalado do `.gs`, o
+    papel, o escape, o clique por índice).
+
+### Ficou de fora, de propósito
+- Um "% do lote" em UEP ou em pontos: o PERCENTUAL da planilha é em caixas, e
+  a mesma régua evita dois números para a mesma pergunta.
+- Re-datar ou encerrar pelo painel: a tela só mostra.
+- Gravar o % em alguma aba: ele sai das linhas, a cada leitura.
+- ⚠ Mudou o `.gs` → **re-deploy manual**. Antes dele, o bloco e o card dizem
+  que o Apps Script ainda não tem a leitura.

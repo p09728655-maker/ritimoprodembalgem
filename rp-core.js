@@ -894,6 +894,79 @@ function atrasoPtsTxt(a){
   return ` · ${fmtN(Math.round(a.pts))} pts${a.semPts ? ` (sem os pontos de ${plural(a.semPts, 'código', 'códigos')})` : ''}`;
 }
 
+// ── ATENDIMENTO POR LOTE INTERNO (rp-core 1.22.0 / v7.260.0 / mobile 1.55.0) ──
+// PPCP, 17/11/2026, com a PROGRAMACAO_CONCLUIDA na tela: "me mostre como podemos
+// apresentar percentual de cada lote que ficou aberto" → "vamos usar o lote
+// interno" → aba PROGRAMAÇÃO, o app e a impressão. A CONTA é esta, uma vez, para
+// os dois painéis (o .gs v5.69 só entrega as linhas: getAtendimentoLotes).
+// `linhas`: { li, data, dataNum, lote, codigo, desc, corGps, qtde, emb, encerrada,
+// aba } · `hojeNum` aaaammdd · `n` quantos lotes fechados no resumo (padrão 10).
+// Por lote interno (cada um é um dia de programação, com uma COR GPS e vários
+// lotes do ERP), em CAIXAS — a mesma régua da coluna PERCENTUAL da planilha:
+//   % ATENDIDO  = Σ embalado ÷ Σ programado (o embalado nunca passa da linha)
+//   ITENS 100%  = linhas que completaram ÷ linhas
+//   FICOU ABERTO  = o que faltou nas linhas ENCERRADAS (não volta)
+//   AINDA ABERTO  = o que falta nas linhas ainda na PROGRAMACAO com data vencida
+//   o lote de HOJE é "em andamento" (nem ficou, nem está vencido).
+// Linha sem a conta do embalado (`emb` null) fica FORA das somas e é contada em
+// `semConta` — nunca entra como 0 (E1/E3).
+// Os lotes: o de hoje, os `n` fechados mais recentes e, além deles, os mais
+// velhos que ainda têm saldo vencido. O resumo é dos `n` fechados; o AINDA ABERTO
+// do resumo é de todos os vencidos.
+function loteIntMontar(linhas, hojeNum, n){
+  if (!Array.isArray(linhas)) return null;
+  const N = Number(n) > 0 ? Math.floor(Number(n)) : 10, hoje = Number(hojeNum) || 0;
+  const ord = li => { const m = /^\s*(\d+)\s*\/\s*(\d+)\s*$/.exec(String(li)); return m ? Number(m[2]) * 10000 + Number(m[1]) : -1; };
+  const G = {};
+  const SIT = { aberto: 0, andamento: 1, fechado: 2 };
+  linhas.forEach(x => {
+    if (!x || !x.li) return;
+    const li = String(x.li).trim();
+    const g = G[li] || (G[li] = { li, dMin: null, dMax: null, data: '', lotes: {}, cores: {}, itens: [], prog: 0, emb: 0, n: 0, n100: 0,
+                                  semConta: 0, ficou: 0, nFicou: 0, aberto: 0, nAberto: 0, hoje: false });
+    const d = Number(x.dataNum) || 0, q = Math.max(0, Number(x.qtde) || 0);
+    if (d && (g.dMin == null || d < g.dMin)) { g.dMin = d; g.data = String(x.data || '').slice(0, 5); }
+    if (d && (g.dMax == null || d > g.dMax)) g.dMax = d;
+    if (x.lote) g.lotes[String(x.lote)] = 1;
+    const cor = String(x.corGps || '').trim().toUpperCase();
+    if (cor) g.cores[cor] = (g.cores[cor] || 0) + 1;
+    if (d && d === hoje) g.hoje = true;
+    if (x.emb == null || !isFinite(Number(x.emb))) { g.semConta++; return; }
+    const e = Math.min(Math.max(0, Number(x.emb)), q), falta = q - e;
+    g.n++; g.prog += q; g.emb += e;
+    if (falta <= 0) { g.n100++; return; }
+    const sit = x.encerrada ? 'fechado' : x.aba === 'aberta' && d && d < hoje ? 'aberto' : 'andamento';
+    if (sit === 'fechado') { g.ficou += falta; g.nFicou++; }
+    else if (sit === 'aberto') { g.aberto += falta; g.nAberto++; }
+    g.itens.push({ lote: String(x.lote || ''), codigo: String(x.codigo || ''), desc: String(x.desc || ''), qtde: q, emb: e, falta, sit });
+  });
+  const todos = Object.keys(G).map(k => {
+    const g = G[k];
+    g.pct = g.prog > 0 ? g.emb / g.prog * 100 : null;
+    g.lotes = Object.keys(g.lotes).sort();
+    g.corGps = Object.keys(g.cores).sort((a, b) => g.cores[b] - g.cores[a])[0] || '';
+    delete g.cores;
+    g.itens.sort((a, b) => (SIT[a.sit] - SIT[b.sit]) || (b.falta - a.falta) || a.codigo.localeCompare(b.codigo));
+    return g;
+  }).sort((a, b) => ((b.dMax || 0) - (a.dMax || 0)) || (ord(b.li) - ord(a.li)));
+  const hojeG = todos.filter(g => g.hoje), fechados = todos.filter(g => !g.hoje);
+  const ult = fechados.slice(0, N), velhos = fechados.slice(N).filter(g => g.aberto > 0);
+  const soma = (arr, k) => arr.reduce((t, g) => t + g[k], 0);
+  const prog = soma(ult, 'prog'), emb = soma(ult, 'emb');
+  const vencidos = fechados.filter(g => g.aberto > 0);
+  return {
+    lotes: hojeG.concat(ult, velhos),
+    resumo: {
+      nLotes: ult.length, de: ult.length ? ult[ult.length - 1].li : '', ate: ult.length ? ult[0].li : '',
+      prog, emb, pct: prog > 0 ? emb / prog * 100 : null,
+      ficou: soma(ult, 'ficou'), nFicou: soma(ult, 'nFicou'), n: soma(ult, 'n'), n100: soma(ult, 'n100'),
+      aberto: soma(vencidos, 'aberto'), nAberto: soma(vencidos, 'nAberto'), lisAberto: vencidos.map(g => g.li),
+      semConta: soma(todos, 'semConta')
+    },
+    n: N
+  };
+}
+
 // ── Identificação do módulo ─────────────────────────────────────────────────
 // O paradas-calc.js carregou? Função pura, estava copiada IGUAL nos dois HTMLs
 // — exatamente o padrão que este arquivo existe para evitar. Quem usa isto são
@@ -919,10 +992,10 @@ function paradaAInformar(tipo){
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.21.1',
+  versao: '1.22.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
         'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepDiaHe', 'histDiaFds', 'metaDiasParadas', 'metaMedianaUteis', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido',
-        'pdiaVol', 'pdiaBase', 'pdiaCurto', 'pdiaMontar', 'pdiaParMontar', 'atrasoVencido', 'atrasoPtsTxt', 'paradaAInformar',
+        'pdiaVol', 'pdiaBase', 'pdiaCurto', 'pdiaMontar', 'pdiaParMontar', 'atrasoVencido', 'atrasoPtsTxt', 'paradaAInformar', 'loteIntMontar',
         'uepHorasDia', 'uepHoraJulga', 'uepCxComHora', 'uepMinTxt', 'uepProj', 'uepDoProduto', 'uepGerMontar']
 };
