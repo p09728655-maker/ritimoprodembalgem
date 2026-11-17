@@ -439,6 +439,10 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
          --pli-d0:#E6EBF1;--pli-d1:#8FA0B5;--pli-d2:#4E5D72;margin-top:10px}
 #ger-pli .pli-msg{font-family:var(--font-d);font-size:10.5px;color:var(--txt2);padding:6px 0;line-height:1.5}
 #ger-pli .pli-kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+#ger-pli .pli-cap{font-family:var(--font-d);font-size:9.5px;color:var(--txt2);margin:0 0 8px;line-height:1.6}
+#ger-pli .pli-cap b{color:var(--txt);font-weight:600}
+#ger-pli .pli-nsel button{font:inherit;color:var(--txt2);background:none;border:1px solid var(--border);border-radius:5px;padding:3px 10px;margin:0 2px;cursor:pointer}
+#ger-pli .pli-nsel button.on{color:var(--txt);border-color:var(--acc);background:rgba(255,92,31,.10)}
 #ger-pli .pli-k{background:var(--elevated);border:0.5px solid var(--border);border-radius:7px;padding:9px 10px;min-width:0}
 #ger-pli .pli-k .l{font-family:var(--font-d);font-size:8.5px;letter-spacing:1px;color:var(--txt2);text-transform:uppercase;line-height:1.3}
 #ger-pli .pli-k .v{font-family:var(--font-h);font-weight:700;font-size:24px;line-height:1.05;margin-top:3px;color:var(--txt)}
@@ -1180,7 +1184,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.56.1';
+const APP_VER   = '1.57.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -2271,7 +2275,17 @@ function alternarDetalheParadas(){ PAR_DET_ABERTO=!PAR_DET_ABERTO; aplicarDetalh
 // mesma do PC); aqui a leitura (a mesma do PC: getAtendimentoLotes, 3 tentativas
 // em sequência, voo compartilhado) e o desenho do celular. Nasce recolhido.
 let PLI=null, PLI_TS=0, PLI_VOO=null, PLI_FALHA=null, PLI_ERRO='', PLI_ABERTO=false;
-const PLI_TTL=10*60000, PLI_N=10;
+const PLI_TTL=10*60000;
+// Quantos lotes fechados no resumo: 10 ou 20 (1.57.0, o mesmo seletor do PC); a escolha é deste aparelho.
+const PLI_NS=[10, 20];
+let PLI_N=_pliNLerM();
+function _pliNLerM(){ try{ const v=Number(localStorage.getItem('rp_pli_n')); return PLI_NS.indexOf(v)>=0?v:10; }catch(e){ return 10; } }
+function _pliSetNM(n){
+  if(PLI_NS.indexOf(n)<0) return;
+  PLI_N=n;
+  try{ localStorage.setItem('rp_pli_n', String(n)); }catch(e){}
+  renderLotesInternos();
+}
 const PLI_EXP={};
 async function _pliLer(){
   const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getAtendimentoLotes';
@@ -2304,23 +2318,28 @@ function _pliModelo(){
 }
 function _pliFalhaTxt(){
   return PLI_FALHA==='sem-url' ? 'Sem a URL do Apps Script neste aparelho.'
-    : PLI_FALHA==='sem-endpoint' ? 'O Apps Script ainda não tem esta leitura (falta re-implantar o .gs v5.70).'
+    : PLI_FALHA==='sem-endpoint' ? 'O Apps Script ainda não tem esta leitura (falta re-implantar o .gs v5.71).'
     : PLI_FALHA==='erro' ? 'O Apps Script respondeu com erro: '+_escH(PLI_ERRO)
     : 'O servidor não respondeu (3 tentativas). Feche e abra de novo para tentar.';
 }
-const _PLI_SIT={ fechado:'encerrado', aberto:'em atraso · na programação', andamento:'hoje · em andamento', completo:'completo' };
+const _PLI_SIT={ fechado:'fechado com falta (X) · aguardando peça', aberto:'para embalar · vencido, na programação', andamento:'hoje · em andamento', completo:'completo' };
 // DESENHO (sem conta): o modelo do loteIntMontar.
 function _pliHtmlM(M){
   if(!M || !M.lotes.length) return '<div class="pli-msg">Nenhum lote interno com data até hoje na programação (coluna LOTE INTERNO).</div>';
   const R=M.resumo, cx=v=>fmtN(Math.round(v));
   const gps=c=>'<span class="pli-gps g-'+_escH(String(c||'').replace(/[^A-Z]/g, ''))+'"><i></i>'+_escH(c||'—')+'</span>';
-  let s='<div class="pli-kpis">'
-    +'<div class="pli-k"><div class="l">Atendido · últimos '+R.nLotes+'</div><div class="v">'+fmtP(R.pct)+'</div><div class="s">'+cx(R.emb)+' de '+cx(R.prog)+' cx</div></div>'
-    +'<div class="pli-k"><div class="l">No dia · na data do lote</div><div class="v">'+(R.pctNoDia==null?'—':fmtP(R.pctNoDia))+'</div><div class="s">'
-      +(R.pctNoDia==null?(R.semTempo>0?'precisa do .gs v5.70':'—'):'D+1 '+fmtP(R.pctD1)+' · D+2+ '+fmtP(R.pctD2))+'</div></div>'
-    +'<div class="pli-k"><div class="l">Ficou aberto · encerrado</div><div class="v">'+cx(R.ficou)+'<small>cx</small></div><div class="s">'+plural(R.nFicou, 'item', 'itens')+' sem completar</div></div>'
-    +'<div class="pli-k"><div class="l">Itens 100%</div><div class="v">'+fmtN(R.n100)+'<small>de '+fmtN(R.n)+'</small></div><div class="s">'+(R.pctItens==null?'—':fmtP(R.pctItens)+' dos itens')+'</div></div>'
-    +'<div class="pli-k'+(R.aberto>0?' ab':'')+'"><div class="l">Ainda aberto · vencido</div><div class="v">'+cx(R.aberto)+'<small>cx</small></div><div class="s">'+(R.aberto>0?R.lisAberto.map(_escH).join(' · '):'nenhum vencido')+'</div></div>'
+  // os mesmos cartões do PC, em palavras da fábrica (1.57.0); o seletor 10 · 20 em cima (o toque leva o número)
+  const nb=n=>'<button type="button" class="'+(M.n===n?'on':'')+'" onclick="event.stopPropagation();_pliSetNM('+n+')">'+n+'</button>';
+  let s='<div class="pli-cap"><span class="pli-nsel">últimos '+nb(10)+nb(20)+' lotes</span>'
+    +(R.nLotes?' · <b>'+_escH(R.de)+' a '+_escH(R.ate)+'</b>'+(M.n>R.nLotes?' (só há '+R.nLotes+')':''):'')
+    +' · o de hoje fica fora (em andamento)</div>'
+    +'<div class="pli-kpis">'
+    +'<div class="pli-k"><div class="l">Embalado</div><div class="v">'+fmtP(R.pct)+'</div><div class="s">'+cx(R.emb)+' de '+cx(R.prog)+' cx programadas</div></div>'
+    +'<div class="pli-k"><div class="l">Embalado no dia programado</div><div class="v">'+(R.pctNoDia==null?'—':fmtP(R.pctNoDia))+'</div><div class="s">'
+      +(R.pctNoDia==null?(R.semTempo>0?'precisa do .gs v5.70':'—'):'depois: '+fmtP(R.pctD1)+' no dia seguinte · '+fmtP(R.pctD2)+' em 2+ dias')+'</div></div>'
+    +'<div class="pli-k"><div class="l">Fechado com falta (X)</div><div class="v">'+cx(R.ficou)+'<small>cx</small></div><div class="s">'+plural(R.nFicou, 'item', 'itens')+' · aguardando peça, finalizados no ERP</div></div>'
+    +'<div class="pli-k"><div class="l">Itens 100% embalados</div><div class="v">'+fmtN(R.n100)+'<small>de '+fmtN(R.n)+'</small></div><div class="s">'+(R.pctItens==null?'—':fmtP(R.pctItens)+' saíram completos')+'</div></div>'
+    +'<div class="pli-k'+(R.aberto>0?' ab':'')+'"><div class="l">Ainda para embalar</div><div class="v">'+cx(R.aberto)+'<small>cx</small></div><div class="s">'+(R.aberto>0?'vencido, na programação · '+R.lisAberto.map(_escH).join(' · '):'nada vencido na programação')+'</div></div>'
     +'</div>';
   const w=v=>Math.min(100, Math.max(0, v||0)).toFixed(1)+'%';
   const dt=x=>x.pctNoDia==null?'':' · no dia '+fmtP(x.pctNoDia)+(x.pctD1>0?' · D+1 '+fmtP(x.pctD1):'')+(x.pctD2>0?' · D+2+ '+fmtP(x.pctD2):'');
@@ -2335,14 +2354,14 @@ function _pliHtmlM(M){
         +'</span><span class="pli-pcn'+(g.hoje?' pli-dim':'')+'">'+fmtP(g.pct)+'</span></div>')
       +'<div class="pli-l3">'+(g.emb==null?'sem a conta do embalado · '+cx(g.prog)+' cx programadas'
         :'<b>'+cx(g.emb)+'</b> de '+cx(g.prog)+' cx'+(g.pctNoDia==null?'':' · no dia <b>'+fmtP(g.pctNoDia)+'</b>')+' · '+fmtN(g.n100)+' de '+fmtN(g.n)+' itens 100%')
-      +(g.ficou>0?' · ficou aberto <b>'+cx(g.ficou)+' cx</b>':'')
-      +(g.hoje?' · em andamento':g.aberto>0?' · <span class="pli-ab">ainda aberto '+cx(g.aberto)+' cx</span>':'')+'</div>';
+      +(g.ficou>0?' · falta (X) <b>'+cx(g.ficou)+' cx</b>':'')
+      +(g.hoje?' · em andamento':g.aberto>0?' · <span class="pli-ab">para embalar '+cx(g.aberto)+' cx</span>':'')+'</div>';
     if(exp) s+=g.itens.map(x=>'<div class="pli-it'+(x.sit==='completo'?' ok':'')+'"><span class="pli-ipc">'+(x.pct==null?'—':fmtP(x.pct))+'</span><b>'+_escH(x.desc||x.codigo)+'</b><br>'
       +_escH(x.lote)+' · '+cx(x.emb)+' de '+cx(x.qtde)+dt(x)
       +(x.falta>0?' · faltou <b>'+cx(x.falta)+'</b>':'')+' · <span'+(x.sit==='aberto'?' class="pli-ab"':'')+'>'+_PLI_SIT[x.sit]+'</span></div>').join('');
     s+='</div>';
   });
-  return s+'<div class="pli-nota">% = embalado ÷ programado do lote interno, em caixas · no dia = embalado até o fim da data do lote (o adiantado entra); D+1 = no dia útil seguinte (sábado conta); D+2+ = depois — barra: claro no dia, médio D+1, escuro D+2+ · ficou aberto = o que faltou nas linhas encerradas (não volta) · ainda aberto = saldo vencido que está na programação'
+  return s+'<div class="pli-nota">% = embalado ÷ programado do lote interno, em caixas · no dia = embalado até o fim da data do lote (o adiantado entra); D+1 = no dia útil seguinte (sábado conta); D+2+ = depois — barra: claro no dia, médio D+1, escuro D+2+ · falta (X) = o que faltou nas linhas fechadas com o X: caixas aguardando peça, finalizadas no ERP · para embalar = saldo vencido que está na programação'
     +(R.semConta>0?' · '+plural(R.semConta, 'linha sem conta ficou', 'linhas sem conta ficaram')+' fora':'')+' · toque no lote para ver os itens</div>';
 }
 function renderLotesInternos(){

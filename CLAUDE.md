@@ -276,11 +276,14 @@ via Google Apps Script (JSONP).
   15/09/2026); não apagar o `acharAbaTolerante`.
 - ATENDIMENTO POR LOTE INTERNO (v7.260.0; 2ª sub-aba da PROGRAMAÇÃO do PC desde
   a v7.261.0, card do app, 🖨): em CAIXAS, a conta no `loteIntMontar` (rp-core) e as linhas no
-  `getAtendimentoLotes` (`.gs` v5.69, as duas abas, 28 dias).
+  `getAtendimentoLotes` (as duas abas; 35 dias desde o `.gs` v5.71, para o
+  seletor 10 · 20 lotes da v7.263.0).
   - Embalado da encerrada = o `prodConf`, nunca `QTDE − SALDO` (o SALDO é 0).
   - O 0 sem lançamento é só da linha de hoje.
-  - FICOU ABERTO = encerradas; AINDA EM ABERTO = vencidas na aba; o de hoje,
-    em andamento.
+  - Nomes (v7.263.0, "fácil entendimento"): EMBALADO, EMBALADO NO DIA
+    PROGRAMADO, FECHADO COM FALTA (X) = as encerradas, ITENS 100% EMBALADOS,
+    AINDA PARA EMBALAR = vencidas na aba; o de hoje, em andamento, fica fora dos
+    cartões (a legenda diz quais lotes entram).
   - Sem veredito.
   - A aba lê a programação e DEPOIS os lotes, em sequência. O `_progSub` só
     relê os lotes que falharam.
@@ -291,6 +294,11 @@ via Google Apps Script (JSONP).
   - Todos os itens, com o %, em UMA tabela com as colunas do lote: o que faltou
     vai em FICOU ABERTO ou AINDA ABERTO. Nada de tabela aninhada, e a coluna
     LOTES (ERP) não se esconde.
+  - ⚠ A DATA é o dia em que o lote DEVE ser embalado: NO DIA = cumprimento do
+    plano. FICOU ABERTO = caixas aguardando peça, finalizadas no ERP (e no Excel
+    VOLUMES PENDENTES do PPCP), não perda. O X continua; não propor deixar a
+    linha aberta nem finalizar pelo app (17/11/2026: o porquê está no
+    `programacao.md`).
 
 ## Produto, cadastro, cor e comparativo → `docs/memoria/produto-e-comparativo.md`
 - A cor mora na coluna `COR` da `PRODUTO_CODIGO`; as colunas são achadas pelo

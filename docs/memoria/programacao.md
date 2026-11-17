@@ -702,6 +702,108 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     até o próximo lançamento, e aberta para o FIFO. É transitório.
 - Testes: 8 de 8 mutações dos ajustes pegas (`lote-interno.test.js`).
 
+### O QUE A DATA É, O QUE O FICOU ABERTO É E AS PENDÊNCIAS DE PEÇA (decisões de 17/11/2026)
+- **A DATA da PROGRAMACAO é o dia em que o lote DEVE SER EMBALADO** (o dia D).
+  PPCP: *"data que deve ser embalado"*, *"essa data é previsão do dia D"*.
+  - Por isso o **NO DIA é o cumprimento do plano** da embalagem, e D+1 é atraso
+    (não é o normal do processo).
+  - 1ª leitura real, 17/11, lotes 202–211/26: NO DIA 43,5% · D+1 48,5% · D+2+
+    5,6% · atendido 97,6%. Ou seja, 54% das caixas saem depois do dia.
+  - A causa ainda não foi medida. Candidatas:
+    - atraso que se acumula de um dia para o outro;
+    - sequência fora do plano: adianta um lote e atrasa outro (o 25446 de hoje
+      teve 320 cx adiantadas);
+    - carga acima da capacidade;
+    - produção fora do plano, que o FIFO descarta e o painel não mostra;
+    - peça que chega no dia seguinte.
+- **FICOU ABERTO (linha encerrada pelo X) são caixas abertas aguardando
+  componente** (peça, ferragem, emplastificar). Não é produção perdida.
+  - Uma pessoa finaliza depois, e a **finalização é registrada no ERP**. O PPCP
+    também controla essas caixas no Excel *LOTES EM ELABORAÇÃO*, aba *VOLUMES
+    PENDENTES*, com as peças que faltam em cada uma.
+  - Na leitura de 17/11 eram 912 volumes em 63 lotes, com o pior há 29 dias
+    úteis:
+    - 523 cx (57%) em 12 itens inteiros;
+    - 319 cx em 109 linhas parciais por peça (mediana de 2 cx por linha);
+    - 70 cx em 22 linhas aguardando EMPLASTIFICAR (operação, não peça).
+  - O ITENS COMPLETOS (26%) baixo vem disso.
+- **Decidido (PPCP: *"vamos tocar da forma que está por enquanto"*):**
+  - **o X continua** fechando a linha com caixa aguardando peça. Ele tira a
+    linha do FIFO e do atraso;
+  - **a finalização não é apontada no app.**
+- **Recusado, com o porquê:**
+  - **Deixar as linhas abertas até finalizar** (PPCP: *"deixar tudo aberto e
+    eu mesmo finalizar"*):
+    - o FIFO daria as primeiras caixas do próximo lote do mesmo código à linha
+      velha: a falta mudaria de lote e o NO DIA do lote novo pioraria sem
+      motivo;
+    - o ATRASO, a Tela C, o ATRASO em horas e, com o SOMAR ATRASO ligado, a
+      meta do dia inchariam com caixas que a linha não pode embalar;
+    - o app do operador listaria os itens pendentes de peça como atraso.
+  - **Finalizar pelo lançamento normal do app**: a caixa entraria como
+    produção da hora (hora a hora, UEP, eficiência). Numa linha com X, iria para
+    o próximo lote do código ou seria descartada.
+  - **Uma tela FINALIZAR PENDÊNCIA no app** (só PPCP): tecnicamente possível,
+    sem mexer no FIFO nem na produção. Mas a finalização já é registrada no ERP
+    e no Excel; o app seria o 3º lugar para a mesma coisa.
+- **Para depois, nesta ordem:**
+  1. medir a causa dos 54% embalados depois do dia (lote a lote: NO DIA,
+     adiantado, fora do plano, atraso de cada manhã);
+  2. pendências lidas de UMA fonte (o export do ERP colado numa aba do Sheets,
+     se a lista do Excel vier do ERP), com o FICOU ABERTO dizendo "pendente" ou
+     "finalizado";
+  3. mostrar à parte o adiantado (antes do dia) e a produção fora do plano;
+  4. medir o custo do `getAtendimentoLotes` com o `relatorioTempos()`.
+
+### SELETOR 10 · 20 LOTES E OS CARTÕES "FÁCIL ENTENDIMENTO" (v7.263.0 / mobile 1.57.0 / `.gs` v5.71)
+- PPCP, 17/11/2026, com a sub-aba na tela: *"porque só essa qtde de lotes?"*.
+  - Os 10 eram uma escolha minha na prévia, não uma regra.
+  - Foi oferecido o seletor 10 · 20 (*"1 ok"*). O mês a mês por semana fica para
+    um indicador de tendência (e o Power BI), não para a lista.
+- **A janela do `.gs`**: com 28 dias a leitura trazia 20 lotes CONTANDO o de
+  hoje (193–212/26), então o "20" daria 19.
+  - `PROG_LI_DIAS` passou para 35 (~25 dias úteis), ~73 KB.
+  - Antes do re-deploy, a legenda diz *"só há 19 na leitura de 28 dias"*: nunca
+    finge 20.
+- **O seletor**:
+  - `PLI_NS=[10, 20]`, `PLI_N` guardado no navegador (`rpe_pli_n`; no app,
+    `rp_pli_n`), em try/catch. Vazio, inválido ou sem localStorage = 10.
+  - `_pliSetN`/`_pliSetNM` só redesenham, sem leitura: as linhas de 35 dias já
+    chegaram.
+  - No PC fica no cabeçalho da sub-aba (só tela). No app, na legenda, com
+    `stopPropagation` para o toque não abrir e fechar o card.
+- **Os cartões** (PPCP: *"deixa os cartões fácil entendimento"*): o nome diz o
+  que é, a linha de baixo diz de quê, e a régua exata vai no `title`.
+
+  | Nome novo (cartão) | Era | Coluna da tabela |
+  |---|---|---|
+  | EMBALADO | ATENDIDO · ÚLTIMOS N LOTES | % EMBALADO (era % ATENDIDO) |
+  | EMBALADO NO DIA PROGRAMADO | NO DIA · DATA DO LOTE | NO DIA |
+  | FECHADO COM FALTA (X) | FICOU ABERTO · ENCERRADO | FALTA (X) (era FICOU ABERTO) |
+  | ITENS 100% EMBALADOS | ITENS COMPLETOS (100%) | ITENS 100% |
+  | AINDA PARA EMBALAR | AINDA EM ABERTO · VENCIDO | PARA EMBALAR (era AINDA ABERTO) |
+
+  - A linha de baixo do FECHADO COM FALTA diz *"aguardando peça, finalizados no
+    ERP"*: a decisão de 17/11.
+  - Uma legenda em cima diz QUAIS lotes estão nos cartões (*"Lotes 202/26 a
+    211/26 — os 10 últimos já fechados · o de hoje (212/26) fica fora"*).
+  - O botão da sub-aba, o `title` do item e a nota usam os mesmos nomes (UM NOME
+    POR INDICADOR).
+- **"Deixar até o dia de hoje não distorce?"** (PPCP):
+  - O de hoje fica fora dos cartões.
+  - O de ONTEM entra. O NO DIA dele é definitivo (o dia acabou), mas o
+    EMBALADO e o D+1 ainda crescem até o fim de hoje: ficam um pouco menores.
+    No dado de 17/11 o 211/26 já estava em 98,9%.
+  - Ficou assim. Tirar o de ontem atrasaria a informação um dia; o AINDA PARA
+    EMBALAR mostra o que falta dele.
+  - Ofertado e não feito: marcar o D+1 do lote de ontem como "em curso" na
+    tabela.
+- Testes (`lote-interno.test.js`):
+  - o seletor numa vm: guarda, ignora o inválido, sem localStorage = 10, não lê;
+  - a legenda com 10 e com 20 (19 no retrato de 28 dias);
+  - os cinco nomes e os `title`;
+  - o seletor do app.
+
 ### Ficou de fora, de propósito
 - Um "% do lote" em UEP ou em pontos: o PERCENTUAL da planilha é em caixas, e
   a mesma régua evita dois números para a mesma pergunta.

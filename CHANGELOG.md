@@ -11,6 +11,42 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.263.0 · mobile 1.57.0 · `.gs` v5.71 — 17/11/2026 · seletor 10 · 20 lotes e cartões mais fáceis de ler
+
+O PPCP, no ATENDIMENTO POR LOTE INTERNO, perguntou *"porque só essa qtde de
+lotes?"* e pediu: *"deixa os cartões fácil entendimento"*.
+
+- **Seletor ÚLTIMOS 10 · 20 LOTES** no cabeçalho da sub-aba (e no card do app).
+  - Os cartões e a tabela passam a ter os 10 ou os 20 lotes fechados mais
+    recentes. O de hoje aparece sempre.
+  - A escolha fica guardada no navegador ou no aparelho.
+- **`.gs` v5.71**: a leitura cobre 35 dias, antes 28. Com 28 dias, o "20" daria
+  19 lotes. Até o re-deploy, a legenda diz *"só há 19 na leitura de 28 dias"*.
+- **Cartões em palavras da fábrica.** A régua exata fica ao passar o mouse.
+  - Uma legenda em cima diz quais lotes entram e que o de hoje fica fora.
+  - O FECHADO COM FALTA diz o que é: caixas aguardando peça, finalizadas no ERP.
+
+**Atenção** (só nomes, nenhum número muda):
+
+| Antes | Depois |
+|---|---|
+| cartão `ATENDIDO · ÚLTIMOS 10 LOTES` | `EMBALADO` |
+| cartão `NO DIA · DATA DO LOTE` | `EMBALADO NO DIA PROGRAMADO` |
+| cartão `FICOU ABERTO · ENCERRADO` | `FECHADO COM FALTA (X)` |
+| cartão `ITENS COMPLETOS (100%)` | `ITENS 100% EMBALADOS` |
+| cartão `AINDA EM ABERTO · VENCIDO` | `AINDA PARA EMBALAR` |
+| coluna `% ATENDIDO` | `% EMBALADO` |
+| coluna `FICOU ABERTO` | `FALTA (X)` |
+| coluna `AINDA ABERTO` | `PARA EMBALAR` |
+| botão da sub-aba `97,6% atendido · … itens completos · … cx em aberto` | `97,6% embalado · … no dia programado · … itens 100% · … cx para embalar` |
+
+O app usa os mesmos nomes.
+
+⚠ **re-deploy** do `.gs` v5.71 para o seletor "20" mostrar 20 lotes. Sem ele,
+mostra os que couberem em 28 dias e diz quantos.
+
+---
+
 ## v7.262.1 · mobile 1.56.1 · rp-core 1.23.1 — 17/11/2026 · ajustes da revisão
 
 O revisor do projeto conferiu a v7.260.0, a v7.261.0 e a v7.262.0 depois do

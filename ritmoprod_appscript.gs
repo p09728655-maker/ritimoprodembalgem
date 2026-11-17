@@ -1,5 +1,11 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.71 — A LEITURA DO ATENDIMENTO POR LOTE INTERNO COBRE 35 DIAS.
+//               PPCP, 17/11/2026: "porque só essa qtde de lotes?" → o seletor
+//               10 · 20 lotes no painel. Com 28 dias a leitura trazia 20 lotes
+//               contando o de hoje (193–212/26): o "20" daria 19. PROG_LI_DIAS
+//               28 → 35 (~25 dias úteis). Medido: ~58 KB em 28 dias → ~73 KB em
+//               35, abaixo dos 100 KB do cache. Nada mais muda. ⚠ re-deploy.
 // Versão: 5.70 — TEMPO DE ATENDIMENTO (quanto saiu no dia do lote).
 //               PPCP, 17/11/2026, com o ATENDIMENTO POR LOTE INTERNO na tela:
 //               "tempo de atendimento" → escolheu "quanto saiu no dia" (D+0 / D+1 /
@@ -652,7 +658,7 @@
 
 // A versão deste arquivo, a mesma do cabeçalho (v5.58). Vai no getDados para o
 // rodapé do painel dizer qual .gs está implantado — o GitHub não sabe.
-const GS_VERSAO = '5.70';
+const GS_VERSAO = '5.71';
 
 const SHEET_DADOS     = 'HORA_A_HORA';
 const SHEET_HIST      = 'HISTORICO';
@@ -6756,9 +6762,10 @@ function getProgramacaoSemana(p) {
 //   sem conta nenhuma → null (o painel conta à parte, nunca como 0).
 // Fora da esteira não entra (não é a linha que embala). A descrição vai em TODA
 // linha desde a v5.70 (o detalhe mostra todos os itens, com o %): ~58 KB para
-// as 247 linhas de 28 dias em 17/11/2026 — o limite de 100 KB do cache fica
-// perto de 420 linhas. (Na v5.69 ela ia só nas linhas que não completaram.)
-const PROG_LI_DIAS = 28;
+// as 247 linhas de 28 dias em 17/11/2026 (~73 KB com os 35 dias da v5.71) — o
+// limite de 100 KB do cache fica perto de 420 linhas. (Na v5.69 ela ia só nas
+// linhas que não completaram.)
+const PROG_LI_DIAS = 35;   // v5.71: 20 lotes fechados + o de hoje com folga de feriado (era 28: dava 19)
 function getAtendimentoLotes() {
   const hojeNum = dataParaNum(Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
   const deNum = _somaDiasNum(hojeNum, -PROG_LI_DIAS);
