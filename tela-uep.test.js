@@ -316,20 +316,21 @@ ok('letra do gráfico (v7.257.0): FEITO 80, META 52 laranja, eixo 40 em Barlow C
     '.tvg-svg .tvg-t2{font-family:var(--font-h);font-weight:600;font-size:40px'].map(t => html.includes(t)), [true, true, true]);
 
 console.log('\n── o gráfico no TAMANHO DA CAIXA (v7.173.0; print de 27/10, a janela do app no PC da TV) ──');
-// Caixas medidas no Chromium: a janela do app em 1920 (cabeçalho, abas, rodapé
-// e barra do Windows — o print), a TV cheia em 1920×1080 e em 1366×768, e o
-// gerencial em janelas de 1366×650, 1366×560 e 1280×600 (as duas últimas, da
-// revisão de 16/11/2026: lá o gráfico deixava um número de fora).
-const CAIXAS_G = { 'janela 1920 (o print)': { w: 1050, h: 654 }, 'TV cheia 1920×1080': { w: 1050, h: 842 },
-                   'TV cheia 1366×768': { w: 747, h: 575 }, 'janela 1366×650': { w: 747, h: 357 },
-                   'janela 1366×560': { w: 747, h: 268 }, 'janela 1280×600': { w: 700, h: 307 } };
+// Caixas do gráfico MEDIDAS no Chromium na v7.257.1 (a tela da G mudou de
+// tamanho na v7.257.0 — a revisão achou o teste ainda com as da v7.256.0):
+// a TV cheia em 1920×1080 e 1366×768, a janela do app em 1920 (o print), e o
+// gerencial em janelas de 1366×560 e 1280×600, na menor altura medida (com
+// hora extra ou o selo, o cartão cresce e o gráfico encolhe).
+const CAIXAS_G = { 'TV cheia 1920×1080': { w: 1085, h: 883 }, 'TV cheia 1366×768': { w: 772, h: 571 },
+                   'janela 1920 (o print)': { w: 1085, h: 659 }, 'janela 1366×560': { w: 772, h: 307 },
+                   'janela 1280×600': { w: 724, h: 346 } };
 const CAIXA_TV = ['janela 1920 (o print)', 'TV cheia 1920×1080', 'TV cheia 1366×768'];
 ok('escala: a letra da TV cheia vale até 620 px de altura; abaixo encolhe junto; sem caixa, 1',
    [_tvGEscala(654), +_tvGEscala(842).toFixed(3), +_tvGEscala(575).toFixed(3), +_tvGEscala(357).toFixed(3), _tvGEscala(0), _tvGEscala(5000)],
    [1, 1.002, 0.927, 0.576, 1, 1.3]);
 ok('o viewBox tem a proporção da caixa (antes 1000×840 fixo: na janela de 1920 sobravam 135 px de cada lado)',
    Object.values(CAIXAS_G).map(d => { const v = _tvGSvg(M, false, d).match(/viewBox="0 0 (\d+) (\d+)"/).slice(1).map(Number);
-     return Math.abs(v[0] / v[1] - d.w / d.h) < 0.01; }), [true, true, true, true, true, true]);
+     return Math.abs(v[0] / v[1] - d.w / d.h) < 0.01; }), [true, true, true, true, true]);
 ok('sem caixa (1º desenho, escondida) continua 1000×840', /viewBox="0 0 1000 840"/.test(_tvGSvg(M, false)), true);
 const noTempo = _tvUepMontar(montarD(889, { '07:00': 300, '08:00': 270, '09:00': 290, '10:00': 330, '12:12': 215, '13:00': 435, '14:00': 66 },
                                      { '07:00': 290, '08:00': 260, '09:00': 280, '10:00': 320, '12:12': 200, '13:00': 420, '14:00': 64 }),
@@ -361,6 +362,26 @@ ok('feito = esperado (14:49, o print de 27/10): o esperado segue até o fim da j
    [Math.round(noTempo.difUep), espPts(_tvGSvg(noTempo, false)) > noTempo.pts.length], [0, true]);
 ok('com distância (15:02, +312 UEP), o esperado segue até o fim da jornada', espPts(S1502) > M.pts.length, true);
 ok('meta batida: o esperado segue até o fim', espPts(_tvGSvg(batida, false)) > batida.pts.length, true);
+
+console.log('\n── o 2º cartão e o NO TEMPO (revisão da v7.257.0) ──');
+{
+  const semCad = _tvUepMontar(montarD(902, UEP_H, CX_H), { agoraMin: 902, prod: PROD, cat: [] });
+  const semProd = _tvUepMontar(montarD(902, UEP_H, CX_H), { agoraMin: 902 });
+  const g = mm => _tvGHtml(mm, false);
+  ok('jornada encerrada: JORNADA ENCERRADA, a falta em UEP e FALTARAM PARA A META',
+     [g(fimDia).includes('<div class="tvg-lbl">JORNADA ENCERRADA</div><div class="tvg-falta"><span><b>' + fmtN(Math.round(fimDia.falta)) + '</b>UEP</span></div>'),
+      g(fimDia).includes('>FALTARAM PARA A META<')], [true, true]);
+  ok('meta batida: ALCANÇADA e quanto passou, que vem PRONTO do modelo (acima), sem sinal',
+     [batida.acima > 0, g(batida).includes('<b>ALCANÇADA</b>'), g(batida).includes('>' + fmtN(Math.round(batida.acima)) + ' UEP ACIMA DA META<'), /\+\d/.test(g(batida).replace(/<svg[\s\S]*<\/svg>/, ''))],
+     [true, true, true, false]);
+  ok('sem UEP do produto de agora: só a UEP grande, e o aviso QUEBRA linha (em nowrap levava a tela a 0,70)',
+     [semCad.faltaCx, g(semCad).includes('<span><b>' + fmtN(Math.round(semCad.falta)) + '</b>UEP</span></div>'), g(semCad).includes('<div class="tvg-uep tvg-aviso">PRODUTO DE AGORA SEM UEP NO CADASTRO</div>'),
+      g(semProd).includes('<div class="tvg-uep tvg-aviso">NENHUM PRODUTO SELECIONADO NO APP</div>'), /#tv-slide-g \.tvg-uep\.tvg-aviso\{white-space:normal\}/.test(html)],
+     [null, true, true, true, true]);
+  ok('NO TEMPO (menos de meio minuto): "0 min" e NO TEMPO, sem a linha da distância',
+     [Math.abs(noTempo.difMin) < 0.5, g(noTempo).includes('<div class="tvg-min">0 min</div><div class="tvg-dir">NO TEMPO</div>'), /DO ESPERADO ·/.test(g(noTempo))], [true, true, false]);
+  ok('desenho sem conta: o ACIMA DA META vem do modelo', /m\.feito - m\.meta/.test(pegaJs('function _tvGHtml(')), false);
+}
 ok('grade de no máximo 4 passos: com a meta de 2.530, só 1.000 e 2.000',
    [...S1502.matchAll(/text-anchor="end" class="tvg-t2">([\d.]+)</g)].map(m => m[1]), ['1.000', '2.000']);
 ok('o ALMOÇO mora no pé da faixa', /y="(\d+)" text-anchor="middle" class="tvg-t2">ALMOÇO/.test(S1502) && +S1502.match(/y="(\d+)" text-anchor="middle" class="tvg-t2">ALMOÇO/)[1] > 700, true);

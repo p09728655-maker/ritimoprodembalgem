@@ -1666,13 +1666,13 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvg-graf{margin:0;min-width:0;min-height:0;display:flex;flex-direction:column;gap:clamp(4px,1vh,10px)}
 .tvg-svg{flex:1;min-height:0;width:100%;height:100%;display:block}
 .tvg-svg text{font-family:var(--font-d)}
-.tvg-svg .tvg-t0{font-family:var(--font-h);font-weight:700;font-size:80px;fill:var(--txt)}
-.tvg-svg .tvg-tm{font-family:var(--font-h);font-weight:700;font-size:52px;fill:var(--acc)}
-.tvg-svg .tvg-t2{font-family:var(--font-h);font-weight:600;font-size:40px;fill:var(--txt2)}
-.tvg-sw{display:inline-block;width:72px;height:0}
-.tvg-sw.f{border-top:16px solid var(--txt);border-radius:8px}
-.tvg-sw.e{border-top:9px dashed var(--txt2)}
-.tvg-sw.m{border-top:7px solid var(--acc)}
+#tv-slide-g .tvg-svg .tvg-t0{font-family:var(--font-h);font-weight:700;font-size:80px;fill:var(--txt)}
+#tv-slide-g .tvg-svg .tvg-tm{font-family:var(--font-h);font-weight:700;font-size:52px;fill:var(--acc)}
+#tv-slide-g .tvg-svg .tvg-t2{font-family:var(--font-h);font-weight:600;font-size:40px;fill:var(--txt2)}
+#tv-slide-g .tvg-sw{display:inline-block;width:72px;height:0}
+#tv-slide-g .tvg-sw.f{border-top:16px solid var(--txt);border-radius:8px}
+#tv-slide-g .tvg-sw.e{border-top:9px dashed var(--txt2)}
+#tv-slide-g .tvg-sw.m{border-top:7px solid var(--acc)}
 .tvg-cards{display:flex;flex-direction:column;gap:calc(var(--tvu-k,1)*clamp(10px,2vh,22px));min-width:0;min-height:0}
 /* TELA G (v7.257.0): letra de TV a 10–15 m, tudo pela escala --tvu-k */
 #tv-slide-g{padding:10px 2.5vw 12px}
@@ -1690,6 +1690,10 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 #tv-slide-g .tvg-min{font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(80px,min(11vw,19.5vh),230px));line-height:.88;color:var(--txt);font-variant-numeric:tabular-nums;white-space:nowrap}
 #tv-slide-g .tvg-dir{font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(44px,min(6vw,10.6vh),124px));line-height:.95;color:var(--txt);letter-spacing:2px;white-space:nowrap}
 #tv-slide-g .tvg-uep{font-family:var(--font-h);font-weight:600;font-size:calc(var(--tvu-k,1)*clamp(20px,min(2.4vw,4.2vh),48px));color:var(--txt2);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* o aviso (produto sem UEP, nenhum produto) QUEBRA linha: em nowrap ele era a
+   linha mais larga do cartão e levava a escala da tela inteira a 0,70 (revisão
+   da v7.257.0) */
+#tv-slide-g .tvg-uep.tvg-aviso{white-space:normal}
 #tv-slide-g .tvg-lbl{font-family:var(--font-h);font-weight:600;font-size:calc(var(--tvu-k,1)*clamp(24px,min(2.8vw,4.9vh),56px));letter-spacing:4px;color:var(--txt);white-space:nowrap}
 #tv-slide-g .tvg-falta{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 .5em;font-family:var(--font-h);font-weight:600;color:var(--txt);font-size:calc(var(--tvu-k,1)*clamp(26px,min(3vw,5.3vh),60px))}
 #tv-slide-g .tvg-falta b{font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(64px,min(8.2vw,14.6vh),170px));line-height:.92;margin-right:.08em;font-variant-numeric:tabular-nums}
@@ -4198,7 +4202,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.257.0';
+const APP_VER = '7.257.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -27627,6 +27631,7 @@ function _tvUepMontar(D, ctx){
   return {
     meta, porMin, feito, esp, ef, difUep, difMin: difUep / porMin,
     falta, faltaCx: falta > 0 && uepCx > 0 ? Math.ceil(falta / uepCx) : null,
+    acima: Math.max(0, feito - meta),   // meta batida: quanto passou (a Tela G escreve, não conta)
     he: Number(D.he) || 0,
     // "VOL 1/1" é ruído na TV; "VOL 1/3" fica — a UEP é daquele volume. Nome e
     // cor vão separados também: na letra de TV os dois não cabem numa linha.
@@ -27643,7 +27648,8 @@ function _tvUepMontar(D, ctx){
     baseNome: c.baseNome || ''
   };
 }
-// Rodapé comum das duas telas (desenho).
+// Rodapé da Tela F (desenho). A G não tem desde a v7.257.0: o "1 UEP = 1 caixa
+// de …" saiu dela (PPCP), e a linha da hora extra ela escreve sozinha.
 function _tvUepRodHtml(m){
   return '<div class="tvu-rod"><span>' + (m.he > 0 ? '+' + fmtN(Math.round(m.he)) + ' UEP em hora extra hoje — fora da meta' : '') + '</span>'
     + '<span>1 UEP = 1 caixa de ' + _rpEsc(m.baseNome) + '</span></div>';
@@ -27791,7 +27797,7 @@ function _tvGDesenho(m, selo, W, H){
   // Sem lugar livre nem com a letra no mínimo (a janela pequena do gerencial),
   // ele vai encostado numa curva, sobre a tarja: o número nunca sai da tela —
   // e o cartão não o repete mais (revisão de 16/11/2026).
-  const rF = { t:'FEITO ' + fmtN(Math.round(m.feito)), py:yf, f:80 };
+  const rF = { t:'FEITO ' + fmtN(Math.round(m.feito)), f:80 };
   const fundo = T + ph - 10;   // abaixo disto é o eixo e as horas
   const linhas = [m.pts.map(p => [x(p.t), y(p.f)]), espLinha.map(p => [x(p[0]), y(p[1])])];
   const larg = r => r.t.length * r.f * .42 + 18;
@@ -27880,13 +27886,13 @@ function _tvGHtml(m, selo){
       + '<div class="tvg-falta"><span><b>' + fmtN(Math.round(m.falta)) + '</b>UEP</span>'
       + (m.faltaCx ? '<span><b>' + fmtN(m.faltaCx) + '</b>caixas</span>' : '') + '</div>'
       + (m.faltaCx ? '<div class="tvg-prod tvu-nome">' + _rpEsc(m.prod.nome) + '</div>'
-         : '<div class="tvg-uep">' + (m.prod ? 'SEM UEP NO CADASTRO PARA O PRODUTO DE AGORA' : 'NENHUM PRODUTO SELECIONADO NO APP') + '</div>');
+         : '<div class="tvg-uep tvg-aviso">' + (m.prod ? 'PRODUTO DE AGORA SEM UEP NO CADASTRO' : 'NENHUM PRODUTO SELECIONADO NO APP') + '</div>');
   } else if(m.falta > 0){
     card2 = '<div class="tvg-lbl">JORNADA ENCERRADA</div><div class="tvg-falta"><span><b>' + fmtN(Math.round(m.falta)) + '</b>UEP</span></div>'
       + '<div class="tvg-uep">FALTARAM PARA A META</div>';
   } else {
     card2 = '<div class="tvg-lbl">META DO DIA</div><div class="tvg-falta"><span><b>ALCANÇADA</b></span></div>'
-      + '<div class="tvg-uep">' + fmtN(Math.round(m.feito - m.meta)) + ' UEP ACIMA DA META</div>';
+      + '<div class="tvg-uep">' + fmtN(Math.round(m.acima)) + ' UEP ACIMA DA META</div>';
   }
   // ⚠ "NO RITMO" é a palavra do VEREDITO (slRitmo): rótulo nenhum pode usá-la,
   // senão lido a 15 m parece selo mesmo com o selo desligado.

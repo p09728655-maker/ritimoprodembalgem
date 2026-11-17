@@ -11,6 +11,25 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.257.1 — 16/11/2026 · Tela G: ajustes da revisão
+
+O revisor do projeto conferiu a v7.257.0 depois do merge. Não achou número
+errado, mas apontou um caso que encolhia a tela.
+
+- **Produto sem UEP no cadastro**: o aviso não quebrava linha e, por ser a
+  linha mais larga, encolhia a tela inteira para 70%. Agora quebra, e a tela
+  fica no tamanho cheio. O texto ficou mais curto: *PRODUTO DE AGORA SEM UEP NO
+  CADASTRO*.
+- A **Atenção** da v7.257.0 foi corrigida e completada (os minutos, os
+  rótulos e o cartão da meta batida).
+- Por dentro: o *N UEP ACIMA DA META* vem pronto da conta (o desenho não
+  calcula), e o teste usa o tamanho real do gráfico em cada tela.
+
+**Atenção** (Tela G): o aviso *SEM UEP NO CADASTRO PARA O PRODUTO DE AGORA* →
+*PRODUTO DE AGORA SEM UEP NO CADASTRO*, que quebra linha.
+
+---
+
 ## v7.257.0 — 16/11/2026 · Tela G da TV: menos informação, mais visibilidade
 
 O PPCP mandou uma maquete com o pedido *"menos informação, mais visibilidade"*:
@@ -41,9 +60,15 @@ revisão da v7.256.0 pediu.
 - O cabeçalho da tela ficou maior e as margens laterais, menores.
 
 **Atenção** (antes → depois, Tela G, em relação à v7.256.0):
-- `−2 min` → `2 min` e, embaixo, `ATRÁS` em letra grande.
+- `2 min ATRÁS` na mesma linha e `do esperado · 12 UEP` → `2 min` grande,
+  `ATRÁS` embaixo em letra grande e `DO ESPERADO · 12 UEP`. *(Corrigido na
+  v7.257.1: a 1ª versão desta nota dizia `−2 min`, que era da v7.255.0.)*
 - FALTA: `156 caixas` grande e `de PENTEADEIRA PRINCESA · 332 UEP` → `332 UEP`
   e `156 caixas`, os dois grandes, e `PENTEADEIRA PRINCESA` na linha de baixo.
+- Rótulos: FALTA PARA A META DO DIA → FALTA PARA A META; JORNADA NORMAL
+  ENCERRADA → JORNADA ENCERRADA.
+- Meta batida: `2.890 UEP · +129 acima da meta` → `129 UEP ACIMA DA META` (o
+  feito está no gráfico).
 - Saíram da tela: o número do ESPERADO no gráfico (a distância está no cartão,
   em minutos e UEP), a linha `2.429 feitas · 2.441 esperadas`, a UEP/cx do
   produto, a hora em que a meta sai e o pontilhado RITMO DA META.
