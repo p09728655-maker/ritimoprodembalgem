@@ -455,7 +455,8 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   (*410 cx · 21.321 pts · desde 10/11*); a coluna **PTS** do ATRASO —
   CONFERÊNCIA (⚖ UEP › PRÓXIMOS DIAS), com o total no rodapé e no título. O
   número grande do card continua em horas de linha. A faixa da ⚖ UEP (o cartão
-  ATRASO de ~166 px a 1280) e a Tela C da TV ficaram sem pontos.
+  ATRASO de ~166 px a 1280) e a Tela C da TV ficaram sem pontos (a Tela C, desde a
+  v7.258.0, diz as HORAS de linha deste card — ver `tv.md`).
 - **A conta é UMA** (`atrasoVencido(lista, uepDe, metaUep, ptsDe)` no rp-core →
   `pts`, `semPts`) e o texto também (`atrasoPtsTxt`, o mesmo nos dois painéis);
   o quadro soma por código no `_gpxAtrasoMontar(linhas, porMin, ptsDe)`, com o

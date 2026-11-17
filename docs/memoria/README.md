@@ -29,6 +29,7 @@ de tema entra aqui também.
 - `.gs` v5.46 a v5.54 — o que mudou de regra (05/11/2026)
 
 ## TV — `tv.md`
+- TELA C da TV — o atraso em horas de linha (v7.258.0)
 - TELA D da TV — fechamento da semana passada
 - TELA E da TV — programação do dia
 - TELAS F e G da TV — a UEP do dia (v7.138.0 / `.gs` v5.26)
