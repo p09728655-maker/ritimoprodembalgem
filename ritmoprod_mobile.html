@@ -1133,7 +1133,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.54.0';
+const APP_VER   = '1.54.1';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -4062,8 +4062,8 @@ function _pdiaToggle(i){
 // ════════════════════════════════════════════════
 // A CONTA é a do rp-core (uepGerMontar / uepHoraJulga, 1.18.0), a MESMA do
 // gerencial do PC (v7.243.0/7.244.0): o veredito (uepCard), as horas em UEP, a
-// projeção, o que resta de jornada, quando a meta sai e o que falta em caixas do
-// produto de agora. Aqui só a leitura do celular (os slots vêm da HORA_A_HORA, com
+// projeção, o que resta de jornada e quando a meta sai (a falta em caixas do
+// produto de agora saiu na 1.54.0 / rp-core 1.21.0). Aqui só a leitura do celular (os slots vêm da HORA_A_HORA, com
 // os minutos pelo fim que o backend manda: 12:12 = 48, 16:00-16:59 = 59) e o
 // desenho. O teste confere o celular contra o PC no retrato de 13/11 16:22.
 let _GER_G = null;   // o modelo do último renderGerencial (a tabela hora a hora lê dele)

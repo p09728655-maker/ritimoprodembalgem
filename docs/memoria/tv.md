@@ -221,8 +221,8 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     frente/atrás, FALTA PARA A META em UEP ~~**e em caixas do produto de agora**~~
     (as caixas saíram na v7.259.0 — ver *A FALTA SÓ EM UEP*, abaixo),
     e ~~A META SAI ÀS (mantendo 288 UEP/h)~~ (o cartão saiu na v7.256.0 — ver
-    *UM VEREDITO SÓ NA G*, abaixo). Fala em tempo e caixas — é a que se lê sem
-    entender UEP.
+    *UM VEREDITO SÓ NA G*, abaixo). Fala em tempo ~~e caixas~~ (as caixas
+    saíram na v7.259.0) — é a que se lê sem entender UEP.
 - **Conta nenhuma nova**: `_tvUepModelo` lê o `_uepAbaDados` (4º leitor — o
   teste conta) e o `_tvUepMontar` só arruma para a TV (curva, minutos,
   caixas). Desenho em `_tvFHtml` / `_tvGHtml` / `_tvGSvg`, sem conta (o teste
@@ -401,10 +401,11 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     "FRENTE" na outra). O `−2 min` ao lado do NO RITMO se lia como contradição.
     ~~Saiu a linha *"2.429 feitas · 2.441 esperadas"*: os dois números estão no
     gráfico~~ — **voltou na v7.256.1** (abaixo).
-  - **A falta em CAIXAS no número grande** (*156 caixas*), com o produto e a
+  - ~~**A falta em CAIXAS no número grande** (*156 caixas*), com o produto e a
     UEP no apoio. Sem UEP no cadastro para o produto de agora, o número grande
-    volta a ser a UEP. ~~*de PENTEADEIRA PRINCESA · 332 UEP* numa linha só~~ —
-    corrigido na v7.256.1 (abaixo).
+    volta a ser a UEP. *de PENTEADEIRA PRINCESA · 332 UEP* numa linha só —
+    corrigido na v7.256.1 (abaixo).~~ (Saiu na v7.259.0 — ver *A FALTA SÓ EM
+    UEP*.)
   - ~~A legenda do pontilhado diz **RITMO DA META · 314/h**~~ (era *ATÉ A META,
     A 314/h*; o pontilhado saiu na v7.257.0).
   - Com dois cartões, a escala `--tvu-k` não precisa encolher: medido no
@@ -500,15 +501,16 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
 
     Os menores são a hora extra (a linha do rodapé tira altura) e, até a
     v7.257.0, o produto sem UEP: o aviso em `nowrap` era a linha mais larga e
-    levava a TV a 0,70 — desde a v7.257.1 ele quebra linha
-    (`.tvg-uep.tvg-aviso`) e fica em 1,00. Nada corta. ~~O nome comprido cabe
-    inteiro com 62 px~~ — medido só com o selo: SEM o selo a escala fica em
-    1,00 e *KIT 2 MESA CABECEIRA SLEEP* corta com "…" na TV (648 > 631 px em
-    1920; 469 > 449 em 1366). Permitido (`.tvu-nome`); o número nunca está
-    nessa linha.
+    levava a TV a 0,70 — ~~desde a v7.257.1 ele quebra linha
+    (`.tvg-uep.tvg-aviso`) e fica em 1,00~~ (o aviso e a regra saíram na
+    v7.259.0: o cartão não depende mais do produto). Nada corta. ~~O nome
+    comprido cabe inteiro com 62 px — medido só com o selo: SEM o selo a escala
+    fica em 1,00 e *KIT 2 MESA CABECEIRA SLEEP* corta com "…" na TV.~~ (O nome
+    do produto saiu da G na v7.259.0; na Tela F ele segue podendo cortar com
+    "…", `.tvu-prod.tvu-nome`, e número nunca vai nessa linha.)
   - O teste (`tela-uep.test.js`) prende:
-    - o print das 15:58 (selo NO RITMO, `2 min` / `ATRÁS`, 332 UEP e 156
-      caixas);
+    - o print das 15:58 (selo NO RITMO, `2 min` / `ATRÁS`, 332 UEP ~~e 156
+      caixas~~ — desde a v7.259.0 o teste prende que NÃO há caixas);
     - nenhum ADIANTADO / ATRASADO;
     - nenhuma projeção (pontilhado `0 16` ou horário) e `proj` / `chega` fora
       do modelo;
@@ -549,14 +551,25 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     tolerância zero desse texto continua — ver *UM VEREDITO SÓ NA G*). O
     `faltaCx` saiu do `uepGerMontar` (rp-core 1.21.0); o `m.prod` fica (a
     análise e a META EM CX da hora usam a UEP/cx do produto de agora).
-  - Medido no Chromium (o print das 08:53 e os outros 10 casos): a escala da G
-    sobe — TV 1920×1080 a 1,00 (era 0,90), 1366×768 0,95–1,00, janela 1920 a
-    0,95; nada corta.
+  - Medido no Chromium (o print das 08:53 e os outros 10 casos): a escala do
+    cartão FALTA sobe — TV 1920×1080 a 1,00 (era 0,90; meta batida e jornada
+    encerrada, que não mudaram, seguem em 0,90), 1366×768 0,95–1,00, janela
+    1920 a 0,95; nada corta (revisão: 0,90–1,00 na TV 1920 com o selo).
   - Testes: `tela-uep.test.js` (o cartão só com a UEP, nem caixas nem nome, no
     print das 15:58 e no das 08:53, sem produto ou sem UEP o mesmo cartão;
     `faltaCx` fora do modelo) e `relatorios.test.js` (os textos do PC e do
     celular sem *≈ cx de*; `faltaCx` fora do `uepGerMontar`). Contra o código
-    anterior: 7 + 4 falhas.
+    anterior: 6 + 4 falhas (a revisão contou; a nota dizia 7).
+  - **v7.259.1 · mobile 1.54.1 · rp-core 1.21.1 (revisão da v7.259.0; PPCP:
+    *"tirar as cx/h"*)**: o RITMO NECESSÁRIO da análise do gerencial do PC
+    (`_gerAnaliseUepHtml`) perdeu o *≈ N cx/h de PRODUTO* — a mesma premissa
+    (ritmo ÷ UEP/cx do produto de agora); o `_gerAnaliseUep` não devolve mais
+    `uepCx`/`prod`. O teste da meta batida comparava o `faltaCx` sumido
+    (`undefined` vira `null` no `JSON.stringify` — passava sempre) e agora
+    confere `'faltaCx' in`. Comentários do rp-core, do `_tvGHtml`, do
+    `_gerUepModelo`, do cabeçalho das F/G e do celular deixaram de dar a falta
+    em caixas como regra. O `m.prod` segue no modelo: a Tela F e a META EM CX
+    da hora usam a UEP/cx do produto de agora.
 - Mexeu em texto ou tamanho? Renderizar de novo na TV e no gerencial, nas
   duas resoluções, medindo ALTURA e largura.
 

@@ -51,7 +51,7 @@ META UEP · % DA META · CAIXAS (com a META EM CX embaixo).
 | **META UEP da hora no dia passado** | META UEP gravada × minutos da hora ÷ 527; em sábado e domingo **não há** (todo hora extra, v7.248.0) | UEP | `v7:_gerHorasHist` |
 | **META EM CX** (hora a hora) | meta de UEP da hora × caixas com UEP ÷ UEP da hora (a hora de agora sem caixa: ÷ UEP por caixa do produto de agora) | cx | `v7:_gerHoraLinha` · `mobile:_gerHoraLinhaM` |
 | **PICO / VALE** | a hora de jornada fechada com o maior / menor % da meta da hora | — | `v7:_gerAnaliseUep` |
-| **RITMO NECESSÁRIO** | (meta − UEP feita) ÷ minutos de jornada que restam a partir de agora × 60 (antes do 1º lançamento da jornada: a meta inteira ÷ 527 min); no celular, dentro do card PARA A META quando a meta não cabe | UEP/h | `v7:_gerAnaliseUep` · `mobile:_gerUepCardsM` + `rp-core:uepGerMontar` (`minRest`) |
+| **RITMO NECESSÁRIO** | (meta − UEP feita) ÷ minutos de jornada que restam a partir de agora × 60 (antes do 1º lançamento da jornada: a meta inteira ÷ 527 min); no celular, dentro do card PARA A META quando a meta não cabe. Só em UEP/h desde a v7.259.1 (saiu o *≈ N cx/h de PRODUTO*: o ritmo ÷ a UEP/cx do produto de agora) | UEP/h | `v7:_gerAnaliseUep` · `mobile:_gerUepCardsM` + `rp-core:uepGerMontar` (`minRest`) |
 
 ⚠ Sem a UEP no backend ou no cadastro, as caixas programadas voltam a dar o
 selo — nunca uma tela sem veredito. No dia passado, o veredito é a UEP gravada

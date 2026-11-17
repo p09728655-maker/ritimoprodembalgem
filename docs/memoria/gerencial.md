@@ -157,8 +157,8 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   (`uepGerMontar`, `uepHorasDia`, `uepHoraJulga`, `uepCxComHora`, `uepMinTxt`,
   `uepProj`, `uepDoProduto`, `UEP_HORA_TOL_MIN`) e os nomes do PC delegam
   (`_gerUepModelo`, `_uepAbaHoras`, `_gerHoraJulga`, `_uepAbaProj`,
-  `_tvUepDoProduto`…) — o celular 1.50.0 usa a mesma. O `G.m` (minutos, falta em
-  caixas, sai às, produto de agora) não vem mais do `_tvUepMontar`: vem do
+  `_tvUepDoProduto`…) — o celular 1.50.0 usa a mesma. O `G.m` (minutos, ~~falta em
+  caixas~~ — saiu na v7.259.0 / rp-core 1.21.0 —, sai às, produto de agora) não vem mais do `_tvUepMontar`: vem do
   `uepGerMontar` (null sem jornada lançada, como antes). Ver *GERENCIAL DO
   CELULAR: A UEP NA FRENTE*.
 - ⚠ **A v7.243.0 entrou na `main` antes de a revisão terminar** (o PPCP pediu o

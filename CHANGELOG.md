@@ -11,6 +11,24 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.259.1 · mobile 1.54.1 · rp-core 1.21.1 — 17/11/2026 · ajustes da revisão
+
+O revisor do projeto conferiu a v7.259.0 depois do merge e não achou número
+errado.
+
+- **RITMO NECESSÁRIO** (análise do gerencial do PC): saiu o *"≈ N cx/h de
+  PRODUTO"*. Era o ritmo dividido pela UEP por caixa do produto de agora, a
+  mesma suposição que saiu do PARA A META. O PPCP escolheu tirar.
+- Por dentro, sem efeito na tela:
+  - um teste que passava sempre agora confere de verdade;
+  - comentários e memória que ainda falavam da falta em caixas foram
+    acertados.
+
+**Atenção** (gerencial do PC, RITMO NECESSÁRIO): `para a meta em 6h55 de
+jornada · ≈ 377 cx/h de MESA CENTRO SLIM` → `para a meta em 6h55 de jornada`.
+
+---
+
 ## v7.259.0 · mobile 1.54.0 · rp-core 1.21.0 — 17/11/2026 · a falta para a meta só em UEP
 
 O PPCP viu na TV, às 08:53, *"2.603 caixas · MESA CENTRO SLIM"* no cartão FALTA
