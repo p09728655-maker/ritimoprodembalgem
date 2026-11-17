@@ -1183,6 +1183,16 @@ html.modo-dir #sec-dir.on{display:flex}
 .tbl-wrap{background:var(--surface);border:0.5px solid var(--border);border-radius:7px;overflow:hidden}
 .tbl-hdr{padding:12px 16px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .tbl-hdr-ttl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
+/* ATENDIMENTO POR LOTE INTERNO (v7.260.0): a MESMA marcação na tela e no papel
+   (_pliHtml); a pele do papel é o _PLI_SKIN. As cores do GPS são as etiquetas
+   físicas do lote — identificação, não veredito. */
+#sec-programacao .pli-wrap{margin-top:14px}
+#sec-programacao .pli-hdr{cursor:pointer;gap:10px;justify-content:flex-start}
+#sec-programacao .pli-seta{color:var(--txt2);font-size:11px;width:12px}
+#sec-programacao .pli-hdr-sub{font-family:var(--font-d);font-size:10px;color:var(--txt2);letter-spacing:.5px}
+#sec-programacao #pli-corpo{padding:14px 16px}
+#sec-programacao .pli-msg{font-family:var(--font-d);font-size:11px;color:var(--txt2);padding:8px 0}
+@media (max-width:1100px){ #sec-programacao .pli-kpis{grid-template-columns:repeat(2,minmax(0,1fr))} #sec-programacao .pli-lotes,#sec-programacao .pli-tab th.c-lotes{display:none} }
 /* PRODUTOS EMBALADOS HOJE (v7.201.0) — desenho do PC; a conta é a pdiaMontar
    do rp-core.js. Cor só onde há função: os blocos da faixa alternam dois tons
    neutros, laranja = agora, âmbar = hora extra. Nenhum verde/vermelho. */
@@ -3257,6 +3267,19 @@ if (_v7Instalado()) _v7EscondeBotao();
     </div>
   </div>
   <div id="prog2-dias"><div class="empty-msg" style="padding:20px">Carregando…</div></div>
+  <!-- ═══ ATENDIMENTO POR LOTE INTERNO (v7.260.0 / .gs v5.69) ═══
+       Fechado por padrão: a leitura (getAtendimentoLotes) só sai ao abrir. -->
+  <div class="tbl-wrap pli-wrap" id="pli">
+    <div class="tbl-hdr pli-hdr" onclick="_pliAlternar()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();_pliAlternar()}">
+      <span class="pli-seta" id="pli-seta">▸</span>
+      <span class="tbl-hdr-ttl">ATENDIMENTO POR LOTE INTERNO</span>
+      <span class="pli-hdr-sub">programado × embalado · últimos 10 lotes · em caixas</span>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px" onclick="event.stopPropagation();gerarRelatorioLotesInternos()"
+              title="O atendimento dos últimos lotes internos, com os itens que não completaram — para imprimir ou salvar em PDF">🖨 IMPRIMIR</button>
+    </div>
+    <div id="pli-corpo" style="display:none"></div>
+  </div>
 </section>
 
 <!-- ═══ PRODUÇÃO POR MODELO (visão dedicada: total do dia, um modelo por linha) ═══ -->
@@ -4199,14 +4222,14 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.259.1';
+const APP_VER = '7.260.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
 // .gs v5.57) e o rodapé compara: o GitHub e o editor do Apps Script não se
 // falam, e sem isso ninguém via qual .gs estava rodando. Mudou o .gs? Suba este
 // número junto com o GS_VERSAO de lá (o apps-script.test.js confere).
-const GS_REPO   = '5.68';
+const GS_REPO   = '5.69';
 let GS_IMPL;   // undefined = ainda não leu · null = o .gs implantado não informa (antes da v5.57)
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico e a
@@ -17379,6 +17402,220 @@ const PROG2_COLS = [
   { t:'LOTE', w:6 }, { t:'PRODUTO' }, { t:'QTDE', w:7, n:1 }, { t:'PESO', w:11, n:1 }, { t:'PONTOS', w:9, n:1 },
   { t:'UEP', w:7, n:1, uep:1, tip:'qtde × UEP por caixa do cadastro' }, { t:'EMBALADO', w:9, n:1 }, { t:'FALTA', w:12, n:1 }
 ];
+// ═══ ATENDIMENTO POR LOTE INTERNO (v7.260.0 · .gs v5.69 · rp-core 1.22.0) ═══
+// PPCP, 17/11/2026, com a PROGRAMACAO_CONCLUIDA na tela: "me mostre como podemos
+// apresentar percentual de cada lote que ficou aberto" → "vamos usar o lote
+// interno" → prévia com os lotes reais → "isso" (aba PROGRAMAÇÃO), "no app tbm",
+// "tem que pensar em impressão tbm". A CONTA é do rp-core (loteIntMontar, a mesma
+// do celular); aqui a LEITURA (getAtendimentoLotes: as duas abas, só as linhas
+// com LOTE INTERNO) e o DESENHO (_pliHtml), um só para a tela e o papel — o que
+// muda é a pele (_PLI_SKIN). O bloco nasce fechado e só lê ao abrir.
+let PLI=null, PLI_TS=0, PLI_VOO=null, PLI_FALHA=null, PLI_ERRO='', PLI_ABERTO=false;
+const PLI_TTL=10*60000;   // o .gs guarda 120 s; um lançamento invalida o cache dele
+const PLI_N=10;           // lotes fechados no resumo (a prévia aprovada: os últimos 10)
+const PLI_EXP={};         // lote interno → detalhe aberto na tela
+//   PLI_FALHA: null | 'sem-url' | 'sem-resposta' | 'sem-endpoint' (.gs antes da v5.69) | 'erro'
+async function _pliLer(){
+  const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getAtendimentoLotes';
+  let erro='';
+  for(let t=1; t<=3; t++){   // em sequência: o Apps Script atende uma execução por vez
+    try{
+      const json=await jsonpFetch(url);
+      if(json && json.ok && Array.isArray(json.linhas)) return { D:json };
+      if(json && json.erro) return { falha:'erro', erro:String(json.erro) };
+      // respondeu sem `linhas`: o dispatcher antigo não conhece a ação e cai no getDados()
+      return { falha:'sem-endpoint', erro:'' };
+    }catch(e){
+      erro=e && e.message ? e.message : '';
+      if(t<3) await new Promise(r=>setTimeout(r, t*1500));
+    }
+  }
+  return { falha:'sem-resposta', erro };
+}
+// Voo compartilhado: a tela e a impressão pedindo juntas fazem UMA leitura.
+function _pliCarregar(forcar){
+  if(PLI_VOO) return PLI_VOO;
+  if(!CFG.sheetsUrl){ PLI_FALHA='sem-url'; return Promise.resolve(false); }
+  if(!forcar && PLI && !PLI_FALHA && Date.now()-PLI_TS<PLI_TTL) return Promise.resolve(true);
+  PLI_VOO=_pliLer().then(r=>{
+    if(r.D){ PLI=r.D; PLI_FALHA=null; PLI_ERRO=''; return true; }
+    PLI_FALHA=r.falha; PLI_ERRO=r.erro||''; console.warn('[PROGRAMAÇÃO] lotes internos:', PLI_FALHA, PLI_ERRO);
+    return false;
+  }).finally(()=>{ PLI_VOO=null; PLI_TS=Date.now(); });
+  return PLI_VOO;
+}
+function _pliModelo(){
+  return PLI && typeof loteIntMontar==='function' ? loteIntMontar(PLI.linhas, Number(PLI.hojeNum)||0, PLI_N) : null;
+}
+// A causa da falha, dita (F3): "falta colar o .gs" só quando o backend RESPONDEU sem a ação.
+function _pliFalhaTxt(){
+  return PLI_FALHA==='sem-url' ? 'Sem conexão com o Google Sheets (URL do Apps Script vazia, ⚙).'
+    : PLI_FALHA==='sem-endpoint' ? 'O Apps Script ainda não tem esta leitura: cole o .gs v5.69 no editor e re-implante.'
+    : PLI_FALHA==='erro' ? 'O Apps Script respondeu com erro: '+_rpEsc(PLI_ERRO)
+    : 'O servidor não respondeu a tempo (3 tentativas). Abra de novo para tentar.';
+}
+// DESENHO (sem conta): o modelo do loteIntMontar. `papel` abre o detalhe de todo
+// lote (folha não tem clique) e esconde o que é só da tela (.so-tela).
+const _PLI_SIT={ fechado:'ENCERRADO', aberto:'EM ATRASO · na programação', andamento:'HOJE · em andamento' };
+function _pliHtml(M, papel){
+  if(!M || !M.lotes.length) return '<div class="pli-msg">Nenhum lote interno com data até hoje nas últimas '+(PLI&&PLI.dias||28)+' dias da programação (coluna LOTE INTERNO).</div>';
+  const R=M.resumo, cx=v=>fmtN(Math.round(v));
+  const gps=c=>'<span class="pli-gps g-'+_rpEsc(String(c||'').replace(/[^A-Z]/g, ''))+'"><i></i>'+_rpEsc(c||'—')+'</span>';
+  let s='<div class="pli-box"><div class="pli-kpis">'
+    +'<div class="pli-k"><div class="l">ATENDIDO · ÚLTIMOS '+R.nLotes+' LOTES</div><div class="v">'+fmtP(R.pct)+'</div>'
+      +'<div class="s">'+cx(R.emb)+' de '+cx(R.prog)+' cx'+(R.nLotes?' · '+_rpEsc(R.de)+' a '+_rpEsc(R.ate):'')+'</div></div>'
+    +'<div class="pli-k"><div class="l">FICOU ABERTO · ENCERRADO COM FALTA</div><div class="v">'+cx(R.ficou)+'<small>cx</small></div>'
+      +'<div class="s">'+plural(R.nFicou, 'item fechado', 'itens fechados')+' sem completar</div></div>'
+    +'<div class="pli-k"><div class="l">ITENS COMPLETOS (100%)</div><div class="v">'+fmtN(R.n100)+'<small>de '+fmtN(R.n)+'</small></div>'
+      +'<div class="s">'+(R.n?fmtP(R.n100/R.n*100)+' dos itens':'—')+'</div></div>'
+    +'<div class="pli-k'+(R.aberto>0?' ab':'')+'"><div class="l">AINDA EM ABERTO · LOTES VENCIDOS</div><div class="v">'+cx(R.aberto)+'<small>cx</small></div>'
+      +'<div class="s">'+(R.aberto>0?plural(R.nAberto, 'item', 'itens')+' na programação · '+R.lisAberto.map(_rpEsc).join(' · '):'nenhum lote vencido com saldo')+'</div></div>'
+    +'</div>';
+  s+='<table class="pli-tab"><thead><tr><th>LOTE INTERNO</th><th>COR GPS</th><th>DATA</th><th class="c-lotes">LOTES (ERP)</th>'
+    +'<th class="n">PROGRAMADO</th><th class="n">EMBALADO</th><th>% ATENDIDO</th><th class="n">ITENS 100%</th><th class="n">FICOU ABERTO</th><th class="n">AINDA ABERTO</th></tr></thead>';
+  M.lotes.forEach((g, i)=>{
+    const exp=papel ? g.itens.length>0 && !g.hoje : !!PLI_EXP[g.li];
+    // cada lote num <tbody> próprio: no papel o lote não se separa dos itens dele
+    s+='<tbody class="pli-g"><tr class="pli-lt'+(exp?' exp':'')+'" onclick="_pliExp('+i+')">'
+      +'<td class="pli-li"><span class="seta so-tela">'+(g.itens.length?(exp?'▾':'▸'):'·')+'</span>'+_rpEsc(g.li)+(g.hoje?'<span class="pli-hoje">HOJE</span>':'')+'</td>'
+      +'<td>'+gps(g.corGps)+'</td><td class="pli-mono">'+_rpEsc(g.data)+'</td>'
+      +'<td class="pli-lotes">'+g.lotes.map(_rpEsc).join(' · ')+'</td>'
+      +'<td class="n">'+cx(g.prog)+'</td><td class="n">'+cx(g.emb)+'</td>'
+      +'<td class="pli-pc">'+(g.pct==null?'<span class="pli-dim">—</span>'
+        :'<span class="pli-bar"><b style="width:'+Math.min(100, g.pct).toFixed(1)+'%"></b></span><span class="pli-pcn'+(g.hoje?' pli-dim':'')+'">'+fmtP(g.pct)+'</span>')+'</td>'
+      +'<td class="n">'+fmtN(g.n100)+' <small>de '+fmtN(g.n)+'</small></td>'
+      +'<td class="n">'+(g.ficou>0?cx(g.ficou)+' cx <small>· '+plural(g.nFicou, 'item', 'itens')+'</small>':'<span class="pli-dim">—</span>')+'</td>'
+      +'<td class="n">'+(g.hoje?'<span class="pli-dim">em andamento</span>':g.aberto>0?'<span class="pli-ab">'+cx(g.aberto)+' cx</span>':'<span class="pli-dim">—</span>')+'</td>'
+      +'</tr>';
+    if(exp) s+='<tr class="pli-det"><td colspan="10"><table class="pli-sub"><thead><tr><th>LOTE</th><th>CÓDIGO</th><th>PRODUTO</th>'
+      +'<th class="n">PROGRAMADO</th><th class="n">EMBALADO</th><th class="n">FALTOU</th><th>SITUAÇÃO</th></tr></thead><tbody>'
+      +g.itens.map(x=>'<tr><td class="pli-mono">'+_rpEsc(x.lote)+'</td><td class="pli-mono">'+_rpEsc(x.codigo)+'</td><td>'+_rpEsc(x.desc||'—')+'</td>'
+        +'<td class="n">'+cx(x.qtde)+'</td><td class="n">'+cx(x.emb)+'</td><td class="n">'+cx(x.falta)+'</td>'
+        +'<td'+(x.sit==='aberto'?' class="pli-ab"':' class="pli-dim"')+'>'+_PLI_SIT[x.sit]+'</td></tr>').join('')
+      +'</tbody></table></td></tr>';
+    s+='</tbody>';
+  });
+  s+='</table>'
+    +'<div class="pli-nota">% ATENDIDO = embalado ÷ programado do lote interno, em caixas (a régua da coluna PERCENTUAL da planilha) · '
+    +'FICOU ABERTO = o que faltou nas linhas ENCERRADAS (não volta) · AINDA ABERTO = o saldo das linhas que ainda estão na PROGRAMACAO com data vencida'
+    +(R.semConta>0?' · '+plural(R.semConta, 'linha sem a conta do embalado ficou', 'linhas sem a conta do embalado ficaram')+' fora das somas':'')
+    +'<span class="so-tela"> · clique no lote para ver os itens que não completaram</span></div></div>';
+  return s;
+}
+function renderLotesInternos(){
+  const c=document.getElementById('pli-corpo');
+  if(!c || !PLI_ABERTO) return;
+  _pliCssNaTela();
+  if(!PLI && PLI_VOO){ c.innerHTML='<div class="pli-msg">Lendo os lotes internos…</div>'; return; }
+  if(!PLI && PLI_FALHA){ c.innerHTML='<div class="pli-msg">'+_pliFalhaTxt()+'</div>'; return; }
+  c.innerHTML=_pliHtml(_pliModelo(), false)
+    +(PLI_FALHA?'<div class="pli-msg">'+_pliFalhaTxt()+' Mostrando a leitura anterior.</div>':'');
+}
+function _pliAlternar(){
+  PLI_ABERTO=!PLI_ABERTO;
+  const c=document.getElementById('pli-corpo'), seta=document.getElementById('pli-seta');
+  if(c) c.style.display=PLI_ABERTO?'':'none';
+  if(seta) seta.textContent=PLI_ABERTO?'▾':'▸';
+  if(!PLI_ABERTO) return;
+  const p=_pliCarregar(); renderLotesInternos(); p.then(renderLotesInternos);
+}
+function _pliExp(i){
+  const M=_pliModelo(), g=M && M.lotes[i];
+  if(!g || !g.itens.length) return;
+  PLI_EXP[g.li]=!PLI_EXP[g.li]; renderLotesInternos();
+}
+// O CSS do bloco, UMA vez para a tela e o papel (D2): o documento de impressão não
+// herda o <style> do painel — na 1ª versão os cartões saíam empilhados no papel.
+// Na tela ele entra no <head> na 1ª vez que o bloco desenha (_pliCssNaTela). As
+// cores do GPS são as etiquetas físicas do lote — identificação, não veredito.
+const _PLI_CSS=`
+  .pli-box{--gps-amarelo:#F2C94C;--gps-azul:#3B82F6;--gps-preto:#0B0B0B;--gps-verde:#27AE60;--gps-branco:#F5F5F5;--gps-vermelho:#E53935;--gps-outra:#8FA0B5}
+  .pli-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+  .pli-k{background:var(--elevated);border:0.5px solid var(--border);border-radius:7px;padding:11px 14px;min-width:0}
+  .pli-k .l{font-family:var(--font-d);font-size:9px;letter-spacing:1.5px;color:var(--txt2);text-transform:uppercase}
+  .pli-k .v{font-family:var(--font-h);font-weight:700;font-size:30px;line-height:1.05;margin-top:4px;color:var(--txt)}
+  .pli-k .v small{font-size:15px;color:var(--txt2);margin-left:3px;font-weight:600}
+  .pli-k .s{font-family:var(--font-d);font-size:10.5px;color:var(--txt2);margin-top:3px;line-height:1.4}
+  .pli-k.ab .v{color:var(--warn)}
+  .pli-tab{width:100%;border-collapse:collapse}
+  .pli-tab th{font-family:var(--font-d);font-size:9.5px;letter-spacing:1px;color:var(--txt2);font-weight:600;text-align:left;padding:8px 10px;border-bottom:0.5px solid var(--border)}
+  .pli-tab td{padding:8px 10px;border-bottom:0.5px solid var(--border);font-size:13px;vertical-align:middle;color:var(--txt)}
+  .pli-tab .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .pli-tab tr.pli-lt{cursor:pointer}
+  .pli-tab tr.pli-lt:hover td{background:var(--elevated)}
+  .pli-tab tr.pli-lt.exp td{background:var(--elevated)}
+  .pli-li{font-family:var(--font-h);font-weight:700;font-size:18px;letter-spacing:.5px;white-space:nowrap}
+  .pli-li .seta{color:var(--txt2);font-family:var(--font-d);font-size:10px;margin-right:6px}
+  .pli-hoje{font-family:var(--font-d);font-size:9px;letter-spacing:1px;color:var(--acc);border:1px solid var(--acc);border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle}
+  .pli-gps{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-d);font-size:10px;letter-spacing:1px;color:var(--txt2);white-space:nowrap}
+  .pli-gps i{width:11px;height:11px;border-radius:3px;border:1px solid var(--txt2);display:inline-block;background:var(--gps-outra);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pli-gps.g-AMARELO i{background:var(--gps-amarelo)}.pli-gps.g-AZUL i{background:var(--gps-azul)}.pli-gps.g-PRETO i{background:var(--gps-preto)}
+  .pli-gps.g-VERDE i{background:var(--gps-verde)}.pli-gps.g-BRANCO i{background:var(--gps-branco)}.pli-gps.g-VERMELHO i{background:var(--gps-vermelho)}
+  .pli-mono{font-family:var(--font-d);font-size:11.5px}
+  .pli-lotes{font-family:var(--font-d);font-size:10.5px;color:var(--txt2)}
+  .pli-pc{white-space:nowrap}
+  .pli-bar{display:inline-block;vertical-align:middle;width:110px;height:9px;background:var(--border);border-radius:5px;overflow:hidden;margin-right:8px}
+  .pli-bar b{display:block;height:100%;background:var(--txt);opacity:.85;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pli-pcn{font-family:var(--font-h);font-weight:700;font-size:18px}
+  .pli-tab small,.pli-sub small{color:var(--txt2);font-size:10.5px}
+  .pli-dim{color:var(--txt2)}
+  .pli-ab{color:var(--warn);font-weight:600}
+  .pli-tab tr.pli-det td{padding:0 10px 10px 34px;background:var(--elevated)}
+  .pli-sub{width:100%;border-collapse:collapse}
+  .pli-sub th{font-family:var(--font-d);font-size:9px;letter-spacing:1px;color:var(--txt2);text-align:left;padding:6px 8px;border-bottom:0.5px solid var(--border)}
+  .pli-sub td{padding:5px 8px;font-size:12px;border-bottom:0.5px solid var(--border);color:var(--txt)}
+  .pli-sub .n{text-align:right;font-variant-numeric:tabular-nums}
+  .pli-sub td.pli-ab{color:var(--warn)}.pli-sub td.pli-dim{color:var(--txt2)}
+  .pli-nota{font-family:var(--font-d);font-size:10.5px;color:var(--txt2);margin-top:10px;line-height:1.6}
+`;
+function _pliCssNaTela(){
+  if(document.getElementById('pli-css')) return;
+  const st=document.createElement('style'); st.id='pli-css'; st.textContent=_PLI_CSS; document.head.appendChild(st);
+}
+// A IMPRESSÃO: o MESMO _pliHtml, com os detalhes abertos (menos o de hoje, ainda
+// em andamento), na pele do papel.
+const _PLI_SKIN=`
+  .pli-doc{--bg:#fff;--surface:#fff;--elevated:#f6f8fa;--border:#e2e8f0;--txt:#1F2328;--txt2:#5B6470;--warn:#B26A00;--acc:#E65100;
+           --font-h:'Barlow Condensed',sans-serif;--font-d:'IBM Plex Mono',monospace;color:#1F2328}
+  .pli-doc .so-tela{display:none}
+  .pli-doc .pli-kpis{gap:8px;margin:4px 0 10px}
+  .pli-doc .pli-k{border:1px solid #e2e8f0;padding:7px 10px;page-break-inside:avoid}
+  .pli-doc .pli-k .v{font-size:22px}
+  .pli-doc .pli-tab td{font-size:10px;padding:3px 6px}
+  .pli-doc .pli-tab th{font-size:7.5px;padding:4px 6px}
+  .pli-doc .pli-sub th{background:none;color:#5B6470;border-bottom:1px solid #cbd5e0}
+  .pli-doc .pli-li{font-size:13px}
+  .pli-doc .pli-pcn{font-size:13px}
+  .pli-doc .pli-bar{width:70px;height:7px;background:#e2e8f0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pli-doc .pli-bar b{background:#1F2328}
+  .pli-doc .pli-tab tr.pli-lt td{border-top:1px solid #cbd5e0;background:#f6f8fa;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pli-doc .pli-tab tr.pli-det td{padding:0 6px 6px 24px;background:#fff}
+  .pli-doc .pli-sub td{font-size:9px;padding:2px 6px}
+  .pli-doc .pli-sub th{font-size:7.5px;padding:4px 6px}
+  .pli-doc thead{display:table-header-group}
+  .pli-doc tr{page-break-inside:avoid}
+  .pli-doc tbody.pli-g{break-inside:avoid;page-break-inside:avoid}
+  .pli-doc .pli-nota{font-size:8.5px}
+`;
+async function gerarRelatorioLotesInternos(){
+  const win=window.open('', '_blank', 'width=1100,height=800');
+  if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
+  win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Montando o atendimento por lote interno…</p></body></html>');
+  await _pliCarregar();
+  const M=_pliModelo();
+  if(!M){ win.close(); alert('Não foi possível ler os lotes internos.\n'+_pliFalhaTxt().replace(/<[^>]+>/g, '')); return; }
+  const R=M.resumo;
+  const meta='<b>'+fmtP(R.pct)+'</b> atendido · últimos '+R.nLotes+' lotes'+(R.nLotes?' ('+_rpEsc(R.de)+' a '+_rpEsc(R.ate)+')':'')
+    +'<br>emitido em '+new Date().toLocaleString('pt-BR');
+  const html=_rpDocParadas('Atendimento por lote interno — '+hojeStr(), true)
+    +'<style>'+_PLI_CSS+_PLI_SKIN+'</style></head><body>'
+    +_rpCabecalho('ATENDIMENTO POR LOTE INTERNO', meta)
+    +'<div class="pli-doc">'+_pliHtml(M, true)
+    +'<div class="rp-footer"><span>'+APP_NOME_CX+' · Embalagem</span><span>programação de '+_rpEsc(PLI.hoje||hojeStr())
+    +' · as duas abas (PROGRAMACAO + PROGRAMACAO_CONCLUIDA)</span></div></div>'
+    +_rpBotaoImprimir()+'</body></html>';
+  win.document.open(); win.document.write(html); win.document.close();
+}
 function renderProgramacaoDetalhada(){
   const wrap=document.getElementById('prog2-dias');
   const totEl=document.getElementById('prog2-totais');
@@ -21244,7 +21481,7 @@ function setTab(tab){
   if(tab==='uep'){ _uepSubMarca(UEP_SUB); renderUep(); if(UEP_SUB==='reguas'){ UEP_ABA_PEND=true; _regAbrir(); } else { UEP_ABA_PEND=false; _uepDepoisDe(()=>REG_RODANDO, ()=>{ if(_abaOn('uep')) _uepAbaCarregar(); }); } }
   if(tab==='crono'){ const di=_ucvEl('dia'); if(di && !di.value) di.value=_ucvDiaParaCampo(hojeStr());   // o dia dos ESTUDOS DO DIA: hoje, se ninguém escolheu
     _uepConvAtualiza(); _uepAbaCatCarregar().then(()=>_ucvRegsCarregar()).then(()=>_ucvConfCarregar()).then(()=>_ucvLinhaCarregar()).then(()=>_ucvProgCarregar()); }   // só o cadastro (10 min de cache); o resto do painel já tem a meta
-  if(tab==='programacao') carregarProgramacaoDetalhada().then(renderProgramacaoDetalhada);
+  if(tab==='programacao') carregarProgramacaoDetalhada().then(renderProgramacaoDetalhada).then(()=>{ if(PLI_ABERTO) return _pliCarregar().then(renderLotesInternos); });
   if(tab==='plano'){ _qpInitFiltro(); renderCarteira(); renderQualidadePlano(); }
   if(tab==='producaohora'){ _initFiltroPH(); renderModeloPeriodo(); lerPontosDia().then(renderProducaoPorHoraDedicada); }
   // Carrossel das telas: mostra os controles (pausar/passar) só p/ o gestor na

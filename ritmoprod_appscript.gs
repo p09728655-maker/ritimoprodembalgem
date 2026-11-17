@@ -1,5 +1,18 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.69 — ATENDIMENTO POR LOTE INTERNO (getAtendimentoLotes).
+//               PPCP, 17/11/2026, com a PROGRAMACAO_CONCLUIDA na tela: "me mostre
+//               como podemos apresentar percentual de cada lote que ficou aberto"
+//               → "vamos usar o lote interno" → prévia com os lotes reais → aba
+//               PROGRAMAÇÃO do painel, o app e a impressão. A leitura nova junta
+//               as DUAS abas (PROGRAMACAO + PROGRAMACAO_CONCLUIDA) e devolve, por
+//               linha de lote interno com data até hoje (nas últimas
+//               PROG_LI_DIAS), o programado e o EMBALADO da linha — a conta
+//               (% por lote interno, itens 100%, o que ficou aberto) é do rp-core
+//               (loteIntMontar), a mesma no PC e no celular. O _lerProgDaAba
+//               passa a dar também o prodConf (o PRODUZIDO confiável de TODA linha,
+//               não só da encerrada) e a COR GPS (só para mostrar). Nada no FIFO,
+//               no saldo, no arquivamento nem na meta muda. ⚠ re-deploy manual.
 // Versão: 5.68 — SÁBADO E DOMINGO SÃO HORA EXTRA O DIA INTEIRO.
 //               PPCP, 16/11/2026, com o PERÍODO da aba ⚖ UEP na tela (o sábado
 //               14/11 em vermelho, 894 UEP de meta 1.257, 71,1%): "aos sábados
@@ -627,7 +640,7 @@
 
 // A versão deste arquivo, a mesma do cabeçalho (v5.58). Vai no getDados para o
 // rodapé do painel dizer qual .gs está implantado — o GitHub não sabe.
-const GS_VERSAO = '5.68';
+const GS_VERSAO = '5.69';
 
 const SHEET_DADOS     = 'HORA_A_HORA';
 const SHEET_HIST      = 'HISTORICO';
@@ -1394,6 +1407,7 @@ const CACHE_TTL_LEITURA = {
   getConferenciaCrono: 300,        // v5.34: a troca e o lançamento invalidam
   getHorasCrono: 300,              // v5.35: o lançamento invalida (a chave leva de/ate)
   getProgramacaoSemana: 120,       // v5.59: as duas abas e o cadastro; o lançamento invalida
+  getAtendimentoLotes: 120,        // v5.69: as duas abas e o cadastro (atendimento por lote interno)
   getTemposAlvo: 300               // v5.62: o cadastro e a config; v5.63: e a programação (o takt da semana)
 };
 
@@ -1519,7 +1533,8 @@ const CACHE_DEP_LEITURA = {
   getPontosDia: ['prod', 'cat', 'cfg'], getProgramacaoHoje: ['prod', 'cat'],
   getProgramacaoDetalhada: ['prod', 'cat'], getProducaoModeloPeriodo: ['prod', 'cat'],
   getCronoRegistros: ['crono'], getConferenciaCrono: ['crono', 'cat'],
-  getProgramacaoSemana: ['prod', 'cat'], getTemposAlvo: ['cat', 'cfg', 'prod']
+  getProgramacaoSemana: ['prod', 'cat'], getTemposAlvo: ['cat', 'cfg', 'prod'],
+  getAtendimentoLotes: ['prod', 'cat']   // v5.69
 };
 const CACHE_INV_ESCRITA = {
   saveDay: ['prod'], addHE: ['prod'], saveRealizado: ['prod'], setTurnoInicio: ['prod'],
@@ -1647,6 +1662,7 @@ function doGet(e) {
     else if (act === 'getProgramacaoHoje') result = getProgramacaoHoje();
     else if (act === 'getProgramacaoDetalhada') result = getProgramacaoDetalhada();
     else if (act === 'getProgramacaoSemana') result = getProgramacaoSemana(p);   // v5.59
+    else if (act === 'getAtendimentoLotes') result = getAtendimentoLotes();      // v5.69
     else if (act === 'getTemposAlvo') result = getTemposAlvo();   // v5.62: o tempo-alvo de cada produto (app de cronoanálise)
     else if (act === 'setConfigPainel') result = setConfigPainel(p);
     else if (act === 'setUepCatalogo')  result = setUepCatalogo(p);
@@ -5992,6 +6008,9 @@ function _lerProgDaAba(sh, arquivada) {
   // LOTE INTERNO (v5.39): o lote da fábrica (ex. 203/26), opcional e só para
   // mostrar. Pelo nome com INTERNO — o "contém LOTE" acima acha o LOTE (col. A).
   const iLtInt = hdr.findIndex(function (h) { return h.indexOf('LOTE') >= 0 && h.indexOf('INTERNO') >= 0; });
+  // COR GPS (v5.69): a cor da etiqueta do lote na fábrica, opcional e só para
+  // mostrar (atendimento por lote interno). Pelo nome com GPS.
+  const iGps  = hdr.findIndex(function (h) { return h.indexOf('GPS') >= 0; });
   // ADIANTADO_CX (v5.67 lê; o write-back grava desde a v5.23): caixas da linha vindas de produção ANTES da data dela
   const iAdi  = hdr.indexOf('ADIANTADO_CX');
   const cData = iData >= 0 ? iData : 0;
@@ -6025,6 +6044,12 @@ function _lerProgDaAba(sh, arquivada) {
                status: iStat >= 0 ? String(r[iStat] == null ? '' : r[iStat]).trim().toUpperCase() : '',
                ordem: iOrd >= 0 && String(r[iOrd] == null ? '' : r[iOrd]).trim() !== '' && isFinite(Number(r[iOrd])) ? Number(r[iOrd]) : null,
                loteInt: iLtInt >= 0 ? _loteIntTxt(r[iLtInt]) : '',
+               corGps: iGps >= 0 ? String(r[iGps] == null ? '' : r[iGps]).trim().toUpperCase() : '',
+               // v5.69: o PRODUZIDO de TODA linha, quando a célula é DELA (o mesmo
+               // _produzidoConfiavel do teto da encerrada). null = sem conta. Só o
+               // atendimento por lote interno lê; o FIFO e o `produzido` acima, não.
+               prodConf: _produzidoConfiavel(iProd >= 0 ? r[iProd] : '', iSald >= 0 ? r[iSald] : '',
+                                             iStat >= 0 ? r[iStat] : '', qtde),
                // v5.59: o SALDO da linha, só quando a célula é DELA (ver
                // _saldoConfiavel). Só a semana do takt lê; o FIFO não.
                saldo: _saldoConfiavel(iProd >= 0 ? r[iProd] : '', iSald >= 0 ? r[iSald] : '', qtde),
@@ -6682,6 +6707,55 @@ function getProgramacaoSemana(p) {
            linhas: linhas, feriados: feriados };
   if (vencidoAntes) out.vencidoAntes = vencidoAntes;
   return out;
+}
+
+// ════════════════════════════════════════════════════════
+// ATENDIMENTO POR LOTE INTERNO (v5.69)
+// ════════════════════════════════════════════════════════
+// PPCP, 17/11/2026: o percentual de cada lote interno que ficou aberto. As DUAS
+// abas (a linha concluída muda para a PROGRAMACAO_CONCLUIDA), só as linhas COM
+// LOTE INTERNO e com data até hoje, nas últimas PROG_LI_DIAS. Por linha: o
+// programado (QTDE) e o EMBALADO:
+//   encerrada (X no ENCERRAR ou STATUS ENCERRADO) → o PRODUZIDO confiável (o
+//     que ela fechou; a diferença é o que FICOU ABERTO e não volta);
+//   senão, com o SALDO da própria linha (_saldoConfiavel) → QTDE − SALDO (a
+//     concluída tem SALDO 0; a aberta, o que falta);
+//   senão o PRODUZIDO confiável; a linha de HOJE ainda sem lançamento → 0;
+//   sem conta nenhuma → null (o painel conta à parte, nunca como 0).
+// Fora da esteira não entra (não é a linha que embala). A descrição só vai nas
+// linhas que não completaram (é o detalhe que a tela abre) — a resposta fica
+// abaixo dos 100 KB do cache.
+const PROG_LI_DIAS = 28;
+function getAtendimentoLotes() {
+  const hojeNum = dataParaNum(Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
+  const deNum = _somaDiasNum(hojeNum, -PROG_LI_DIAS);
+  const catByKey = {};
+  lerCatalogoProdutos().forEach(function (pr) { catByKey[codKey(pr.codigo)] = pr; });
+  const linhas = [];
+  let semLote = 0;
+  lerProgramacao(true).forEach(function (pr) {
+    const dNum = dataParaNum(pr.data);
+    if (!dNum || dNum < deNum || dNum > hojeNum || pr.foraEsteira) return;
+    if (!pr.loteInt) { semLote++; return; }
+    const qtde = Number(pr.qtde) || 0;
+    const enc = !!pr.encerrada || pr.status === 'ENCERRADO';
+    let emb;
+    if (enc) emb = pr.prodConf;
+    else if (pr.saldo != null) emb = Math.max(0, qtde - pr.saldo);
+    else if (pr.prodConf != null) emb = pr.prodConf;
+    else if (!pr.arquivada && dNum === hojeNum && pr.saidaVazia) emb = 0;
+    else emb = null;
+    const cat = catByKey[codKey(pr.codigo)];
+    linhas.push({
+      li: pr.loteInt, data: _numParaDataBR(dNum), dataNum: dNum, lote: pr.lote || '',
+      codigo: cat ? cat.codigo : pr.codigo,
+      desc: emb == null || emb < qtde ? (cat ? cat.desc : '') : '',
+      corGps: pr.corGps || '', qtde: qtde, emb: emb, encerrada: enc,
+      aba: pr.arquivada ? 'concluida' : 'aberta'
+    });
+  });
+  linhas.sort(function (a, b) { return (b.dataNum - a.dataNum) || String(a.lote).localeCompare(String(b.lote)); });
+  return { ok: true, hoje: _numParaDataBR(hojeNum), hojeNum: hojeNum, dias: PROG_LI_DIAS, linhas: linhas, semLote: semLote };
 }
 
 

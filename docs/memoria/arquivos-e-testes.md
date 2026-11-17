@@ -197,6 +197,15 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   mutações — a 10ª é equivalente); e (v7.246.0) o EMBALOU ANTES na barra do
   dia (o 25441 de 16/11: 838 cx, 5h20; tela, papel, legenda, sem o campo):
   `node takt-semana.test.js`.
+- `lote-interno.test.js` — ATENDIMENTO POR LOTE INTERNO (v7.260.0 / `.gs` v5.69).
+  - A fixture são as 247 linhas reais de 17/11. Confere:
+    - a conta do `loteIntMontar` (97,4%, 405 cx em 85 itens, 31 de 118
+      completos, 36 cx ainda abertas);
+    - o `getAtendimentoLotes` real numa vm (as regras do embalado, a janela, a
+      descrição só na linha incompleta);
+    - o desenho do PC na tela e no papel, e o do app (escape, clique por
+      índice, sem conta no desenho).
+  - Pegou 9 de 9 mutações: `node lote-interno.test.js`.
 - `testes.js` — **`node testes.js`: todas as suítes + o lint**, uma de cada vez,
   com o resumo; sai com 1 se algo falhar; suíte que passa de 2 min reprova
   (v7.248.2).

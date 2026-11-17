@@ -152,6 +152,27 @@ abate o lote aberto **mais antigo** do mesmo código.
 outro lote do mesmo código ou é descartada, e a meta do dia encolhe. Para
 fechar uma linha que não vai completar, é **ENCERRAR**, não apagar.
 
+## Atendimento por lote interno (v7.260.0 · aba PROGRAMAÇÃO, app, 🖨)
+
+Por **lote interno** (`LOTE INTERNO` da programação, ex. `210/26`). Cada lote
+interno é um dia de programação, com uma COR GPS e vários lotes do ERP. As
+contas são em **caixas**. Linhas: as duas abas (PROGRAMACAO + CONCLUIDA), com
+data nos últimos 28 dias até hoje, fora da esteira fora.
+
+| Termo | Fórmula | Unidade | Onde está |
+|---|---|---|---|
+| **EMBALADO da linha** | encerrada (X ou STATUS ENCERRADO) → o PRODUZIDO confiável da linha; senão `QTDE − SALDO` (saldo confiável); senão o PRODUZIDO confiável; linha de hoje sem lançamento → 0; sem nada disso → **sem conta** (fora das somas, contada; nunca 0). Limitado à `QTDE` | cx | `.gs` `getAtendimentoLotes` |
+| **% ATENDIDO** (do lote interno) | Σ embalado ÷ Σ programado das linhas do lote interno | % | `rp-core` `loteIntMontar` |
+| **% ATENDIDO · ÚLTIMOS N LOTES** (cartão) | o mesmo, somando os **N** (10) lotes internos fechados mais recentes. O de hoje fica fora | % | `rp-core` `loteIntMontar` |
+| **ITENS COMPLETOS (100%)** | linhas com embalado = QTDE ÷ linhas com conta, nos N lotes | itens | `rp-core` `loteIntMontar` |
+| **FICOU ABERTO** | Σ (QTDE − embalado) das linhas **encerradas**, nos N lotes. Não volta: o PPCP fechou a linha | cx | `rp-core` `loteIntMontar` |
+| **AINDA EM ABERTO** | Σ (QTDE − embalado) das linhas que **ainda estão na PROGRAMACAO** com data **anterior a hoje**, de **todos** os lotes da janela (não só dos N) — o atraso desses lotes | cx | `rp-core` `loteIntMontar` |
+| **HOJE · em andamento** | o lote interno de hoje: mostrado com o %, mas fora dos cartões; a falta dele não é FICOU nem AINDA ABERTO | — | `rp-core` `loteIntMontar` |
+
+⚠ O % do lote é **média ponderada pelas caixas**. Por isso um lote fecha em
+97% com só 1 item em 4 completo: a falta pequena espalhada por muitos itens
+quase não pesa nas caixas. O ITENS COMPLETOS é o número que mostra isso.
+
 ## Qualidade do plano (aba 📐 PLANO)
 
 Mede o **plano**, não a linha. Medido no `HISTORICO` em 15/09/2026 (79 dias), a

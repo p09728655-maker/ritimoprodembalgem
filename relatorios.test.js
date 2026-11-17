@@ -1991,8 +1991,8 @@ ok('não repete o relatório de controle', /swotHtml|linhasTipo|<div class="rp-s
 // o próximo ajuste consertasse um e esquecesse o outro (#204/#205).
 ok('o CSS do documento é declarado uma vez só',
    (JS.match(/function _rpDocParadas\(/g) || []).length, 1);
-ok('e os vinte relatórios usam ele (paradas, perdas, min/1000, proposta de investimento, qualidade do plano, carteira, estudo de UEP, capacidade em UEP — dia montado e por produto —, a UEP executiva, o padrão × realizado por produto, a fila de cronoanálise, caixas × UEP, a cronoanálise → UEP, a programação × capacidade, os estudos do dia, o onde o tempo vai, o takt da semana, as 4 semanas e a avaliação da programação)',
-   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 20);
+ok('e os vinte e um relatórios usam ele (o atendimento por lote interno, v7.260.0; paradas, perdas, min/1000, proposta de investimento, qualidade do plano, carteira, estudo de UEP, capacidade em UEP — dia montado e por produto —, a UEP executiva, o padrão × realizado por produto, a fila de cronoanálise, caixas × UEP, a cronoanálise → UEP, a programação × capacidade, os estudos do dia, o onde o tempo vai, o takt da semana, as 4 semanas e a avaliação da programação)',
+   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 21);
 // A camada abre o documento no relatório dela: sem "o relatório acima" e sem
 // a quebra de página que imprimiria uma folha em branco.
 ok('o relatório da tela marca a camada como sozinha', /ctx\.soZinho=true/.test(_relPg), true);
@@ -3260,8 +3260,8 @@ console.log('\n── o slogan vai em TODA impressão ──');
 // ponto de destaque é o FINAL, e o "·" do meio é texto normal.
 ok('o cabeçalho comum dos relatórios leva o slogan',
    /rp-slogan[^>]*>Medimos o pulso da·linha<span[^>]*>\.<\/span>/.test(_v7), true);
-ok('e é UMA implementação — os 24 relatórios passam pelo _rpCabecalho',
-   (_v7.match(/_rpCabecalho\(/g) || []).length, 25);   // 23 chamadas (+ 4 semanas, + UEP executiva + padrão × realizado + fila de cronoanálise + caixas × UEP + cronoanálise → UEP + programação × capacidade + estudos do dia + onde o tempo vai + takt da semana) + a declaração
+ok('e é UMA implementação — os 25 relatórios passam pelo _rpCabecalho (+ o atendimento por lote interno, v7.260.0)',
+   (_v7.match(/_rpCabecalho\(/g) || []).length, 26);   // 23 chamadas (+ 4 semanas, + UEP executiva + padrão × realizado + fila de cronoanálise + caixas × UEP + cronoanálise → UEP + programação × capacidade + estudos do dia + onde o tempo vai + takt da semana) + a declaração
 ok('os dois cabeçalhos de impressão do painel também levam',
    (_v7.match(/class="print-header-slogan">Medimos o pulso da·linha<span>\.<\/span>/g) || []).length, 2);
 // O slogan aparece em SEIS lugares no desktop, e a forma é a MESMA nos seis —
