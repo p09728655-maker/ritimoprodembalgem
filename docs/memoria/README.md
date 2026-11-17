@@ -55,6 +55,7 @@ de tema entra aqui também.
 - ATENDIMENTO POR LOTE INTERNO (v7.260.0 / mobile 1.55.0 / rp-core 1.22.0 / `.gs` v5.69)
 - SUB-ABAS DA 📅 PROGRAMAÇÃO (v7.261.0) — dentro da seção acima
 - TEMPO DE ATENDIMENTO, % DE CADA ITEM E ALINHAMENTO (v7.262.0 / `.gs` v5.70) — dentro da seção acima
+- O QUE A DATA É, O QUE O FICOU ABERTO É E AS PENDÊNCIAS DE PEÇA (decisões de 17/11/2026) — dentro da seção acima
 
 ## Produto, cadastro, cor e comparativo — `produto-e-comparativo.md`
 - Produto × cor (relatórios por modelo)

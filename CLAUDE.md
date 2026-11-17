@@ -291,6 +291,11 @@ via Google Apps Script (JSONP).
   - Todos os itens, com o %, em UMA tabela com as colunas do lote: o que faltou
     vai em FICOU ABERTO ou AINDA ABERTO. Nada de tabela aninhada, e a coluna
     LOTES (ERP) não se esconde.
+  - ⚠ A DATA é o dia em que o lote DEVE ser embalado: NO DIA = cumprimento do
+    plano. FICOU ABERTO = caixas aguardando peça, finalizadas no ERP (e no Excel
+    VOLUMES PENDENTES do PPCP), não perda. O X continua; não propor deixar a
+    linha aberta nem finalizar pelo app (17/11/2026: o porquê está no
+    `programacao.md`).
 
 ## Produto, cadastro, cor e comparativo → `docs/memoria/produto-e-comparativo.md`
 - A cor mora na coluna `COR` da `PRODUTO_CODIGO`; as colunas são achadas pelo
