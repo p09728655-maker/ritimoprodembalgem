@@ -202,7 +202,7 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     - a conta do `loteIntMontar` (97,4%, 405 cx em 85 itens, 31 de 118
       completos, 36 cx ainda abertas);
     - o `getAtendimentoLotes` real numa vm (as regras do embalado, a janela, a
-      descrição só na linha incompleta);
+      descrição em toda linha desde a v5.70 — até a v5.69, só na incompleta);
     - o desenho do PC na tela e no papel, e o do app (escape, clique por
       índice, sem conta no desenho).
   - Pegou 9 de 9 mutações.

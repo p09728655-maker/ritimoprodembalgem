@@ -6754,9 +6754,10 @@ function getProgramacaoSemana(p) {
 //     concluída tem SALDO 0; a aberta, o que falta);
 //   senão o PRODUZIDO confiável; a linha de HOJE ainda sem lançamento → 0;
 //   sem conta nenhuma → null (o painel conta à parte, nunca como 0).
-// Fora da esteira não entra (não é a linha que embala). A descrição só vai nas
-// linhas que não completaram (é o detalhe que a tela abre) — a resposta fica
-// abaixo dos 100 KB do cache.
+// Fora da esteira não entra (não é a linha que embala). A descrição vai em TODA
+// linha desde a v5.70 (o detalhe mostra todos os itens, com o %): ~58 KB para
+// as 247 linhas de 28 dias em 17/11/2026 — o limite de 100 KB do cache fica
+// perto de 420 linhas. (Na v5.69 ela ia só nas linhas que não completaram.)
 const PROG_LI_DIAS = 28;
 function getAtendimentoLotes() {
   const hojeNum = dataParaNum(Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));

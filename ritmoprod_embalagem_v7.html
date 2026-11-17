@@ -4236,7 +4236,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.262.0';
+const APP_VER = '7.262.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -17474,7 +17474,7 @@ function _pliFalhaTxt(){
 // lote (folha não tem clique) e esconde o que é só da tela (.so-tela).
 const _PLI_SIT={ fechado:'ENCERRADO', aberto:'EM ATRASO · na programação', andamento:'HOJE · em andamento', completo:'COMPLETO' };
 function _pliHtml(M, papel){
-  if(!M || !M.lotes.length) return '<div class="pli-msg">Nenhum lote interno com data até hoje nas últimas '+(PLI&&PLI.dias||28)+' dias da programação (coluna LOTE INTERNO).</div>';
+  if(!M || !M.lotes.length) return '<div class="pli-msg">Nenhum lote interno com data até hoje nos últimos '+(PLI&&PLI.dias||28)+' dias da programação (coluna LOTE INTERNO).</div>';
   const R=M.resumo, cx=v=>fmtN(Math.round(v));
   const gps=c=>'<span class="pli-gps g-'+_rpEsc(String(c||'').replace(/[^A-Z]/g, ''))+'"><i></i>'+_rpEsc(c||'—')+'</span>';
   let s='<div class="pli-box"><div class="pli-kpis">'
@@ -17487,7 +17487,7 @@ function _pliHtml(M, papel){
     +'<div class="pli-k"><div class="l">FICOU ABERTO · ENCERRADO</div><div class="v">'+cx(R.ficou)+'<small>cx</small></div>'
       +'<div class="s">'+plural(R.nFicou, 'item fechado', 'itens fechados')+' sem completar</div></div>'
     +'<div class="pli-k"><div class="l">ITENS COMPLETOS (100%)</div><div class="v">'+fmtN(R.n100)+'<small>de '+fmtN(R.n)+'</small></div>'
-      +'<div class="s">'+(R.n?fmtP(R.n100/R.n*100)+' dos itens':'—')+'</div></div>'
+      +'<div class="s">'+(R.pctItens==null?'—':fmtP(R.pctItens)+' dos itens')+'</div></div>'
     +'<div class="pli-k'+(R.aberto>0?' ab':'')+'"><div class="l">AINDA EM ABERTO · VENCIDO</div><div class="v">'+cx(R.aberto)+'<small>cx</small></div>'
       +'<div class="s">'+(R.aberto>0?plural(R.nAberto, 'item', 'itens')+' na programação · '+R.lisAberto.map(_rpEsc).join(' · '):'nenhum lote vencido com saldo')+'</div></div>'
     +'</div>';
@@ -17500,7 +17500,7 @@ function _pliHtml(M, papel){
       ?'<b class="d0" style="width:'+w(o.pctNoDia)+'"></b><b class="d1" style="width:'+w(o.pctD1)+'"></b><b class="d2" style="width:'+w(o.pctD2)+'"></b>'
       :'<b class="sd" style="width:'+w(o.pct)+'"></b>')+'</span>';
   const pc=v=>v==null?'<span class="pli-dim">—</span>':v>0?fmtP(v):'<span class="pli-dim">0%</span>';
-  s+='<table class="pli-tab"><thead><tr><th>LOTE INTERNO</th><th>COR GPS</th><th>DATA</th><th class="c-lotes">LOTES (ERP)</th>'
+  s+='<table class="pli-tab"><thead><tr><th>LOTE INTERNO</th><th>COR GPS</th><th>DATA</th><th>LOTES (ERP)</th>'
     +'<th class="n">PROGRAMADO</th><th class="n">EMBALADO</th><th>% ATENDIDO</th>'
     +'<th class="n" title="Embalado até o fim da data do lote (o adiantado entra) ÷ programado">NO DIA</th>'
     +'<th class="n" title="Embalado no dia útil seguinte (o sábado conta) ÷ programado">D+1</th>'
@@ -17514,12 +17514,12 @@ function _pliHtml(M, papel){
       +'<td class="pli-li"><span class="seta so-tela">'+(g.itens.length?(exp?'▾':'▸'):'·')+'</span>'+_rpEsc(g.li)+(g.hoje?'<span class="pli-hoje">HOJE</span>':'')+'</td>'
       +'<td>'+gps(g.corGps)+'</td><td class="pli-mono">'+_rpEsc(g.data)+'</td>'
       +'<td class="pli-lotes">'+g.lotes.map(_rpEsc).join(' · ')+'</td>'
-      +'<td class="n">'+cx(g.prog)+'</td><td class="n">'+cx(g.emb)+'</td>'
-      +'<td class="pli-pc">'+(g.pct==null?'<span class="pli-dim">—</span>'
+      +'<td class="n">'+cx(g.prog)+'</td><td class="n">'+(g.emb==null?'<span class="pli-dim">—</span>':cx(g.emb))+'</td>'
+      +'<td class="pli-pc">'+(g.pct==null?'<span class="pli-dim">'+(g.n?'—':'sem a conta do embalado')+'</span>'
         :barra(g, temT)+'<span class="pli-pcn'+(g.hoje?' pli-dim':'')+'">'+fmtP(g.pct)+'</span>')+'</td>'
       +'<td class="n pli-nd">'+(g.pctNoDia==null?'<span class="pli-dim">—</span>':fmtP(g.pctNoDia)+(g.semTempo?'<small>*</small>':''))+'</td>'
       +'<td class="n">'+pc(g.pctD1)+'</td><td class="n">'+pc(g.pctD2)+'</td>'
-      +'<td class="n">'+fmtN(g.n100)+' <small>de '+fmtN(g.n)+'</small></td>'
+      +'<td class="n">'+(g.n?fmtN(g.n100)+' <small>de '+fmtN(g.n)+'</small>':'<span class="pli-dim">—</span>')+'</td>'
       +'<td class="n">'+(g.ficou>0?cx(g.ficou)+' cx <small>· '+plural(g.nFicou, 'item', 'itens')+'</small>':'<span class="pli-dim">—</span>')+'</td>'
       +'<td class="n">'+(g.hoje?'<span class="pli-dim">em andamento</span>':g.aberto>0?'<span class="pli-ab">'+cx(g.aberto)+' cx</span>':'<span class="pli-dim">—</span>')+'</td>'
       +'</tr>';
@@ -17593,7 +17593,8 @@ function _progSub(k){
     b.setAttribute('aria-selected', on?'true':'false');
   });
   document.querySelectorAll('#sec-programacao .ucv-pn').forEach(p=>p.classList.toggle('on', p.dataset.sub===k));
-  if(k==='lotes' && PLI_FALHA && !PLI_VOO){ const p=_pliCarregar(true); renderLotesInternos(); p.then(renderLotesInternos); }
+  // ⚠ nunca junto com a leitura da programação (F1): com ela em voo, a corrente do setTab relê os lotes depois
+  if(k==='lotes' && PLI_FALHA && !PLI_VOO && !PROG_DET_VOO){ const p=_pliCarregar(true); renderLotesInternos(); p.then(renderLotesInternos); }
 }
 function _pliExp(i){
   const M=_pliModelo(), g=M && M.lotes[i];
@@ -17709,9 +17710,11 @@ function renderProgramacaoDetalhada(){
   if(!wrap) return;
   const sbDias=document.getElementById('prog-sb-dias');
   if(!PROG_DETALHADA.length){
-    wrap.innerHTML='<div class="empty-msg" style="padding:20px">Sem programação cadastrada.</div>';
+    // v7.262.1 (revisão, F3/E1): leitura que FALHOU não é "sem programação"
+    const fi=_progDetFalhaInfo();
+    wrap.innerHTML='<div class="empty-msg" style="padding:20px">'+(fi?'<b>'+fi.t+'</b> — '+fi.d:'Sem programação cadastrada.')+'</div>';
     if(totEl) totEl.textContent='';
-    _sbPinta(sbDias, { txt:'sem programação cadastrada', cls:'' });
+    _sbPinta(sbDias, { txt: fi ? fi.t : 'sem programação cadastrada', cls:'' });
     return;
   }
   // Agrupa por data — já vem ordenado cronologicamente do backend.
