@@ -827,6 +827,23 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   - os cinco nomes e os `title`;
   - o seletor do app.
 
+### A COR DO PRODUTO NOS ITENS (v7.264.0 / mobile 1.58.0 / rp-core 1.24.0 / `.gs` v5.72)
+- PPCP, 17/11/2026, com os itens do 212/26 abertos: *"consegue trazer a cor do
+  produto"*. Duas linhas "VOL 2/2 CRISTALEIRA ORION", uma OFF WHITE e outra
+  CINAMOMO, apareciam iguais. A descrição do cadastro não tem a cor; ela mora
+  na coluna `COR` (a regra de sempre, em `produto-e-comparativo.md`).
+- O `getAtendimentoLotes` manda `cor: produtoDoCodigo(cat.codigo).cor`; fora do
+  cadastro, vazia.
+- O rp-core dá ao item `nome = nomeComCor(desc, cor)`: a mesma junção do app, e
+  a cor que já está na descrição não repete. Os desenhos (PC, papel, app)
+  mostram o `nome`.
+- Sem o re-deploy, o `.gs` v5.71 não manda a cor e o nome fica igual à
+  descrição. Nada quebra.
+- ⚠ O `.gs` foi de 5.71 para 5.72: a v5.72 das pendências de peça foi preparada
+  e adiada, nunca existiu (ver *O QUE A DATA É…*, item 2 do "para depois").
+- Testes: o nome com e sem a cor, a cor no `.gs` (stub do `produtoDoCodigo`), o
+  escape no PC e no app; 4 de 4 mutações.
+
 ### Ficou de fora, de propósito
 - Um "% do lote" em UEP ou em pontos: o PERCENTUAL da planilha é em caixas, e
   a mesma régua evita dois números para a mesma pergunta.

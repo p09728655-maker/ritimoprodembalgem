@@ -11,6 +11,28 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.264.0 · mobile 1.58.0 · rp-core 1.24.0 · `.gs` v5.72 — 17/11/2026 · a cor do produto nos itens do lote interno
+
+O PPCP, com os itens do 212/26 abertos, perguntou: *"consegue trazer a cor do
+produto"*. Duas linhas apareciam iguais, "VOL 2/2 CRISTALEIRA ORION", mas eram
+cores diferentes.
+
+- A descrição vem do cadastro (`PRODUTO_CODIGO`), e em vários produtos a cor
+  não está nela: fica na coluna `COR`.
+- O `.gs` v5.72 passa a mandar a cor em cada linha do atendimento por lote
+  interno.
+- O item mostra a descrição com a cor, do mesmo jeito do resto do painel
+  (`nomeComCor`): *VOL 2/2 CRISTALEIRA ORION · OFF WHITE*.
+  - Quando a cor já está na descrição, ela não se repete.
+- Vale para o PC, o papel e o app.
+
+**Atenção**: nenhum número muda, só o texto do produto nos itens.
+
+⚠ **re-deploy** do `.gs` v5.72. Sem ele, os itens continuam só com a
+descrição do cadastro.
+
+---
+
 ## v7.263.0 · mobile 1.57.0 · `.gs` v5.71 — 17/11/2026 · seletor 10 · 20 lotes e cartões mais fáceis de ler
 
 O PPCP, no ATENDIMENTO POR LOTE INTERNO, perguntou *"porque só essa qtde de

@@ -1184,7 +1184,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.57.0';
+const APP_VER   = '1.58.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -2356,7 +2356,7 @@ function _pliHtmlM(M){
         :'<b>'+cx(g.emb)+'</b> de '+cx(g.prog)+' cx'+(g.pctNoDia==null?'':' · no dia <b>'+fmtP(g.pctNoDia)+'</b>')+' · '+fmtN(g.n100)+' de '+fmtN(g.n)+' itens 100%')
       +(g.ficou>0?' · falta (X) <b>'+cx(g.ficou)+' cx</b>':'')
       +(g.hoje?' · em andamento':g.aberto>0?' · <span class="pli-ab">para embalar '+cx(g.aberto)+' cx</span>':'')+'</div>';
-    if(exp) s+=g.itens.map(x=>'<div class="pli-it'+(x.sit==='completo'?' ok':'')+'"><span class="pli-ipc">'+(x.pct==null?'—':fmtP(x.pct))+'</span><b>'+_escH(x.desc||x.codigo)+'</b><br>'
+    if(exp) s+=g.itens.map(x=>'<div class="pli-it'+(x.sit==='completo'?' ok':'')+'"><span class="pli-ipc">'+(x.pct==null?'—':fmtP(x.pct))+'</span><b>'+_escH(x.nome||x.codigo)+'</b><br>'
       +_escH(x.lote)+' · '+cx(x.emb)+' de '+cx(x.qtde)+dt(x)
       +(x.falta>0?' · faltou <b>'+cx(x.falta)+'</b>':'')+' · <span'+(x.sit==='aberto'?' class="pli-ab"':'')+'>'+_PLI_SIT[x.sit]+'</span></div>').join('');
     s+='</div>';

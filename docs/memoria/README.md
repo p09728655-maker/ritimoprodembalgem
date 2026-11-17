@@ -57,6 +57,7 @@ de tema entra aqui também.
 - TEMPO DE ATENDIMENTO, % DE CADA ITEM E ALINHAMENTO (v7.262.0 / `.gs` v5.70) — dentro da seção acima
 - O QUE A DATA É, O QUE O FICOU ABERTO É E AS PENDÊNCIAS DE PEÇA (decisões de 17/11/2026) — dentro da seção acima
 - SELETOR 10 · 20 LOTES E OS CARTÕES "FÁCIL ENTENDIMENTO" (v7.263.0 / `.gs` v5.71) — dentro da seção acima
+- A COR DO PRODUTO NOS ITENS (v7.264.0 / `.gs` v5.72) — dentro da seção acima
 
 ## Produto, cadastro, cor e comparativo — `produto-e-comparativo.md`
 - Produto × cor (relatórios por modelo)
