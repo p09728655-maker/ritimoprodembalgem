@@ -11,6 +11,27 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.261.0 — 17/11/2026 · sub-abas na PROGRAMAÇÃO
+
+O PPCP, com o atendimento por lote interno embaixo da programação: *"esta com
+muita rolagem faça uma sub aba"*.
+
+- A aba **📅 PROGRAMAÇÃO** passa a ter duas sub-abas, na mesma faixa do 📐
+  PLANO e da ⚖ UEP:
+  - **PROGRAMAÇÃO POR DIA** (abre nela): a programação de sempre. O botão diz
+    os dias, as caixas e a UEP, os mesmos números do TOTAL.
+  - **ATENDIMENTO POR LOTE INTERNO**: o bloco da v7.260.0, que antes ficava
+    embaixo de todos os dias. O botão já diz o resumo, por exemplo *97,4%
+    atendido · 31 de 118 itens completos · 36 cx em aberto*.
+- O bloco deixou de abrir e fechar pelo título. A leitura dos lotes internos sai
+  sozinha ao abrir a aba, depois da programação (uma chamada por vez). Se ela
+  falhar, clicar na sub-aba tenta de novo.
+- O app e a impressão não mudam.
+
+**Atenção**: nenhum número muda. Só a arrumação da aba.
+
+---
+
 ## v7.260.0 · mobile 1.55.0 · rp-core 1.22.0 · `.gs` v5.69 — 17/11/2026 · atendimento por lote interno
 
 O PPCP, com a PROGRAMACAO_CONCLUIDA na tela: *"me mostre como podemos

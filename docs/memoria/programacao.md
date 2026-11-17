@@ -525,8 +525,9 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
 
 ### Tela, app e papel
 - **PC**: bloco `#pli` embaixo da aba PROGRAMAÇÃO.
-  - Começa **fechado** (`PLI_ABERTO`) e só lê ao abrir. Depois da 1ª leitura,
-    a troca de aba lê junto com a programação.
+  - ~~Começa **fechado** (`PLI_ABERTO`) e só lê ao abrir. Depois da 1ª
+    leitura, a troca de aba lê junto com a programação.~~ Revogado na
+    v7.261.0: o bloco virou sub-aba (ver *SUB-ABAS DA 📅 PROGRAMAÇÃO*).
   - Leitura:
     - 3 tentativas em sequência;
     - voo compartilhado (`PLI_VOO`);
@@ -560,6 +561,38 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   - roda o `getAtendimentoLotes` de verdade numa vm;
   - pegou 9 de 9 mutações (a conta, as duas regras do embalado do `.gs`, o
     papel, o escape, o clique por índice).
+
+### SUB-ABAS DA 📅 PROGRAMAÇÃO (v7.261.0)
+- PPCP, 17/11/2026, logo depois do merge da v7.260.0: *"esta com muita rolagem
+  faça uma sub aba"*. O bloco de lotes internos ficava embaixo de TODOS os dias
+  da programação.
+- A faixa é a `#prog-sub`, com os mesmos `.ucv-sb` do PLANO e da UEP; a regra
+  da faixa ganhou o `#sec-programacao`. Os dois painéis `.ucv-pn` têm marcação
+  fixa:
+  - **PROGRAMAÇÃO POR DIA** (`dias`): o cabeçalho com 🧮 CAPACIDADE UEP e o
+    TOTAL, mais o `#prog2-dias`;
+  - **ATENDIMENTO POR LOTE INTERNO** (`lotes`): o `#pli`.
+- `PROG_SUBS` e `PROG_SUB` começam em `dias` e ficam só na memória da sessão.
+- O `_progSub(k)` só acende o painel e o botão; os renders refazem só o miolo,
+  por isso a animação entra no `.on`, como no PLANO.
+  - A única leitura dele é a do retry: lotes internos que falharam e não estão
+    em voo (`PLI_FALHA && !PLI_VOO`).
+- **Revoga o "nasce fechado e só lê ao abrir" da v7.260.0.** Saíram o
+  `PLI_ABERTO`, o `_pliAlternar` e a seta.
+  - Ao abrir a aba, a leitura é a programação e DEPOIS os lotes internos, em
+    sequência (`.then(()=>_pliCarregar()).then(renderLotesInternos)`).
+  - O custo é uma chamada a mais por abertura da aba: o TTL de 10 min no PC e
+    o cache de 120 s no `.gs` seguram as repetições.
+  - Em troca, o botão da sub-aba já diz o resumo.
+- **Números dos botões**, sem conta nova e sem cor de veredito; sem a leitura,
+  o estado, nunca 0:
+  - `dias`: os totais que o `renderProgramacaoDetalhada` já soma (dias, caixas,
+    UEP; `*` quando parte das caixas não tem UEP);
+  - `lotes`: `_pliSubTxt(M, falha)` sobre o `resumo` do `loteIntMontar`.
+- Medido em 1920, 1366 e 1280: nada passa da largura. A sub-aba de lotes tem
+  ~780 px, antes somados aos ~1.000+ da programação.
+- Testes: `lote-interno.test.js`, com 8 de 8 mutações (o retry, o voo, o texto
+  do botão, o CSS, o aria, o painel, o portão do render).
 
 ### Ficou de fora, de propósito
 - Um "% do lote" em UEP ou em pontos: o PERCENTUAL da planilha é em caixas, e

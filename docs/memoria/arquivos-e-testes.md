@@ -205,7 +205,11 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
       descrição só na linha incompleta);
     - o desenho do PC na tela e no papel, e o do app (escape, clique por
       índice, sem conta no desenho).
-  - Pegou 9 de 9 mutações: `node lote-interno.test.js`.
+  - Pegou 9 de 9 mutações.
+  - Desde a v7.261.0, confere também as sub-abas da PROGRAMAÇÃO: a faixa, os
+    painéis, o `_progSub` num DOM de mentira (só relê o que falhou, nunca com
+    leitura em voo) e o texto dos dois botões. Pegou 8 de 8 mutações:
+    `node lote-interno.test.js`.
 - `testes.js` — **`node testes.js`: todas as suítes + o lint**, uma de cada vez,
   com o resumo; sai com 1 se algo falhar; suíte que passa de 2 min reprova
   (v7.248.2).

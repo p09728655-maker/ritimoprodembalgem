@@ -516,18 +516,18 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-crono .ucv-hdr-dia .btn,#sec-uep .ucv-hdr-dia .btn{flex:1;border-radius:0 5px 5px 0}
 /* as sub-abas (v7.197.0, PPCP: "está muito cheia a tela, tem que enxugar, deixar mais dinâmica"):
    uma tarefa por vez, cada botão com o seu número */
-#sec-crono .ucv-sub,#sec-uep .ucv-sub,#sec-plano .ucv-sub{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin:0 0 18px}
-#sec-crono .ucv-sb,#sec-uep .ucv-sb,#sec-plano .ucv-sb{flex:1 1 180px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;padding:10px 14px 11px;border:1px solid var(--border);border-radius:9px;background:var(--surface);cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
-#sec-crono .ucv-sb:hover,#sec-uep .ucv-sb:hover,#sec-plano .ucv-sb:hover{border-color:var(--txt2)}
-#sec-crono .ucv-sb b,#sec-uep .ucv-sb b,#sec-plano .ucv-sb b{font-family:var(--font-d);font-size:11px;font-weight:400;letter-spacing:1.8px;color:var(--txt2)}
-#sec-crono .ucv-sb span,#sec-uep .ucv-sb span,#sec-plano .ucv-sb span{max-width:100%;font-family:var(--font-b);font-size:13px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#sec-crono .ucv-sb.on,#sec-uep .ucv-sb.on,#sec-plano .ucv-sb.on{border-color:var(--acc);background:rgba(255,92,31,.08);box-shadow:inset 0 -3px 0 var(--acc)}
-#sec-crono .ucv-sb.on b,#sec-uep .ucv-sb.on b,#sec-plano .ucv-sb.on b{color:var(--txt)}
-#sec-crono .ucv-sb.ok span,#sec-uep .ucv-sb.ok span,#sec-plano .ucv-sb.ok span{color:var(--ok)}
-#sec-crono .ucv-sb.acc span,#sec-uep .ucv-sb.acc span,#sec-plano .ucv-sb.acc span{color:var(--acc)}
-#sec-crono .ucv-sb.warn span,#sec-uep .ucv-sb.warn span,#sec-plano .ucv-sb.warn span{color:var(--warn)}
-#sec-crono .ucv-sb.red span,#sec-uep .ucv-sb.red span,#sec-plano .ucv-sb.red span{color:var(--red)}
-#sec-crono .ucv-sb-ir,#sec-uep .ucv-sb-ir,#sec-plano .ucv-sb-ir{flex:0 0 auto;align-self:center;height:34px;padding:0 14px;font-size:10.5px;letter-spacing:1px}
+#sec-crono .ucv-sub,#sec-uep .ucv-sub,#sec-plano .ucv-sub,#sec-programacao .ucv-sub{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin:0 0 18px}
+#sec-crono .ucv-sb,#sec-uep .ucv-sb,#sec-plano .ucv-sb,#sec-programacao .ucv-sb{flex:1 1 180px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;padding:10px 14px 11px;border:1px solid var(--border);border-radius:9px;background:var(--surface);cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
+#sec-crono .ucv-sb:hover,#sec-uep .ucv-sb:hover,#sec-plano .ucv-sb:hover,#sec-programacao .ucv-sb:hover{border-color:var(--txt2)}
+#sec-crono .ucv-sb b,#sec-uep .ucv-sb b,#sec-plano .ucv-sb b,#sec-programacao .ucv-sb b{font-family:var(--font-d);font-size:11px;font-weight:400;letter-spacing:1.8px;color:var(--txt2)}
+#sec-crono .ucv-sb span,#sec-uep .ucv-sb span,#sec-plano .ucv-sb span,#sec-programacao .ucv-sb span{max-width:100%;font-family:var(--font-b);font-size:13px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sec-crono .ucv-sb.on,#sec-uep .ucv-sb.on,#sec-plano .ucv-sb.on,#sec-programacao .ucv-sb.on{border-color:var(--acc);background:rgba(255,92,31,.08);box-shadow:inset 0 -3px 0 var(--acc)}
+#sec-crono .ucv-sb.on b,#sec-uep .ucv-sb.on b,#sec-plano .ucv-sb.on b,#sec-programacao .ucv-sb.on b{color:var(--txt)}
+#sec-crono .ucv-sb.ok span,#sec-uep .ucv-sb.ok span,#sec-plano .ucv-sb.ok span,#sec-programacao .ucv-sb.ok span{color:var(--ok)}
+#sec-crono .ucv-sb.acc span,#sec-uep .ucv-sb.acc span,#sec-plano .ucv-sb.acc span,#sec-programacao .ucv-sb.acc span{color:var(--acc)}
+#sec-crono .ucv-sb.warn span,#sec-uep .ucv-sb.warn span,#sec-plano .ucv-sb.warn span,#sec-programacao .ucv-sb.warn span{color:var(--warn)}
+#sec-crono .ucv-sb.red span,#sec-uep .ucv-sb.red span,#sec-plano .ucv-sb.red span,#sec-programacao .ucv-sb.red span{color:var(--red)}
+#sec-crono .ucv-sb-ir,#sec-uep .ucv-sb-ir,#sec-plano .ucv-sb-ir,#sec-programacao .ucv-sb-ir{flex:0 0 auto;align-self:center;height:34px;padding:0 14px;font-size:10.5px;letter-spacing:1px}
 #sec-crono .ucv-pn{display:none}
 #sec-crono .ucv-pn.on{display:block;animation:ucvIn .18s ease-out}
 @keyframes ucvIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
@@ -666,6 +666,10 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-plano .ucv-pn{display:none}
 #sec-plano .ucv-pn.on{display:block;animation:ucvIn .18s ease-out}
 @media (prefers-reduced-motion:reduce){#sec-plano .ucv-pn.on{animation:none}}
+/* Sub-abas da 📅 PROGRAMAÇÃO (v7.261.0): os renders refazem só o miolo, o painel fica — anima no .on. */
+#sec-programacao .ucv-pn{display:none}
+#sec-programacao .ucv-pn.on{display:block;animation:ucvIn .18s ease-out}
+@media (prefers-reduced-motion:reduce){#sec-programacao .ucv-pn.on{animation:none}}
 #sec-plano .qp-lbl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;white-space:nowrap}
 #sec-plano .qp-sel{height:30px;padding:3px 8px;font-size:11px;cursor:pointer;box-sizing:border-box}
 #sec-plano .qp-pbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 16px}
@@ -1186,9 +1190,7 @@ html.modo-dir #sec-dir.on{display:flex}
 /* ATENDIMENTO POR LOTE INTERNO (v7.260.0): a MESMA marcação na tela e no papel
    (_pliHtml); a pele do papel é o _PLI_SKIN. As cores do GPS são as etiquetas
    físicas do lote — identificação, não veredito. */
-#sec-programacao .pli-wrap{margin-top:14px}
-#sec-programacao .pli-hdr{cursor:pointer;gap:10px;justify-content:flex-start}
-#sec-programacao .pli-seta{color:var(--txt2);font-size:11px;width:12px}
+#sec-programacao .pli-hdr{gap:10px;justify-content:flex-start}
 #sec-programacao .pli-hdr-sub{font-family:var(--font-d);font-size:10px;color:var(--txt2);letter-spacing:.5px}
 #sec-programacao #pli-corpo{padding:14px 16px}
 #sec-programacao .pli-msg{font-family:var(--font-d);font-size:11px;color:var(--txt2);padding:8px 0}
@@ -3257,6 +3259,16 @@ if (_v7Instalado()) _v7EscondeBotao();
 
 <!-- ═══ PROGRAMAÇÃO (visão dedicada: lote, peso, pontos, por dia) ═══ -->
 <section id="sec-programacao" class="sec">
+  <!-- v7.261.0 (PPCP 17/11/2026, com o bloco de lotes internos embaixo da programação: "esta com muita
+       rolagem faça uma sub aba"): duas sub-abas, a mesma faixa do 📐 PLANO e da ⚖ UEP. Trocar só mostra e
+       esconde; as duas leituras saem em sequência ao abrir a aba (a programação, depois os lotes internos). -->
+  <div class="ucv-sub" id="prog-sub" role="tablist">
+    <button type="button" class="ucv-sb on" data-sub="dias" role="tab" aria-selected="true" onclick="_progSub('dias')"
+            title="Os lotes programados, dia a dia: quantidade, peso, pontos e UEP"><b>PROGRAMAÇÃO POR DIA</b><span id="prog-sb-dias">…</span></button>
+    <button type="button" class="ucv-sb" data-sub="lotes" role="tab" aria-selected="false" onclick="_progSub('lotes')"
+            title="Programado × embalado de cada lote interno, nas duas abas (PROGRAMACAO + CONCLUIDA): o que fechou, o que ficou e o que ainda está aberto"><b>ATENDIMENTO POR LOTE INTERNO</b><span id="prog-sb-lotes">…</span></button>
+  </div>
+  <div class="ucv-pn on" data-sub="dias">
   <div class="tbl-wrap" style="margin-top:0">
     <div class="tbl-hdr">
       <span class="tbl-hdr-ttl">PROGRAMAÇÃO POR DIA — LOTE · PESO · PONTOS · UEP</span>
@@ -3267,18 +3279,19 @@ if (_v7Instalado()) _v7EscondeBotao();
     </div>
   </div>
   <div id="prog2-dias"><div class="empty-msg" style="padding:20px">Carregando…</div></div>
-  <!-- ═══ ATENDIMENTO POR LOTE INTERNO (v7.260.0 / .gs v5.69) ═══
-       Fechado por padrão: a leitura (getAtendimentoLotes) só sai ao abrir. -->
+  </div>
+  <!-- ═══ ATENDIMENTO POR LOTE INTERNO (v7.260.0 / .gs v5.69) — sub-aba desde a v7.261.0 ═══ -->
+  <div class="ucv-pn" data-sub="lotes">
   <div class="tbl-wrap pli-wrap" id="pli">
-    <div class="tbl-hdr pli-hdr" onclick="_pliAlternar()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();_pliAlternar()}">
-      <span class="pli-seta" id="pli-seta">▸</span>
+    <div class="tbl-hdr pli-hdr">
       <span class="tbl-hdr-ttl">ATENDIMENTO POR LOTE INTERNO</span>
       <span class="pli-hdr-sub">programado × embalado · últimos 10 lotes · em caixas</span>
       <div style="flex:1"></div>
-      <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px" onclick="event.stopPropagation();gerarRelatorioLotesInternos()"
+      <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px" onclick="gerarRelatorioLotesInternos()"
               title="O atendimento dos últimos lotes internos, com os itens que não completaram — para imprimir ou salvar em PDF">🖨 IMPRIMIR</button>
     </div>
-    <div id="pli-corpo" style="display:none"></div>
+    <div id="pli-corpo"><div class="pli-msg">Lendo os lotes internos…</div></div>
+  </div>
   </div>
 </section>
 
@@ -4222,7 +4235,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.260.0';
+const APP_VER = '7.261.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -17409,8 +17422,10 @@ const PROG2_COLS = [
 // "tem que pensar em impressão tbm". A CONTA é do rp-core (loteIntMontar, a mesma
 // do celular); aqui a LEITURA (getAtendimentoLotes: as duas abas, só as linhas
 // com LOTE INTERNO) e o DESENHO (_pliHtml), um só para a tela e o papel — o que
-// muda é a pele (_PLI_SKIN). O bloco nasce fechado e só lê ao abrir.
-let PLI=null, PLI_TS=0, PLI_VOO=null, PLI_FALHA=null, PLI_ERRO='', PLI_ABERTO=false;
+// muda é a pele (_PLI_SKIN). Desde a v7.261.0 é a 2ª sub-aba da PROGRAMAÇÃO
+// ("esta com muita rolagem faça uma sub aba"): lê ao abrir a aba, DEPOIS da
+// programação (uma chamada por vez), e o botão da sub-aba diz o resumo.
+let PLI=null, PLI_TS=0, PLI_VOO=null, PLI_FALHA=null, PLI_ERRO='';
 const PLI_TTL=10*60000;   // o .gs guarda 120 s; um lançamento invalida o cache dele
 const PLI_N=10;           // lotes fechados no resumo (a prévia aprovada: os últimos 10)
 const PLI_EXP={};         // lote interno → detalhe aberto na tela
@@ -17452,7 +17467,7 @@ function _pliFalhaTxt(){
   return PLI_FALHA==='sem-url' ? 'Sem conexão com o Google Sheets (URL do Apps Script vazia, ⚙).'
     : PLI_FALHA==='sem-endpoint' ? 'O Apps Script ainda não tem esta leitura: cole o .gs v5.69 no editor e re-implante.'
     : PLI_FALHA==='erro' ? 'O Apps Script respondeu com erro: '+_rpEsc(PLI_ERRO)
-    : 'O servidor não respondeu a tempo (3 tentativas). Abra de novo para tentar.';
+    : 'O servidor não respondeu a tempo (3 tentativas). Clique na sub-aba de novo para tentar.';
 }
 // DESENHO (sem conta): o modelo do loteIntMontar. `papel` abre o detalhe de todo
 // lote (folha não tem clique) e esconde o que é só da tela (.so-tela).
@@ -17502,22 +17517,47 @@ function _pliHtml(M, papel){
     +'<span class="so-tela"> · clique no lote para ver os itens que não completaram</span></div></div>';
   return s;
 }
+// O texto do botão da sub-aba: só lê o que o loteIntMontar já devolveu (nenhuma
+// conta nova). Sem veredito, como o bloco. Sem a leitura, o estado — nunca 0.
+function _pliSubTxt(M, falha){
+  if(!M){
+    if(falha === 'sem-endpoint') return { txt:'falta re-implantar o .gs v5.69', cls:'' };
+    if(falha === 'sem-url') return { txt:'sem a URL do Apps Script (⚙)', cls:'' };
+    if(falha) return { txt:'não lido — clique para tentar', cls:'' };
+    return { txt:'…', cls:'' };
+  }
+  const R = M.resumo;
+  if(!R.nLotes) return { txt:'nenhum lote interno fechado nos últimos ' + (PLI && PLI.dias || 28) + ' dias', cls:'' };
+  if(R.pct == null) return { txt:'sem a conta do embalado', cls:'' };
+  return { txt: fmtP(R.pct) + ' atendido · ' + R.n100 + ' de ' + plural(R.n, 'item completo', 'itens completos')
+    + (R.aberto > 0 ? ' · ' + fmtN(R.aberto) + ' cx em aberto' : ''), cls:'' };
+}
 function renderLotesInternos(){
   const c=document.getElementById('pli-corpo');
-  if(!c || !PLI_ABERTO) return;
+  if(!c) return;
   _pliCssNaTela();
-  if(!PLI && PLI_VOO){ c.innerHTML='<div class="pli-msg">Lendo os lotes internos…</div>'; return; }
+  const M=PLI?_pliModelo():null;
+  _sbPinta(document.getElementById('prog-sb-lotes'), _pliSubTxt(M, PLI_FALHA));
   if(!PLI && PLI_FALHA){ c.innerHTML='<div class="pli-msg">'+_pliFalhaTxt()+'</div>'; return; }
-  c.innerHTML=_pliHtml(_pliModelo(), false)
+  if(!PLI){ c.innerHTML='<div class="pli-msg">Lendo os lotes internos…</div>'; return; }
+  c.innerHTML=_pliHtml(M, false)
     +(PLI_FALHA?'<div class="pli-msg">'+_pliFalhaTxt()+' Mostrando a leitura anterior.</div>':'');
 }
-function _pliAlternar(){
-  PLI_ABERTO=!PLI_ABERTO;
-  const c=document.getElementById('pli-corpo'), seta=document.getElementById('pli-seta');
-  if(c) c.style.display=PLI_ABERTO?'':'none';
-  if(seta) seta.textContent=PLI_ABERTO?'▾':'▸';
-  if(!PLI_ABERTO) return;
-  const p=_pliCarregar(); renderLotesInternos(); p.then(renderLotesInternos);
+// SUB-ABAS DA 📅 PROGRAMAÇÃO (v7.261.0). Trocar só mostra e esconde. A única
+// leitura é a de quem tenta de novo: lotes internos que FALHARAM e não estão sendo
+// lidos (a leitura da aba, ao abrir, já vem em sequência depois da programação).
+const PROG_SUBS=['dias', 'lotes'];
+let PROG_SUB='dias';   // só na memória da sessão: abre na programação por dia
+function _progSub(k){
+  if(PROG_SUBS.indexOf(k)<0) return;
+  PROG_SUB=k;
+  document.querySelectorAll('#prog-sub .ucv-sb').forEach(b=>{
+    const on=b.dataset.sub===k;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-selected', on?'true':'false');
+  });
+  document.querySelectorAll('#sec-programacao .ucv-pn').forEach(p=>p.classList.toggle('on', p.dataset.sub===k));
+  if(k==='lotes' && PLI_FALHA && !PLI_VOO){ const p=_pliCarregar(true); renderLotesInternos(); p.then(renderLotesInternos); }
 }
 function _pliExp(i){
   const M=_pliModelo(), g=M && M.lotes[i];
@@ -17620,9 +17660,11 @@ function renderProgramacaoDetalhada(){
   const wrap=document.getElementById('prog2-dias');
   const totEl=document.getElementById('prog2-totais');
   if(!wrap) return;
+  const sbDias=document.getElementById('prog-sb-dias');
   if(!PROG_DETALHADA.length){
     wrap.innerHTML='<div class="empty-msg" style="padding:20px">Sem programação cadastrada.</div>';
     if(totEl) totEl.textContent='';
+    _sbPinta(sbDias, { txt:'sem programação cadastrada', cls:'' });
     return;
   }
   // Agrupa por data — já vem ordenado cronologicamente do backend.
@@ -17699,6 +17741,9 @@ function renderProgramacaoDetalhada(){
   }).join('');
   if(totEl) totEl.textContent=`TOTAL: ${fmtN(totQtd)} cx · ${fmtN(totPeso)} kg · ${fmtN(totPts)} pts`
     +(temUep?` · ${fmtN(Math.round(totUep))} UEP`+(totSemUep>0?` (${fmtN(totSemUep)} cx sem UEP)`:''):'');
+  // o botão da sub-aba: os mesmos totais, sem conta nova (o * = parte das caixas sem UEP)
+  _sbPinta(sbDias, { txt: plural(ordem.length, 'dia', 'dias')+' · '+fmtN(totQtd)+' cx'
+    +(temUep?' · '+fmtN(Math.round(totUep))+' UEP'+(totSemUep>0?'*':''):''), cls:'' });
 }
 
 // ════════════════════════════════════════════════
@@ -21481,7 +21526,7 @@ function setTab(tab){
   if(tab==='uep'){ _uepSubMarca(UEP_SUB); renderUep(); if(UEP_SUB==='reguas'){ UEP_ABA_PEND=true; _regAbrir(); } else { UEP_ABA_PEND=false; _uepDepoisDe(()=>REG_RODANDO, ()=>{ if(_abaOn('uep')) _uepAbaCarregar(); }); } }
   if(tab==='crono'){ const di=_ucvEl('dia'); if(di && !di.value) di.value=_ucvDiaParaCampo(hojeStr());   // o dia dos ESTUDOS DO DIA: hoje, se ninguém escolheu
     _uepConvAtualiza(); _uepAbaCatCarregar().then(()=>_ucvRegsCarregar()).then(()=>_ucvConfCarregar()).then(()=>_ucvLinhaCarregar()).then(()=>_ucvProgCarregar()); }   // só o cadastro (10 min de cache); o resto do painel já tem a meta
-  if(tab==='programacao') carregarProgramacaoDetalhada().then(renderProgramacaoDetalhada).then(()=>{ if(PLI_ABERTO) return _pliCarregar().then(renderLotesInternos); });
+  if(tab==='programacao') carregarProgramacaoDetalhada().then(renderProgramacaoDetalhada).then(()=>_pliCarregar()).then(renderLotesInternos);
   if(tab==='plano'){ _qpInitFiltro(); renderCarteira(); renderQualidadePlano(); }
   if(tab==='producaohora'){ _initFiltroPH(); renderModeloPeriodo(); lerPontosDia().then(renderProducaoPorHoraDedicada); }
   // Carrossel das telas: mostra os controles (pausar/passar) só p/ o gestor na

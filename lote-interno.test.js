@@ -1,4 +1,4 @@
-// Teste do ATENDIMENTO POR LOTE INTERNO (v7.260.0 · mobile 1.55.0 · rp-core 1.22.0 · .gs v5.69).
+// Teste do ATENDIMENTO POR LOTE INTERNO (v7.260.0 · mobile 1.55.0 · rp-core 1.22.0 · .gs v5.69; sub-aba da PROGRAMAÇÃO desde a v7.261.0).
 //   node lote-interno.test.js
 //
 // PPCP, 17/11/2026, com a PROGRAMACAO_CONCLUIDA na tela: "me mostre como podemos
@@ -412,9 +412,69 @@ console.log('\n── o PC: a mesma marcação na tela e no papel ──');
   ok('a leitura: 3 tentativas em sequência, voo compartilhado; o .gs antigo (sem `linhas`) diz que falta re-implantar',
      [/for\(let t=1; t<=3; t\+\+\)/.test(pega(JS, 'async function _pliLer(')), /if\(PLI_VOO\) return PLI_VOO;/.test(pega(JS, 'function _pliCarregar(')),
       /return \{ falha:'sem-endpoint'/.test(pega(JS, 'async function _pliLer(')), /cole o \.gs v5\.69/.test(pega(JS, 'function _pliFalhaTxt('))], [true, true, true, true]);
-  ok('o bloco nasce fechado na aba PROGRAMAÇÃO e só lê ao abrir',
-     [/<div id="pli-corpo" style="display:none"><\/div>/.test(html), /let PLI=null, PLI_TS=0, PLI_VOO=null, PLI_FALHA=null, PLI_ERRO='', PLI_ABERTO=false;/.test(JS),
-      /if\(tab==='programacao'\)[^\n]*if\(PLI_ABERTO\) return _pliCarregar\(\)\.then\(renderLotesInternos\)/.test(JS)], [true, true, true]);
+}
+
+console.log('\n── v7.261.0: sub-aba da PROGRAMAÇÃO ("esta com muita rolagem faça uma sub aba") ──');
+{
+  const sec = html.slice(html.indexOf('<section id="sec-programacao"'), html.indexOf('</section>', html.indexOf('<section id="sec-programacao"')));
+  const pDias = sec.indexOf('<div class="ucv-pn on" data-sub="dias">'), pLotes = sec.indexOf('<div class="ucv-pn" data-sub="lotes">');
+  ok('a faixa de sub-abas (o mesmo .ucv-sb do PLANO e da UEP): PROGRAMAÇÃO POR DIA acesa, ATENDIMENTO POR LOTE INTERNO ao lado',
+     [/<div class="ucv-sub" id="prog-sub" role="tablist">/.test(sec), /data-sub="dias" role="tab" aria-selected="true" onclick="_progSub\('dias'\)"/.test(sec),
+      /data-sub="lotes" role="tab" aria-selected="false" onclick="_progSub\('lotes'\)"/.test(sec), /id="prog-sb-dias">…</.test(sec), /id="prog-sb-lotes">…</.test(sec)],
+     [true, true, true, true, true]);
+  ok('cada bloco no seu painel: a programação por dia no 1º, os lotes internos no 2º (não mais embaixo, na mesma rolagem)',
+     [pDias > 0, pLotes > pDias, sec.indexOf('id="prog2-dias"') > pDias && sec.indexOf('id="prog2-dias"') < pLotes, sec.indexOf('id="pli"') > pLotes],
+     [true, true, true, true]);
+  ok('o bloco não abre nem fecha mais pelo título: sem o _pliAlternar, sem a seta, sem o PLI_ABERTO, o corpo visível',
+     [/_pliAlternar|pli-seta|PLI_ABERTO/.test(html), /<div id="pli-corpo"><div class="pli-msg">Lendo os lotes internos…<\/div><\/div>/.test(sec), /event\.stopPropagation\(\);gerarRelatorioLotesInternos/.test(sec)],
+     [false, true, false]);
+  ok('CSS: os painéis escondem e acendem (com a animação respeitando o reduced-motion) e a faixa é a das outras abas',
+     [/#sec-programacao \.ucv-pn\{display:none\}/.test(html), /#sec-programacao \.ucv-pn\.on\{display:block;animation:ucvIn/.test(html),
+      /prefers-reduced-motion:reduce\)\{#sec-programacao \.ucv-pn\.on\{animation:none\}/.test(html),
+      /#sec-plano \.ucv-sb,#sec-programacao \.ucv-sb\{flex:1 1 180px/.test(html), /#sec-plano \.ucv-sb\.on,#sec-programacao \.ucv-sb\.on\{/.test(html)],
+     [true, true, true, true, true]);
+  ok('ao abrir a aba: a programação e DEPOIS os lotes internos, em sequência (uma chamada por vez); sem esperar clique',
+     /if\(tab==='programacao'\) carregarProgramacaoDetalhada\(\)\.then\(renderProgramacaoDetalhada\)\.then\(\(\)=>_pliCarregar\(\)\)\.then\(renderLotesInternos\);/.test(JS), true);
+
+  // _progSub com um DOM de mentira: só acende painel e botão; relê só os lotes que FALHARAM
+  const el = (sub, on) => ({ dataset: { sub }, cls: new Set(on ? ['on'] : []), aria: '', classList: { toggle(c, v) { v ? this.o.cls.add(c) : this.o.cls.delete(c); } }, setAttribute(k, v) { this.aria = v; } });
+  const bts = [el('dias', true), el('lotes')], pns = [el('dias', true), el('lotes')];
+  [...bts, ...pns].forEach(e => { e.classList.o = e; });
+  let leu = 0, desenhou = 0;
+  const C = vm.createContext({ document: { querySelectorAll: q => q === '#prog-sub .ucv-sb' ? bts : q === '#sec-programacao .ucv-pn' ? pns : [] },
+    PLI_FALHA: null, PLI_VOO: null, _pliCarregar: () => { leu++; return Promise.resolve(true); }, renderLotesInternos: () => { desenhou++; } });
+  vm.runInContext(linha(JS, /const PROG_SUBS=\['dias', 'lotes'\];/).replace('const ', 'var ') + '\n' + linha(JS, /let PROG_SUB='dias';/).replace('let ', 'var ')
+    + '\n' + pega(JS, 'function _progSub('), C);
+  vm.runInContext("_progSub('lotes')", C);
+  ok('trocar para LOTES INTERNOS acende o painel e o botão (aria-selected), apaga o outro e NÃO lê (a leitura já veio com a aba)',
+     [C.PROG_SUB, pns.map(p => p.cls.has('on')), bts.map(b => b.cls.has('on')), bts.map(b => b.aria), leu], ['lotes', [false, true], [false, true], ['false', 'true'], 0]);
+  vm.runInContext("_progSub('xyz')", C);
+  ok('sub-aba que não existe não muda nada', [C.PROG_SUB, pns.map(p => p.cls.has('on'))], ['lotes', [false, true]]);
+  C.PLI_FALHA = 'sem-resposta'; vm.runInContext("_progSub('lotes')", C);
+  ok('com a leitura dos lotes FALHADA, o clique na sub-aba tenta de novo (e desenha o "Lendo…")', [leu, desenhou > 0], [1, true]);
+  C.PLI_VOO = Promise.resolve(); vm.runInContext("_progSub('lotes')", C);
+  ok('…mas não com uma leitura já em voo (uma chamada por vez)', leu, 1);
+  vm.runInContext("_progSub('dias')", C);
+  ok('e volta para a PROGRAMAÇÃO POR DIA', [C.PROG_SUB, pns.map(p => p.cls.has('on'))], ['dias', [true, false]]);
+
+  // o texto do botão: o resumo que o loteIntMontar já devolveu, sem conta nova; sem leitura, o estado (nunca 0)
+  vm.runInThisContext('var PLI = { dias: 28 };\n' + pega(JS, 'function _pliSubTxt('));
+  const M = loteIntMontar(LINHAS, 20261117, 10);
+  ok('o botão diz o % atendido, os itens completos e o que ainda está em aberto — os MESMOS números dos cartões, sem cor de veredito',
+     _pliSubTxt(M, null), { txt: '97,4% atendido · 31 de 118 itens completos · 36 cx em aberto', cls: '' });
+  const semAberto = loteIntMontar(LINHAS.filter(x => !(x.aba === 'aberta' && x.dataNum < 20261117 && !x.encerrada)), 20261117, 10);
+  ok('sem nada vencido em aberto, o pedaço some (não "0 cx em aberto")', /em aberto/.test(_pliSubTxt(semAberto, null).txt), false);
+  ok('sem a leitura: o estado — lendo, .gs sem a leitura, sem URL, falha (clique tenta de novo), nenhum lote fechado; nunca 0',
+     [_pliSubTxt(null, null).txt, _pliSubTxt(null, 'sem-endpoint').txt, _pliSubTxt(null, 'sem-url').txt, _pliSubTxt(null, 'sem-resposta').txt,
+      _pliSubTxt(loteIntMontar([], 20261117, 10), null).txt],
+     ['…', 'falta re-implantar o .gs v5.69', 'sem a URL do Apps Script (⚙)', 'não lido — clique para tentar', 'nenhum lote interno fechado nos últimos 28 dias']);
+  const R = pega(JS, 'function renderLotesInternos(');
+  ok('o render pinta o botão (o _sbPinta comum) e desenha mesmo com o painel escondido — sem o portão do "aberto"',
+     [/_sbPinta\(document\.getElementById\('prog-sb-lotes'\), _pliSubTxt\(M, PLI_FALHA\)\)/.test(R), /if\(!c\) return;/.test(R)], [true, true]);
+  const P = pega(JS, 'function renderProgramacaoDetalhada(');
+  ok('o botão da PROGRAMAÇÃO POR DIA: dias, caixas e UEP — os MESMOS totais do TOTAL (o * quando parte das caixas não tem UEP); vazio diz que não há programação',
+     [/_sbPinta\(sbDias, \{ txt: plural\(ordem\.length, 'dia', 'dias'\)\+' · '\+fmtN\(totQtd\)\+' cx'/.test(P), /fmtN\(Math\.round\(totUep\)\)\+' UEP'\+\(totSemUep>0\?'\*':''\)/.test(P),
+      /_sbPinta\(sbDias, \{ txt:'sem programação cadastrada', cls:'' \}\);/.test(P)], [true, true, true]);
 }
 
 console.log('\n── o celular: a mesma conta, o desenho dele ──');
