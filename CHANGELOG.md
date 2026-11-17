@@ -11,6 +11,80 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.265.0 · mobile 1.59.0 — 17/11/2026 · TV sem a hora extra na meta, e o selo pelos minutos
+
+O PPCP, com a TV na tela às 16:26: *"108% abaixo do ritmo?"*. Depois: *"tem
+que tirar hora extra"*, e a tela continua em caixas.
+
+O dia tinha 273 cx de hora extra (05:00–07:00) e 1.188 na jornada, com meta de
+1.350. A TV mostrava duas réguas lado a lado:
+- o **% DA META DO DIA** (108,2%), a barra e a **PROJEÇÃO** (1.461) contavam a
+  hora extra;
+- o **selo** contava só a jornada e cobrava a hora 16:00 **inteira**, com 37
+  minutos ainda por vir: *"1.188 DE 1.350 CX ESPERADAS"*, ABAIXO DO RITMO.
+
+O que muda:
+- **Na TV, nada do que se compara com a meta conta a hora extra**, porque
+  hora extra não tem meta:
+  - o % DA META DO DIA e a barra;
+  - o FALTAM e o NECESSÁRIO;
+  - a PROJEÇÃO FINAL.
+- **A hora extra continua na PRODUÇÃO ACUMULADA**, separada: *1.461 CAIXAS ·
+  1.188 NORMAL + 273 EXTRA*.
+- **O selo (TV e app) conta a hora em andamento pelos minutos que já
+  passaram**, a mesma régua da UEP desde a v7.114.0. Antes ele cobrava a hora
+  inteira assim que ela recebia o 1º lançamento.
+- **A PROJEÇÃO FINAL usa a régua do selo**: o que a jornada fez, levado até o
+  fim da jornada pelo mesmo ritmo.
+  - É a conta da PROJEÇÃO · UEP do gerencial, em caixas.
+  - Projeção ÷ meta dá sempre o % do selo, então as duas não se contradizem.
+  - Ela também deixou de tratar como encerrada a hora em andamento.
+- **O NECESSÁRIO é o RITMO NECESSÁRIO da UEP, em caixas**: o que falta da
+  jornada ÷ o tempo de jornada que resta a partir de agora.
+  - Antes ele dividia pelas horas ainda sem lançamento. Às 14:05, com a hora
+    14:00 em 10 cx, dizia 250 cx/h; a conta certa é 173.
+  - Com a jornada encerrada, ele mostra o que faltou.
+- **Com hora extra no dia**, a PROJEÇÃO e o FALTAM dizem *CAIXAS NA JORNADA*.
+  Depois da madrugada a projeção da jornada fica menor que a produção
+  acumulada, e sem essas palavras pareceria erro.
+
+**Atenção** (antes → depois), o caso de 17/11 às 16:22:
+
+| Na TV | Antes | Depois |
+|---|---|---|
+| % DA META DO DIA | 108,2% | **88,0%** (1.188 ÷ 1.350) |
+| barra | cheia, vermelha | 18 de 20 segmentos, âmbar |
+| linha de apoio | 1.188 DE **1.350** CX ESPERADAS ATÉ AGORA | 1.188 DE **1.255** CX ESPERADAS ATÉ AGORA |
+| STATUS | ABAIXO DO RITMO | **ATENÇÃO** (94,6%) |
+| PROJEÇÃO FINAL | 1.461 CAIXAS | **1.278 CAIXAS NA JORNADA** |
+| FALTAM | 0 (META BATIDA) | **162** |
+| NECESSÁRIO (Tela A; cartão opcional na B) | ✓ META OK | **263 CX/HORA** (162 cx em 37 min) |
+| PRODUÇÃO ACUMULADA | 1.461 · 1.188 NORMAL + 273 EXTRA | igual |
+
+- Num **dia sem hora extra**, o % e o FALTAM não mudam.
+- O **selo** muda só enquanto uma hora de jornada está em andamento e já tem
+  lançamento. Nessa hora ele sobe, porque antes cobrava a hora inteira.
+- A **PROJEÇÃO** muda o dia todo, para cima ou para baixo, porque a fórmula é
+  outra.
+  - Exemplo, num dia sem hora extra às 11:05 (07:00 a 10:00 lançadas, 785 cx,
+    meta 1.800): era 1.765, agora é 1.724.
+- O **NECESSÁRIO** muda o dia todo: agora divide pelo tempo que resta.
+- No **gerencial do PC** e no **celular**, o selo do card CAIXAS PROGRAMADAS (o
+  que aparece quando falta a UEP do dia) segue a régua nova do selo.
+  - Às 16:22 de 17/11 ele passa de ABAIXO DO RITMO para ATENÇÃO, como na TV.
+- Ficam como estavam:
+  - o *% feito* do card CAIXAS PROGRAMADAS, que continua com a hora extra
+    porque fala do programado (a caixa da hora extra atende o lote);
+  - o resumo do WhatsApp (*Eficiência* e *Projeção* com a hora extra);
+  - a análise em caixas do gerencial (RITMO NECESSÁRIO por horas, com a hora
+    extra);
+  - o fim de semana, em que tudo é hora extra.
+- Nos primeiros minutos da jornada, a projeção e o selo oscilam: com
+  12 cx às 07:03, a projeção dá 2.108. A PROJEÇÃO · UEP do gerencial faz o
+  mesmo. A partir das ~07:10 o número firma.
+
+---
+
 ## v7.264.0 · mobile 1.58.0 · rp-core 1.24.0 · `.gs` v5.72 — 17/11/2026 · a cor do produto nos itens do lote interno
 
 O PPCP, com os itens do 212/26 abertos, perguntou: *"consegue trazer a cor do

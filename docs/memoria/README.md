@@ -21,6 +21,7 @@ de tema entra aqui também.
 ## Hora extra, meta e o HISTORICO — `hora-extra-e-meta.md`
 - Caixas em HORA NORMAL × HORA EXTRA
 - EFICIÊNCIA: uma régua só, e é a META DO DIA
+- A TV SEM A HORA EXTRA (v7.265.0 · mobile 1.59.0)
 - Dia PASSADO no gerencial: hora extra não tem meta, e a meta não se dilui
 - Dia de HOJE no gerencial: a mesma regra, ao vivo
 - O que é gravado no HISTORICO tem de fechar consigo mesmo

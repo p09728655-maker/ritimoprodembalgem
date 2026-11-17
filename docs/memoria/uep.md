@@ -970,9 +970,14 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
       de 398 saía 0, 100, 250, 350, 450.
   - ⚠ **O ESPERADO DA UEP CONTA SÓ O MINUTO QUE PASSOU**: `minSlotDecorrido`
     (rp-core) nos DOIS `calcKPIs` alimenta o `minNorm` — card UEP DO DIA (PC e
-    celular), aba UEP, projeção e PRÓXIMOS DIAS. ⚠ O `hProd`/`efRitmo` (selo em
+    celular), aba UEP, projeção e PRÓXIMOS DIAS. ~~⚠ O `hProd`/`efRitmo` (selo em
     CAIXAS) **não** foi mexido — continua contando a hora corrente inteira; a
-    mudança foi aprovada só para a UEP.
+    mudança foi aprovada só para a UEP.~~ — o plano aprovado em 25/09 era só da
+    UEP; **desde a v7.265.0 / mobile 1.59.0 o `efRitmo` (selo em caixas) usa o
+    mesmo `minNorm`** (17/11/2026: a TV dizia ABAIXO DO RITMO com "1.188 DE 1.350
+    CX ESPERADAS" às 16:22, cobrando a hora 16:00 inteira — ver *A TV SEM A HORA
+    EXTRA* em `hora-extra-e-meta.md`). O `hProd` (HORAS PRODUTIVAS) segue com as
+    horas inteiras.
   - **CONFIABILIDADE virou ORIGEM DA UEP** (`UEP_ORIGEM_T`): "medida" = estudo
     ou digitada, não cronoanálise. ~~Numeração da tela na ordem em que aparece:
     1 hoje · 2 hora a hora · 3 mix · 4 origem · 5 período · 6 próximos dias~~ —
