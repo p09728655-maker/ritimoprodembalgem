@@ -4242,14 +4242,14 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.263.0';
+const APP_VER = '7.264.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
 // .gs v5.57) e o rodapé compara: o GitHub e o editor do Apps Script não se
 // falam, e sem isso ninguém via qual .gs estava rodando. Mudou o .gs? Suba este
 // número junto com o GS_VERSAO de lá (o apps-script.test.js confere).
-const GS_REPO   = '5.71';
+const GS_REPO   = '5.72';
 let GS_IMPL;   // undefined = ainda não leu · null = o .gs implantado não informa (antes da v5.57)
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico e a
@@ -17559,7 +17559,7 @@ function _pliHtml(M, papel){
         const tit=' title="'+_PLI_SIT[x.sit]+(x.dia==null?'':' · no dia '+cx(x.dia[0])+' cx · D+1 '+cx(x.dia[1])+' cx · D+2+ '+cx(x.dia[2])+' cx')+'"';
         return '<tr class="pli-it'+(x.sit==='completo'?' ok':'')+'"'+tit+'>'
           +'<td class="pli-mono pli-il">'+_rpEsc(x.lote)+'</td>'
-          +'<td colspan="3" class="pli-prod"><span class="pli-mono">'+_rpEsc(x.codigo)+'</span> · '+_rpEsc(x.desc||'—')+'</td>'
+          +'<td colspan="3" class="pli-prod"><span class="pli-mono">'+_rpEsc(x.codigo)+'</span> · '+_rpEsc(x.nome||'—')+'</td>'
           +'<td class="n">'+cx(x.qtde)+'</td><td class="n">'+cx(x.emb)+'</td>'
           +'<td class="pli-pc">'+(x.pct==null?'<span class="pli-dim">—</span>':barra(x, x.dia!=null)+'<span class="pli-ipn">'+fmtP(x.pct)+'</span>')+'</td>'
           +'<td class="n">'+pc(x.pctNoDia)+'</td><td class="n">'+pc(x.pctD1)+'</td><td class="n">'+pc(x.pctD2)+'</td>'

@@ -959,7 +959,9 @@ function loteIntMontar(linhas, hojeNum, n){
       else if (sit === 'aberto') { g.aberto += falta; g.nAberto++; }
     }
     const pi = k => dia && q > 0 ? dia[k] / q * 100 : null;   // o tempo do item, na régua do lote (÷ programado)
-    g.itens.push({ lote: String(x.lote || ''), codigo: String(x.codigo || ''), desc: String(x.desc || ''), qtde: q, emb: e, falta,
+    g.itens.push({ lote: String(x.lote || ''), codigo: String(x.codigo || ''), desc: String(x.desc || ''),
+                   nome: nomeComCor(x.desc, x.cor),   // 1.24.0: a descrição com a cor do cadastro (sem repetir)
+                   qtde: q, emb: e, falta,
                    pct: q > 0 ? e / q * 100 : null, dia, pctNoDia: pi(0), pctD1: pi(1), pctD2: pi(2), sit });
   });
   const pctT = (v, base) => base > 0 ? v / base * 100 : null;
@@ -1026,7 +1028,7 @@ function paradaAInformar(tipo){
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.23.1',
+  versao: '1.24.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
         'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepDiaHe', 'histDiaFds', 'metaDiasParadas', 'metaMedianaUteis', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido',

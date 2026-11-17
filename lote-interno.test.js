@@ -332,7 +332,7 @@ console.log('\n── as regras da conta ──');
   ok('além dos 10 fechados, entra o mais velho que ainda tem saldo vencido; o AINDA ABERTO do resumo é de todos os vencidos',
      [Y.lotes.length, Y.lotes[Y.lotes.length - 1].li, Y.resumo.nLotes, Y.resumo.aberto, Y.resumo.lisAberto], [11, '200/26', 10, 40, ['200/26']]);
   ok('a conta sem a lista não inventa: null', loteIntMontar(null, 20261117), null);
-  ok('o rp-core publica a função e sobe de versão', [RP_CORE.fns.includes('loteIntMontar'), RP_CORE.versao], [true, '1.23.1']);
+  ok('o rp-core publica a função e sobe de versão', [RP_CORE.fns.includes('loteIntMontar'), RP_CORE.versao], [true, '1.24.0']);
 }
 
 console.log('\n── v7.262.0: o % de cada item e o TEMPO (no dia · D+1 · D+2+) ──');
@@ -381,7 +381,8 @@ console.log('\n── a leitura do .gs (getAtendimentoLotes, v5.69) ──');
     var Utilities = { formatDate: function(){ return '17/11/2026'; } };
     function lerCatalogoProdutos(){ return [{ codigo:'501.086.118', desc:'VOL 1/2 HOME RIPADO ANTARES 1.4' }, { codigo:'501.117.004', desc:'ESCRIVANINHA PRISM' }]; }
     var _ROWS = []; function lerProgramacao(){ return _ROWS; }
-    var _DIA = {}; function calcularProgramacao(){ return { diaRow: _DIA }; }`, C);
+    var _DIA = {}; function calcularProgramacao(){ return { diaRow: _DIA }; }
+    function produtoDoCodigo(c){ return { cor: c === '501.086.118' ? 'CINAMOMO/OFF WHITE' : c === '501.117.004' ? 'PRETO' : '' }; }`, C);
   const base = { codigo: '501117004', qtde: 100, lote: '25428', loteInt: '210/26', corGps: 'PRETO', foraEsteira: false, arquivada: true, encerrada: false,
                  status: 'CONCLUIDO', saldo: 0, prodConf: 100, saidaVazia: false };
   const row = o => Object.assign({}, base, o);
@@ -414,6 +415,8 @@ console.log('\n── a leitura do .gs (getAtendimentoLotes, v5.69) ──');
      R.linhas.map(x => !!x.desc), [true, true, true, true, true, true, true]);
   ok('v5.70: o tempo de cada linha vem do FIFO pela chave da ABA certa (a linha 2 da CONCLUIDA ≠ a linha 2 da aba); linha que o FIFO não tem = null, nunca [0,0,0]',
      R.linhas.map(x => x.dia), [null, null, null, [70, 20, 10], [93, 0, 0], [50, 30, 0], [0, 0, 0]]);
+  ok('v5.72: a COR do cadastro vai em cada linha (produtoDoCodigo, a coluna COR da PRODUTO_CODIGO); fora do cadastro, vazia',
+     R.linhas.map(x => x.cor), ['PRETO', 'PRETO', 'PRETO', 'PRETO', 'PRETO', 'CINAMOMO/OFF WHITE', 'CINAMOMO/OFF WHITE']);
   ok('o código e a descrição saem do cadastro; a COR GPS da linha',
      [R.linhas[5].codigo, R.linhas[5].desc, R.linhas[5].corGps], ['501.086.118', 'VOL 1/2 HOME RIPADO ANTARES 1.4', 'PRETO']);
   ok('o leitor da aba dá o PRODUZIDO confiável de TODA linha (prodConf) e a COR GPS, sem mexer no `produzido` da encerrada',
@@ -424,7 +427,7 @@ console.log('\n── a leitura do .gs (getAtendimentoLotes, v5.69) ──');
      [/act === 'getAtendimentoLotes'\) result = getAtendimentoLotes\(\);/.test(gs), /getAtendimentoLotes: 120,/.test(gs), /getAtendimentoLotes: \['prod', 'cat'\]/.test(gs)],
      [true, true, true]);
   ok('o trio da versão do .gs sobe junto (cabeçalho, GS_VERSAO, GS_REPO do painel)',
-     [/^\/\/ Versão: 5\.71 — A LEITURA DO ATENDIMENTO POR LOTE INTERNO COBRE 35 DIAS/m.test(gs), /const GS_VERSAO = '5\.71';/.test(gs), /const GS_REPO   = '5\.71';/.test(JS)],
+     [/^\/\/ Versão: 5\.72 — A COR DO PRODUTO NO ATENDIMENTO POR LOTE INTERNO/m.test(gs), /const GS_VERSAO = '5\.72';/.test(gs), /const GS_REPO   = '5\.72';/.test(JS)],
      [true, true, true]);
 }
 
@@ -549,6 +552,26 @@ console.log('\n── v7.263.0: o seletor 10 · 20 lotes e os cartões "fácil e
   ok('a .gs v5.71 lê 35 dias', /const PROG_LI_DIAS = 35;/.test(gs), true);
 }
 
+console.log('\n── v7.264.0: a cor do produto no item (PPCP: "consegue trazer a cor do produto") ──');
+{
+  const b = { li: '302/26', dataNum: 20261117, data: '17/11/2026', lote: '25448', aba: 'aberta', qtde: 100, emb: 50 };
+  const T = loteIntMontar([
+    Object.assign({}, b, { codigo: '501.080.002', desc: 'VOL 2/2 CRISTALEIRA ORION', cor: 'OFF WHITE' }),
+    Object.assign({}, b, { codigo: '501.080.006', desc: 'VOL 2/2 CRISTALEIRA ORION', cor: 'CINAMOMO' }),
+    Object.assign({}, b, { codigo: '501.126.002', desc: 'VOL 1/1 MESA CENTRO PRISM BRANCO ACETINADO', cor: 'BRANCO ACETINADO' }),
+    Object.assign({}, b, { codigo: '501.999.001', desc: 'VOL 1/1 SEM COR NO CADASTRO' }),
+  ], 20261117, 10);
+  const nomes = {}; T.lotes[0].itens.forEach(x => { nomes[x.codigo] = x.nome; });
+  ok('o item ganha o nome com a cor (o nomeComCor de sempre): as duas ORION se distinguem; a cor que já está na descrição não repete; sem cor, a descrição',
+     [nomes['501.080.002'], nomes['501.080.006'], nomes['501.126.002'], nomes['501.999.001']],
+     ['VOL 2/2 CRISTALEIRA ORION · OFF WHITE', 'VOL 2/2 CRISTALEIRA ORION · CINAMOMO', 'VOL 1/1 MESA CENTRO PRISM BRANCO ACETINADO', 'VOL 1/1 SEM COR NO CADASTRO']);
+  const Lc = LINHAS.map(x => x.li === '210/26' && x.lote === '25428' ? Object.assign({}, x, { cor: 'PRETO <AC>' }) : x);
+  PLI_EXP['210/26'] = true;
+  const tc = _pliHtml(loteIntMontar(Lc, 20261117, 10), false);
+  delete PLI_EXP['210/26'];
+  ok('PC: a linha do item mostra a cor, escapada (G1)', [tc.includes(' · PRETO &lt;AC&gt;</td>'), tc.includes('<AC>')], [true, false]);
+}
+
 console.log('\n── v7.261.0: sub-aba da PROGRAMAÇÃO ("esta com muita rolagem faça uma sub aba") ──');
 {
   const sec = html.slice(html.indexOf('<section id="sec-programacao"'), html.indexOf('</section>', html.indexOf('<section id="sec-programacao"')));
@@ -655,6 +678,10 @@ console.log('\n── o celular: a mesma conta, o desenho dele ──');
      [/<button type="button" class="" onclick="event\.stopPropagation\(\);_pliSetNM\(10\)">10<\/button><button type="button" class="on" onclick="event\.stopPropagation\(\);_pliSetNM\(20\)">20<\/button>/.test(hm),
       /\(só há 19\)/.test(hm), [...hm.matchAll(/<div class="l">([^<]+)<\/div>/g)].map(m => m[1])],
      [true, true, ['Embalado', 'Embalado no dia programado', 'Fechado com falta (X)', 'Itens 100% embalados', 'Ainda para embalar']]);
+  global.PLI_EXP = { '210/26': true };
+  const hc = _pliHtmlMob(loteIntMontar(LINHAS.map(x => x.li === '210/26' && x.lote === '25428' ? Object.assign({}, x, { cor: 'PRETO <AC>' }) : x), 20261117, 10));
+  global.PLI_EXP = {};
+  ok('v1.58.0: o item com a cor do cadastro (o nome do rp-core), escapado (a linha do retrato não tem descrição: só a cor)', [hc.includes('<b>PRETO &lt;AC&gt;</b>'), hc.includes('<AC>')], [true, false]);
   ok('o 5º cartão ocupa a linha inteira (não fica sozinho na metade)', /#ger-pli \.pli-kpis \.pli-k:last-child\{grid-column:1\/-1\}/.test(mob), true);
   global.PLI_EXP = {};
 }

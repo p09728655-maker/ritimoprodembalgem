@@ -749,9 +749,32 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
 - **Para depois, nesta ordem:**
   1. medir a causa dos 54% embalados depois do dia (lote a lote: NO DIA,
      adiantado, fora do plano, atraso de cada manhã);
-  2. pendências lidas de UMA fonte (o export do ERP colado numa aba do Sheets,
-     se a lista do Excel vier do ERP), com o FICOU ABERTO dizendo "pendente" ou
-     "finalizado";
+  2. ~~pendências lidas de UMA fonte (o export do ERP colado numa aba do Sheets,
+     se a lista do Excel vier do ERP)~~: **o ERP NÃO exporta a finalização**
+     (PPCP, 17/11/2026).
+     - **Plano B, pronto e mostrado em prévia, mas ADIADO** (PPCP: *"não vamos
+       fazer ainda, pode deixar como está hoje"*):
+       - uma coluna `FINALIZADO_EM` na PROGRAMACAO_CONCLUIDA. O PPCP digita a
+         data ao finalizar no ERP; texto como CANCELADO = fechada sem data;
+       - `getPendencias` no `.gs`, só leitura, achando as colunas pelo nome:
+         - abertas = linhas com X, falta > 0, sem a data, com o X dado a partir
+           do deploy (o ARQUIVADO_EM);
+         - finalizadas = com a data nos últimos 90 dias;
+         - dias úteis desde a DATA do lote, sem os FERIADOS;
+       - uma 3ª sub-aba na PROGRAMAÇÃO, PENDÊNCIAS DE PEÇA, com 4 cartões
+         (ABERTAS · A MAIS VELHA · 15 DIAS OU MAIS · TEMPO PARA FECHAR, este
+         com a mediana e o pior), as abertas por idade (âmbar de 15 a 30,
+         vermelho acima de 30: as faixas do Excel do PPCP) e as finalizadas
+         com LEVOU.
+     - Ditos ao PPCP, para quando voltar:
+       - o registro começa no deploy; as pendências de antes ficam só no Excel;
+       - "abertas" no painel são só linhas com X; o Excel também lista itens
+         inteiros não embalados, que no painel são AINDA PARA EMBALAR. Os
+         totais não batem, e é o esperado.
+     - **Recusado antes:** tirar o X e lançar no app para medir o tempo. Só
+       funciona com o código fora de outros lotes (o 25443 sim, o 25285 não: o
+       FIFO tira caixas do lote de 9/11). A simulação com o `.gs` real está
+       descrita na conversa de 17/11.
   3. mostrar à parte o adiantado (antes do dia) e a produção fora do plano;
   4. medir o custo do `getAtendimentoLotes` com o `relatorioTempos()`.
 
@@ -803,6 +826,23 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   - a legenda com 10 e com 20 (19 no retrato de 28 dias);
   - os cinco nomes e os `title`;
   - o seletor do app.
+
+### A COR DO PRODUTO NOS ITENS (v7.264.0 / mobile 1.58.0 / rp-core 1.24.0 / `.gs` v5.72)
+- PPCP, 17/11/2026, com os itens do 212/26 abertos: *"consegue trazer a cor do
+  produto"*. Duas linhas "VOL 2/2 CRISTALEIRA ORION", uma OFF WHITE e outra
+  CINAMOMO, apareciam iguais. A descrição do cadastro não tem a cor; ela mora
+  na coluna `COR` (a regra de sempre, em `produto-e-comparativo.md`).
+- O `getAtendimentoLotes` manda `cor: produtoDoCodigo(cat.codigo).cor`; fora do
+  cadastro, vazia.
+- O rp-core dá ao item `nome = nomeComCor(desc, cor)`: a mesma junção do app, e
+  a cor que já está na descrição não repete. Os desenhos (PC, papel, app)
+  mostram o `nome`.
+- Sem o re-deploy, o `.gs` v5.71 não manda a cor e o nome fica igual à
+  descrição. Nada quebra.
+- ⚠ O `.gs` foi de 5.71 para 5.72: a v5.72 das pendências de peça foi preparada
+  e adiada, nunca existiu (ver *O QUE A DATA É…*, item 2 do "para depois").
+- Testes: o nome com e sem a cor, a cor no `.gs` (stub do `produtoDoCodigo`), o
+  escape no PC e no app; 4 de 4 mutações.
 
 ### Ficou de fora, de propósito
 - Um "% do lote" em UEP ou em pontos: o PERCENTUAL da planilha é em caixas, e

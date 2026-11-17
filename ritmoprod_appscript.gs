@@ -1,5 +1,12 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.72 — A COR DO PRODUTO NO ATENDIMENTO POR LOTE INTERNO.
+//               PPCP, 17/11/2026, com os itens do 212/26 abertos ("VOL 2/2
+//               CRISTALEIRA ORION" duas vezes, cores diferentes): "consegue trazer
+//               a cor do produto". getAtendimentoLotes manda a `cor` do cadastro
+//               (produtoDoCodigo — a coluna COR da PRODUTO_CODIGO) em cada linha;
+//               o painel junta com o nomeComCor do rp-core. Nada mais muda.
+//               ⚠ re-deploy manual.
 // Versão: 5.71 — A LEITURA DO ATENDIMENTO POR LOTE INTERNO COBRE 35 DIAS.
 //               PPCP, 17/11/2026: "porque só essa qtde de lotes?" → o seletor
 //               10 · 20 lotes no painel. Com 28 dias a leitura trazia 20 lotes
@@ -658,7 +665,7 @@
 
 // A versão deste arquivo, a mesma do cabeçalho (v5.58). Vai no getDados para o
 // rodapé do painel dizer qual .gs está implantado — o GitHub não sabe.
-const GS_VERSAO = '5.71';
+const GS_VERSAO = '5.72';
 
 const SHEET_DADOS     = 'HORA_A_HORA';
 const SHEET_HIST      = 'HISTORICO';
@@ -6795,6 +6802,9 @@ function getAtendimentoLotes() {
       li: pr.loteInt, data: _numParaDataBR(dNum), dataNum: dNum, lote: pr.lote || '',
       codigo: cat ? cat.codigo : pr.codigo,
       desc: cat ? cat.desc : '',   // v5.70: toda linha aparece no detalhe, com o % dela
+      // v5.72 (PPCP: "consegue trazer a cor do produto"): a descrição do cadastro nem sempre tem
+      // a cor (ela mora na coluna COR) — duas CRISTALEIRA ORION de cores diferentes saíam iguais
+      cor: cat ? produtoDoCodigo(cat.codigo).cor : '',
       corGps: pr.corGps || '', qtde: qtde, emb: emb, encerrada: enc,
       aba: pr.arquivada ? 'concluida' : 'aberta',
       dia: dia ? dia.slice() : null   // [no dia, D+1, D+2+] em caixas; null = o FIFO não tem a linha

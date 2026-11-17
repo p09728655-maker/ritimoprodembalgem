@@ -284,7 +284,8 @@ via Google Apps Script (JSONP).
     PROGRAMADO, FECHADO COM FALTA (X) = as encerradas, ITENS 100% EMBALADOS,
     AINDA PARA EMBALAR = vencidas na aba; o de hoje, em andamento, fica fora dos
     cartões (a legenda diz quais lotes entram).
-  - Sem veredito.
+  - Sem veredito. O item mostra a cor do cadastro (`nome` = `nomeComCor`;
+    `.gs` v5.72 manda a `cor`).
   - A aba lê a programação e DEPOIS os lotes, em sequência. O `_progSub` só
     relê os lotes que falharam.
   - TEMPO (v7.262.0 / `.gs` v5.70): NO DIA, D+1 e D+2+ ÷ programado.
