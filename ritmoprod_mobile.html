@@ -1133,7 +1133,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.53.0';
+const APP_VER   = '1.54.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -4135,16 +4135,17 @@ function _gerUepCardsM(G, k, atrKpi){
   L.push({ l: 'PROJEÇÃO · UEP', v: p ? fmtN(Math.round(p.fim)) : '—', sub: p ? `${fmtP(p.fim / G.meta * 100)} da meta · só jornada` : semHH ? 'a hora a hora ainda não foi lida' : 'sem hora de jornada lançada', c: 'uk' });
   if(G.falta <= 0) L.push({ l: 'PARA A META', v: '✓', sub: 'meta de UEP do dia batida', c: 'larga uk' });
   else {
-    const m = G.m, pr = m && m.prod;
-    // o NEC. P/ META em cx/h virou isto: quanto falta, em caixas do produto de
-    // agora, quando sai — e, não cabendo, o ritmo que a meta pede no que resta
-    const l1 = pr && m.faltaCx ? `≈ ${fmtN(m.faltaCx)} cx de ${_escH(pr.nome)}` : '';
+    const m = G.m;
+    // o NEC. P/ META em cx/h virou isto: quando sai — e, não cabendo, o ritmo
+    // que a meta pede no que resta. Sem o "≈ N cx de PRODUTO" desde a 1.54.0
+    // (a falta ÷ a UEP/cx do produto de agora, como se só ele fosse rodar até
+    // a meta — a TV mostrou 2.603 cx de MESA CENTRO SLIM fora da programação).
     const hm = n => n < 60 ? Math.round(n) + ' min' : Math.floor(n / 60) + 'h' + p2(Math.round(n) % 60);
     const l2 = !m ? (G.minRest > 0 ? 'meta − UEP feita na jornada' : 'jornada encerrada')
       : m.chega != null ? `sai às ${fromMin(Math.round(m.chega))} no ritmo da meta`
       : m.minRest > 0 ? `não cabe até ${CFG.turnoFim || '17:00'} no ritmo da meta · pede ${fmtN(Math.round(G.falta / m.minRest * 60))} UEP/h nos ${hm(m.minRest)} que restam`
       : 'jornada encerrada';
-    L.push({ l: 'PARA A META', v: fmtN(Math.round(G.falta)) + '<small>UEP</small>', sub: l1 ? l1 + '<i>' + l2 + '</i>' : l2, c: 'larga uk' });
+    L.push({ l: 'PARA A META', v: fmtN(Math.round(G.falta)) + '<small>UEP</small>', sub: l2, c: 'larga uk' });
   }
   return L;
 }

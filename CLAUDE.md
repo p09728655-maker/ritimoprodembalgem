@@ -202,10 +202,12 @@ via Google Apps Script (JSONP).
   em texto ou tamanho: medir na TV e no gerencial, ALTURA e largura.
 - G (v7.257.0, "menos informação, mais visibilidade"): UM veredito, o selo de
   sempre — nunca ADIANTADO/ATRASADO por minutos (o PPCP escolheu a variante A);
-  minutos enormes e o sentido por extenso (À FRENTE / ATRÁS); a falta em UEP e
-  em caixas; sem projeção (nem cartão "a meta sai", nem pontilhado); só o FEITO
-  tem número no gráfico; sem o rodapé "1 UEP = …". ⚠ Número nunca na linha
-  `.tvu-nome` (corta com "…").
+  minutos enormes e o sentido por extenso (À FRENTE / ATRÁS); a falta SÓ em
+  UEP (v7.259.0: as caixas eram a falta ÷ UEP/cx do produto de agora — 2.603
+  cx de SLIM fora da programação; saíram também do PARA A META dos dois
+  gerenciais e o `faltaCx` do rp-core 1.21.0); sem projeção (nem cartão "a
+  meta sai", nem pontilhado); só o FEITO tem número no gráfico; sem o rodapé
+  "1 UEP = …".
 - Tela cheia de PARADA: poll de 15 s só na TV (`_paradaNaTV`); a parada sem FIM
   é a aberta; o START é no celular. PAROU AGORA, motivo depois: TIPO
   `A INFORMAR`.

@@ -6575,8 +6575,8 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
   const k = K;
   // ── o modelo real
   ok('a montagem real às 16:22: esperado 2.452, 28 min atrás, restam 37 min de jornada, o produto de agora pesa 2,00',
-     [G.ok, Math.round(G.card.esperado), Math.round(G.m.difMin), G.minRest, G.m.minRest, G.m.prod.uepCx, G.m.faltaCx],
-     [true, 2452, -28, 37, 37, 2, 228]);
+     [G.ok, Math.round(G.card.esperado), Math.round(G.m.difMin), G.minRest, G.m.minRest, G.m.prod.uepCx, 'faltaCx' in G.m],
+     [true, 2452, -28, 37, 37, 2, false]);
   // ── SÁBADO ao vivo (v7.248.0): o mesmo retrato num sábado — todo hora extra,
   // sem meta: o 1º card não tem selo, e saem o ritmo, a projeção e o PARA A META
   { R(`_HOJE_TESTE = '14/11/2026';`);
@@ -6611,10 +6611,11 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
   ok('o card diz o selo, os minutos atrás, o feito × esperado e a hora extra (a prévia de 13/11)',
      [L1[0].v, L1[0].sub],
      ['2.306 <small>UEP</small>', '<b>ATENÇÃO</b> · 28 min atrás do ritmo · 2.306 de 2.452 UEP esperadas até agora · +392 em hora extra']);
-  ok('ritmo 296 UEP/h contra 314; projeção 2.596 (94,0% da meta); faltam 455 UEP ≈ 228 cx de SAPATEIRA, não cabe até 17:00',
+  // v7.259.0 / rp-core 1.21.0 (PPCP, 17/11/2026: "2603 cx slim isso não está na programação"): sem o "≈ N cx de PRODUTO"
+  ok('ritmo 296 UEP/h contra 314; projeção 2.596 (94,0% da meta); faltam 455 UEP, sem caixas do produto de agora; não cabe até 17:00',
      [L1[1].v, L1[1].sub, L1[2].v, L1[2].sub, L1[3].v, L1[3].sub],
      ['296 <small>/h</small>', 'a meta pede 314 UEP/h', '2.596', '94,0% da meta · na média de hoje, só jornada',
-      '455 <small>UEP</small>', '≈ 228 cx de SAPATEIRA SPAZIO · não cabe até 17:00 no ritmo da meta']);
+      '455 <small>UEP</small>', 'não cabe até 17:00 no ritmo da meta']);
   ok('minutos: atrás, à frente e "no tempo" abaixo de meio minuto',
      [R('_gerMinTxt(-27.9)'), R('_gerMinTxt(12.4)'), R('_gerMinTxt(0.4)'), R('_gerMinTxt(-0.4)')],
      ['28 min atrás do ritmo', '12 min à frente do ritmo', 'no tempo da meta', 'no tempo da meta']);
@@ -6842,9 +6843,9 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
   const PDM = Object.assign({}, PD);
   const PRODM = [{ codigo:'501089003', desc:'VOL 1/1 SAPATEIRA SPAZIO', cor:'', uep:2 }];
   const GM = RM('PONTOS_DIA = _pd; PRODUTOS = _pr; PROD_ATUAL = "501089003"; _AGORA = 982; _gerUepModeloM(_k)', { _pd:PDM, _pr:PRODM, _k:KM });
-  const resumo = X => [Math.round(X.card.esperado), Math.round(X.m.difMin), X.minRest, X.m.minRest, X.m.faltaCx, X.m.chega, Math.round(X.proj.fim), Math.round(X.proj.porHora),
+  const resumo = X => [Math.round(X.card.esperado), Math.round(X.m.difMin), X.minRest, X.m.minRest, X.m.chega, Math.round(X.proj.fim), Math.round(X.proj.porHora),
                        X.horas.map(h => [h.inicio, h.metaH == null ? null : Math.round(h.metaH), h.uep == null ? null : Math.round(h.uep), h.cls, h.andamento, h.cx, h.min])];
-  ok('celular e PC: a MESMA montagem no retrato de 13/11 16:22 (esperado 2.452, 28 min atrás, 37 min de jornada, 228 cx, projeção 2.596; cada hora com a mesma meta, UEP e cor)',
+  ok('celular e PC: a MESMA montagem no retrato de 13/11 16:22 (esperado 2.452, 28 min atrás, 37 min de jornada, projeção 2.596; cada hora com a mesma meta, UEP e cor)',
      resumo(GM), resumo(G));
   ok('o 16:00-16:59 vale 59 min pelo fim que o backend manda (meta 309 UEP, a do PC), não os 60 do getSlots do celular',
      [GM.horas[10].min, Math.round(GM.horas[10].metaH)], [59, 309]);
@@ -6855,11 +6856,11 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
      LM.map(c => [c.l, c.c]),
      [['UEP DO DIA · META 2.761', 'warn larga hero'], ['⚠ ATRASO · LOTES VENCIDOS', 'red larga atr'], ['RITMO · UEP/HORA', 'uk'], ['PROJEÇÃO · UEP', 'uk'], ['PARA A META', 'larga uk']]);
   ok('sem atraso, sem o card (o resto igual)', LM0.map(c => c.l), ['UEP DO DIA · META 2.761', 'RITMO · UEP/HORA', 'PROJEÇÃO · UEP', 'PARA A META']);
-  ok('os textos dizem os números do PC: o selo e os minutos, feito × esperado e a hora extra; 296 contra 314/h; 2.596 = 94,0%; 455 UEP ≈ 228 cx, não cabe, 738 UEP/h em 37 min',
+  ok('os textos dizem os números do PC: o selo e os minutos, feito × esperado e a hora extra; 296 contra 314/h; 2.596 = 94,0%; 455 UEP (sem caixas do produto), não cabe, 738 UEP/h em 37 min',
      LM0.map(c => [c.v, c.sub]),
      [['2.306<small>UEP</small>', '<b>ATENÇÃO</b> · 28 min atrás do ritmo<i>2.306 de 2.452 UEP esperadas até agora · +392 em hora extra</i>'],
       ['296<small>/h</small>', 'a meta pede 314/h'], ['2.596', '94,0% da meta · só jornada'],
-      ['455<small>UEP</small>', '≈ 228 cx de SAPATEIRA SPAZIO<i>não cabe até 17:00 no ritmo da meta · pede 738 UEP/h nos 37 min que restam</i>']]);
+      ['455<small>UEP</small>', 'não cabe até 17:00 no ritmo da meta · pede 738 UEP/h nos 37 min que restam']]);
   { const G9 = RM('_AGORA = 9*60+30; _gerUepModeloM(_k)', { _k:Object.assign({}, KM, { minNorm:180 }) });
     ok('cabendo, a meta "sai às" (o mesmo horário do PC)',
        [RM('_gerUepCardsM(_G, _k, null)', { _G:G9, _k:Object.assign({}, KM, { minNorm:180 }) })[3].sub.includes('sai às '), G9.m.chega != null],
@@ -6980,8 +6981,10 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
   { // 8: as três mutações que passavam — o escape do nome, o arredondamento para cima e a borda da tolerância
     const Ge = RM('PRODUTOS = [{ codigo:"501089003", desc:"VOL 1/1 <b>X</b>", cor:"", uep:2.5 }]; _gerUepModeloM(_k)', { _k:KM });
     const pe = RM('_gerUepCardsM(_G, _k, null)', { _G:Ge, _k:KM })[3].sub;
-    ok('o nome do produto sai escapado no PARA A META; as caixas arredondam para cima (455,3 ÷ 2,5 = 182,1 → 183)',
-       [pe.includes('<b>X</b>'), pe.includes('&lt;b&gt;X&lt;/b&gt;'), Ge.m.faltaCx], [false, true, 183]);
+    // v7.259.0 / rp-core 1.21.0: o PARA A META não fala mais em caixas nem no
+    // produto de agora (nada da planilha entra no texto); o modelo não traz faltaCx
+    ok('o PARA A META sem as caixas e sem o nome do produto de agora (rp-core sem faltaCx)',
+       [/X/.test(pe), / cx de /.test(pe), 'faltaCx' in Ge.m], [false, false, false]);
     RM('PRODUTOS = _pr', { _pr:PRODM });
     const allT = allM.filter(r => r.horario < '12:12').concat([rowM('12:12', 0)]);
     const tolEm = ag => RM('_AGORA = _ag; _gerUepModeloM(_k)', { _ag:ag, _k:Object.assign({}, KM, { allHoje:allT }), PONTOS_DIA:Object.assign({}, PDM, { porHoraModelo:PHM.filter(x => x.hora < '12:12') }) })

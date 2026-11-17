@@ -525,7 +525,7 @@ function uepGerMontar(o){
   const meta = card.meta, feito = card.fds ? 0 : Number(U.normal) || 0, he = card.fds ? card.he : Number(U.he) || 0, porMin = meta / UEP_MIN_DIA;
   const horas = uepHorasDia(o.slots, o.allHoje, uepPorHora(o.phm), meta, ag, o.tolMin);
   // O que resta de jornada a partir de agora (o almoço fica de fora) e, no ritmo
-  // da meta, quando a meta sai — a conta do "A META SAI ÀS" da Tela G.
+  // da meta, quando a meta sai — o "sai às" do card PARA A META dos gerenciais.
   const rest = [];
   horas.forEach(h => { if (h.he) return; const i0 = toMin(h.inicio), f0 = i0 + h.min; if (f0 > ag) rest.push([Math.max(i0, ag), f0]); });
   const minRest = rest.reduce((t, r) => t + r[1] - r[0], 0);
@@ -547,7 +547,6 @@ function uepGerMontar(o){
     // "VOL 1/1" é ruído; "VOL 1/3" fica — a UEP é daquele volume.
     const nome = String(pr.desc || '').replace(/^VOL\.?\s*1\s*\/\s*1\s*/i, '').trim() || String(pr.cod || '');
     m = { difMin: (feito - (Number(card.esperado) || 0)) / porMin, minRest, chega, falta,
-          faltaCx: falta > 0 && uepCx > 0 ? Math.ceil(falta / uepCx) : null,
           prod: pr.cod ? { rot: nomeComCor(nome, pr.cor) || nome, nome, cor: String(pr.cor || '').trim(), uepCx } : null };
   } catch (e) { m = null; }
   return { ok: true, card, meta, feito, he, horas, proj: uepProj(feito, o.minNorm), m, agoraMin: ag, minRest, falta,
@@ -919,7 +918,7 @@ function paradaAInformar(tipo){
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.20.0',
+  versao: '1.21.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
         'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepDiaHe', 'histDiaFds', 'metaDiasParadas', 'metaMedianaUteis', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido',
