@@ -184,6 +184,11 @@ diz em que faixa ela entra:
 - As três faixas são cortadas no embalado da linha (no dia primeiro).
 - Linha sem o tempo (`.gs` antes da v5.70) fica fora da base e é contada
   (`semTempo`); nunca entra como 0.
+- Lote interno sem NENHUMA linha com a conta do embalado (v7.262.1): mostra o
+  programado e "sem a conta do embalado", com "—" no embalado, no % e nos itens
+  100%. Fica fora dos últimos N lotes do resumo.
+- ITENS COMPLETOS (%) = Σ itens 100% ÷ Σ itens com conta, dos últimos N lotes
+  (`resumo.pctItens`, rp-core 1.23.1).
 
 ⚠ O % do lote é **média ponderada pelas caixas**. Por isso um lote fecha em
 97% com só 1 item em 4 completo: a falta pequena espalhada por muitos itens

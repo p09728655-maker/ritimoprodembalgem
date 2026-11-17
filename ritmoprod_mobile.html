@@ -1180,7 +1180,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.56.0';
+const APP_VER   = '1.56.1';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -2319,7 +2319,7 @@ function _pliHtmlM(M){
     +'<div class="pli-k"><div class="l">No dia · na data do lote</div><div class="v">'+(R.pctNoDia==null?'—':fmtP(R.pctNoDia))+'</div><div class="s">'
       +(R.pctNoDia==null?(R.semTempo>0?'precisa do .gs v5.70':'—'):'D+1 '+fmtP(R.pctD1)+' · D+2+ '+fmtP(R.pctD2))+'</div></div>'
     +'<div class="pli-k"><div class="l">Ficou aberto · encerrado</div><div class="v">'+cx(R.ficou)+'<small>cx</small></div><div class="s">'+plural(R.nFicou, 'item', 'itens')+' sem completar</div></div>'
-    +'<div class="pli-k"><div class="l">Itens 100%</div><div class="v">'+fmtN(R.n100)+'<small>de '+fmtN(R.n)+'</small></div><div class="s">'+(R.n?fmtP(R.n100/R.n*100)+' dos itens':'—')+'</div></div>'
+    +'<div class="pli-k"><div class="l">Itens 100%</div><div class="v">'+fmtN(R.n100)+'<small>de '+fmtN(R.n)+'</small></div><div class="s">'+(R.pctItens==null?'—':fmtP(R.pctItens)+' dos itens')+'</div></div>'
     +'<div class="pli-k'+(R.aberto>0?' ab':'')+'"><div class="l">Ainda aberto · vencido</div><div class="v">'+cx(R.aberto)+'<small>cx</small></div><div class="s">'+(R.aberto>0?R.lisAberto.map(_escH).join(' · '):'nenhum vencido')+'</div></div>'
     +'</div>';
   const w=v=>Math.min(100, Math.max(0, v||0)).toFixed(1)+'%';
@@ -2333,7 +2333,8 @@ function _pliHtmlM(M){
           ?'<b class="d0" style="width:'+w(g.pctNoDia)+'"></b><b class="d1" style="width:'+w(g.pctD1)+'"></b><b class="d2" style="width:'+w(g.pctD2)+'"></b>'
           :'<b style="width:'+w(g.pct)+'"></b>')
         +'</span><span class="pli-pcn'+(g.hoje?' pli-dim':'')+'">'+fmtP(g.pct)+'</span></div>')
-      +'<div class="pli-l3"><b>'+cx(g.emb)+'</b> de '+cx(g.prog)+' cx'+(g.pctNoDia==null?'':' · no dia <b>'+fmtP(g.pctNoDia)+'</b>')+' · '+fmtN(g.n100)+' de '+fmtN(g.n)+' itens 100%'
+      +'<div class="pli-l3">'+(g.emb==null?'sem a conta do embalado · '+cx(g.prog)+' cx programadas'
+        :'<b>'+cx(g.emb)+'</b> de '+cx(g.prog)+' cx'+(g.pctNoDia==null?'':' · no dia <b>'+fmtP(g.pctNoDia)+'</b>')+' · '+fmtN(g.n100)+' de '+fmtN(g.n)+' itens 100%')
       +(g.ficou>0?' · ficou aberto <b>'+cx(g.ficou)+' cx</b>':'')
       +(g.hoje?' · em andamento':g.aberto>0?' · <span class="pli-ab">ainda aberto '+cx(g.aberto)+' cx</span>':'')+'</div>';
     if(exp) s+=g.itens.map(x=>'<div class="pli-it'+(x.sit==='completo'?' ok':'')+'"><span class="pli-ipc">'+(x.pct==null?'—':fmtP(x.pct))+'</span><b>'+_escH(x.desc||x.codigo)+'</b><br>'

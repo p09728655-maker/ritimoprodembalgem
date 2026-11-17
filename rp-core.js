@@ -932,7 +932,7 @@ function loteIntMontar(linhas, hojeNum, n){
     const li = String(x.li).trim();
     const g = G[li] || (G[li] = { li, dMin: null, dMax: null, data: '', lotes: {}, cores: {}, itens: [], prog: 0, emb: 0, n: 0, n100: 0,
                                   semConta: 0, ficou: 0, nFicou: 0, aberto: 0, nAberto: 0, hoje: false,
-                                  progT: 0, noDia: 0, d1: 0, d2: 0, semTempo: 0 });
+                                  progT: 0, noDia: 0, d1: 0, d2: 0, semTempo: 0, progTot: 0 });
     const d = Number(x.dataNum) || 0, q = Math.max(0, Number(x.qtde) || 0);
     if (d && (g.dMin == null || d < g.dMin)) { g.dMin = d; g.data = String(x.data || '').slice(0, 5); }
     if (d && (g.dMax == null || d > g.dMax)) g.dMax = d;
@@ -940,6 +940,7 @@ function loteIntMontar(linhas, hojeNum, n){
     const cor = String(x.corGps || '').trim().toUpperCase();
     if (cor) g.cores[cor] = (g.cores[cor] || 0) + 1;
     if (d && d === hoje) g.hoje = true;
+    g.progTot += q;   // o programado de TODAS as linhas (o do lote sem nenhuma conta)
     if (x.emb == null || !isFinite(Number(x.emb))) { g.semConta++; return; }
     const e = Math.min(Math.max(0, Number(x.emb)), q), falta = q - e;
     g.n++; g.prog += q; g.emb += e;
@@ -965,25 +966,32 @@ function loteIntMontar(linhas, hojeNum, n){
   const todos = Object.keys(G).map(k => {
     const g = G[k];
     g.pct = g.prog > 0 ? g.emb / g.prog * 100 : null;
+    // v1.23.1 (revisão): lote sem NENHUMA linha com conta — o programado é conhecido,
+    // o embalado não. Nunca "0 de 0" (E1); fica fora dos últimos N (abaixo).
+    if (!g.n) { g.prog = g.progTot; g.emb = null; g.pct = null; }
     g.pctNoDia = pctT(g.noDia, g.progT); g.pctD1 = pctT(g.d1, g.progT); g.pctD2 = pctT(g.d2, g.progT);
     g.lotes = Object.keys(g.lotes).sort();
     g.corGps = Object.keys(g.cores).sort((a, b) => g.cores[b] - g.cores[a])[0] || '';
     delete g.cores;
     g.itens.sort((a, b) => (SIT[a.sit] - SIT[b.sit]) || (b.falta - a.falta) || a.codigo.localeCompare(b.codigo));
     return g;
-  }).sort((a, b) => ((b.dMax || 0) - (a.dMax || 0)) || (ord(b.li) - ord(a.li)));
-  const hojeG = todos.filter(g => g.hoje), fechados = todos.filter(g => !g.hoje);
+  });
+  const cmp = (a, b) => ((b.dMax || 0) - (a.dMax || 0)) || (ord(b.li) - ord(a.li));
+  todos.sort(cmp);
+  const hojeG = todos.filter(g => g.hoje), fechados = todos.filter(g => !g.hoje && g.n > 0);
+  const semCnt = todos.filter(g => !g.hoje && !g.n);   // mostrados, na data deles, mas fora do resumo
   const ult = fechados.slice(0, N), velhos = fechados.slice(N).filter(g => g.aberto > 0);
   const soma = (arr, k) => arr.reduce((t, g) => t + g[k], 0);
   const prog = soma(ult, 'prog'), emb = soma(ult, 'emb'), progT = soma(ult, 'progT');
   const noDia = soma(ult, 'noDia'), d1 = soma(ult, 'd1'), d2 = soma(ult, 'd2');
   const vencidos = fechados.filter(g => g.aberto > 0);
   return {
-    lotes: hojeG.concat(ult, velhos),
+    lotes: hojeG.concat(ult.concat(velhos, semCnt).sort(cmp)),
     resumo: {
       nLotes: ult.length, de: ult.length ? ult[ult.length - 1].li : '', ate: ult.length ? ult[0].li : '',
       prog, emb, pct: prog > 0 ? emb / prog * 100 : null,
       ficou: soma(ult, 'ficou'), nFicou: soma(ult, 'nFicou'), n: soma(ult, 'n'), n100: soma(ult, 'n100'),
+      pctItens: soma(ult, 'n') > 0 ? soma(ult, 'n100') / soma(ult, 'n') * 100 : null,   // o ITENS COMPLETOS, uma conta para os dois desenhos
       aberto: soma(vencidos, 'aberto'), nAberto: soma(vencidos, 'nAberto'), lisAberto: vencidos.map(g => g.li),
       semConta: soma(todos, 'semConta'),
       progT, noDia, d1, d2, pctNoDia: pctT(noDia, progT), pctD1: pctT(d1, progT), pctD2: pctT(d2, progT),
@@ -1018,7 +1026,7 @@ function paradaAInformar(tipo){
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.23.0',
+  versao: '1.23.1',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
         'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepDiaHe', 'histDiaFds', 'metaDiasParadas', 'metaMedianaUteis', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido',

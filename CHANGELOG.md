@@ -11,6 +11,40 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.262.1 · mobile 1.56.1 · rp-core 1.23.1 — 17/11/2026 · ajustes da revisão
+
+O revisor do projeto conferiu a v7.260.0, a v7.261.0 e a v7.262.0 depois do
+merge.
+- **Nenhum bloqueio.**
+- O FIFO do `.gs` (o tempo de atendimento) saiu limpo:
+  - não muda saldo, crédito, arquivamento nem nenhum valor gravado;
+  - o `diaRow` não vaza para o cache nem para o painel;
+  - a chave das duas abas bate.
+
+Ajustes:
+- **Lote interno sem nenhuma linha com a conta do embalado** (PRODUZIDO/SALDO
+  de outra linha, colados por cima, até o próximo lançamento):
+  - aparecia como `0 · 0 · 0 de 0` e ocupava uma vaga dos últimos 10;
+  - agora mostra o programado e "sem a conta do embalado", com "—" no resto;
+  - fica fora do resumo.
+- **PROGRAMAÇÃO POR DIA com a leitura que falhou**: o botão e a tela diziam
+  *"sem programação cadastrada"*. Agora dizem a causa, por exemplo *NÃO
+  CONSEGUI LER A PROGRAMAÇÃO — … cold start*.
+- **Uma leitura por vez**: clicar em LOTES INTERNOS para tentar de novo não
+  dispara mais enquanto a programação ainda está sendo lida.
+- **ITENS COMPLETOS (%)**: a conta saiu dos dois desenhos e foi para o
+  rp-core. O número é o mesmo.
+- Texto: *"nas últimas 28 dias"* → *"nos últimos 28 dias"*.
+- Comentário do `.gs` e memória corrigidos (a descrição vai em toda linha
+  desde a v5.70). **O `.gs` não mudou de código**: a v5.70 já colada vale e não
+  precisa colar de novo.
+
+**Atenção** (antes → depois): só o lote sem nenhuma conta muda, `0 · 0 · 0
+de 0` → programado + "sem a conta do embalado" + "—". Ele deixa de contar
+nos últimos 10, então o 10º lote real volta para o resumo.
+
+---
+
 ## v7.262.0 · mobile 1.56.0 · rp-core 1.23.0 · `.gs` v5.70 — 17/11/2026 · tempo de atendimento, % de cada item e alinhamento
 
 O PPCP, com o ATENDIMENTO POR LOTE INTERNO na tela, perguntou: *"tempo de
@@ -41,8 +75,8 @@ alinhamento"*.
     %.
   - O que faltou cai em FICOU ABERTO (linha encerrada) ou em AINDA ABERTO
     (vencida na programação). A situação por extenso foi para o *title*.
-- **App**: o mesmo, em cartões. O cartão NO DIA ocupa a largura toda, e o %
-  de cada item aparece à direita da 1ª linha.
+- **App**: o mesmo, em cartões. O 5º cartão (AINDA ABERTO) ocupa a largura
+  toda, e o % de cada item aparece à direita da 1ª linha.
 - **`.gs` v5.70**:
   - O FIFO (`calcularProgramacao`) separa as caixas de cada linha pela data do
     lançamento (`diaRow`).

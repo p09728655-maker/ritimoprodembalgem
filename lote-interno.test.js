@@ -332,7 +332,7 @@ console.log('\n── as regras da conta ──');
   ok('além dos 10 fechados, entra o mais velho que ainda tem saldo vencido; o AINDA ABERTO do resumo é de todos os vencidos',
      [Y.lotes.length, Y.lotes[Y.lotes.length - 1].li, Y.resumo.nLotes, Y.resumo.aberto, Y.resumo.lisAberto], [11, '200/26', 10, 40, ['200/26']]);
   ok('a conta sem a lista não inventa: null', loteIntMontar(null, 20261117), null);
-  ok('o rp-core publica a função e sobe de versão', [RP_CORE.fns.includes('loteIntMontar'), RP_CORE.versao], [true, '1.23.0']);
+  ok('o rp-core publica a função e sobe de versão', [RP_CORE.fns.includes('loteIntMontar'), RP_CORE.versao], [true, '1.23.1']);
 }
 
 console.log('\n── v7.262.0: o % de cada item e o TEMPO (no dia · D+1 · D+2+) ──');
@@ -358,6 +358,16 @@ console.log('\n── v7.262.0: o % de cada item e o TEMPO (no dia · D+1 · D+2
   const P2 = loteIntMontar([Object.assign({}, b, { codigo: 'A', qtde: 100, emb: 100, dia: [100, 0, 0] }), Object.assign({}, b, { codigo: 'B', qtde: 100, emb: 50 })], 20261117, 10);
   ok('linha sem o tempo fica fora da base do NO DIA (100 de 100, não 100 de 200) e é contada',
      [P2.lotes[0].pctNoDia, P2.lotes[0].semTempo, P2.lotes[0].itens.find(x => x.codigo === 'B').pctNoDia], [100, 1, null]);
+  // v1.23.1 (revisão, E1): lote só com linhas SEM a conta do embalado
+  const SC = LINHAS.concat([{ li: '213/26', dataNum: 20261116, data: '16/11/2026', lote: '9', codigo: 'X', qtde: 120, emb: null, aba: 'aberta', corGps: 'AZUL' },
+                            { li: '213/26', dataNum: 20261116, data: '16/11/2026', lote: '9', codigo: 'Y', qtde: 80, emb: null, aba: 'aberta', corGps: 'AZUL' }]);
+  const Msc = loteIntMontar(SC, 20261117, 10), gsc = Msc.lotes.find(g => g.li === '213/26');
+  ok('v1.23.1 (revisão): lote sem nenhuma conta — o programado (200) sim, o embalado e o % não (null, nunca "0 de 0")',
+     [gsc.prog, gsc.emb, gsc.pct, gsc.n, gsc.semConta], [200, null, null, 0, 2]);
+  ok('…ele fica FORA dos últimos 10 (o resumo é o mesmo de sem ele) e aparece na lista, na data dele',
+     [Msc.resumo.nLotes, Msc.resumo.de, Msc.resumo.ate, r1(Msc.resumo.pct), Msc.lotes.map(g => g.li).slice(0, 3)], [10, '202/26', '211/26', 97.4, ['212/26', '213/26', '211/26']]);
+  ok('v1.23.1 (revisão, D1/A2): o ITENS COMPLETOS em % sai do rp-core (31 de 118 = 26,3%), não do desenho',
+     [r1(M.resumo.pctItens), loteIntMontar([], 20261117, 10).resumo.pctItens], [26.3, null]);
   ok('dia malformado (2 faixas, texto) = sem tempo, nunca 0',
      loteIntMontar([Object.assign({}, b, { codigo: 'A', qtde: 10, emb: 10, dia: [10, 0] }), Object.assign({}, b, { codigo: 'B', qtde: 10, emb: 10, dia: ['x', 0, 0] })], 20261117, 10).lotes[0].semTempo, 2);
 }
@@ -436,6 +446,15 @@ console.log('\n── o PC: a mesma marcação na tela e no papel ──');
   ok('o que é só da tela é .so-tela (a seta e o "clique no lote")', [/<span class="seta so-tela">/.test(tela), /<span class="so-tela"> · clique no lote/.test(tela)], [true, true]);
   ok('nenhum veredito na tela nova: sem selo, sem cor de status (o % é fato)', /NO RITMO|ATENÇÃO|ABAIXO|var\(--(ok|red)\)/.test(tela), false);
   ok('desenho sem conta: o _pliHtml não soma nem divide caixas (a conta é do rp-core)', /reduce\(|\.prog\s*[-+*/]|\.emb\s*[-+*/]/.test(pega(JS, 'function _pliHtml(')), false);
+  // v7.262.1 (revisão, D1/A2): o "26,3% dos itens" era n100/n*100 nos DOIS desenhos — a régua alargada pega divisão que vira %
+  ok('…nem calcula percentual (nada de "÷ … × 100") — no PC e no celular',
+     [/\/[^/<>'"\n]*\*\s*100/.test(pega(JS, 'function _pliHtml(')), /\/[^/<>'"\n]*\*\s*100/.test(pega(MJS, 'function _pliHtmlM('))], [false, false]);
+  const Lsc = LINHAS.concat([{ li: '213/26', dataNum: 20261116, data: '16/11/2026', lote: '9', codigo: 'X', qtde: 120, emb: null, aba: 'aberta', corGps: 'AZUL' }]);
+  const tsc = _pliHtml(loteIntMontar(Lsc, 20261117, 10), false);
+  const lsc = /<tr class="pli-lt" onclick="_pliExp\(1\)">([\s\S]*?)<\/tr>/.exec(tsc)[1];
+  ok('v7.262.1 (revisão, E1): o lote sem conta mostra o programado e "—" no embalado, no % e nos itens 100% — nunca "0 · 0 de 0"',
+     [lsc.includes('213/26'), lsc.includes('>120<'), /<td class="n"><span class="pli-dim">—<\/span><\/td><td class="pli-pc"><span class="pli-dim">sem a conta do embalado<\/span>/.test(lsc),
+      /0 <small>de 0<\/small>/.test(lsc)], [true, true, true, false]);
   const G = pega(JS, 'async function gerarRelatorioLotesInternos(');
   ok('a impressão: o MESMO _pliHtml com papel=true, o CSS comum + a pele, paisagem, cabeçalho e botão comuns',
      [/_pliHtml\(M, true\)/.test(G), /'<style>'\+_PLI_CSS\+_PLI_SKIN\+'<\/style>/.test(G), /_rpDocParadas\('Atendimento por lote interno — '\+hojeStr\(\), true\)/.test(G),
@@ -523,7 +542,7 @@ console.log('\n── v7.261.0: sub-aba da PROGRAMAÇÃO ("esta com muita rolage
   [...bts, ...pns].forEach(e => { e.classList.o = e; });
   let leu = 0, desenhou = 0;
   const C = vm.createContext({ document: { querySelectorAll: q => q === '#prog-sub .ucv-sb' ? bts : q === '#sec-programacao .ucv-pn' ? pns : [] },
-    PLI_FALHA: null, PLI_VOO: null, _pliCarregar: () => { leu++; return Promise.resolve(true); }, renderLotesInternos: () => { desenhou++; } });
+    PLI_FALHA: null, PLI_VOO: null, PROG_DET_VOO: null, _pliCarregar: () => { leu++; return Promise.resolve(true); }, renderLotesInternos: () => { desenhou++; } });
   vm.runInContext(linha(JS, /const PROG_SUBS=\['dias', 'lotes'\];/).replace('const ', 'var ') + '\n' + linha(JS, /let PROG_SUB='dias';/).replace('let ', 'var ')
     + '\n' + pega(JS, 'function _progSub('), C);
   vm.runInContext("_progSub('lotes')", C);
@@ -535,6 +554,9 @@ console.log('\n── v7.261.0: sub-aba da PROGRAMAÇÃO ("esta com muita rolage
   ok('com a leitura dos lotes FALHADA, o clique na sub-aba tenta de novo (e desenha o "Lendo…")', [leu, desenhou > 0], [1, true]);
   C.PLI_VOO = Promise.resolve(); vm.runInContext("_progSub('lotes')", C);
   ok('…mas não com uma leitura já em voo (uma chamada por vez)', leu, 1);
+  C.PLI_VOO = null; C.PROG_DET_VOO = Promise.resolve(); vm.runInContext("_progSub('lotes')", C);
+  ok('v7.262.1 (revisão, F1): …nem com a leitura da PROGRAMAÇÃO em voo — a corrente do setTab relê os lotes depois dela', leu, 1);
+  C.PROG_DET_VOO = null;
   vm.runInContext("_progSub('dias')", C);
   ok('e volta para a PROGRAMAÇÃO POR DIA', [C.PROG_SUB, pns.map(p => p.cls.has('on'))], ['dias', [true, false]]);
 
@@ -555,7 +577,9 @@ console.log('\n── v7.261.0: sub-aba da PROGRAMAÇÃO ("esta com muita rolage
   const P = pega(JS, 'function renderProgramacaoDetalhada(');
   ok('o botão da PROGRAMAÇÃO POR DIA: dias, caixas e UEP — os MESMOS totais do TOTAL (o * quando parte das caixas não tem UEP); vazio diz que não há programação',
      [/_sbPinta\(sbDias, \{ txt: plural\(ordem\.length, 'dia', 'dias'\)\+' · '\+fmtN\(totQtd\)\+' cx'/.test(P), /fmtN\(Math\.round\(totUep\)\)\+' UEP'\+\(totSemUep>0\?'\*':''\)/.test(P),
-      /_sbPinta\(sbDias, \{ txt:'sem programação cadastrada', cls:'' \}\);/.test(P)], [true, true, true]);
+      /_sbPinta\(sbDias, \{ txt: fi \? fi\.t : 'sem programação cadastrada', cls:'' \}\);/.test(P)], [true, true, true]);
+  ok('v7.262.1 (revisão, F3): leitura da programação que FALHOU diz a causa (o _progDetFalhaInfo) no botão e no miolo — nunca "sem programação cadastrada"',
+     [/const fi=_progDetFalhaInfo\(\);/.test(P), /\(fi\?'<b>'\+fi\.t\+'<\/b> — '\+fi\.d:'Sem programação cadastrada\.'\)/.test(P)], [true, true]);
 }
 
 console.log('\n── o celular: a mesma conta, o desenho dele ──');
@@ -587,6 +611,10 @@ console.log('\n── o celular: a mesma conta, o desenho dele ──');
      [/<div class="l">No dia · na data do lote<\/div><div class="v">\d+,\d%<\/div>/.test(ht), /<b class="d0" style="width:[\d.]+%"><\/b><b class="d1"/.test(ht),
       / · no dia 55,7% · D\+1 13,9% · faltou <b>35<\/b>/.test(ht)], [true, true, true]);
   ok('sem o tempo (.gs v5.69): o cartão diz que precisa do .gs v5.70, nunca 0%', /<div class="v">—<\/div><div class="s">precisa do \.gs v5\.70<\/div>/.test(h), true);
+  global.PLI_EXP = {};
+  const hsc = _pliHtmlMob(loteIntMontar(LINHAS.concat([{ li: '213/26', dataNum: 20261116, data: '16/11/2026', lote: '9', codigo: 'X', qtde: 120, emb: null, aba: 'aberta', corGps: 'AZUL' }]), 20261117, 10));
+  ok('v1.56.1 (revisão, E1): no celular, o lote sem conta diz "sem a conta do embalado · 120 cx programadas", nunca "0 de 0"',
+     [hsc.includes('sem a conta do embalado · 120 cx programadas'), /<b>0<\/b> de 120/.test(hsc)], [true, false]);
   ok('o 5º cartão ocupa a linha inteira (não fica sozinho na metade)', /#ger-pli \.pli-kpis \.pli-k:last-child\{grid-column:1\/-1\}/.test(mob), true);
   global.PLI_EXP = {};
 }

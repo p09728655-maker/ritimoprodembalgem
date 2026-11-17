@@ -500,8 +500,11 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   - o `prodConf` (o `_produzidoConfiavel`, que antes só a encerrada usava);
   - a `corGps` (coluna com `GPS` no nome; só para mostrar).
   - O `produzido` da encerrada, o FIFO, o saldo e o arquivamento não mudam.
-- **A descrição só vai na linha que não completou.** Com todas as linhas, a
-  resposta passaria dos 100 KB do cache do Apps Script.
+- ~~**A descrição só vai na linha que não completou.** Com todas as linhas, a
+  resposta passaria dos 100 KB do cache do Apps Script.~~ **Revogado na
+  v7.262.0 (`.gs` v5.70)**: o detalhe mostra todos os itens, e a descrição vai
+  em toda linha. Medido: ~58 KB para 247 linhas (28 dias); o limite de 100 KB
+  fica perto de 420 linhas. A suposição de que estouraria nunca foi medida.
 - **Cache de leitura** de 120 s:
   - o lançamento o invalida (`prod`);
   - o cadastro também (`cat`).
@@ -547,13 +550,16 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     (`_pliExpM(i)`).
 - Sem veredito (selo ou cor de julgamento): é fato.
   - A barra é só o %.
-  - O vermelho vai só no AINDA EM ABERTO (> 0), porque é o atraso que ainda
-    cobra.
+  - O âmbar (`--warn`) vai só no AINDA EM ABERTO (> 0), porque é o atraso que
+    ainda cobra. A 1ª versão desta memória dizia "vermelho"; o código sempre
+    usou o âmbar (corrigido na revisão de 17/11/2026).
 
 ### Medido e conferido
 - PC renderizado em 1920, 1366 e 1280: sem estouro. Abaixo de 1100 px:
   - os cartões ficam 2 × 2;
-  - saem as colunas de lotes e de cor.
+  - ~~saem as colunas de lotes e de cor.~~ Revogado na v7.262.0: com os itens
+    na mesma tabela, a célula escondida desalinharia o `colspan` do produto.
+    Nenhuma coluna se esconde (a classe `c-lotes` saiu na v7.262.1).
 - Papel: 4 folhas A4 paisagem, o `thead` repetido.
 - App renderizado em 360, 390 e 430.
 - Teste `lote-interno.test.js`:
@@ -660,6 +666,41 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   - `lote-interno.test.js`: o modelo, as 13 colunas de toda linha, cada número
     na coluna do lote, o escape do lote e do código, o papel e o app.
   - Pegaram 20 de 20 mutações.
+
+### Revisão de 17/11/2026 (v7.262.1 / mobile 1.56.1 / rp-core 1.23.1)
+- O `/revisor-codigo` conferiu `5c6a265..0a4bcd3`.
+  - Nenhum bloqueio.
+  - O FIFO (o `dia` só soma depois do `take`; o `diaRow` fica fora do `rp_prog`
+    e do `getPontosDia`; a chave `A|`/`P|` bate) está limpo.
+- Os cinco ajustes:
+  1. **F1**: o `_progSub('lotes')` só relê os lotes que falharam sem a
+     programação em voo (`&& !PROG_DET_VOO`). A corrente do `setTab` relê os
+     lotes depois dela.
+  2. **F3/E1**: a PROGRAMAÇÃO POR DIA com a leitura falhada usa o
+     `_progDetFalhaInfo()` (no botão e no miolo). *"Sem programação
+     cadastrada"* só vale para leitura ok com a lista vazia.
+  3. **E1**: lote interno sem nenhuma linha com conta (`g.n === 0`).
+     - `prog` = o programado de todas as linhas (`progTot`); `emb` e `pct`
+       null.
+     - Fica fora do `ult` (o resumo dos últimos N) e entra na lista na data
+       dele (`semCnt`, ordenado com os outros pelo `cmp`).
+     - Os desenhos mostram "—" e "sem a conta do embalado".
+  4. **D1/A2**: o `resumo.pctItens` sai do rp-core. A régua do teste "desenho
+     sem conta" pega também a divisão que vira % (`/…*100`).
+  5. **H**: comentário do `.gs`, memória e CHANGELOG que contradiziam o código.
+     - O comentário do `.gs` mudou SEM subir a versão: só comentário, a v5.70
+       colada vale.
+- Sugestões que ficaram:
+  - **Medir o custo do `getAtendimentoLotes` depois do re-deploy** (o
+    `relatorioTempos()` no editor). Desde a v5.70 ele roda o FIFO inteiro a
+    cada falta no cache de 120 s.
+    - Se pesar, o `getAtendimentoLotes` grava no `rp_prog` o FIFO que já
+      calculou, ou guarda só o `diaRow` da janela.
+  - Prefixar o `_PLI_CSS` com `.pli-box` (D3). Hoje as classes `pli-*` só
+    existem aqui.
+  - Linha da CONCLUIDA com o X apagado é encerrada para o `getAtendimentoLotes`
+    até o próximo lançamento, e aberta para o FIFO. É transitório.
+- Testes: 8 de 8 mutações dos ajustes pegas (`lote-interno.test.js`).
 
 ### Ficou de fora, de propósito
 - Um "% do lote" em UEP ou em pontos: o PERCENTUAL da planilha é em caixas, e
