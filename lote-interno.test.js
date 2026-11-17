@@ -403,8 +403,8 @@ console.log('\n── a leitura do .gs (getAtendimentoLotes, v5.69) ──');
              'P|501086118|25428|20261113|3': [50, 30, 0], 'P|501086118|25428|20261112|2': [0, 0, 0],
              'P|501117004|25428|20261113|2': [1, 1, 1] };   // armadilha: a linha 2 da aba ATIVA não é a linha 2 da CONCLUIDA
   const R = JSON.parse(JSON.stringify(vm.runInContext('getAtendimentoLotes()', C)));
-  ok('responde ok, com hoje, a janela de 28 dias e as linhas',
-     [R.ok, R.hoje, R.hojeNum, R.dias, R.linhas.length, R.semLote], [true, '17/11/2026', 20261117, 28, 7, 1]);
+  ok('responde ok, com hoje, a janela de 35 dias (v5.71: cabem 20 lotes fechados) e as linhas',
+     [R.ok, R.hoje, R.hojeNum, R.dias, R.linhas.length, R.semLote], [true, '17/11/2026', 20261117, 35, 7, 1]);
   const E = R.linhas.map(x => [x.li, x.dataNum, x.qtde, x.emb, x.encerrada, x.aba]);
   ok('o embalado de cada linha: concluída = QTDE; encerrada = o PRODUZIDO; X na aba aberta = encerrada; aberta = QTDE − SALDO; hoje sem lançamento = 0; sem conta (e vencida sem lançamento) = null',
      E, [['212/26', 20261117, 100, 0, false, 'aberta'], ['212/26', 20261117, 100, null, false, 'aberta'], ['211/26', 20261116, 100, null, false, 'aberta'],
@@ -424,7 +424,7 @@ console.log('\n── a leitura do .gs (getAtendimentoLotes, v5.69) ──');
      [/act === 'getAtendimentoLotes'\) result = getAtendimentoLotes\(\);/.test(gs), /getAtendimentoLotes: 120,/.test(gs), /getAtendimentoLotes: \['prod', 'cat'\]/.test(gs)],
      [true, true, true]);
   ok('o trio da versão do .gs sobe junto (cabeçalho, GS_VERSAO, GS_REPO do painel)',
-     [/^\/\/ Versão: 5\.70 — TEMPO DE ATENDIMENTO/m.test(gs), /const GS_VERSAO = '5\.70';/.test(gs), /const GS_REPO   = '5\.70';/.test(JS)],
+     [/^\/\/ Versão: 5\.71 — A LEITURA DO ATENDIMENTO POR LOTE INTERNO COBRE 35 DIAS/m.test(gs), /const GS_VERSAO = '5\.71';/.test(gs), /const GS_REPO   = '5\.71';/.test(JS)],
      [true, true, true]);
 }
 
@@ -437,7 +437,7 @@ console.log('\n── o PC: a mesma marcação na tela e no papel ──');
   const tela = _pliHtml(Mx, false), papel = _pliHtml(Mx, true);
   ok('os cinco cartões (o NO DIA entrou na v7.262.0) e a tabela, com os números do resumo',
      [(tela.match(/class="pli-k[ "]/g) || []).length, tela.includes('>97,4%<'), tela.includes('405<small>cx</small>'), tela.includes('31<small>de 118</small>'),
-      tela.includes('<div class="pli-k ab">'), (tela.match(/<tbody class="pli-g">/g) || []).length], [5, true, true, true, true, 11]);
+      tela.includes('<div class="pli-k ab" '), (tela.match(/<tbody class="pli-g">/g) || []).length], [5, true, true, true, true, 11]);
   ok('na TELA o detalhe abre no clique (fechado de início); o clique leva o ÍNDICE, nunca o texto (G1)',
      [/class="pli-det"/.test(tela), /onclick="_pliExp\(2\)"/.test(tela), /onclick="_pliExp\('/.test(tela)], [false, true, false]);
   ok('no PAPEL todo lote fechado abre o detalhe; o de HOJE (em andamento) não',
@@ -464,7 +464,7 @@ console.log('\n── o PC: a mesma marcação na tela e no papel ──');
      [true, true, true]);
   ok('a leitura: 3 tentativas em sequência, voo compartilhado; o .gs antigo (sem `linhas`) diz que falta re-implantar',
      [/for\(let t=1; t<=3; t\+\+\)/.test(pega(JS, 'async function _pliLer(')), /if\(PLI_VOO\) return PLI_VOO;/.test(pega(JS, 'function _pliCarregar(')),
-      /return \{ falha:'sem-endpoint'/.test(pega(JS, 'async function _pliLer(')), /cole o \.gs v5\.70/.test(pega(JS, 'function _pliFalhaTxt('))], [true, true, true, true]);
+      /return \{ falha:'sem-endpoint'/.test(pega(JS, 'async function _pliLer(')), /cole o \.gs v5\.71/.test(pega(JS, 'function _pliFalhaTxt('))], [true, true, true, true]);
 }
 
 console.log('\n── v7.262.0: os itens na MESMA tabela, nas colunas do lote (PPCP, print de 1920: "foco no alinhamento") ──');
@@ -487,18 +487,18 @@ console.log('\n── v7.262.0: os itens na MESMA tabela, nas colunas do lote (P
   const it = rows.filter(r => r.tipo === 'pli-it');
   const i27 = it.find(r => r.cel[0].txt === '25427' && r.cel.some(c => c.txt === '35 cx'));
   const i28 = it.find(r => r.cel[0].txt === '25428' && r.cel.some(c => c.txt === '7 cx'));
-  ok('o número do item cai na coluna do mesmo número do lote: PROGRAMADO, EMBALADO, FICOU ABERTO (encerrado) e AINDA ABERTO (vencido)',
+  ok('o número do item cai na coluna do mesmo número do lote: PROGRAMADO, EMBALADO, FALTA (X) (encerrado) e PARA EMBALAR (vencido)',
      [H[col(lt, '1.800') - 1], H[col(i27, '115') - 1], H[col(i27, '80') - 1], H[col(lt, '24 cx · 8 itens') - 1], H[col(i28, '7 cx') - 1],
       H[col(lt, '35 cx') - 1], H[col(i27, '35 cx') - 1]],
-     ['PROGRAMADO', 'PROGRAMADO', 'EMBALADO', 'FICOU ABERTO', 'FICOU ABERTO', 'AINDA ABERTO', 'AINDA ABERTO']);
+     ['PROGRAMADO', 'PROGRAMADO', 'EMBALADO', 'FALTA (X)', 'FALTA (X)', 'PARA EMBALAR', 'PARA EMBALAR']);
   ok('o item: % embaixo do % ATENDIDO, o tempo embaixo de NO DIA · D+1 · D+2+, "completo" embaixo de ITENS 100%',
      [H[col(i27, '69,6%') - 1], H[col(i27, '55,7%') - 1], H[col(i27, '13,9%') - 1], H[col(i27, '0%') - 1],
       H[col(it.find(r => r.cel.some(c => c.txt === 'completo')), 'completo') - 1]],
-     ['% ATENDIDO', 'NO DIA', 'D+1', 'D+2+', 'ITENS 100%']);
+     ['% EMBALADO', 'NO DIA', 'D+1', 'D+2+', 'ITENS 100%']);
   ok('o cabeçalho dos itens vem logo depois do lote aberto; o código e o produto juntos, nas colunas de COR GPS a LOTES (ERP)',
      [rows[rows.indexOf(lt) + 1].tipo, i27.cel[1].col, /colspan="3" class="pli-prod"/.test(tela)], ['pli-ih', 2, true]);
   ok('a situação do item fica no title (a coluna já diz onde ele está), com o tempo em caixas',
-     /<tr class="pli-it" title="EM ATRASO · na programação · no dia 64 cx · D\+1 16 cx · D\+2\+ 0 cx">/.test(tela), true);
+     /<tr class="pli-it" title="PARA EMBALAR · vencido, na programação · no dia 64 cx · D\+1 16 cx · D\+2\+ 0 cx">/.test(tela), true);
   ok('a barra do item é a do lote: as três faixas (no dia · D+1 · D+2+) quando há o tempo',
      [/<td class="pli-pc"><span class="pli-bar"><b class="d0" style="width:55\.7%"><\/b><b class="d1" style="width:13\.9%"><\/b><b class="d2" style="width:0\.0%"><\/b><\/span><span class="pli-ipn">69,6%<\/span>/.test(tela)], [true]);
   ok('a coluna LOTES (ERP) não some mais em tela estreita (a célula escondida desalinharia o colspan do produto)',
@@ -512,6 +512,41 @@ console.log('\n── v7.262.0: os itens na MESMA tabela, nas colunas do lote (P
      [px.includes('&lt;L&gt;25423'), px.includes('<L>'), px.includes('"&amp;501'), /"&\d/.test(px)], [true, false, true, false]);   // _rpEsc: & < > (texto)
   ok('no papel, as cores da barra são as da folha (na .pli-box, que redefine as da tela)',
      /\.pli-doc \.pli-box\{--pli-d0:#1F2328;--pli-d1:#7B8794;--pli-d2:#C3CAD3\}/.test(JS), true);
+}
+
+console.log('\n── v7.263.0: o seletor 10 · 20 lotes e os cartões "fácil entendimento" ──');
+{
+  // a escolha mora no navegador (try/catch: modo privado, bloqueio) e nunca vira número fora da lista
+  const ctx = (ls) => { const C = vm.createContext({ localStorage: ls, Number, String, render: 0 });
+    vm.runInContext('var renderLotesInternos = function(){ render++; }; var _pliCarregar = function(){ throw new Error("não lê"); };\n'
+      + linha(JS, /const PLI_NS=\[10, 20\];/).replace('const ', 'var ') + '\n' + pega(JS, 'function _pliNLer(') + '\n' + pega(JS, 'function _pliSetN(')
+      + '\nvar PLI_N=_pliNLer();', C); return C; };
+  const guarda = {}, LS = v => ({ getItem: () => v, setItem: (k, x) => { guarda[k] = x; } });
+  ok('a escolha guardada (rpe_pli_n) volta; vazia, inválida ou sem localStorage = 10',
+     [ctx(LS('20')).PLI_N, ctx(LS(null)).PLI_N, ctx(LS('15')).PLI_N, ctx({ getItem: () => { throw new Error('bloqueado'); } }).PLI_N], [20, 10, 10, 10]);
+  const C = ctx(LS('10'));
+  vm.runInContext('_pliSetN(20)', C);
+  ok('trocar para 20 guarda, redesenha e NÃO lê (a leitura de 35 dias já trouxe as linhas)', [C.PLI_N, guarda.rpe_pli_n, C.render], [20, '20', 1]);
+  vm.runInContext('_pliSetN(15)', C);
+  ok('número fora da lista não muda nada', [C.PLI_N, C.render], [20, 1]);
+  vm.runInContext('_pliSetN(10)', C);
+  ok('…e volta para 10', C.PLI_N, 10);
+  const sec = html.slice(html.indexOf('<div class="tbl-wrap pli-wrap" id="pli">'), html.indexOf('<div id="pli-corpo">'));
+  ok('o seletor no cabeçalho da sub-aba (só na tela: o papel não tem cabeçalho de tela); o render acende o escolhido',
+     [/data-n="10" onclick="_pliSetN\(10\)">10<\/button><button type="button" data-n="20" onclick="_pliSetN\(20\)">20<\/button>/.test(sec),
+      /últimos 10 lotes/.test(sec), /b\.setAttribute\('aria-pressed', on\?'true':'false'\)/.test(pega(JS, 'function renderLotesInternos('))], [true, false, true]);
+  const M10 = loteIntMontar(LINHAS, 20261117, 10), M20 = loteIntMontar(LINHAS, 20261117, 20);
+  const t10 = _pliHtml(M10, false), t20 = _pliHtml(M20, false);
+  ok('a legenda diz QUAIS lotes estão nos cartões e que o de hoje fica fora',
+     /<div class="pli-cap">Lotes <b>202\/26 a 211\/26<\/b> — os 10 últimos já fechados · o de hoje \(212\/26\) fica fora dos cartões: está em andamento<\/div>/.test(t10), true);
+  ok('com 20 pedidos e só 19 na leitura (o retrato de 17/11 tem 28 dias), a legenda diz quantos há — nunca finge 20',
+     [M20.resumo.nLotes, /os 19 últimos já fechados \(só há 19 na leitura de 28 dias\)/.test(t20), /193\/26 a 211\/26/.test(t20)], [19, true, true]);
+  ok('os cinco cartões em palavras da fábrica, cada um com a régua no title (texto que só explica não ocupa a tela)',
+     [...t10.matchAll(/<div class="l">([^<]+)<\/div>/g)].map(m => m[1]).concat([(t10.match(/<div class="pli-k[^"]*" title="/g) || []).length]),
+     ['EMBALADO', 'EMBALADO NO DIA PROGRAMADO', 'FECHADO COM FALTA (X)', 'ITENS 100% EMBALADOS', 'AINDA PARA EMBALAR', 5]);
+  ok('o FECHADO COM FALTA diz o que é (aguardando peça, finalizado no ERP) — não "produção perdida"',
+     /85 itens · aguardando peça, finalizados no ERP/.test(t10), true);
+  ok('a .gs v5.71 lê 35 dias', /const PROG_LI_DIAS = 35;/.test(gs), true);
 }
 
 console.log('\n── v7.261.0: sub-aba da PROGRAMAÇÃO ("esta com muita rolagem faça uma sub aba") ──');
@@ -564,13 +599,13 @@ console.log('\n── v7.261.0: sub-aba da PROGRAMAÇÃO ("esta com muita rolage
   vm.runInThisContext('var PLI = { dias: 28 };\n' + pega(JS, 'function _pliSubTxt('));
   const M = loteIntMontar(LINHAS, 20261117, 10);
   ok('o botão diz o % atendido, os itens completos e o que ainda está em aberto — os MESMOS números dos cartões, sem cor de veredito',
-     _pliSubTxt(M, null), { txt: '97,4% atendido · 31 de 118 itens completos · 36 cx em aberto', cls: '' });
+     _pliSubTxt(M, null), { txt: '97,4% embalado · 31 de 118 itens 100% · 36 cx para embalar', cls: '' });
   const semAberto = loteIntMontar(LINHAS.filter(x => !(x.aba === 'aberta' && x.dataNum < 20261117 && !x.encerrada)), 20261117, 10);
-  ok('sem nada vencido em aberto, o pedaço some (não "0 cx em aberto")', /em aberto/.test(_pliSubTxt(semAberto, null).txt), false);
+  ok('sem nada vencido na programação, o pedaço some (não "0 cx para embalar")', /para embalar/.test(_pliSubTxt(semAberto, null).txt), false);
   ok('sem a leitura: o estado — lendo, .gs sem a leitura, sem URL, falha (clique tenta de novo), nenhum lote fechado; nunca 0',
      [_pliSubTxt(null, null).txt, _pliSubTxt(null, 'sem-endpoint').txt, _pliSubTxt(null, 'sem-url').txt, _pliSubTxt(null, 'sem-resposta').txt,
       _pliSubTxt(loteIntMontar([], 20261117, 10), null).txt],
-     ['…', 'falta re-implantar o .gs v5.70', 'sem a URL do Apps Script (⚙)', 'não lido — clique para tentar', 'nenhum lote interno fechado nos últimos 28 dias']);
+     ['…', 'falta re-implantar o .gs v5.71', 'sem a URL do Apps Script (⚙)', 'não lido — clique para tentar', 'nenhum lote interno fechado nos últimos 28 dias']);
   const R = pega(JS, 'function renderLotesInternos(');
   ok('o render pinta o botão (o _sbPinta comum) e desenha mesmo com o painel escondido — sem o portão do "aberto"',
      [/_sbPinta\(document\.getElementById\('prog-sb-lotes'\), _pliSubTxt\(M, PLI_FALHA\)\)/.test(R), /if\(!c\) return;/.test(R)], [true, true]);
@@ -608,13 +643,18 @@ console.log('\n── o celular: a mesma conta, o desenho dele ──');
   global.PLI_EXP = { '210/26': true };
   const ht = _pliHtmlMob(loteIntMontar(Lt, 20261117, 10));
   ok('com o tempo: o cartão NO DIA, a barra em três faixas e o item com "no dia · D+1" em % (sem o 0% do D+2+)',
-     [/<div class="l">No dia · na data do lote<\/div><div class="v">\d+,\d%<\/div>/.test(ht), /<b class="d0" style="width:[\d.]+%"><\/b><b class="d1"/.test(ht),
+     [/<div class="l">Embalado no dia programado<\/div><div class="v">\d+,\d%<\/div>/.test(ht), /<b class="d0" style="width:[\d.]+%"><\/b><b class="d1"/.test(ht),
       / · no dia 55,7% · D\+1 13,9% · faltou <b>35<\/b>/.test(ht)], [true, true, true]);
   ok('sem o tempo (.gs v5.69): o cartão diz que precisa do .gs v5.70, nunca 0%', /<div class="v">—<\/div><div class="s">precisa do \.gs v5\.70<\/div>/.test(h), true);
   global.PLI_EXP = {};
   const hsc = _pliHtmlMob(loteIntMontar(LINHAS.concat([{ li: '213/26', dataNum: 20261116, data: '16/11/2026', lote: '9', codigo: 'X', qtde: 120, emb: null, aba: 'aberta', corGps: 'AZUL' }]), 20261117, 10));
   ok('v1.56.1 (revisão, E1): no celular, o lote sem conta diz "sem a conta do embalado · 120 cx programadas", nunca "0 de 0"',
      [hsc.includes('sem a conta do embalado · 120 cx programadas'), /<b>0<\/b> de 120/.test(hsc)], [true, false]);
+  const hm = _pliHtmlMob(loteIntMontar(LINHAS, 20261117, 20));
+  ok('celular: o mesmo seletor 10 · 20 (o toque leva o número e não abre/fecha o card), aceso pelo modelo; os mesmos nomes dos cartões',
+     [/<button type="button" class="" onclick="event\.stopPropagation\(\);_pliSetNM\(10\)">10<\/button><button type="button" class="on" onclick="event\.stopPropagation\(\);_pliSetNM\(20\)">20<\/button>/.test(hm),
+      /\(só há 19\)/.test(hm), [...hm.matchAll(/<div class="l">([^<]+)<\/div>/g)].map(m => m[1])],
+     [true, true, ['Embalado', 'Embalado no dia programado', 'Fechado com falta (X)', 'Itens 100% embalados', 'Ainda para embalar']]);
   ok('o 5º cartão ocupa a linha inteira (não fica sozinho na metade)', /#ger-pli \.pli-kpis \.pli-k:last-child\{grid-column:1\/-1\}/.test(mob), true);
   global.PLI_EXP = {};
 }

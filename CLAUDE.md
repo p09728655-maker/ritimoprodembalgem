@@ -276,11 +276,14 @@ via Google Apps Script (JSONP).
   15/09/2026); não apagar o `acharAbaTolerante`.
 - ATENDIMENTO POR LOTE INTERNO (v7.260.0; 2ª sub-aba da PROGRAMAÇÃO do PC desde
   a v7.261.0, card do app, 🖨): em CAIXAS, a conta no `loteIntMontar` (rp-core) e as linhas no
-  `getAtendimentoLotes` (`.gs` v5.69, as duas abas, 28 dias).
+  `getAtendimentoLotes` (as duas abas; 35 dias desde o `.gs` v5.71, para o
+  seletor 10 · 20 lotes da v7.263.0).
   - Embalado da encerrada = o `prodConf`, nunca `QTDE − SALDO` (o SALDO é 0).
   - O 0 sem lançamento é só da linha de hoje.
-  - FICOU ABERTO = encerradas; AINDA EM ABERTO = vencidas na aba; o de hoje,
-    em andamento.
+  - Nomes (v7.263.0, "fácil entendimento"): EMBALADO, EMBALADO NO DIA
+    PROGRAMADO, FECHADO COM FALTA (X) = as encerradas, ITENS 100% EMBALADOS,
+    AINDA PARA EMBALAR = vencidas na aba; o de hoje, em andamento, fica fora dos
+    cartões (a legenda diz quais lotes entram).
   - Sem veredito.
   - A aba lê a programação e DEPOIS os lotes, em sequência. O `_progSub` só
     relê os lotes que falharam.

@@ -157,17 +157,17 @@ fechar uma linha que não vai completar, é **ENCERRAR**, não apagar.
 Por **lote interno** (`LOTE INTERNO` da programação, ex. `210/26`). Cada lote
 interno é um dia de programação, com uma COR GPS e vários lotes do ERP. As
 contas são em **caixas**. Linhas: as duas abas (PROGRAMACAO + CONCLUIDA), com
-data nos últimos 28 dias até hoje, fora da esteira fora.
+data nos últimos 35 dias até hoje (28 até o `.gs` v5.70), fora da esteira fora.
 
 | Termo | Fórmula | Unidade | Onde está |
 |---|---|---|---|
 | **EMBALADO da linha** | encerrada (X ou STATUS ENCERRADO) → o PRODUZIDO confiável da linha; senão `QTDE − SALDO` (saldo confiável); senão o PRODUZIDO confiável; linha de hoje sem lançamento → 0; sem nada disso → **sem conta** (fora das somas, contada; nunca 0). Limitado à `QTDE` | cx | `.gs` `getAtendimentoLotes` |
-| **% ATENDIDO** (do lote interno) | Σ embalado ÷ Σ programado das linhas do lote interno | % | `rp-core` `loteIntMontar` |
-| **% ATENDIDO · ÚLTIMOS N LOTES** (cartão) | o mesmo, somando os **N** (10) lotes internos fechados mais recentes. O de hoje fica fora | % | `rp-core` `loteIntMontar` |
-| **ITENS COMPLETOS (100%)** | linhas com embalado = QTDE ÷ linhas com conta, nos N lotes | itens | `rp-core` `loteIntMontar` |
-| **FICOU ABERTO** | Σ (QTDE − embalado) das linhas **encerradas**, nos N lotes. Não volta: o PPCP fechou a linha | cx | `rp-core` `loteIntMontar` |
-| **AINDA EM ABERTO** | Σ (QTDE − embalado) das linhas que **ainda estão na PROGRAMACAO** com data **anterior a hoje**, de **todos** os lotes da janela (não só dos N) — o atraso desses lotes | cx | `rp-core` `loteIntMontar` |
-| **HOJE · em andamento** | o lote interno de hoje: mostrado com o %, mas fora dos cartões; a falta dele não é FICOU nem AINDA ABERTO | — | `rp-core` `loteIntMontar` |
+| **% EMBALADO** (do lote interno; até a v7.262 "% ATENDIDO") | Σ embalado ÷ Σ programado das linhas do lote interno | % | `rp-core` `loteIntMontar` |
+| **EMBALADO** (cartão; até a v7.262 "ATENDIDO · ÚLTIMOS N LOTES") | o mesmo, somando os **N** lotes internos fechados mais recentes (10 ou 20, o seletor da tela, v7.263.0). O de hoje fica fora | % | `rp-core` `loteIntMontar` |
+| **ITENS 100% EMBALADOS** (até a v7.262 "ITENS COMPLETOS (100%)") | linhas com embalado = QTDE ÷ linhas com conta, nos N lotes | itens | `rp-core` `loteIntMontar` |
+| **FECHADO COM FALTA (X)** (cartão) · **FALTA (X)** (coluna) — até a v7.262 "FICOU ABERTO" | Σ (QTDE − embalado) das linhas **encerradas** (o X), nos N lotes. São caixas aguardando peça, finalizadas depois no ERP — não é produção perdida (PPCP, 17/11/2026) | cx | `rp-core` `loteIntMontar` |
+| **AINDA PARA EMBALAR** (cartão) · **PARA EMBALAR** (coluna) — até a v7.262 "AINDA EM ABERTO" | Σ (QTDE − embalado) das linhas que **ainda estão na PROGRAMACAO** com data **anterior a hoje**, de **todos** os lotes da janela (não só dos N) — o atraso desses lotes | cx | `rp-core` `loteIntMontar` |
+| **HOJE · em andamento** | o lote interno de hoje: mostrado com o %, mas fora dos cartões; a falta dele não é FALTA (X) nem PARA EMBALAR | — | `rp-core` `loteIntMontar` |
 
 **Tempo de atendimento** (v7.262.0 · `.gs` v5.70). O FIFO casa cada caixa
 com uma linha. A data do lançamento dessa caixa, comparada com a data do lote,
@@ -180,7 +180,9 @@ diz em que faixa ela entra:
 | **D+2+** | caixas embaladas depois do dia útil seguinte ÷ programado | % | idem |
 | **% do item** | embalado da linha ÷ programado da linha (o mesmo para NO DIA, D+1, D+2+ do item) | % | `rp-core` `loteIntMontar` |
 
-- NO DIA + D+1 + D+2+ = % ATENDIDO, quando todas as linhas têm o tempo.
+- NO DIA (o cartão EMBALADO NO DIA PROGRAMADO) + D+1 + D+2+ = % EMBALADO, quando todas as
+  linhas têm o tempo. O NO DIA de um lote é definitivo no fim do dia dele; o D+1 do lote
+  de ontem ainda corre hoje.
 - As três faixas são cortadas no embalado da linha (no dia primeiro).
 - Linha sem o tempo (`.gs` antes da v5.70) fica fora da base e é contada
   (`semTempo`); nunca entra como 0.

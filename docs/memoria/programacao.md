@@ -755,6 +755,55 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   3. mostrar à parte o adiantado (antes do dia) e a produção fora do plano;
   4. medir o custo do `getAtendimentoLotes` com o `relatorioTempos()`.
 
+### SELETOR 10 · 20 LOTES E OS CARTÕES "FÁCIL ENTENDIMENTO" (v7.263.0 / mobile 1.57.0 / `.gs` v5.71)
+- PPCP, 17/11/2026, com a sub-aba na tela: *"porque só essa qtde de lotes?"*.
+  - Os 10 eram uma escolha minha na prévia, não uma regra.
+  - Foi oferecido o seletor 10 · 20 (*"1 ok"*). O mês a mês por semana fica para
+    um indicador de tendência (e o Power BI), não para a lista.
+- **A janela do `.gs`**: com 28 dias a leitura trazia 20 lotes CONTANDO o de
+  hoje (193–212/26), então o "20" daria 19.
+  - `PROG_LI_DIAS` passou para 35 (~25 dias úteis), ~73 KB.
+  - Antes do re-deploy, a legenda diz *"só há 19 na leitura de 28 dias"*: nunca
+    finge 20.
+- **O seletor**:
+  - `PLI_NS=[10, 20]`, `PLI_N` guardado no navegador (`rpe_pli_n`; no app,
+    `rp_pli_n`), em try/catch. Vazio, inválido ou sem localStorage = 10.
+  - `_pliSetN`/`_pliSetNM` só redesenham, sem leitura: as linhas de 35 dias já
+    chegaram.
+  - No PC fica no cabeçalho da sub-aba (só tela). No app, na legenda, com
+    `stopPropagation` para o toque não abrir e fechar o card.
+- **Os cartões** (PPCP: *"deixa os cartões fácil entendimento"*): o nome diz o
+  que é, a linha de baixo diz de quê, e a régua exata vai no `title`.
+
+  | Nome novo (cartão) | Era | Coluna da tabela |
+  |---|---|---|
+  | EMBALADO | ATENDIDO · ÚLTIMOS N LOTES | % EMBALADO (era % ATENDIDO) |
+  | EMBALADO NO DIA PROGRAMADO | NO DIA · DATA DO LOTE | NO DIA |
+  | FECHADO COM FALTA (X) | FICOU ABERTO · ENCERRADO | FALTA (X) (era FICOU ABERTO) |
+  | ITENS 100% EMBALADOS | ITENS COMPLETOS (100%) | ITENS 100% |
+  | AINDA PARA EMBALAR | AINDA EM ABERTO · VENCIDO | PARA EMBALAR (era AINDA ABERTO) |
+
+  - A linha de baixo do FECHADO COM FALTA diz *"aguardando peça, finalizados no
+    ERP"*: a decisão de 17/11.
+  - Uma legenda em cima diz QUAIS lotes estão nos cartões (*"Lotes 202/26 a
+    211/26 — os 10 últimos já fechados · o de hoje (212/26) fica fora"*).
+  - O botão da sub-aba, o `title` do item e a nota usam os mesmos nomes (UM NOME
+    POR INDICADOR).
+- **"Deixar até o dia de hoje não distorce?"** (PPCP):
+  - O de hoje fica fora dos cartões.
+  - O de ONTEM entra. O NO DIA dele é definitivo (o dia acabou), mas o
+    EMBALADO e o D+1 ainda crescem até o fim de hoje: ficam um pouco menores.
+    No dado de 17/11 o 211/26 já estava em 98,9%.
+  - Ficou assim. Tirar o de ontem atrasaria a informação um dia; o AINDA PARA
+    EMBALAR mostra o que falta dele.
+  - Ofertado e não feito: marcar o D+1 do lote de ontem como "em curso" na
+    tabela.
+- Testes (`lote-interno.test.js`):
+  - o seletor numa vm: guarda, ignora o inválido, sem localStorage = 10, não lê;
+  - a legenda com 10 e com 20 (19 no retrato de 28 dias);
+  - os cinco nomes e os `title`;
+  - o seletor do app.
+
 ### Ficou de fora, de propósito
 - Um "% do lote" em UEP ou em pontos: o PERCENTUAL da planilha é em caixas, e
   a mesma régua evita dois números para a mesma pergunta.
