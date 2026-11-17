@@ -1724,6 +1724,7 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvc-card-lbl{font-family:var(--font-d);font-size:clamp(14px,1.4vw,24px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
 .tvc-card-val{font-family:var(--font-h);font-weight:700;line-height:.95;color:var(--red);font-size:clamp(60px,6.6vw,140px)}
 .tvc-card-unit{font-family:var(--font-d);font-size:clamp(13px,1.2vw,22px);color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
+#tv-slide-c #tvc-atraso-un{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}   /* numa linha só: duas empurravam o CX/HORA para fora a 1366×768 (v7.258.1) */
 /* ═══ TELA D — FECHAMENTO DA SEMANA PASSADA ═══
    Gestão à vista: a TV é lida de longe e de passagem, então esta tela NÃO
    repete o texto do relatório. Sobram quatro coisas: quanto saiu, quanto foi
@@ -4202,7 +4203,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.258.0';
+const APP_VER = '7.258.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -13522,15 +13523,33 @@ function _gerKpiHtml(kpis){
 // sem nenhum neste computador (nem o guardado), lê UMA vez por sessão, no fim
 // do ciclo — uma leitura de cada vez, só com o gerencial ao vivo na tela. É a
 // mesma leitura (e a mesma marca) do clique no PRODUTOS EMBALADOS HOJE.
-// v7.258.0: também com a TV na tela e atraso vencido — a Tela C diz o atraso
-// em horas de linha, como o gerencial; sem o cadastro ela fica nas caixas.
-// Lido uma vez, ele fica guardado no computador (_capGuardar): a TV, que
-// recarrega a cada 28 min, não lê de novo.
+// v7.258.0: também com a TV na tela, a Tela C ligada e atraso vencido — a
+// Tela C diz o atraso em horas de linha, como o gerencial; sem o cadastro ela
+// fica nas caixas.
+// ⚠ v7.258.1 (revisão): o cadastro tem PRAZO (GER_CAT_TTL). Até a v7.258.0,
+// havendo um guardado neste computador, de qualquer idade, ele nunca era
+// relido: travada uma UEP nova, o gerencial (com a ⚖ UEP aberta) e a faixa
+// da ⚖ UEP mudavam e a Tela C (e o card de um gerencial aberto há dias)
+// ficava no número velho, para sempre. Agora, cadastro com mais de 2 h (o lido
+// nesta sessão ou o guardado) é relido — no máximo uma tentativa por prazo em
+// cada sessão; falhou, segue o que há. Guardado no computador, a TV (que
+// recarrega a cada 28 min) lê ~1 vez a cada 2 h.
+const GER_CAT_TTL = 2 * 60 * 60 * 1000;
 let GER_CAT_FALHA = false;   // a leitura do cadastro desta sessão falhou: o ATRASO diz isso, não "lendo"
+let GER_CAT_TENTOU = 0;      // hora da última tentativa desta sessão
+// Idade (ms) do cadastro que as telas usam: o lido nesta sessão ou o guardado.
+function _gerCatIdade(){
+  if(Array.isArray(CAP_RAW) && CAP_RAW.length && CAP_CAT_TS) return Date.now() - CAP_CAT_TS;
+  const loc = _capDoLocal();
+  return loc && loc.ts ? Date.now() - loc.ts : Infinity;
+}
 function _gerCatSeFalta(){
-  const tvAtraso = !!CFG.sheetsUrl && !_modoDir() && _abaOn('tv') && Number((PONTOS_DIA.programacao||{}).atrasoTotal) > 0;
-  if(!(_pdiaParPrecisa() || tvAtraso) || _pdiaPcCat() || PDIA_PC_CATPED) return Promise.resolve(null);
-  PDIA_PC_CATPED = true;
+  const tvAtraso = !!CFG.sheetsUrl && !_modoDir() && _abaOn('tv') && (CFG.telasAtivas||{}).c !== false
+    && Number((PONTOS_DIA.programacao||{}).atrasoTotal) > 0;
+  if(!(_pdiaParPrecisa() || tvAtraso) || CAP_BUSCANDO) return Promise.resolve(null);
+  if(_pdiaPcCat() && _gerCatIdade() < GER_CAT_TTL) return Promise.resolve(null);
+  if(GER_CAT_TENTOU && Date.now() - GER_CAT_TENTOU < GER_CAT_TTL) return Promise.resolve(null);
+  GER_CAT_TENTOU = Date.now(); PDIA_PC_CATPED = true;
   return Promise.resolve(_capBuscar()).catch(() => null)
     .then(() => { GER_CAT_FALHA = !_pdiaPcCat(); if(_pdiaParPrecisa()) renderGerencial(); }).catch(() => null);
 }
@@ -28133,12 +28152,13 @@ const _cicloTV = (function() {
     // dessa"): em HORAS DE LINHA, o MESMO número do card ATRASO do gerencial e
     // da faixa da ⚖ UEP (_atrasoVencidoPc → atrasoVencido do rp-core), com as
     // caixas e a data embaixo. Sem o cadastro de UEP neste computador, as caixas
-    // (como era). * = código sem UEP, que fica só nas caixas.
+    // (como era). * = código sem UEP, que fica só nas caixas (o card do
+    // gerencial diz quantos; aqui só a marca: v7.258.1, o "· * 1 SEM UEP" quebrava
+    // a linha na TV de 1366×768 e empurrava o CX/HORA para fora da tela).
     const av = _atrasoVencidoPc().a;
     if (av && av.n > 0 && av.min != null) {
       set('tvc-atraso', (av.min > 0 ? _fmtHM(av.min) : '<1 min') + (av.semUep ? '*' : ''));
-      set('tvc-atraso-un', 'DE LINHA · ' + fmtN(av.cx) + ' CX' + (av.desde ? ' · DESDE ' + av.desde : '')
-        + (av.semUep ? ' · * ' + av.semUep + ' SEM UEP' : ''));
+      set('tvc-atraso-un', 'DE LINHA · ' + fmtN(av.cx) + ' CX' + (av.desde ? ' · DESDE ' + av.desde : ''));
     } else {
       set('tvc-atraso', fmtN(prog.atrasoTotal || 0));
       set('tvc-atraso-un', 'CAIXAS');

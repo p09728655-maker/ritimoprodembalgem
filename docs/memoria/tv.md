@@ -20,19 +20,38 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   gerencial e da faixa da ⚖ UEP: a montagem é UMA (`_atrasoVencidoPc` → o
   `atrasoVencido` do rp-core), lida pelo `_gerAtrasoKpi` e pelo `_sincSlideC`.
   As caixas são as mesmas do `atrasoTotal` (Σ do atraso de cada código).
-  - Código sem UEP no cadastro: fica só nas caixas, com o `*` no número e
-    *· \* N SEM UEP* embaixo (como o card).
+  - Código sem UEP no cadastro: fica só nas caixas, com o `*` no número (como
+    o card). ~~e *· \* N SEM UEP* embaixo~~ — saiu na v7.258.1: a linha
+    quebrava na TV de 1366×768 (44 px em vez de 22) e empurrava o CX/HORA para
+    fora; a linha de baixo agora é `nowrap` (`#tv-slide-c #tvc-atraso-un`).
   - Sem o cadastro de UEP no computador (nem o guardado): as CAIXAS, como era.
-    Para não ficar assim, a TV com atraso também pede o cadastro UMA vez por
-    sessão (`_gerCatSeFalta`, que antes só lia com o gerencial ao vivo); lido,
-    ele fica guardado no computador (`_capGuardar`) e a TV, que recarrega a
-    cada 28 min, não lê de novo.
+    Para não ficar assim, a TV com atraso (e a Tela C ligada, v7.258.1) também
+    pede o cadastro (`_gerCatSeFalta`, que antes só lia com o gerencial ao
+    vivo). ~~Lido, ele fica guardado no computador e a TV não lê de novo~~ —
+    **BLOQUEIA da revisão, corrigido na v7.258.1**: guardado de qualquer
+    idade, ele nunca era relido; travada uma UEP nova, o gerencial (com a ⚖
+    UEP aberta, que relê a cada 10 min) e a faixa da ⚖ UEP mudavam e a Tela C
+    ficava no número velho para sempre. Agora o cadastro tem **prazo de 2 h**
+    (`GER_CAT_TTL`, contra o `CAP_CAT_TS` da leitura desta sessão ou o `ts` do
+    guardado — `_gerCatIdade`): mais velho que isso, relê; no máximo UMA
+    tentativa por prazo em cada sessão (`GER_CAT_TENTOU`); falhou, segue o que
+    há. A TV (recarrega a cada 28 min) lê ~1 vez a cada 2 h. Fecha também a
+    mesma brecha do card do gerencial aberto há dias (v7.243.0).
 - Sem os PONTOS (o gerencial tem; a TV fica enxuta — ver *O ATRASO TAMBÉM EM
   PONTOS* em `gerencial.md`). O PRODUZIR HOJE P/ ZERAR e o RITMO P/ ZERAR
   continuam em caixas (é o número de ação do chão: caixas por hora).
-- Medido no Chromium (TV 1920×1080 e 1366×768, com e sem o cadastro): nada
-  corta. Teste em `relatorios.test.js` (o `_sincSlideC` real contra o card do
-  gerencial: 0h46 = 0h46, o `*` sem UEP, as caixas sem cadastro).
+- Medido no Chromium (TV 1920×1080 e 1366×768, com e sem o cadastro, com um
+  código sem UEP): a linha de baixo numa linha só (22 px a 1366). ~~nada
+  corta~~ — a medição da v7.258.0 olhou só a largura (o erro da v7.138.0):
+  ⚠ a 1366×768 o CX/HORA do RITMO P/ ZERAR termina em 783 numa tela de 768
+  (15 px cortados) — de ANTES da v7.258.0, não mexido; e no preview do
+  gerencial (aba TV OPERACIONAL) a Tela C já passava da altura nas duas
+  resoluções. Na TV de 1920 cabe (o CX/HORA termina em 1019).
+- Teste em `relatorios.test.js`: o `_sincSlideC` real contra o card do
+  gerencial (0h46 = 0h46, o `*` sem UEP, as caixas sem cadastro) e o
+  `_gerCatSeFalta` REAL com o relógio (guardado de 1 h → 0 leitura, de 3 h →
+  1, de novo na sessão → 1, sessão longa passado o prazo → relê, falha → uma
+  tentativa por prazo, Tela C desligada / sem atraso / sem a TV → 0).
 
 ## TELA D da TV — fechamento da semana passada
 - A mesma leitura aparece em **dois lugares**: a Tela D do carrossel da TV e o

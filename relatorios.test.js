@@ -6731,13 +6731,39 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
     ok('Tela C: o atraso em horas de linha, o MESMO número do card do gerencial (0h46), as caixas e a data embaixo',
        [telaC(), R('_gerAtrasoKpi()').v.startsWith(telaC()[0] + ' ')], [['0h46', 'DE LINHA · 120 CX · DESDE 12/11'], true]);
     R(`PONTOS_DIA.programacao.lista.push({ codigo:'999', falta:30, atraso:30, atrasoDesde:'14/11/2026' }); PONTOS_DIA.programacao.atrasoTotal = 150;`);
-    ok('Tela C: código sem UEP fica só nas caixas, com o * (como o card)',
-       [telaC(), R('_gerAtrasoKpi()').v.startsWith(telaC()[0] + ' ')], [['0h46*', 'DE LINHA · 150 CX · DESDE 12/11 · * 1 SEM UEP'], true]);
+    // v7.258.1 (revisão): só a marca * no número — o "· * 1 SEM UEP" quebrava a
+    // linha na TV de 1366×768 e empurrava o CX/HORA para fora da tela
+    ok('Tela C: código sem UEP fica só nas caixas, com o * no número (como o card); a linha de baixo numa linha só',
+       [telaC(), R('_gerAtrasoKpi()').v.startsWith(telaC()[0] + ' '), /#tv-slide-c #tvc-atraso-un\{white-space:nowrap;/.test(src)],
+       [['0h46*', 'DE LINHA · 150 CX · DESDE 12/11'], true, true]);
     R(`_CAT = null; PONTOS_DIA.programacao = { lista:[{ codigo:'501089003', falta:200, atraso:120, atrasoDesde:'12/11/2026' }], atrasoTotal:120 };`);
     ok('Tela C sem o cadastro neste computador: as caixas, como era', telaC(), ['120', 'CAIXAS']);
     R(`_CAT = [{ codigo:'501.089.003', uep:2 }];`);
-    ok('a TV com atraso também pede o cadastro (uma vez por sessão, sem cadastro no computador)',
-       /_abaOn\('tv'\) && Number\(\(PONTOS_DIA\.programacao\|\|\{\}\)\.atrasoTotal\) > 0/.test(pega('function _gerCatSeFalta(')), true);
+    // v7.258.1 (revisão): o cadastro tem PRAZO. Até a v7.258.0 o guardado no
+    // computador, de qualquer idade, nunca era relido: travada uma UEP nova, a
+    // Tela C ficava no número velho para sempre. Roda o _gerCatSeFalta REAL.
+    const K = vm.createContext({ Date, Number, Array, Promise, Math });
+    vm.runInContext(pega('function _gerCatIdade(') + '\n' + pega('function _gerCatSeFalta(') + `
+      var GER_CAT_TTL = ${(JS.match(/const GER_CAT_TTL = ([^;]+);/) || [])[1]}; var GER_CAT_FALHA = false, GER_CAT_TENTOU = 0, PDIA_PC_CATPED = false, CAP_BUSCANDO = false;
+      var CFG = { sheetsUrl:'x', telasAtivas:{ c:true } }, PONTOS_DIA = { programacao:{ atrasoTotal:355 } };
+      var CAP_RAW = null, CAP_CAT_TS = 0, _LOC = null, _LEU = 0, _ABA = 'tv';
+      function _modoDir(){ return false; } function _abaOn(t){ return t === _ABA; } function _pdiaParPrecisa(){ return _ABA === 'gerencial'; }
+      function _capDoLocal(){ return _LOC; } function _pdiaPcCat(){ return CAP_RAW || (_LOC && _LOC.p); } function renderGerencial(){}
+      function _capBuscar(){ _LEU++; CAP_RAW = [{ codigo:'1', uep:1 }]; CAP_CAT_TS = Date.now(); _LOC = { ts:Date.now(), p:CAP_RAW }; }
+      function _sessao(loc){ GER_CAT_TENTOU = 0; PDIA_PC_CATPED = false; CAP_RAW = null; CAP_CAT_TS = 0; _LOC = loc; _LEU = 0; }`, K);
+    const leu = cod => vm.runInContext(cod + '; _LEU', K), H = 3600000;
+    ok('TTL do cadastro: 2 h', vm.runInContext('GER_CAT_TTL', K), 2 * H);
+    ok('TV com atraso: guardado de 1 h → 0 leitura; de 3 h → 1; de novo na mesma sessão → continua 1; sem nenhum → 1',
+       [leu(`_sessao({ ts:Date.now() - ${H}, p:[1] }); _gerCatSeFalta()`), leu(`_sessao({ ts:Date.now() - ${3 * H}, p:[1] }); _gerCatSeFalta()`),
+        leu('_gerCatSeFalta(); _gerCatSeFalta()'), leu('_sessao(null); _gerCatSeFalta()')], [0, 1, 1, 1]);
+    ok('sessão longa (gerencial aberto há dias): passou o prazo desde a última leitura → relê; lido nesta sessão há pouco → não',
+       [leu(`_sessao(null); _ABA = 'gerencial'; _gerCatSeFalta(); CAP_CAT_TS = Date.now() - ${3 * H}; GER_CAT_TENTOU = Date.now() - ${3 * H}; _gerCatSeFalta()`),
+        leu(`_sessao({ ts:Date.now() - ${5 * H}, p:[1] }); CAP_RAW = [1]; CAP_CAT_TS = Date.now(); _gerCatSeFalta()`)], [2, 0]);
+    ok('a falha não vira martelo: uma tentativa por prazo na sessão; Tela C desligada, sem atraso ou sem a TV na tela → nenhuma leitura',
+       [leu(`_sessao({ ts:Date.now() - ${3 * H}, p:[1] }); _ABA = 'tv'; _capBuscar = function(){ _LEU++; }; _gerCatSeFalta(); _gerCatSeFalta()`),
+        leu(`_sessao(null); CFG.telasAtivas.c = false; _gerCatSeFalta()`),
+        leu(`_sessao(null); CFG.telasAtivas.c = true; PONTOS_DIA.programacao.atrasoTotal = 0; _gerCatSeFalta()`),
+        leu(`_sessao(null); PONTOS_DIA.programacao.atrasoTotal = 355; _ABA = 'uep'; _gerCatSeFalta()`)], [1, 0, 0, 0]);
   }
   R(`GER_CAT_FALHA = false; PONTOS_DIA.programacao = { lista:[{ codigo:'501089003', falta:200 }], atrasoTotal:300 };`);
   ok('.gs sem o atraso por código: as caixas do atrasoTotal; sem atraso, sem card',
@@ -6775,8 +6801,8 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
       /nota:'UEP da hora pelo cadastro de hoje/.test(pega('function renderGerencialHist('))], [true, true, true, true]);
   ok('a análise e o gráfico julgam pela mesma regra da tabela (_gerHoraJulga)',
      [/_gerHoraJulga\(/.test(pega('function _gerAnaliseUep(')), /_gerHoraJulga\(/.test(pega('function _gerChartsUep(')), /_gerHoraJulga\(/.test(pega('function _gerAnaliseUepHistHtml('))], [true, true, true]);
-  ok('sem cadastro neste computador: UMA leitura por sessão, no fim do ciclo e da carga inicial, só com o gerencial ao vivo (ou, desde a v7.258.0, a TV com atraso); a falha é lembrada',
-     [/if\(!\(_pdiaParPrecisa\(\) \|\| tvAtraso\) \|\| _pdiaPcCat\(\) \|\| PDIA_PC_CATPED\) return Promise\.resolve\(null\);\s*PDIA_PC_CATPED = true;/.test(pega('function _gerCatSeFalta(')),
+  ok('o cadastro: no fim do ciclo e da carga inicial, só com o gerencial ao vivo (ou a TV com atraso, v7.258.0), relido com mais de 2 h (v7.258.1); a falha é lembrada',
+     [/if\(_pdiaPcCat\(\) && _gerCatIdade\(\) < GER_CAT_TTL\) return Promise\.resolve\(null\);/.test(pega('function _gerCatSeFalta(')),
       /GER_CAT_FALHA = !_pdiaPcCat\(\);/.test(pega('function _gerCatSeFalta(')),
       /renderGerProdutosDia\(\); \}\)\.then\(\(\)=>_gerCatSeFalta\(\)\)\.catch/.test(pega('function _cicloLeitura(')), /await _gerCatSeFalta\(\);/.test(JS)], [true, true, true, true]);
   ok('nenhuma leitura nova: o gerencial não chama o Apps Script por conta da UEP',

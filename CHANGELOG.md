@@ -11,6 +11,28 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.258.1 — 17/11/2026 · Tela C: correções da revisão
+
+O revisor do projeto conferiu a v7.258.0 depois do merge e achou dois
+problemas.
+
+- **O cadastro de UEP guardado no computador nunca era relido.** Quando o PPCP
+  trava uma UEP nova, o gerencial e a aba UEP passam a mostrar o atraso novo,
+  mas a Tela C da TV ficava no número velho para sempre. O mesmo valia para o
+  card ATRASO de um gerencial aberto há dias.
+  - Agora o cadastro com mais de **2 horas** é relido, no gerencial e na TV.
+  - Se a leitura falhar, fica o que já havia.
+  - A TV lê cerca de uma vez a cada 2 horas.
+- **TV de 1366×768**: com um código sem UEP, a linha de baixo da Tela C quebrava
+  em duas e empurrava o CX/HORA para fora da tela. Agora a linha de baixo fica
+  numa linha só, e o código sem UEP aparece só como o `*` no número.
+- A TV só lê o cadastro se a Tela C estiver ligada.
+
+**Atenção** (Tela C, com código sem UEP): `DE LINHA · 150 CX · DESDE 12/11 · *
+1 SEM UEP` → `DE LINHA · 150 CX · DESDE 12/11` (o `*` continua no número).
+
+---
+
 ## v7.258.0 — 17/11/2026 · Tela C da TV: o atraso em horas de linha
 
 O PPCP mostrou o card ATRASO do gerencial (*1h56 de linha · 355 cx · desde
@@ -21,7 +43,8 @@ O PPCP mostrou o card ATRASO do gerencial (*1h56 de linha · 355 cx · desde
   ficam as caixas e desde quando: *DE LINHA · 355 CX · DESDE 12/11*.
   - Código sem UEP no cadastro fica só nas caixas, com um `*` no número.
   - Sem o cadastro de UEP no computador da TV, continua em caixas, como era.
-    Para isso não acontecer, a TV com atraso lê o cadastro uma vez e o guarda.
+    Para isso não acontecer, a TV com atraso lê o cadastro e o guarda *(desde a
+    v7.258.1, relido quando tem mais de 2 horas)*.
 - PRODUZIR HOJE P/ ZERAR e RITMO P/ ZERAR não mudam (caixas).
 
 **Atenção** (antes → depois, Tela C): `355` / `CAIXAS` → `1h56` / `DE LINHA ·

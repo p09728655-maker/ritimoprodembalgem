@@ -222,9 +222,14 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   inteira volta às caixas). ~~O celular não passa `porUep` e não muda.~~ — passa
   desde a 1.50.0. rp-core antigo em cache: sem a divisão e o EM HE em caixas.
 - **Uma leitura a mais, só quando falta**: `_gerCatSeFalta` — sem cadastro neste
-  computador (nem o `rpe_cap_cat`), lê o `getProdutos` UMA vez por sessão
+  computador (nem o `rpe_cap_cat`), lê o `getProdutos` ~~UMA vez por sessão~~
   (`PDIA_PC_CATPED`, a mesma marca do clique no PRODUTOS EMBALADOS), no fim do
-  `_cicloLeitura` e da carga inicial, só com o gerencial ao vivo.
+  `_cicloLeitura` e da carga inicial, só com o gerencial ao vivo (desde a
+  v7.258.0, também a TV com atraso). Desde a v7.258.1 o cadastro tem **prazo
+  de 2 h** (`GER_CAT_TTL`): mais velho que isso — o guardado ou o lido nesta
+  sessão — relê, no máximo uma tentativa por prazo em cada sessão. Antes, um
+  guardado de qualquer idade valia para sempre (ver *TELA C da TV* em
+  `tv.md`).
 - Medido no Chromium (Apps Script simulado com os lançamentos reais de 13/11,
   Chart.js local): 1920, 1366 e 1280 — nada passa da largura; o hero tem 2
   colunas e a 2ª linha cabe numa só.
