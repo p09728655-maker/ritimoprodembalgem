@@ -169,6 +169,22 @@ data nos últimos 28 dias até hoje, fora da esteira fora.
 | **AINDA EM ABERTO** | Σ (QTDE − embalado) das linhas que **ainda estão na PROGRAMACAO** com data **anterior a hoje**, de **todos** os lotes da janela (não só dos N) — o atraso desses lotes | cx | `rp-core` `loteIntMontar` |
 | **HOJE · em andamento** | o lote interno de hoje: mostrado com o %, mas fora dos cartões; a falta dele não é FICOU nem AINDA ABERTO | — | `rp-core` `loteIntMontar` |
 
+**Tempo de atendimento** (v7.262.0 · `.gs` v5.70). O FIFO casa cada caixa
+com uma linha. A data do lançamento dessa caixa, comparada com a data do lote,
+diz em que faixa ela entra:
+
+| Termo | Fórmula | Unidade | Onde está |
+|---|---|---|---|
+| **NO DIA** | caixas embaladas até o fim da data do lote (o crédito, produção ANTES da data, entra aqui) ÷ programado das linhas com o tempo | % | `.gs` `calcularProgramacao` (`diaRow`) · `rp-core` `loteIntMontar` |
+| **D+1** | caixas embaladas depois da data do lote, até o dia útil seguinte (o sábado de um lote de sexta conta como D+1; feriado da aba `FERIADOS` não é dia útil) ÷ programado | % | idem |
+| **D+2+** | caixas embaladas depois do dia útil seguinte ÷ programado | % | idem |
+| **% do item** | embalado da linha ÷ programado da linha (o mesmo para NO DIA, D+1, D+2+ do item) | % | `rp-core` `loteIntMontar` |
+
+- NO DIA + D+1 + D+2+ = % ATENDIDO, quando todas as linhas têm o tempo.
+- As três faixas são cortadas no embalado da linha (no dia primeiro).
+- Linha sem o tempo (`.gs` antes da v5.70) fica fora da base e é contada
+  (`semTempo`); nunca entra como 0.
+
 ⚠ O % do lote é **média ponderada pelas caixas**. Por isso um lote fecha em
 97% com só 1 item em 4 completo: a falta pequena espalhada por muitos itens
 quase não pesa nas caixas. O ITENS COMPLETOS é o número que mostra isso.

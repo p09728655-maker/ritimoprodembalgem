@@ -284,6 +284,13 @@ via Google Apps Script (JSONP).
   - Sem veredito.
   - A aba lê a programação e DEPOIS os lotes, em sequência. O `_progSub` só
     relê os lotes que falharam.
+  - TEMPO (v7.262.0 / `.gs` v5.70): NO DIA, D+1 e D+2+ ÷ programado.
+    - Sai do FIFO (`diaRow`, chave `A|`/`P|` por aba; fora do cache e do JSON
+      do painel). O crédito conta no dia; o sábado de um lote de sexta é D+1.
+    - Não é o "fechou em D+n", que mede o X.
+  - Todos os itens, com o %, em UMA tabela com as colunas do lote: o que faltou
+    vai em FICOU ABERTO ou AINDA ABERTO. Nada de tabela aninhada, e a coluna
+    LOTES (ERP) não se esconde.
 
 ## Produto, cadastro, cor e comparativo → `docs/memoria/produto-e-comparativo.md`
 - A cor mora na coluna `COR` da `PRODUTO_CODIGO`; as colunas são achadas pelo

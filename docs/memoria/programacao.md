@@ -594,6 +594,73 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
 - Testes: `lote-interno.test.js`, com 8 de 8 mutações (o retry, o voo, o texto
   do botão, o CSS, o aria, o painel, o portão do render).
 
+### TEMPO DE ATENDIMENTO, % DE CADA ITEM E ALINHAMENTO (v7.262.0 / mobile 1.56.0 / rp-core 1.23.0 / `.gs` v5.70)
+- **O pedido.** PPCP, 17/11/2026: *"tempo de atendimento:?"* e *"percentual
+  individual?"*. Duas medidas foram mostradas, com os números reais da CONCLUIDA
+  (lotes 201–210/26, dias úteis da data do lote; o detalhe está no CHANGELOG):
+  - "quando o lote fechou": D+1 a D+5;
+  - "quanto saiu no dia": das 33 linhas que completaram, 11 em D+0, 16 em D+1 e
+    6 depois; 87 linhas foram encerradas pelo X, 54 delas em D+1.
+  - O PPCP escolheu **"quanto saiu no dia"** e **"todos, com o %"**.
+  - Recusado: o "fechou em D+n" (ATUALIZADO_EM / ARQUIVADO_EM). Com 87 de 120
+    linhas fechadas pelo X, ele mede quando o PPCP encerra, não a linha.
+- **No `.gs`**: o FIFO do `calcularProgramacao` guarda, em cada lote da fila,
+  `dia: [no dia, D+1, D+2+]`:
+  - o crédito (produção ANTES da data do lote) soma no dia;
+  - cada `take` cai na faixa pela `faixaDia(L.d, e.d)`: data ≤ a do lote = 0;
+    até 1 dia útil (`_diasUteisEntre` com os FERIADOS, memo por par de datas) =
+    1; mais = 2. O sábado depois de sexta dá 0 dias úteis, mas passou da data,
+    e por isso é D+1.
+  - Sai no `diaRow`, chaveado por `A|` (CONCLUIDA) ou `P|` (aba ativa) + a
+    chave da linha. Os números de linha das duas abas colidem; o teste prende
+    isso com a linha 2 de cada aba.
+  - O `diaRow` está no `PROG_SO_ESCRITA` (fica fora do cache de 60 s, que
+    passaria dos 100 KB) e no `delete` do `getPontosDia` (fica fora do JSON do
+    painel).
+  - O `getAtendimentoLotes` chama o `calcularProgramacao()` direto, não o
+    cacheado. A leitura dele tem o cache de 120 s do `doGet`.
+  - A descrição vai em TODA linha. Para 28 dias são 247 linhas e ~58 KB; o
+    limite de 100 KB fica perto de 420 linhas.
+- **No rp-core**:
+  - `itens` são TODAS as linhas com conta, com `pct`, `dia` e `pctNoDia` /
+    `pctD1` / `pctD2`, todos sobre o programado do item.
+  - O completo tem `sit` 'completo' e vai por último.
+  - As faixas são cortadas no embalado da linha, nesta ordem: no dia, D+1, D+2+.
+  - Linha sem `dia` (.gs v5.69) fica fora da base (`progT`) e é contada em
+    `semTempo`; nunca 0.
+- **"foco no alinhamento"** (PPCP, print de 1920 na v7.261.0). Cada lote aberto
+  era uma `<table>` aninhada, com a largura das colunas pelo conteúdo, e o CÓDIGO
+  e o PROGRAMADO mudavam de lugar entre o 203/26 e o 202/26.
+  - Agora há UMA tabela, com 13 colunas: LOTE INTERNO, COR GPS, DATA, LOTES
+    (ERP), PROGRAMADO, EMBALADO, % ATENDIDO, NO DIA, D+1, D+2+, ITENS 100%,
+    FICOU ABERTO, AINDA ABERTO.
+  - O item é uma linha dela (`tr.pli-it`), depois de um cabeçalho curto
+    (`tr.pli-ih`: LOTE, CÓDIGO · PRODUTO). O CÓDIGO · PRODUTO ocupa as colunas
+    2–4 (`colspan="3"`, `max-width:0` + reticências na tela, quebra no papel).
+  - O que faltou vai na coluna da situação: FICOU ABERTO se a linha foi
+    encerrada; AINDA ABERTO se está vencida na aba (ou "falta N", se for a de
+    hoje). "completo" vai em ITENS 100%.
+  - A situação por extenso e o tempo em caixas ficam no `title`.
+  - Medido na tela: as bordas de PROGRAMADO, EMBALADO e FICOU ABERTO do lote e
+    do item são as mesmas (969/1064/1749 px em 1920, 652/725/1225 px em 1366).
+  - ⚠ A coluna LOTES (ERP) não some mais abaixo de 1100 px: a célula escondida
+    desalinharia o colspan do produto.
+  - ⚠ O recuo do LOTE do item (`tr.pli-it td.pli-il`) tem de vencer o padding
+    da linha. Na 1ª versão, `.pli-tab td.pli-il` perdia para `tr.pli-it td`.
+  - ⚠ As cores da barra no papel vão na `.pli-doc .pli-box`, porque a `.pli-box`
+    redefine as da tela. Na 1ª versão a folha saiu com a barra clara.
+- **App**: os mesmos números em cartões.
+  - O % do item fica à direita, na 1ª linha (o `float` antes do nome).
+  - O tempo do item é em %, como no PC.
+  - O 5º cartão (AINDA ABERTO) ocupa a linha inteira.
+- **Testes**:
+  - `programacao.test.js`: o FIFO numa planilha de mentira (crédito, sábado,
+    feriado com e sem a aba, a linha que vai para a CONCLUIDA, a soma = o que o
+    FIFO deu).
+  - `lote-interno.test.js`: o modelo, as 13 colunas de toda linha, cada número
+    na coluna do lote, o escape do lote e do código, o papel e o app.
+  - Pegaram 20 de 20 mutações.
+
 ### Ficou de fora, de propósito
 - Um "% do lote" em UEP ou em pontos: o PERCENTUAL da planilha é em caixas, e
   a mesma régua evita dois números para a mesma pergunta.

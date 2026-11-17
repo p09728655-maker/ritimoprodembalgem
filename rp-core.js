@@ -913,17 +913,26 @@ function atrasoPtsTxt(a){
 // Os lotes: o de hoje, os `n` fechados mais recentes e, além deles, os mais
 // velhos que ainda têm saldo vencido. O resumo é dos `n` fechados; o AINDA ABERTO
 // do resumo é de todos os vencidos.
+// rp-core 1.23.0 / v7.262.0 (PPCP, 17/11/2026: "tempo de atendimento" → "quanto
+// saiu no dia"; "percentual individual?" → "todos, com o %"):
+//   - `itens` são TODAS as linhas com conta, cada uma com o `pct` dela; a que
+//     completou tem `sit` 'completo' e vai por último.
+//   - TEMPO: `x.dia` = [no dia, D+1, D+2+] em caixas, do FIFO do .gs v5.70.
+//     Limitado ao embalado da linha, na ordem (no dia primeiro). Linha sem `dia`
+//     (o .gs antes da v5.70) fica fora do tempo e é contada em `semTempo` —
+//     nunca 0. % NO DIA = Σ no dia ÷ Σ programado das linhas COM tempo.
 function loteIntMontar(linhas, hojeNum, n){
   if (!Array.isArray(linhas)) return null;
   const N = Number(n) > 0 ? Math.floor(Number(n)) : 10, hoje = Number(hojeNum) || 0;
   const ord = li => { const m = /^\s*(\d+)\s*\/\s*(\d+)\s*$/.exec(String(li)); return m ? Number(m[2]) * 10000 + Number(m[1]) : -1; };
   const G = {};
-  const SIT = { aberto: 0, andamento: 1, fechado: 2 };
+  const SIT = { aberto: 0, andamento: 1, fechado: 2, completo: 3 };
   linhas.forEach(x => {
     if (!x || !x.li) return;
     const li = String(x.li).trim();
     const g = G[li] || (G[li] = { li, dMin: null, dMax: null, data: '', lotes: {}, cores: {}, itens: [], prog: 0, emb: 0, n: 0, n100: 0,
-                                  semConta: 0, ficou: 0, nFicou: 0, aberto: 0, nAberto: 0, hoje: false });
+                                  semConta: 0, ficou: 0, nFicou: 0, aberto: 0, nAberto: 0, hoje: false,
+                                  progT: 0, noDia: 0, d1: 0, d2: 0, semTempo: 0 });
     const d = Number(x.dataNum) || 0, q = Math.max(0, Number(x.qtde) || 0);
     if (d && (g.dMin == null || d < g.dMin)) { g.dMin = d; g.data = String(x.data || '').slice(0, 5); }
     if (d && (g.dMax == null || d > g.dMax)) g.dMax = d;
@@ -934,15 +943,29 @@ function loteIntMontar(linhas, hojeNum, n){
     if (x.emb == null || !isFinite(Number(x.emb))) { g.semConta++; return; }
     const e = Math.min(Math.max(0, Number(x.emb)), q), falta = q - e;
     g.n++; g.prog += q; g.emb += e;
-    if (falta <= 0) { g.n100++; return; }
-    const sit = x.encerrada ? 'fechado' : x.aba === 'aberta' && d && d < hoje ? 'aberto' : 'andamento';
-    if (sit === 'fechado') { g.ficou += falta; g.nFicou++; }
-    else if (sit === 'aberto') { g.aberto += falta; g.nAberto++; }
-    g.itens.push({ lote: String(x.lote || ''), codigo: String(x.codigo || ''), desc: String(x.desc || ''), qtde: q, emb: e, falta, sit });
+    // o tempo: as três faixas do FIFO, cortadas no embalado da linha (no dia primeiro)
+    let dia = null;
+    if (Array.isArray(x.dia) && x.dia.length === 3 && x.dia.every(v => isFinite(Number(v)))) {
+      const a = Math.min(Math.max(0, Number(x.dia[0])), e), b = Math.min(Math.max(0, Number(x.dia[1])), e - a);
+      dia = [a, b, Math.min(Math.max(0, Number(x.dia[2])), e - a - b)];
+      g.progT += q; g.noDia += dia[0]; g.d1 += dia[1]; g.d2 += dia[2];
+    } else g.semTempo++;
+    let sit = 'completo';
+    if (falta <= 0) g.n100++;
+    else {
+      sit = x.encerrada ? 'fechado' : x.aba === 'aberta' && d && d < hoje ? 'aberto' : 'andamento';
+      if (sit === 'fechado') { g.ficou += falta; g.nFicou++; }
+      else if (sit === 'aberto') { g.aberto += falta; g.nAberto++; }
+    }
+    const pi = k => dia && q > 0 ? dia[k] / q * 100 : null;   // o tempo do item, na régua do lote (÷ programado)
+    g.itens.push({ lote: String(x.lote || ''), codigo: String(x.codigo || ''), desc: String(x.desc || ''), qtde: q, emb: e, falta,
+                   pct: q > 0 ? e / q * 100 : null, dia, pctNoDia: pi(0), pctD1: pi(1), pctD2: pi(2), sit });
   });
+  const pctT = (v, base) => base > 0 ? v / base * 100 : null;
   const todos = Object.keys(G).map(k => {
     const g = G[k];
     g.pct = g.prog > 0 ? g.emb / g.prog * 100 : null;
+    g.pctNoDia = pctT(g.noDia, g.progT); g.pctD1 = pctT(g.d1, g.progT); g.pctD2 = pctT(g.d2, g.progT);
     g.lotes = Object.keys(g.lotes).sort();
     g.corGps = Object.keys(g.cores).sort((a, b) => g.cores[b] - g.cores[a])[0] || '';
     delete g.cores;
@@ -952,7 +975,8 @@ function loteIntMontar(linhas, hojeNum, n){
   const hojeG = todos.filter(g => g.hoje), fechados = todos.filter(g => !g.hoje);
   const ult = fechados.slice(0, N), velhos = fechados.slice(N).filter(g => g.aberto > 0);
   const soma = (arr, k) => arr.reduce((t, g) => t + g[k], 0);
-  const prog = soma(ult, 'prog'), emb = soma(ult, 'emb');
+  const prog = soma(ult, 'prog'), emb = soma(ult, 'emb'), progT = soma(ult, 'progT');
+  const noDia = soma(ult, 'noDia'), d1 = soma(ult, 'd1'), d2 = soma(ult, 'd2');
   const vencidos = fechados.filter(g => g.aberto > 0);
   return {
     lotes: hojeG.concat(ult, velhos),
@@ -961,7 +985,9 @@ function loteIntMontar(linhas, hojeNum, n){
       prog, emb, pct: prog > 0 ? emb / prog * 100 : null,
       ficou: soma(ult, 'ficou'), nFicou: soma(ult, 'nFicou'), n: soma(ult, 'n'), n100: soma(ult, 'n100'),
       aberto: soma(vencidos, 'aberto'), nAberto: soma(vencidos, 'nAberto'), lisAberto: vencidos.map(g => g.li),
-      semConta: soma(todos, 'semConta')
+      semConta: soma(todos, 'semConta'),
+      progT, noDia, d1, d2, pctNoDia: pctT(noDia, progT), pctD1: pctT(d1, progT), pctD2: pctT(d2, progT),
+      semTempo: soma(ult, 'semTempo')
     },
     n: N
   };
@@ -992,7 +1018,7 @@ function paradaAInformar(tipo){
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.22.0',
+  versao: '1.23.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
         'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepDiaHe', 'histDiaFds', 'metaDiasParadas', 'metaMedianaUteis', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido',

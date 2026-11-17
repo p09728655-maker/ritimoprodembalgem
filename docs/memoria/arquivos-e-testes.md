@@ -208,8 +208,15 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   - Pegou 9 de 9 mutações.
   - Desde a v7.261.0, confere também as sub-abas da PROGRAMAÇÃO: a faixa, os
     painéis, o `_progSub` num DOM de mentira (só relê o que falhou, nunca com
-    leitura em voo) e o texto dos dois botões. Pegou 8 de 8 mutações:
-    `node lote-interno.test.js`.
+    leitura em voo) e o texto dos dois botões. Pegou 8 de 8 mutações.
+  - Desde a v7.262.0, confere também:
+    - o % de cada item e o tempo (no dia, D+1, D+2+) no modelo;
+    - o mapeamento A/P do `diaRow` no `.gs`;
+    - a tabela única, com as 13 colunas em toda linha e cada número do item
+      na coluna do lote;
+    - o escape, o papel e o app.
+    - O FIFO real fica no `programacao.test.js`.
+    - Pegou 20 de 20 mutações: `node lote-interno.test.js`.
 - `testes.js` — **`node testes.js`: todas as suítes + o lint**, uma de cada vez,
   com o resumo; sai com 1 se algo falhar; suíte que passa de 2 min reprova
   (v7.248.2).

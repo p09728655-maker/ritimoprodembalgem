@@ -1194,7 +1194,8 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-programacao .pli-hdr-sub{font-family:var(--font-d);font-size:10px;color:var(--txt2);letter-spacing:.5px}
 #sec-programacao #pli-corpo{padding:14px 16px}
 #sec-programacao .pli-msg{font-family:var(--font-d);font-size:11px;color:var(--txt2);padding:8px 0}
-@media (max-width:1100px){ #sec-programacao .pli-kpis{grid-template-columns:repeat(2,minmax(0,1fr))} #sec-programacao .pli-lotes,#sec-programacao .pli-tab th.c-lotes{display:none} }
+@media (max-width:1100px){ #sec-programacao .pli-kpis{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:1400px){ #sec-programacao .pli-k .v{font-size:26px} #sec-programacao .pli-bar{width:80px} }
 /* PRODUTOS EMBALADOS HOJE (v7.201.0) — desenho do PC; a conta é a pdiaMontar
    do rp-core.js. Cor só onde há função: os blocos da faixa alternam dois tons
    neutros, laranja = agora, âmbar = hora extra. Nenhum verde/vermelho. */
@@ -4235,14 +4236,14 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.261.0';
+const APP_VER = '7.262.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
 // .gs v5.57) e o rodapé compara: o GitHub e o editor do Apps Script não se
 // falam, e sem isso ninguém via qual .gs estava rodando. Mudou o .gs? Suba este
 // número junto com o GS_VERSAO de lá (o apps-script.test.js confere).
-const GS_REPO   = '5.69';
+const GS_REPO   = '5.70';
 let GS_IMPL;   // undefined = ainda não leu · null = o .gs implantado não informa (antes da v5.57)
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico e a
@@ -17465,13 +17466,13 @@ function _pliModelo(){
 // A causa da falha, dita (F3): "falta colar o .gs" só quando o backend RESPONDEU sem a ação.
 function _pliFalhaTxt(){
   return PLI_FALHA==='sem-url' ? 'Sem conexão com o Google Sheets (URL do Apps Script vazia, ⚙).'
-    : PLI_FALHA==='sem-endpoint' ? 'O Apps Script ainda não tem esta leitura: cole o .gs v5.69 no editor e re-implante.'
+    : PLI_FALHA==='sem-endpoint' ? 'O Apps Script ainda não tem esta leitura: cole o .gs v5.70 no editor e re-implante.'
     : PLI_FALHA==='erro' ? 'O Apps Script respondeu com erro: '+_rpEsc(PLI_ERRO)
     : 'O servidor não respondeu a tempo (3 tentativas). Clique na sub-aba de novo para tentar.';
 }
 // DESENHO (sem conta): o modelo do loteIntMontar. `papel` abre o detalhe de todo
 // lote (folha não tem clique) e esconde o que é só da tela (.so-tela).
-const _PLI_SIT={ fechado:'ENCERRADO', aberto:'EM ATRASO · na programação', andamento:'HOJE · em andamento' };
+const _PLI_SIT={ fechado:'ENCERRADO', aberto:'EM ATRASO · na programação', andamento:'HOJE · em andamento', completo:'COMPLETO' };
 function _pliHtml(M, papel){
   if(!M || !M.lotes.length) return '<div class="pli-msg">Nenhum lote interno com data até hoje nas últimas '+(PLI&&PLI.dias||28)+' dias da programação (coluna LOTE INTERNO).</div>';
   const R=M.resumo, cx=v=>fmtN(Math.round(v));
@@ -17479,17 +17480,35 @@ function _pliHtml(M, papel){
   let s='<div class="pli-box"><div class="pli-kpis">'
     +'<div class="pli-k"><div class="l">ATENDIDO · ÚLTIMOS '+R.nLotes+' LOTES</div><div class="v">'+fmtP(R.pct)+'</div>'
       +'<div class="s">'+cx(R.emb)+' de '+cx(R.prog)+' cx'+(R.nLotes?' · '+_rpEsc(R.de)+' a '+_rpEsc(R.ate):'')+'</div></div>'
-    +'<div class="pli-k"><div class="l">FICOU ABERTO · ENCERRADO COM FALTA</div><div class="v">'+cx(R.ficou)+'<small>cx</small></div>'
+    +'<div class="pli-k"><div class="l">NO DIA · DATA DO LOTE</div><div class="v">'+(R.pctNoDia==null?'—':fmtP(R.pctNoDia))+'</div>'
+      +'<div class="s">'+(R.pctNoDia==null
+        ?(R.semTempo>0?'precisa do .gs v5.70 (re-implantar)':'—')
+        :'D+1 '+fmtP(R.pctD1)+' · D+2 ou depois '+fmtP(R.pctD2)+(R.semTempo>0?' · '+plural(R.semTempo, 'linha sem o tempo', 'linhas sem o tempo')+', fora':''))+'</div></div>'
+    +'<div class="pli-k"><div class="l">FICOU ABERTO · ENCERRADO</div><div class="v">'+cx(R.ficou)+'<small>cx</small></div>'
       +'<div class="s">'+plural(R.nFicou, 'item fechado', 'itens fechados')+' sem completar</div></div>'
     +'<div class="pli-k"><div class="l">ITENS COMPLETOS (100%)</div><div class="v">'+fmtN(R.n100)+'<small>de '+fmtN(R.n)+'</small></div>'
       +'<div class="s">'+(R.n?fmtP(R.n100/R.n*100)+' dos itens':'—')+'</div></div>'
-    +'<div class="pli-k'+(R.aberto>0?' ab':'')+'"><div class="l">AINDA EM ABERTO · LOTES VENCIDOS</div><div class="v">'+cx(R.aberto)+'<small>cx</small></div>'
+    +'<div class="pli-k'+(R.aberto>0?' ab':'')+'"><div class="l">AINDA EM ABERTO · VENCIDO</div><div class="v">'+cx(R.aberto)+'<small>cx</small></div>'
       +'<div class="s">'+(R.aberto>0?plural(R.nAberto, 'item', 'itens')+' na programação · '+R.lisAberto.map(_rpEsc).join(' · '):'nenhum lote vencido com saldo')+'</div></div>'
     +'</div>';
+  // UMA tabela para os lotes e os itens (v7.262.0, PPCP com o print de 1920: "foco no alinhamento" —
+  // cada lote aberto era uma tabela própria e as colunas mudavam de lugar de um lote para o outro).
+  // O item usa as MESMAS colunas do lote: o programado embaixo do programado, o % embaixo do %, o
+  // que faltou na coluna FICOU ABERTO (encerrado) ou AINDA ABERTO (vencido na programação).
+  const w=v=>Math.min(100, Math.max(0, v||0)).toFixed(1)+'%';
+  const barra=(o, tem)=>'<span class="pli-bar">'+(tem
+      ?'<b class="d0" style="width:'+w(o.pctNoDia)+'"></b><b class="d1" style="width:'+w(o.pctD1)+'"></b><b class="d2" style="width:'+w(o.pctD2)+'"></b>'
+      :'<b class="sd" style="width:'+w(o.pct)+'"></b>')+'</span>';
+  const pc=v=>v==null?'<span class="pli-dim">—</span>':v>0?fmtP(v):'<span class="pli-dim">0%</span>';
   s+='<table class="pli-tab"><thead><tr><th>LOTE INTERNO</th><th>COR GPS</th><th>DATA</th><th class="c-lotes">LOTES (ERP)</th>'
-    +'<th class="n">PROGRAMADO</th><th class="n">EMBALADO</th><th>% ATENDIDO</th><th class="n">ITENS 100%</th><th class="n">FICOU ABERTO</th><th class="n">AINDA ABERTO</th></tr></thead>';
+    +'<th class="n">PROGRAMADO</th><th class="n">EMBALADO</th><th>% ATENDIDO</th>'
+    +'<th class="n" title="Embalado até o fim da data do lote (o adiantado entra) ÷ programado">NO DIA</th>'
+    +'<th class="n" title="Embalado no dia útil seguinte (o sábado conta) ÷ programado">D+1</th>'
+    +'<th class="n" title="Embalado depois do dia útil seguinte ÷ programado">D+2+</th>'
+    +'<th class="n">ITENS 100%</th><th class="n">FICOU ABERTO</th><th class="n">AINDA ABERTO</th></tr></thead>';
   M.lotes.forEach((g, i)=>{
     const exp=papel ? g.itens.length>0 && !g.hoje : !!PLI_EXP[g.li];
+    const temT=g.pctNoDia!=null && !g.semTempo;
     // cada lote num <tbody> próprio: no papel o lote não se separa dos itens dele
     s+='<tbody class="pli-g"><tr class="pli-lt'+(exp?' exp':'')+'" onclick="_pliExp('+i+')">'
       +'<td class="pli-li"><span class="seta so-tela">'+(g.itens.length?(exp?'▾':'▸'):'·')+'</span>'+_rpEsc(g.li)+(g.hoje?'<span class="pli-hoje">HOJE</span>':'')+'</td>'
@@ -17497,31 +17516,47 @@ function _pliHtml(M, papel){
       +'<td class="pli-lotes">'+g.lotes.map(_rpEsc).join(' · ')+'</td>'
       +'<td class="n">'+cx(g.prog)+'</td><td class="n">'+cx(g.emb)+'</td>'
       +'<td class="pli-pc">'+(g.pct==null?'<span class="pli-dim">—</span>'
-        :'<span class="pli-bar"><b style="width:'+Math.min(100, g.pct).toFixed(1)+'%"></b></span><span class="pli-pcn'+(g.hoje?' pli-dim':'')+'">'+fmtP(g.pct)+'</span>')+'</td>'
+        :barra(g, temT)+'<span class="pli-pcn'+(g.hoje?' pli-dim':'')+'">'+fmtP(g.pct)+'</span>')+'</td>'
+      +'<td class="n pli-nd">'+(g.pctNoDia==null?'<span class="pli-dim">—</span>':fmtP(g.pctNoDia)+(g.semTempo?'<small>*</small>':''))+'</td>'
+      +'<td class="n">'+pc(g.pctD1)+'</td><td class="n">'+pc(g.pctD2)+'</td>'
       +'<td class="n">'+fmtN(g.n100)+' <small>de '+fmtN(g.n)+'</small></td>'
       +'<td class="n">'+(g.ficou>0?cx(g.ficou)+' cx <small>· '+plural(g.nFicou, 'item', 'itens')+'</small>':'<span class="pli-dim">—</span>')+'</td>'
       +'<td class="n">'+(g.hoje?'<span class="pli-dim">em andamento</span>':g.aberto>0?'<span class="pli-ab">'+cx(g.aberto)+' cx</span>':'<span class="pli-dim">—</span>')+'</td>'
       +'</tr>';
-    if(exp) s+='<tr class="pli-det"><td colspan="10"><table class="pli-sub"><thead><tr><th>LOTE</th><th>CÓDIGO</th><th>PRODUTO</th>'
-      +'<th class="n">PROGRAMADO</th><th class="n">EMBALADO</th><th class="n">FALTOU</th><th>SITUAÇÃO</th></tr></thead><tbody>'
-      +g.itens.map(x=>'<tr><td class="pli-mono">'+_rpEsc(x.lote)+'</td><td class="pli-mono">'+_rpEsc(x.codigo)+'</td><td>'+_rpEsc(x.desc||'—')+'</td>'
-        +'<td class="n">'+cx(x.qtde)+'</td><td class="n">'+cx(x.emb)+'</td><td class="n">'+cx(x.falta)+'</td>'
-        +'<td'+(x.sit==='aberto'?' class="pli-ab"':' class="pli-dim"')+'>'+_PLI_SIT[x.sit]+'</td></tr>').join('')
-      +'</tbody></table></td></tr>';
+    if(exp){
+      s+='<tr class="pli-ih"><td>LOTE</td><td colspan="3">CÓDIGO · PRODUTO</td><td colspan="9"></td></tr>';
+      s+=g.itens.map(x=>{
+        const tit=' title="'+_PLI_SIT[x.sit]+(x.dia==null?'':' · no dia '+cx(x.dia[0])+' cx · D+1 '+cx(x.dia[1])+' cx · D+2+ '+cx(x.dia[2])+' cx')+'"';
+        return '<tr class="pli-it'+(x.sit==='completo'?' ok':'')+'"'+tit+'>'
+          +'<td class="pli-mono pli-il">'+_rpEsc(x.lote)+'</td>'
+          +'<td colspan="3" class="pli-prod"><span class="pli-mono">'+_rpEsc(x.codigo)+'</span> · '+_rpEsc(x.desc||'—')+'</td>'
+          +'<td class="n">'+cx(x.qtde)+'</td><td class="n">'+cx(x.emb)+'</td>'
+          +'<td class="pli-pc">'+(x.pct==null?'<span class="pli-dim">—</span>':barra(x, x.dia!=null)+'<span class="pli-ipn">'+fmtP(x.pct)+'</span>')+'</td>'
+          +'<td class="n">'+pc(x.pctNoDia)+'</td><td class="n">'+pc(x.pctD1)+'</td><td class="n">'+pc(x.pctD2)+'</td>'
+          +'<td class="n">'+(x.sit==='completo'?'<span class="pli-dim">completo</span>':'')+'</td>'
+          +'<td class="n">'+(x.sit==='fechado'?cx(x.falta)+' cx':'')+'</td>'
+          +'<td class="n">'+(x.sit==='aberto'?'<span class="pli-ab">'+cx(x.falta)+' cx</span>'
+            :x.sit==='andamento'?'<span class="pli-dim">falta '+cx(x.falta)+'</span>':'')+'</td></tr>';
+      }).join('');
+    }
     s+='</tbody>';
   });
   s+='</table>'
     +'<div class="pli-nota">% ATENDIDO = embalado ÷ programado do lote interno, em caixas (a régua da coluna PERCENTUAL da planilha) · '
+    +'NO DIA = embalado até o fim da data do lote (o adiantado entra) ÷ programado; D+1 = no dia útil seguinte (o sábado conta como D+1); D+2+ = depois — '
+    +'a data de cada caixa é a do lançamento, casada com o lote pelo FIFO · barra: <span class="pli-lg d0"></span> no dia <span class="pli-lg d1"></span> D+1 <span class="pli-lg d2"></span> D+2+ · '
     +'FICOU ABERTO = o que faltou nas linhas ENCERRADAS (não volta) · AINDA ABERTO = o saldo das linhas que ainda estão na PROGRAMACAO com data vencida'
     +(R.semConta>0?' · '+plural(R.semConta, 'linha sem a conta do embalado ficou', 'linhas sem a conta do embalado ficaram')+' fora das somas':'')
-    +'<span class="so-tela"> · clique no lote para ver os itens que não completaram</span></div></div>';
+    +(R.semTempo>0&&R.pctNoDia!=null?' · * = parte das linhas sem o tempo':'')
+    +' · nos itens, o que faltou fica na coluna da situação: FICOU ABERTO (linha encerrada) ou AINDA ABERTO (vencida, na programação)'
+    +'<span class="so-tela"> · clique no lote para ver os itens, com o % de cada um</span></div></div>';
   return s;
 }
 // O texto do botão da sub-aba: só lê o que o loteIntMontar já devolveu (nenhuma
 // conta nova). Sem veredito, como o bloco. Sem a leitura, o estado — nunca 0.
 function _pliSubTxt(M, falha){
   if(!M){
-    if(falha === 'sem-endpoint') return { txt:'falta re-implantar o .gs v5.69', cls:'' };
+    if(falha === 'sem-endpoint') return { txt:'falta re-implantar o .gs v5.70', cls:'' };
     if(falha === 'sem-url') return { txt:'sem a URL do Apps Script (⚙)', cls:'' };
     if(falha) return { txt:'não lido — clique para tentar', cls:'' };
     return { txt:'…', cls:'' };
@@ -17529,7 +17564,8 @@ function _pliSubTxt(M, falha){
   const R = M.resumo;
   if(!R.nLotes) return { txt:'nenhum lote interno fechado nos últimos ' + (PLI && PLI.dias || 28) + ' dias', cls:'' };
   if(R.pct == null) return { txt:'sem a conta do embalado', cls:'' };
-  return { txt: fmtP(R.pct) + ' atendido · ' + R.n100 + ' de ' + plural(R.n, 'item completo', 'itens completos')
+  return { txt: fmtP(R.pct) + ' atendido' + (R.pctNoDia == null ? '' : ' · ' + fmtP(R.pctNoDia) + ' no dia')
+    + ' · ' + R.n100 + ' de ' + plural(R.n, 'item completo', 'itens completos')
     + (R.aberto > 0 ? ' · ' + fmtN(R.aberto) + ' cx em aberto' : ''), cls:'' };
 }
 function renderLotesInternos(){
@@ -17569,8 +17605,9 @@ function _pliExp(i){
 // Na tela ele entra no <head> na 1ª vez que o bloco desenha (_pliCssNaTela). As
 // cores do GPS são as etiquetas físicas do lote — identificação, não veredito.
 const _PLI_CSS=`
-  .pli-box{--gps-amarelo:#F2C94C;--gps-azul:#3B82F6;--gps-preto:#0B0B0B;--gps-verde:#27AE60;--gps-branco:#F5F5F5;--gps-vermelho:#E53935;--gps-outra:#8FA0B5}
-  .pli-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+  .pli-box{--gps-amarelo:#F2C94C;--gps-azul:#3B82F6;--gps-preto:#0B0B0B;--gps-verde:#27AE60;--gps-branco:#F5F5F5;--gps-vermelho:#E53935;--gps-outra:#8FA0B5;
+           --pli-d0:#E6EBF1;--pli-d1:#8FA0B5;--pli-d2:#4E5D72}
+  .pli-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}
   .pli-k{background:var(--elevated);border:0.5px solid var(--border);border-radius:7px;padding:11px 14px;min-width:0}
   .pli-k .l{font-family:var(--font-d);font-size:9px;letter-spacing:1.5px;color:var(--txt2);text-transform:uppercase}
   .pli-k .v{font-family:var(--font-h);font-weight:700;font-size:30px;line-height:1.05;margin-top:4px;color:var(--txt)}
@@ -17595,17 +17632,24 @@ const _PLI_CSS=`
   .pli-lotes{font-family:var(--font-d);font-size:10.5px;color:var(--txt2)}
   .pli-pc{white-space:nowrap}
   .pli-bar{display:inline-block;vertical-align:middle;width:110px;height:9px;background:var(--border);border-radius:5px;overflow:hidden;margin-right:8px}
+  .pli-bar{display:inline-flex}
   .pli-bar b{display:block;height:100%;background:var(--txt);opacity:.85;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pli-bar b.d0{background:var(--pli-d0);opacity:1}.pli-bar b.d1{background:var(--pli-d1);opacity:1}.pli-bar b.d2{background:var(--pli-d2);opacity:1}
+  .pli-lg{display:inline-block;width:10px;height:8px;border-radius:2px;vertical-align:baseline;margin-left:4px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pli-lg.d0{background:var(--pli-d0)}.pli-lg.d1{background:var(--pli-d1)}.pli-lg.d2{background:var(--pli-d2)}
+  .pli-nd{font-family:var(--font-h);font-weight:700;font-size:16px}
   .pli-pcn{font-family:var(--font-h);font-weight:700;font-size:18px}
-  .pli-tab small,.pli-sub small{color:var(--txt2);font-size:10.5px}
+  .pli-tab small{color:var(--txt2);font-size:10.5px}
   .pli-dim{color:var(--txt2)}
   .pli-ab{color:var(--warn);font-weight:600}
-  .pli-tab tr.pli-det td{padding:0 10px 10px 34px;background:var(--elevated)}
-  .pli-sub{width:100%;border-collapse:collapse}
-  .pli-sub th{font-family:var(--font-d);font-size:9px;letter-spacing:1px;color:var(--txt2);text-align:left;padding:6px 8px;border-bottom:0.5px solid var(--border)}
-  .pli-sub td{padding:5px 8px;font-size:12px;border-bottom:0.5px solid var(--border);color:var(--txt)}
-  .pli-sub .n{text-align:right;font-variant-numeric:tabular-nums}
-  .pli-sub td.pli-ab{color:var(--warn)}.pli-sub td.pli-dim{color:var(--txt2)}
+  /* os itens: linhas da MESMA tabela, nas colunas do lote */
+  .pli-tab tr.pli-ih td{font-family:var(--font-d);font-size:9px;letter-spacing:1px;color:var(--txt2);padding:7px 10px 3px;background:var(--elevated);border-bottom:0.5px solid var(--border)}
+  .pli-tab tr.pli-it td{padding:5px 10px;font-size:12px;background:var(--elevated)}
+  .pli-tab tr.pli-ih td:first-child,.pli-tab tr.pli-it td.pli-il{padding-left:30px}
+  .pli-tab tr.pli-it.ok td{color:var(--txt2)}
+  .pli-prod{max-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pli-prod .pli-mono{font-size:11px;color:var(--txt2)}
+  .pli-ipn{font-weight:600;font-size:13px}
   .pli-nota{font-family:var(--font-d);font-size:10.5px;color:var(--txt2);margin-top:10px;line-height:1.6}
 `;
 function _pliCssNaTela(){
@@ -17618,20 +17662,23 @@ const _PLI_SKIN=`
   .pli-doc{--bg:#fff;--surface:#fff;--elevated:#f6f8fa;--border:#e2e8f0;--txt:#1F2328;--txt2:#5B6470;--warn:#B26A00;--acc:#E65100;
            --font-h:'Barlow Condensed',sans-serif;--font-d:'IBM Plex Mono',monospace;color:#1F2328}
   .pli-doc .so-tela{display:none}
+  .pli-doc .pli-box{--pli-d0:#1F2328;--pli-d1:#7B8794;--pli-d2:#C3CAD3}   /* no .pli-box: ele redefine as da tela */
   .pli-doc .pli-kpis{gap:8px;margin:4px 0 10px}
   .pli-doc .pli-k{border:1px solid #e2e8f0;padding:7px 10px;page-break-inside:avoid}
   .pli-doc .pli-k .v{font-size:22px}
   .pli-doc .pli-tab td{font-size:10px;padding:3px 6px}
   .pli-doc .pli-tab th{font-size:7.5px;padding:4px 6px}
-  .pli-doc .pli-sub th{background:none;color:#5B6470;border-bottom:1px solid #cbd5e0}
+  .pli-doc .pli-prod{max-width:none;white-space:normal}
   .pli-doc .pli-li{font-size:13px}
   .pli-doc .pli-pcn{font-size:13px}
   .pli-doc .pli-bar{width:70px;height:7px;background:#e2e8f0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .pli-doc .pli-bar b{background:#1F2328}
+  .pli-doc .pli-bar b.sd{background:#1F2328}
+  .pli-doc .pli-nd{font-size:11px}
   .pli-doc .pli-tab tr.pli-lt td{border-top:1px solid #cbd5e0;background:#f6f8fa;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .pli-doc .pli-tab tr.pli-det td{padding:0 6px 6px 24px;background:#fff}
-  .pli-doc .pli-sub td{font-size:9px;padding:2px 6px}
-  .pli-doc .pli-sub th{font-size:7.5px;padding:4px 6px}
+  .pli-doc .pli-tab tr.pli-ih td{font-size:7px;padding:4px 6px 2px;background:#fff}
+  .pli-doc .pli-tab tr.pli-it td{font-size:9px;padding:2px 6px;background:#fff}
+  .pli-doc .pli-tab tr.pli-ih td:first-child,.pli-doc .pli-tab tr.pli-it td.pli-il{padding-left:20px}
+  .pli-doc .pli-ipn{font-size:9.5px}
   .pli-doc thead{display:table-header-group}
   .pli-doc tr{page-break-inside:avoid}
   .pli-doc tbody.pli-g{break-inside:avoid;page-break-inside:avoid}
