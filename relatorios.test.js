@@ -6683,9 +6683,12 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
      cel(R('_gerHoraLinha(_h, 136, 0, null, { est:"LENDO…" })', { _h:{ label:'07:00', he:false, lancada:true, andamento:false, uep:null, cxSem:0, metaH:314 } })).slice(-1), ['LENDO…']);
   // ── a análise
   const A = R('_gerAnaliseUep(_G)', { _G:G });
-  ok('pico 15:00 (142,5%), vale 12:12 (68,2%), tendência ↑, precisa 738 UEP/h em 0h37 ≈ 369 cx/h de SAPATEIRA (a montagem real)',
-     [A.pico.h.label, Math.round(A.pico.p * 10) / 10, A.vale.h.label, Math.round(A.vale.p * 10) / 10, A.tend, Math.round(A.nec.uepH), A.nec.rest, Math.round(A.nec.uepH / A.uepCx)],
-     ['15:00', 142.5, '12:12', 68.2, 1, 738, 37, 369]);
+  // v7.259.1 (PPCP, 17/11/2026): o RITMO NECESSÁRIO sem o "≈ N cx/h de PRODUTO"
+  // (o ritmo ÷ a UEP/cx do produto de agora — a premissa que saiu do PARA A META)
+  ok('pico 15:00 (142,5%), vale 12:12 (68,2%), tendência ↑, precisa 738 UEP/h em 0h37, sem cx/h do produto de agora (a montagem real)',
+     [A.pico.h.label, Math.round(A.pico.p * 10) / 10, A.vale.h.label, Math.round(A.vale.p * 10) / 10, A.tend, Math.round(A.nec.uepH), A.nec.rest, 'uepCx' in A,
+      / cx\/h de /.test(R('_gerAnaliseUepHtml(_G)', { _G:G }))],
+     ['15:00', 142.5, '12:12', 68.2, 1, 738, 37, false, false]);
   ok('a análise não julga hora extra nem a hora de agora',
      R('_gerAnaliseUep(_G)', { _G:Object.assign({}, G, { horas:horas.map((h, i) => i === 0 ? Object.assign({}, h, { uep:999 }) : h) }) }).pico.h.label, '15:00');
   // v7.244.0 (revisão): de manhã, sem hora de jornada lançada, não é "jornada encerrada"

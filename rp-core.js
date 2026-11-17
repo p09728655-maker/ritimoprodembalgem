@@ -511,8 +511,9 @@ function uepDoProduto(cod, desc, cor, cat, phm){
   return cx > 0 ? u / cx : null;
 }
 // O MODELO do gerencial: o veredito (uepCard), as horas, a projeção, o que resta de
-// jornada e, com jornada lançada (`m`), os minutos à frente/atrás, o que falta em
-// caixas do produto de agora e quando a meta sai no ritmo da meta.
+// jornada e, com jornada lançada (`m`), os minutos à frente/atrás, quando a meta
+// sai no ritmo da meta e o produto de agora (a falta em caixas dele, `faltaCx`,
+// saiu na 1.21.0: não é a programação).
 // o: { uep, metaUep, minNorm, slots, allHoje, phm, agoraMin, tolMin, prod:{cod,desc,cor}, cat }
 // ok:false = sem a UEP do dia (lendo: a leitura ainda não chegou; senão backend
 // antigo ou cadastro sem UEP) — o painel devolve o veredito às caixas.
@@ -534,8 +535,8 @@ function uepGerMontar(o){
   const falta = card.fds ? 0 : Math.max(0, meta - feito);
   let m = null;
   // Protegido como o PC era (try em volta do _tvUepMontar): um item torto no
-  // porHoraModelo ou no cadastro não derruba o gerencial — fica sem os minutos,
-  // a falta em caixas e o "sai às".
+  // porHoraModelo ou no cadastro não derruba o gerencial — fica sem os minutos
+  // e o "sai às".
   if (Number(o.minNorm) > 0 && horas.some(h => !h.he)) try {
     let chega = null;
     if (falta > 0){
@@ -918,7 +919,7 @@ function paradaAInformar(tipo){
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.21.0',
+  versao: '1.21.1',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
         'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepDiaHe', 'histDiaFds', 'metaDiasParadas', 'metaMedianaUteis', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido',

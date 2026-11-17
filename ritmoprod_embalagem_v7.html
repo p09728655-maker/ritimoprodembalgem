@@ -4199,7 +4199,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.259.0';
+const APP_VER = '7.259.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -13373,8 +13373,8 @@ function renderGerencial(){
 // ════════════════════════════════════════════════════════════════════════════
 // A conta é a que já existe: o uepCard (rp-core) para o veredito, o
 // _uepAbaHoras / _uepAbaProj da aba ⚖ UEP para a hora e a projeção, e o
-// _tvUepMontar das Telas F/G para os minutos à frente/atrás, o que falta em
-// caixas do produto de agora e quando a meta sai. Nenhuma régua nova.
+// _tvUepMontar das Telas F/G para os minutos à frente/atrás e quando a meta
+// sai (a falta em caixas do produto de agora saiu na v7.259.0). Nenhuma régua nova.
 function _gerUepModelo(k, agoraMin){
   // A montagem é a do rp-core (uepGerMontar, 1.18.0) — a MESMA do gerencial do
   // celular 1.50.0. Aqui só a leitura do painel: os slots, o relógio, o produto
@@ -13673,14 +13673,16 @@ function _gerAnaliseUep(G){
   fech.forEach(x=>{ if(!pico||x.p>pico.p) pico=x; if(!vale||x.p<vale.p) vale=x; });
   const ult=fech.slice(-2);
   const tend=ult.length===2?(ult[1].p>=ult[0].p?1:-1):0;
-  return { nec, porH, pico, vale, tend, uepCx:m&&m.prod?m.prod.uepCx:null, prod:m&&m.prod?m.prod.nome:'' };
+  return { nec, porH, pico, vale, tend };
 }
 function _gerAnaliseUepHtml(G){
   const A=_gerAnaliseUep(G), n=A.nec, fds=!!(G.card&&G.card.fds);
   const necV=fds?'—':!n?'— Turno enc.':n.ok?'META OK':fmtN(Math.round(n.uepH))+' UEP/h';
   const necC=fds||!n?'var(--txt2)':n.ok||n.uepH<=A.porH?'var(--ok)':'var(--warn)';
   const necD=fds?'sem meta — '+_fdsNome(hojeStr()).toLowerCase()+' é todo hora extra':!n?'jornada encerrada':n.ok?'meta de UEP do dia batida'
-    :`para a meta em ${_fmtHM(n.rest)} de jornada${A.uepCx>0?` · ≈ ${fmtN(Math.round(n.uepH/A.uepCx))} cx/h de ${_rpEsc(A.prod)}`:''}`;
+    // v7.259.1: sem o "≈ N cx/h de PRODUTO" (o ritmo ÷ a UEP/cx do produto de agora,
+    // como se só ele fosse rodar até a meta — a mesma premissa que saiu do PARA A META)
+    :`para a meta em ${_fmtHM(n.rest)} de jornada`;
   const ph=x=>x?`${fmtP(x.p)} da meta da hora · ${fmtN(Math.round(x.uep))} UEP`:'nenhuma hora de jornada fechada com UEP';
   return `
     <div class="a-card"><div class="a-lbl">RITMO NECESSÁRIO</div>
@@ -27543,9 +27545,9 @@ function _telaEHtml(m){
 // em maquete → "vamos fazer as duas, deixar prontas para que eu possa
 // acompanhar". F = ESFORÇO DO DIA (UEP feita × esperada, produto rodando, peso
 // da caixa de hoje, hora a hora); G = CORRIDA DO DIA (UEP acumulada × esperada,
-// minutos à frente ou atrás, o que falta em caixas do produto de agora e a hora
-// em que a meta sai, no ritmo dela). G fala em TEMPO e em CAIXAS: quem está na
-// linha lê sem precisar entender UEP.
+// minutos à frente ou atrás e o que falta para a meta — em UEP desde a
+// v7.259.0; até a v7.258.x também em caixas do produto de agora e a hora em
+// que a meta sai). G fala em TEMPO: quem está na linha lê sem entender UEP.
 // ⚠ NENHUMA CONTA DE UEP NOVA: tudo sai do _uepAbaDados (uepCard, _uepAbaHoras,
 // _uepAbaMix) — a montagem da aba ⚖ UEP, do papel e da diretoria. Aqui só se
 // arruma o que ela já calculou para a TV (curva acumulada, minutos, caixas).
@@ -27893,8 +27895,9 @@ function _tvGDesenho(m, selo, W, H){
 // quanto falta? O selo e o sentido por extenso (À FRENTE / ATRÁS, nunca
 // ADIANTADO / ATRASADO: o PPCP escolheu a variante A — uma régua em minutos
 // fixos diria ATRASADO em vermelho com o gerencial em NO RITMO), os minutos
-// enormes, a falta em UEP E em caixas, o produto. Saíram as linhas de apoio
-// (feitas · esperadas, UEP/cx) e o rodapé "1 UEP = 1 caixa de …".
+// enormes e a falta para a meta (desde a v7.259.0 só em UEP; na v7.257.x em UEP
+// E em caixas do produto de agora). Saíram as linhas de apoio (feitas ·
+// esperadas, UEP/cx) e o rodapé "1 UEP = 1 caixa de …".
 function _tvGHtml(m, selo){
   const absMin = Math.abs(m.difMin), frente = m.difMin >= 0, noTempo = absMin < 0.5;
   const cls = selo ? ' ' + sc(m.ef) : '';

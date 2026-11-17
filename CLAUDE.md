@@ -199,13 +199,15 @@ via Google Apps Script (JSONP).
   fábrica no primeiro deploy).
 - F e G: escala medida (`_tvUepCabe`, `--tvu-k`) e o gráfico da G no tamanho
   da caixa (`_tvGSvg(m, selo, dim)`); na G, o número do FEITO sempre. Mexeu
-  em texto ou tamanho: medir na TV e no gerencial, ALTURA e largura.
+  em texto ou tamanho: medir na TV e no gerencial, ALTURA e largura. ⚠ Número
+  nunca na linha `.tvu-nome` (o nome do produto da F, corta com "…").
 - G (v7.257.0, "menos informação, mais visibilidade"): UM veredito, o selo de
   sempre — nunca ADIANTADO/ATRASADO por minutos (o PPCP escolheu a variante A);
   minutos enormes e o sentido por extenso (À FRENTE / ATRÁS); a falta SÓ em
   UEP (v7.259.0: as caixas eram a falta ÷ UEP/cx do produto de agora — 2.603
   cx de SLIM fora da programação; saíram também do PARA A META dos dois
-  gerenciais e o `faltaCx` do rp-core 1.21.0); sem projeção (nem cartão "a
+  gerenciais, o `faltaCx` do rp-core 1.21.0 e, na v7.259.1, o *≈ N cx/h* do
+  RITMO NECESSÁRIO); sem projeção (nem cartão "a
   meta sai", nem pontilhado); só o FEITO tem número no gráfico; sem o rodapé
   "1 UEP = …".
 - Tela cheia de PARADA: poll de 15 s só na TV (`_paradaNaTV`); a parada sem FIM

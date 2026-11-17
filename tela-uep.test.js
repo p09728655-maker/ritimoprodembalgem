@@ -110,7 +110,7 @@ ok('fim da tarde: restam 29 min de jornada', Mt.minRest, 29);
 const fimDia = _tvUepMontar(montarD(1030, { '07:00': 100 }, { '07:00': 60 }), { agoraMin: 1030 });
 ok('jornada encerrada: nada resta', [fimDia.minRest, fimDia.agora], [0, 1019]);
 const batida = _tvUepMontar(montarD(960, Object.assign({}, UEP_H, { '15:00': 400 }), Object.assign({}, CX_H, { '15:00': 300 })), { agoraMin: 960 });
-ok('meta batida: falta 0, sem caixas a fazer', [batida.falta, batida.faltaCx], [0, null]);
+ok('meta batida: falta 0 (e o modelo sem faltaCx — revisão da v7.259.0: comparar o campo sumido passava sempre)', [batida.falta, 'faltaCx' in batida], [0, false]);
 // v7.257.0 (PPCP, 16/11/2026: "não incluir projeção de fechamento"): o modelo
 // não monta mais a projeção do feito (o pontilhado e a hora da meta).
 ok('sem projeção no modelo (proj e chega saíram)', [M, Mt, fimDia, batida].map(mm => 'proj' in mm || 'chega' in mm), [false, false, false, false]);
