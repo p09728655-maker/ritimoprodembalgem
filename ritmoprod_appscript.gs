@@ -1,5 +1,17 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.70 — TEMPO DE ATENDIMENTO (quanto saiu no dia do lote).
+//               PPCP, 17/11/2026, com o ATENDIMENTO POR LOTE INTERNO na tela:
+//               "tempo de atendimento" → escolheu "quanto saiu no dia" (D+0 / D+1 /
+//               D+2+), não "quando o lote fechou" — 87 de 120 linhas dos lotes
+//               201–210/26 foram fechadas pelo X, e a data de fechamento media o
+//               X, não a linha. O calcularProgramacao separa, por linha das duas
+//               abas, as caixas que o FIFO deu a ela pela data do lançamento
+//               (diaRow: crédito e o próprio dia = no dia; o dia útil seguinte =
+//               D+1; depois = D+2+). Só leitura: o diaRow fica fora do cache e do
+//               JSON do painel. O getAtendimentoLotes manda `dia` e a descrição
+//               de TODA linha ("percentual individual?" → todos os itens com o %).
+//               Saldo, FIFO, arquivamento e meta não mudam. ⚠ re-deploy manual.
 // Versão: 5.69 — ATENDIMENTO POR LOTE INTERNO (getAtendimentoLotes).
 //               PPCP, 17/11/2026, com a PROGRAMACAO_CONCLUIDA na tela: "me mostre
 //               como podemos apresentar percentual de cada lote que ficou aberto"
@@ -640,7 +652,7 @@
 
 // A versão deste arquivo, a mesma do cabeçalho (v5.58). Vai no getDados para o
 // rodapé do painel dizer qual .gs está implantado — o GitHub não sabe.
-const GS_VERSAO = '5.69';
+const GS_VERSAO = '5.70';
 
 const SHEET_DADOS     = 'HORA_A_HORA';
 const SHEET_HIST      = 'HISTORICO';
@@ -5438,7 +5450,7 @@ function _ptsDoLog(r, iPts, cx, prod) {
 // getProgramacaoHoje e getProgramacaoDetalhada: as três refaziam o mesmo FIFO.
 // Só para LEITURA. Quem grava chama calcularProgramacao() direto. Os mapas de
 // escrita não entram no cache, e o que passar de 100 KB só não é guardado.
-const PROG_SO_ESCRITA = ['saldoLinha', 'saldoRow', 'encLinha', 'adiLinha', 'credRow', 'credArq', 'reabrirArq'];
+const PROG_SO_ESCRITA = ['saldoLinha', 'saldoRow', 'encLinha', 'adiLinha', 'credRow', 'credArq', 'reabrirArq', 'diaRow'];
 function _programacaoCacheada() {
   let cache = null, k = '';
   try {
@@ -5475,7 +5487,7 @@ function getPontosDia() {
   const programacao = _programacaoCacheada();
   // saldoLinha é um mapa auxiliar (uso interno do write-back de saldo por lote);
   // não precisa ir no JSON do painel — remove para manter o payload enxuto.
-  try { ['saldoLinha', 'saldoRow', 'encLinha', 'adiLinha', 'adiFut', 'credRow', 'credArq', 'reabrirArq'].forEach(function (k) { delete programacao[k]; }); } catch (e) {}
+  try { ['saldoLinha', 'saldoRow', 'encLinha', 'adiLinha', 'adiFut', 'credRow', 'credArq', 'reabrirArq', 'diaRow'].forEach(function (k) { delete programacao[k]; }); } catch (e) {}
 
   // Item 1: ao abrir/atualizar o gerencial, garante que a META DO DIA gravada na
   // planilha (B3) reflete a quantidade programada para hoje — assim "definir o
@@ -6237,6 +6249,21 @@ function calcularProgramacao() {
   // foi apagado lá: volta para a PROGRAMACAO (_desarquivar). Sem isso o atraso
   // dela aparecia no painel sem linha nenhuma na aba que o explicasse.
   const reabrirArq = {};
+  // TEMPO DE ATENDIMENTO (v5.70, PPCP 17/11/2026: "tempo de atendimento" →
+  // "quanto saiu no dia"). Por linha das DUAS abas — "P|…" a ativa, "A|…" a
+  // CONCLUIDA (os números de linha das duas colidem) —, as caixas que este FIFO
+  // deu a ela: [no dia do lote ou antes (crédito incluído), no dia útil
+  // seguinte, depois]. Sábado de um lote de sexta conta como D+1 (passou do dia),
+  // feriado não conta como dia útil. Só para leitura (getAtendimentoLotes): fica
+  // fora do cache da programação e do JSON do painel (PROG_SO_ESCRITA).
+  const diaRow = {};
+  const duMemo = {};
+  const faixaDia = function (ld, ed) {
+    if (ed <= ld) return 0;
+    const k = ld + '|' + ed;
+    if (!(k in duMemo)) duMemo[k] = _diasUteisEntre(ld, ed, FER);
+    return duMemo[k] <= 1 ? 1 : 2;
+  };
   let totMeta = 0, totProgHoje = 0, totAtraso = 0, totEmbHoje = 0, totHojeRest = 0;
   const loteMap = {}; // v5.8: Tela E por LOTE — ver _somaNoLote()
 
@@ -6272,12 +6299,14 @@ function calcularProgramacao() {
     ev.forEach(e => {
       if (e.t === 0) {
         const lot = { d: e.d, rem: e.q, lote: e.lote, q: e.qOrig, qf: e.q, enc: e.enc,
-                      ateOntem: e.ateOntem, arq: e.arq, row: e.row, desfez: e.desfez, cred: 0, hojeProd: 0 };
+                      ateOntem: e.ateOntem, arq: e.arq, row: e.row, desfez: e.desfez, cred: 0, hojeProd: 0,
+                      dia: [0, 0, 0] };   // v5.70: no dia · D+1 · D+2+
         if (cred.length) {
           cred = cred.filter(c => c.rem > 0 && _diasUteisEntre(c.d, e.d, FER) <= ANTEC_DIAS_UTEIS);
           for (let i = 0; i < cred.length && lot.rem > 0; i++) {
             const take = Math.min(lot.rem, cred[i].rem);
             lot.rem -= take; cred[i].rem -= take; lot.cred += take;
+            lot.dia[0] += take;   // embalado ANTES da data do lote: no prazo
           }
         }
         fila.push(lot); return;
@@ -6298,6 +6327,7 @@ function calcularProgramacao() {
           const take = Math.min(L.rem, rem);
           L.rem -= take; rem -= take;
           if (e.d === hojeNum) L.hojeProd += take;
+          if (take > 0) L.dia[faixaDia(L.d, e.d)] += take;
         }
       }
       if (rem > 0 && ANTEC_DIAS_UTEIS > 0) cred.push({ d: e.d, rem: rem });
@@ -6335,6 +6365,7 @@ function calcularProgramacao() {
     });
     fila.forEach(lot => {
       const rk = key + '|' + lot.lote + '|' + lot.d + '|' + lot.row;
+      diaRow[(lot.arq ? 'A|' : 'P|') + rk] = lot.dia;
       if (lot.arq) {
         if (!lot.enc && (lot.rem > 0 || lot.desfez)) { reabrirArq[rk] = lot.rem; credArq[rk] = lot.cred; }
         return;
@@ -6403,7 +6434,8 @@ function calcularProgramacao() {
     adiFut: adiFut,                       // idem: caixas adiantadas por linha FUTURA (v5.22)
     credRow: credRow,                     // idem: caixas vindas de crédito, por linha (v5.23, ADIANTADO_CX)
     credArq: credArq,                     // idem: o mesmo para a linha da CONCLUIDA que volta (v5.23)
-    reabrirArq: reabrirArq                // idem: linha da CONCLUIDA que volta para a aba (v5.21)
+    reabrirArq: reabrirArq,               // idem: linha da CONCLUIDA que volta para a aba (v5.21)
+    diaRow: diaRow                        // só leitura: no dia · D+1 · D+2+ por linha das duas abas (v5.70)
   };
 }
 
@@ -6731,6 +6763,10 @@ function getAtendimentoLotes() {
   const deNum = _somaDiasNum(hojeNum, -PROG_LI_DIAS);
   const catByKey = {};
   lerCatalogoProdutos().forEach(function (pr) { catByKey[codKey(pr.codigo)] = pr; });
+  // v5.70: o tempo de atendimento sai do MESMO FIFO que dá o saldo (as caixas de
+  // cada linha separadas pela data do lançamento). Direto, não o cacheado: o
+  // diaRow não vai para o cache da programação.
+  const diaRow = calcularProgramacao().diaRow || {};
   const linhas = [];
   let semLote = 0;
   lerProgramacao(true).forEach(function (pr) {
@@ -6746,12 +6782,14 @@ function getAtendimentoLotes() {
     else if (!pr.arquivada && dNum === hojeNum && pr.saidaVazia) emb = 0;
     else emb = null;
     const cat = catByKey[codKey(pr.codigo)];
+    const dia = diaRow[(pr.arquivada ? 'A|' : 'P|') + codKey(pr.codigo) + '|' + (pr.lote || '') + '|' + dNum + '|' + pr.row];
     linhas.push({
       li: pr.loteInt, data: _numParaDataBR(dNum), dataNum: dNum, lote: pr.lote || '',
       codigo: cat ? cat.codigo : pr.codigo,
-      desc: emb == null || emb < qtde ? (cat ? cat.desc : '') : '',
+      desc: cat ? cat.desc : '',   // v5.70: toda linha aparece no detalhe, com o % dela
       corGps: pr.corGps || '', qtde: qtde, emb: emb, encerrada: enc,
-      aba: pr.arquivada ? 'concluida' : 'aberta'
+      aba: pr.arquivada ? 'concluida' : 'aberta',
+      dia: dia ? dia.slice() : null   // [no dia, D+1, D+2+] em caixas; null = o FIFO não tem a linha
     });
   });
   linhas.sort(function (a, b) { return (b.dataNum - a.dataNum) || String(a.lote).localeCompare(String(b.lote)); });

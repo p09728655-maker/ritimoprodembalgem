@@ -332,7 +332,34 @@ console.log('\n── as regras da conta ──');
   ok('além dos 10 fechados, entra o mais velho que ainda tem saldo vencido; o AINDA ABERTO do resumo é de todos os vencidos',
      [Y.lotes.length, Y.lotes[Y.lotes.length - 1].li, Y.resumo.nLotes, Y.resumo.aberto, Y.resumo.lisAberto], [11, '200/26', 10, 40, ['200/26']]);
   ok('a conta sem a lista não inventa: null', loteIntMontar(null, 20261117), null);
-  ok('o rp-core publica a função e sobe de versão', [RP_CORE.fns.includes('loteIntMontar'), RP_CORE.versao], [true, '1.22.0']);
+  ok('o rp-core publica a função e sobe de versão', [RP_CORE.fns.includes('loteIntMontar'), RP_CORE.versao], [true, '1.23.0']);
+}
+
+console.log('\n── v7.262.0: o % de cada item e o TEMPO (no dia · D+1 · D+2+) ──');
+{
+  ok('"percentual individual": TODO item do 210/26 aparece (14), cada um com o % dele; os completos por último',
+     [g210.itens.length, g210.itens.filter(x => x.sit === 'completo').length, g210.itens.slice(-5).every(x => x.sit === 'completo'),
+      r1(g210.itens[0].pct), g210.itens.find(x => x.sit === 'completo').pct],
+     [14, 5, true, 69.6, 100]);
+  ok('sem o tempo (.gs antes da v5.70): nenhum número inventado — % NO DIA null e as linhas contadas em semTempo',
+     [M.resumo.pctNoDia, M.resumo.semTempo, g210.pctNoDia, g210.itens[0].pctNoDia, g210.itens[0].dia], [null, 118, null, null, null]);
+  const b = { li: '301/26', dataNum: 20261110, data: '10/11/2026', lote: '9', aba: 'concluida', corGps: 'AZUL' };
+  const T = loteIntMontar([
+    Object.assign({}, b, { codigo: 'A', qtde: 100, emb: 100, dia: [70, 20, 10] }),
+    Object.assign({}, b, { codigo: 'B', qtde: 100, emb: 90, encerrada: true, dia: [90, 0, 0] }),
+    Object.assign({}, b, { codigo: 'C', qtde: 50, emb: 40, encerrada: true, dia: [30, 30, 30] }),     // o FIFO deu mais que o embalado: corta, no dia primeiro
+  ], 20261117, 10);
+  const t = T.lotes[0], [A, B2, C] = ['A', 'B', 'C'].map(c => t.itens.find(x => x.codigo === c));
+  ok('o tempo do lote: Σ no dia ÷ Σ programado (as três faixas somam o embalado)',
+     [t.noDia, t.d1, t.d2, t.progT, r1(t.pctNoDia), r1(t.pctD1), r1(t.pctD2), r1(t.pct)], [190, 30, 10, 250, 76, 12, 4, 92]);
+  ok('o tempo do item, na régua do item (÷ programado dele); a faixa nunca passa do embalado da linha',
+     [A.pctNoDia, A.pctD1, A.pctD2, C.dia, C.pctNoDia, C.pctD1, C.pctD2], [70, 20, 10, [30, 10, 0], 60, 20, 0]);
+  ok('o resumo dos últimos lotes traz o mesmo tempo', [T.resumo.noDia, T.resumo.progT, r1(T.resumo.pctNoDia), T.resumo.semTempo], [190, 250, 76, 0]);
+  const P2 = loteIntMontar([Object.assign({}, b, { codigo: 'A', qtde: 100, emb: 100, dia: [100, 0, 0] }), Object.assign({}, b, { codigo: 'B', qtde: 100, emb: 50 })], 20261117, 10);
+  ok('linha sem o tempo fica fora da base do NO DIA (100 de 100, não 100 de 200) e é contada',
+     [P2.lotes[0].pctNoDia, P2.lotes[0].semTempo, P2.lotes[0].itens.find(x => x.codigo === 'B').pctNoDia], [100, 1, null]);
+  ok('dia malformado (2 faixas, texto) = sem tempo, nunca 0',
+     loteIntMontar([Object.assign({}, b, { codigo: 'A', qtde: 10, emb: 10, dia: [10, 0] }), Object.assign({}, b, { codigo: 'B', qtde: 10, emb: 10, dia: ['x', 0, 0] })], 20261117, 10).lotes[0].semTempo, 2);
 }
 
 console.log('\n── a leitura do .gs (getAtendimentoLotes, v5.69) ──');
@@ -343,23 +370,28 @@ console.log('\n── a leitura do .gs (getAtendimentoLotes, v5.69) ──');
     var TZ = 'America/Sao_Paulo';
     var Utilities = { formatDate: function(){ return '17/11/2026'; } };
     function lerCatalogoProdutos(){ return [{ codigo:'501.086.118', desc:'VOL 1/2 HOME RIPADO ANTARES 1.4' }, { codigo:'501.117.004', desc:'ESCRIVANINHA PRISM' }]; }
-    var _ROWS = []; function lerProgramacao(){ return _ROWS; }`, C);
+    var _ROWS = []; function lerProgramacao(){ return _ROWS; }
+    var _DIA = {}; function calcularProgramacao(){ return { diaRow: _DIA }; }`, C);
   const base = { codigo: '501117004', qtde: 100, lote: '25428', loteInt: '210/26', corGps: 'PRETO', foraEsteira: false, arquivada: true, encerrada: false,
                  status: 'CONCLUIDO', saldo: 0, prodConf: 100, saidaVazia: false };
   const row = o => Object.assign({}, base, o);
   C._ROWS = [
-    row({ data: '13/11/2026' }),                                                                          // concluída: saldo 0
-    row({ data: '13/11/2026', status: 'ENCERRADO', encerrada: true, saldo: 0, prodConf: 93 }),           // encerrada na CONCLUIDA: SALDO 0 não é 100%
-    row({ data: '12/11/2026', arquivada: false, status: 'EM ATRASO', encerrada: true, saldo: 10, prodConf: 0, qtde: 10, codigo: '501086118' }),  // X marcado, ainda na aba
-    row({ data: '13/11/2026', arquivada: false, status: 'EM ATRASO', saldo: 35, prodConf: 80, qtde: 115, codigo: '501086118' }),  // aberta vencida
-    row({ data: '17/11/2026', arquivada: false, status: '', saldo: null, prodConf: null, saidaVazia: true, loteInt: '212/26' }),   // hoje, sem lançamento
-    row({ data: '17/11/2026', arquivada: false, status: '', saldo: null, prodConf: null, saidaVazia: false, loteInt: '212/26' }), // hoje, sem conta
-    row({ data: '16/11/2026', arquivada: false, status: 'EM ATRASO', saldo: null, prodConf: null, saidaVazia: true, loteInt: '211/26' }), // vencida sem conta: o 0 é só de HOJE
+    row({ data: '13/11/2026', row: 2 }),                                                                  // concluída: saldo 0
+    row({ data: '13/11/2026', row: 3, status: 'ENCERRADO', encerrada: true, saldo: 0, prodConf: 93 }),   // encerrada na CONCLUIDA: SALDO 0 não é 100%
+    row({ data: '12/11/2026', row: 2, arquivada: false, status: 'EM ATRASO', encerrada: true, saldo: 10, prodConf: 0, qtde: 10, codigo: '501086118' }),  // X marcado, ainda na aba
+    row({ data: '13/11/2026', row: 3, arquivada: false, status: 'EM ATRASO', saldo: 35, prodConf: 80, qtde: 115, codigo: '501086118' }),  // aberta vencida
+    row({ data: '17/11/2026', row: 4, arquivada: false, status: '', saldo: null, prodConf: null, saidaVazia: true, loteInt: '212/26' }),   // hoje, sem lançamento
+    row({ data: '17/11/2026', row: 5, arquivada: false, status: '', saldo: null, prodConf: null, saidaVazia: false, loteInt: '212/26' }), // hoje, sem conta
+    row({ data: '16/11/2026', row: 6, arquivada: false, status: 'EM ATRASO', saldo: null, prodConf: null, saidaVazia: true, loteInt: '211/26' }), // vencida sem conta: o 0 é só de HOJE
     row({ data: '18/11/2026', arquivada: false, loteInt: '213/26' }),                                     // futura: fora
     row({ data: '13/11/2026', loteInt: '' }),                                                             // sem lote interno: contada
     row({ data: '13/11/2026', foraEsteira: true }),                                                       // fora da esteira: fora
     row({ data: '10/10/2026' })                                                                           // antes da janela: fora
   ];
+  // o FIFO (stub): a chave é aba|código|lote|data|linha — a CONCLUIDA ("A") e a aba ativa ("P") têm números de linha próprios
+  C._DIA = { 'A|501117004|25428|20261113|2': [70, 20, 10], 'A|501117004|25428|20261113|3': [93, 0, 0],
+             'P|501086118|25428|20261113|3': [50, 30, 0], 'P|501086118|25428|20261112|2': [0, 0, 0],
+             'P|501117004|25428|20261113|2': [1, 1, 1] };   // armadilha: a linha 2 da aba ATIVA não é a linha 2 da CONCLUIDA
   const R = JSON.parse(JSON.stringify(vm.runInContext('getAtendimentoLotes()', C)));
   ok('responde ok, com hoje, a janela de 28 dias e as linhas',
      [R.ok, R.hoje, R.hojeNum, R.dias, R.linhas.length, R.semLote], [true, '17/11/2026', 20261117, 28, 7, 1]);
@@ -368,8 +400,10 @@ console.log('\n── a leitura do .gs (getAtendimentoLotes, v5.69) ──');
      E, [['212/26', 20261117, 100, 0, false, 'aberta'], ['212/26', 20261117, 100, null, false, 'aberta'], ['211/26', 20261116, 100, null, false, 'aberta'],
          ['210/26', 20261113, 100, 100, false, 'concluida'], ['210/26', 20261113, 100, 93, true, 'concluida'],
          ['210/26', 20261113, 115, 80, false, 'aberta'], ['210/26', 20261112, 10, 0, true, 'aberta']]);
-  ok('a descrição só vai na linha que não completou (a resposta fica abaixo dos 100 KB do cache)',
-     R.linhas.map(x => !!x.desc), [true, true, true, false, true, true, true]);
+  ok('v5.70: a descrição vai em TODA linha (o detalhe mostra todos os itens, com o % de cada um)',
+     R.linhas.map(x => !!x.desc), [true, true, true, true, true, true, true]);
+  ok('v5.70: o tempo de cada linha vem do FIFO pela chave da ABA certa (a linha 2 da CONCLUIDA ≠ a linha 2 da aba); linha que o FIFO não tem = null, nunca [0,0,0]',
+     R.linhas.map(x => x.dia), [null, null, null, [70, 20, 10], [93, 0, 0], [50, 30, 0], [0, 0, 0]]);
   ok('o código e a descrição saem do cadastro; a COR GPS da linha',
      [R.linhas[5].codigo, R.linhas[5].desc, R.linhas[5].corGps], ['501.086.118', 'VOL 1/2 HOME RIPADO ANTARES 1.4', 'PRETO']);
   ok('o leitor da aba dá o PRODUZIDO confiável de TODA linha (prodConf) e a COR GPS, sem mexer no `produzido` da encerrada',
@@ -380,7 +414,7 @@ console.log('\n── a leitura do .gs (getAtendimentoLotes, v5.69) ──');
      [/act === 'getAtendimentoLotes'\) result = getAtendimentoLotes\(\);/.test(gs), /getAtendimentoLotes: 120,/.test(gs), /getAtendimentoLotes: \['prod', 'cat'\]/.test(gs)],
      [true, true, true]);
   ok('o trio da versão do .gs sobe junto (cabeçalho, GS_VERSAO, GS_REPO do painel)',
-     [/^\/\/ Versão: 5\.69 — ATENDIMENTO POR LOTE INTERNO/m.test(gs), /const GS_VERSAO = '5\.69';/.test(gs), /const GS_REPO   = '5\.69';/.test(JS)],
+     [/^\/\/ Versão: 5\.70 — TEMPO DE ATENDIMENTO/m.test(gs), /const GS_VERSAO = '5\.70';/.test(gs), /const GS_REPO   = '5\.70';/.test(JS)],
      [true, true, true]);
 }
 
@@ -391,13 +425,13 @@ console.log('\n── o PC: a mesma marcação na tela e no papel ──');
   const Ls = LINHAS.map(x => x.li === '210/26' && x.lote === '25427' && x.emb < x.qtde ? Object.assign({}, x, { desc: 'VOL 1/2 <b>X</b> & cia' }) : x);
   const Mx = loteIntMontar(Ls, 20261117, 10);
   const tela = _pliHtml(Mx, false), papel = _pliHtml(Mx, true);
-  ok('os quatro cartões e a tabela, com os números do resumo',
+  ok('os cinco cartões (o NO DIA entrou na v7.262.0) e a tabela, com os números do resumo',
      [(tela.match(/class="pli-k[ "]/g) || []).length, tela.includes('>97,4%<'), tela.includes('405<small>cx</small>'), tela.includes('31<small>de 118</small>'),
-      tela.includes('<div class="pli-k ab">'), (tela.match(/<tbody class="pli-g">/g) || []).length], [4, true, true, true, true, 11]);
+      tela.includes('<div class="pli-k ab">'), (tela.match(/<tbody class="pli-g">/g) || []).length], [5, true, true, true, true, 11]);
   ok('na TELA o detalhe abre no clique (fechado de início); o clique leva o ÍNDICE, nunca o texto (G1)',
      [/class="pli-det"/.test(tela), /onclick="_pliExp\(2\)"/.test(tela), /onclick="_pliExp\('/.test(tela)], [false, true, false]);
   ok('no PAPEL todo lote fechado abre o detalhe; o de HOJE (em andamento) não',
-     [(papel.match(/class="pli-det"/g) || []).length, Mx.lotes.filter(g => !g.hoje && g.itens.length).length, /HOJE · em andamento/.test(papel)], [10, 10, false]);
+     [(papel.match(/class="pli-ih"/g) || []).length, Mx.lotes.filter(g => !g.hoje && g.itens.length).length, /title="HOJE · em andamento/.test(papel)], [10, 10, false]);
   ok('texto da planilha escapado (G1)', [papel.includes('VOL 1/2 &lt;b&gt;X&lt;/b&gt; &amp; cia'), papel.includes('<b>X</b>')], [true, false]);
   ok('o que é só da tela é .so-tela (a seta e o "clique no lote")', [/<span class="seta so-tela">/.test(tela), /<span class="so-tela"> · clique no lote/.test(tela)], [true, true]);
   ok('nenhum veredito na tela nova: sem selo, sem cor de status (o % é fato)', /NO RITMO|ATENÇÃO|ABAIXO|var\(--(ok|red)\)/.test(tela), false);
@@ -411,7 +445,54 @@ console.log('\n── o PC: a mesma marcação na tela e no papel ──');
      [true, true, true]);
   ok('a leitura: 3 tentativas em sequência, voo compartilhado; o .gs antigo (sem `linhas`) diz que falta re-implantar',
      [/for\(let t=1; t<=3; t\+\+\)/.test(pega(JS, 'async function _pliLer(')), /if\(PLI_VOO\) return PLI_VOO;/.test(pega(JS, 'function _pliCarregar(')),
-      /return \{ falha:'sem-endpoint'/.test(pega(JS, 'async function _pliLer(')), /cole o \.gs v5\.69/.test(pega(JS, 'function _pliFalhaTxt('))], [true, true, true, true]);
+      /return \{ falha:'sem-endpoint'/.test(pega(JS, 'async function _pliLer(')), /cole o \.gs v5\.70/.test(pega(JS, 'function _pliFalhaTxt('))], [true, true, true, true]);
+}
+
+console.log('\n── v7.262.0: os itens na MESMA tabela, nas colunas do lote (PPCP, print de 1920: "foco no alinhamento") ──');
+{
+  const Ld = LINHAS.map(x => Object.assign({}, x, { dia: x.emb == null ? null : [Math.round(x.emb * 0.8), x.emb - Math.round(x.emb * 0.8), 0] }));
+  const Mt = loteIntMontar(Ld, 20261117, 10);
+  PLI_EXP['210/26'] = true;
+  const tela = _pliHtml(Mt, false);
+  delete PLI_EXP['210/26'];
+  const celulas = h => { const out = []; let c = 0;
+    for (const m of h.matchAll(/<t([dh])(\s[^>]*)?>([\s\S]*?)<\/t\1>/g)) { const span = Number((/colspan="(\d+)"/.exec(m[2] || '') || [])[1]) || 1; out.push({ col: c + 1, txt: m[3].replace(/<[^>]+>/g, '') }); c += span; }
+    return { cel: out, n: c }; };
+  const thead = /<thead><tr>([\s\S]*?)<\/tr><\/thead>/.exec(tela)[1];
+  const rows = [...tela.matchAll(/<tr class="(pli-lt|pli-ih|pli-it)[^"]*"[^>]*>([\s\S]*?)<\/tr>/g)].map(r => ({ tipo: r[1], ...celulas(r[2]) }));
+  ok('UMA tabela (nenhuma tabela dentro de outra); toda linha — lote, cabeçalho dos itens e item — tem as 13 colunas do cabeçalho',
+     [(tela.match(/<table/g) || []).length, celulas(thead).n, [...new Set(rows.map(r => r.n))], rows.filter(r => r.tipo === 'pli-it').length], [1, 13, [13], 14]);
+  const H = celulas(thead).cel.map(c => c.txt);
+  const col = (r, txt) => (r.cel.find(c => c.txt === txt) || {}).col;
+  const lt = rows.find(r => r.tipo === 'pli-lt' && r.cel[0].txt.includes('210/26'));
+  const it = rows.filter(r => r.tipo === 'pli-it');
+  const i27 = it.find(r => r.cel[0].txt === '25427' && r.cel.some(c => c.txt === '35 cx'));
+  const i28 = it.find(r => r.cel[0].txt === '25428' && r.cel.some(c => c.txt === '7 cx'));
+  ok('o número do item cai na coluna do mesmo número do lote: PROGRAMADO, EMBALADO, FICOU ABERTO (encerrado) e AINDA ABERTO (vencido)',
+     [H[col(lt, '1.800') - 1], H[col(i27, '115') - 1], H[col(i27, '80') - 1], H[col(lt, '24 cx · 8 itens') - 1], H[col(i28, '7 cx') - 1],
+      H[col(lt, '35 cx') - 1], H[col(i27, '35 cx') - 1]],
+     ['PROGRAMADO', 'PROGRAMADO', 'EMBALADO', 'FICOU ABERTO', 'FICOU ABERTO', 'AINDA ABERTO', 'AINDA ABERTO']);
+  ok('o item: % embaixo do % ATENDIDO, o tempo embaixo de NO DIA · D+1 · D+2+, "completo" embaixo de ITENS 100%',
+     [H[col(i27, '69,6%') - 1], H[col(i27, '55,7%') - 1], H[col(i27, '13,9%') - 1], H[col(i27, '0%') - 1],
+      H[col(it.find(r => r.cel.some(c => c.txt === 'completo')), 'completo') - 1]],
+     ['% ATENDIDO', 'NO DIA', 'D+1', 'D+2+', 'ITENS 100%']);
+  ok('o cabeçalho dos itens vem logo depois do lote aberto; o código e o produto juntos, nas colunas de COR GPS a LOTES (ERP)',
+     [rows[rows.indexOf(lt) + 1].tipo, i27.cel[1].col, /colspan="3" class="pli-prod"/.test(tela)], ['pli-ih', 2, true]);
+  ok('a situação do item fica no title (a coluna já diz onde ele está), com o tempo em caixas',
+     /<tr class="pli-it" title="EM ATRASO · na programação · no dia 64 cx · D\+1 16 cx · D\+2\+ 0 cx">/.test(tela), true);
+  ok('a barra do item é a do lote: as três faixas (no dia · D+1 · D+2+) quando há o tempo',
+     [/<td class="pli-pc"><span class="pli-bar"><b class="d0" style="width:55\.7%"><\/b><b class="d1" style="width:13\.9%"><\/b><b class="d2" style="width:0\.0%"><\/b><\/span><span class="pli-ipn">69,6%<\/span>/.test(tela)], [true]);
+  ok('a coluna LOTES (ERP) não some mais em tela estreita (a célula escondida desalinharia o colspan do produto)',
+     /#sec-programacao \.pli-lotes[^{]*\{display:none\}/.test(html), false);
+  ok('CSS: o recuo do LOTE do item vence o padding da linha do item (no papel também)',
+     [/\.pli-tab tr\.pli-it td\{padding:5px 10px[^}]*\}\n\s*\.pli-tab tr\.pli-ih td:first-child,\.pli-tab tr\.pli-it td\.pli-il\{padding-left:30px\}/.test(JS),
+      /\.pli-doc \.pli-tab tr\.pli-it td\.pli-il\{padding-left:20px\}/.test(JS)], [true, true]);
+  const Lx = LINHAS.map(x => x.li === '209/26' ? Object.assign({}, x, { lote: '<L>' + x.lote, codigo: '"&' + x.codigo }) : x);
+  const px = _pliHtml(loteIntMontar(Lx, 20261117, 10), true);
+  ok('o LOTE e o CÓDIGO do item também saem escapados (G1), na linha do item e na lista de lotes',
+     [px.includes('&lt;L&gt;25423'), px.includes('<L>'), px.includes('"&amp;501'), /"&\d/.test(px)], [true, false, true, false]);   // _rpEsc: & < > (texto)
+  ok('no papel, as cores da barra são as da folha (na .pli-box, que redefine as da tela)',
+     /\.pli-doc \.pli-box\{--pli-d0:#1F2328;--pli-d1:#7B8794;--pli-d2:#C3CAD3\}/.test(JS), true);
 }
 
 console.log('\n── v7.261.0: sub-aba da PROGRAMAÇÃO ("esta com muita rolagem faça uma sub aba") ──');
@@ -467,7 +548,7 @@ console.log('\n── v7.261.0: sub-aba da PROGRAMAÇÃO ("esta com muita rolage
   ok('sem a leitura: o estado — lendo, .gs sem a leitura, sem URL, falha (clique tenta de novo), nenhum lote fechado; nunca 0',
      [_pliSubTxt(null, null).txt, _pliSubTxt(null, 'sem-endpoint').txt, _pliSubTxt(null, 'sem-url').txt, _pliSubTxt(null, 'sem-resposta').txt,
       _pliSubTxt(loteIntMontar([], 20261117, 10), null).txt],
-     ['…', 'falta re-implantar o .gs v5.69', 'sem a URL do Apps Script (⚙)', 'não lido — clique para tentar', 'nenhum lote interno fechado nos últimos 28 dias']);
+     ['…', 'falta re-implantar o .gs v5.70', 'sem a URL do Apps Script (⚙)', 'não lido — clique para tentar', 'nenhum lote interno fechado nos últimos 28 dias']);
   const R = pega(JS, 'function renderLotesInternos(');
   ok('o render pinta o botão (o _sbPinta comum) e desenha mesmo com o painel escondido — sem o portão do "aberto"',
      [/_sbPinta\(document\.getElementById\('prog-sb-lotes'\), _pliSubTxt\(M, PLI_FALHA\)\)/.test(R), /if\(!c\) return;/.test(R)], [true, true]);
@@ -494,6 +575,20 @@ console.log('\n── o celular: a mesma conta, o desenho dele ──');
      [h.includes('VOL &lt;i&gt;Y&lt;/i&gt;'), h.includes('<i>Y</i>'), /onclick="_pliExpM\(2\)"/.test(h)], [true, false, true]);
   ok('a conta é a do rp-core e a leitura é a mesma do PC', [/loteIntMontar\(PLI\.linhas, Number\(PLI\.hojeNum\)\|\|0, PLI_N\)/.test(MJS), /action=getAtendimentoLotes/.test(MJS)], [true, true]);
   ok('o bloco nasce recolhido na tela GERENCIAL', /<div id="ger-pli" style="display:none"><\/div>/.test(mob), true);
+  // v1.56.0: todos os itens com o % (o número à direita, na 1ª linha) e o tempo em %, como no PC
+  ok('todos os 14 itens do 210/26, o % de cada um ANTES do nome (flutua na 1ª linha), os completos marcados',
+     [(h.match(/<div class="pli-it/g) || []).length, (h.match(/<div class="pli-it ok">/g) || []).length,
+      /<div class="pli-it"><span class="pli-ipc">69,6%<\/span><b>VOL &lt;i&gt;Y&lt;\/i&gt;<\/b>/.test(h)], [14, 5, true]);
+  global.PLI_EXP = {};
+  const Lt = LINHAS.map(x => Object.assign({}, x, { dia: x.emb == null ? null : [Math.round(x.emb * 0.8), x.emb - Math.round(x.emb * 0.8), 0] }));
+  global.PLI_EXP = { '210/26': true };
+  const ht = _pliHtmlMob(loteIntMontar(Lt, 20261117, 10));
+  ok('com o tempo: o cartão NO DIA, a barra em três faixas e o item com "no dia · D+1" em % (sem o 0% do D+2+)',
+     [/<div class="l">No dia · na data do lote<\/div><div class="v">\d+,\d%<\/div>/.test(ht), /<b class="d0" style="width:[\d.]+%"><\/b><b class="d1"/.test(ht),
+      / · no dia 55,7% · D\+1 13,9% · faltou <b>35<\/b>/.test(ht)], [true, true, true]);
+  ok('sem o tempo (.gs v5.69): o cartão diz que precisa do .gs v5.70, nunca 0%', /<div class="v">—<\/div><div class="s">precisa do \.gs v5\.70<\/div>/.test(h), true);
+  ok('o 5º cartão ocupa a linha inteira (não fica sozinho na metade)', /#ger-pli \.pli-kpis \.pli-k:last-child\{grid-column:1\/-1\}/.test(mob), true);
+  global.PLI_EXP = {};
 }
 
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo certo');

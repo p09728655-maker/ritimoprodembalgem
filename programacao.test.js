@@ -1111,5 +1111,55 @@ console.log('\n── v5.63: o takt da semana do .gs = o TAKT DA SEMANA do paine
      [ant && ant.gs[2], ant && ant.gs[3], ant2 && ant2.gs[2]], [5, Math.round((100 * 2.05 + 60 * 1.73 + 95 * 2.48) * 10) / 10, 4]);
 }
 
+console.log('\n── v5.70: TEMPO DE ATENDIMENTO — o FIFO separa, por linha, no dia / D+1 / D+2+ ──');
+{
+  // HOJE = sexta 09/10/2026; quinta 08/10 é feriado. PPCP, 17/11/2026: "tempo de
+  // atendimento" → "quanto saiu no dia". Cada caixa conta na faixa da data do
+  // lançamento contra a data DO LOTE que o FIFO deu a ela.
+  const prog = [
+    { lote: 'T1', data: '06/10', ordem: 1, cod: '501100001', qtde: 100 },   // terça
+    { lote: 'T2', data: '02/10', ordem: 1, cod: '501100002', qtde: 40 },    // a sexta anterior
+    { lote: 'T3', data: '07/10', ordem: 1, cod: '501100003', qtde: 30 },    // quarta (a quinta é feriado)
+    { lote: 'T4', data: '09/10', ordem: 1, cod: '501100004', qtde: 50 },    // hoje
+  ];
+  const log = [
+    ['05/10/2026', '501100001', 20],   // 15 fecham o T0 (01/10, da CONCLUIDA: D+2+), 5 viram crédito do T1 → no dia
+    ['06/10/2026', '501100001', 50],   // no dia do T1
+    ['07/10/2026', '501100001', 20],   // D+1
+    ['09/10/2026', '501100001', 5],    // D+3 → D+2+
+    ['03/10/2026', '501100002', 10],   // o SÁBADO depois do lote de sexta → D+1 (passou do dia)
+    ['05/10/2026', '501100002', 10],   // segunda → D+1
+    ['06/10/2026', '501100002', 20],   // terça → D+2+
+    ['09/10/2026', '501100003', 30],   // sexta: com a quinta feriado, é D+1
+    ['09/10/2026', '501100004', 12],   // hoje, lote de hoje → no dia
+  ];
+  const HDR_ARQ = ['LOTE', 'DATA', 'ORDEM', 'CODIGO', 'DESCRICAO', 'QTD_CX', 'PRODUZIDO', 'SALDO', 'PERCENTUAL', 'STATUS', 'ATUALIZADO_EM', 'ARQUIVADO_EM', 'LOTE INTERNO'];
+  const cenario = (fer) => {
+    const m = montar(prog, log, { arq: [HDR_ARQ.slice(), ['T0', '01/10/2026', 1, '501100001', 'X', 15, 15, 0, 100, 'CONCLUIDO', '', '', '196/26']], fer });
+    const P = m.ABAS.PROGRAMACAO;
+    P[0].push('LOTE INTERNO'); P.slice(1).forEach((r, i) => r.push(['199/26', '197/26', '198/26', '200/26'][i]));
+    return m;
+  };
+  const FER = [['DATA', 'DESCRICAO'], ['08/10/2026', 'FERIADO']];
+  const m = cenario(FER);
+  const d0 = m.calc().diaRow;
+  const porLote = D => { const o = {}; Object.keys(D).forEach(k => { const p = k.split('|'); o[p[0] + ':' + p[2]] = D[k]; }); return o; };
+  ok('o FIFO (antes de gravar): crédito e o próprio dia = no dia; o dia útil seguinte = D+1; o sábado de um lote de sexta = D+1; depois = D+2+; o feriado não conta',
+     porLote(d0), { 'A:T0': [0, 0, 15], 'P:T1': [55, 20, 5], 'P:T2': [0, 20, 20], 'P:T3': [0, 30, 0], 'P:T4': [12, 0, 0] });
+  ok('a soma das três faixas é o que o FIFO deu à linha (o PRODUZIDO que ele grava)',
+     ['T1', 'T2', 'T3', 'T4'].map(l => d0[Object.keys(d0).find(k => k.startsWith('P|') && k.split('|')[2] === l)].reduce((a, b) => a + b, 0)), [80, 40, 30, 12]);
+  const sem = cenario(null).calc().diaRow;
+  ok('sem a aba FERIADOS, a mesma caixa do T3 (quarta → sexta) é D+2+', porLote(sem)['P:T3'], [0, 0, 30]);
+  // o caminho real: lançamento → grava o saldo → arquiva o que fechou (T2 e T3 vão para a CONCLUIDA) → a leitura
+  m.rodar();
+  const R = vm.runInContext('(function(){ _invalidarValores(); return getAtendimentoLotes(); })()', m.ctx);
+  const L = {}; (R.linhas || []).slice().sort((a, b) => a.lote.localeCompare(b.lote)).forEach(x => { L[x.lote] = [x.li, x.aba, x.qtde, x.emb, x.dia]; });
+  ok('getAtendimentoLotes: cada linha com o seu tempo, inclusive as que acabaram de ir para a CONCLUIDA (a chave muda de aba e de número de linha)',
+     L, { T0: ['196/26', 'concluida', 15, 15, [0, 0, 15]], T1: ['199/26', 'aberta', 100, 80, [55, 20, 5]], T2: ['197/26', 'concluida', 40, 40, [0, 20, 20]],
+          T3: ['198/26', 'concluida', 30, 30, [0, 30, 0]], T4: ['200/26', 'aberta', 50, 12, [12, 0, 0]] });
+  ok('o diaRow é só de leitura: fora do cache da programação e do JSON do getPontosDia',
+     [/const PROG_SO_ESCRITA = \[[^\]]*'diaRow'\]/.test(GS), /'reabrirArq', 'diaRow'\]\.forEach\(function \(k\) \{ delete programacao\[k\]; \}\)/.test(GS)], [true, true]);
+}
+
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ programação ok — adiantamento abate o lote, ENCERRAR fecha sem apagar, o app pergunta a cor');
 process.exit(falhas ? 1 : 0);

@@ -11,6 +11,63 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.262.0 · mobile 1.56.0 · rp-core 1.23.0 · `.gs` v5.70 — 17/11/2026 · tempo de atendimento, % de cada item e alinhamento
+
+O PPCP, com o ATENDIMENTO POR LOTE INTERNO na tela, perguntou: *"tempo de
+atendimento:?"* e *"percentual individual?"*. Escolheu *"quanto saiu no dia"*
+e *"todos os itens, com o %"*. Depois, com o print em 1920: *"foco no
+alinhamento"*.
+
+- **Tempo de atendimento**: quanto do lote foi embalado no dia, no dia útil
+  seguinte e depois.
+  - **NO DIA** = embalado até o fim da data do lote ÷ programado. O adiantado
+    conta como no dia.
+  - **D+1** = embalado no dia útil seguinte. O sábado depois de um lote de
+    sexta conta como D+1.
+  - **D+2+** = embalado depois disso.
+  - Não foi usada a data em que o lote fechou. Nos lotes 201/26 a 210/26, 87
+    de 120 linhas foram fechadas pelo X, então essa data mediria o X, não a
+    linha.
+- **Onde aparece**: um cartão novo, NO DIA. A barra do % ATENDIDO agora tem
+  três tons: claro = no dia, médio = D+1, escuro = D+2+. A tabela ganhou as
+  colunas NO DIA, D+1 e D+2+.
+- **% de cada item**: o detalhe do lote passa a mostrar **todos** os itens,
+  com o % de cada um. Os itens completos vêm por último, em cinza.
+- **Alinhamento** (PC e papel):
+  - Os itens agora são linhas da **mesma tabela** dos lotes, nas mesmas
+    colunas. Antes, cada lote aberto era uma tabela própria e as colunas mudavam
+    de lugar de um lote para o outro.
+  - O programado do item fica embaixo do programado do lote, e o % embaixo do
+    %.
+  - O que faltou cai em FICOU ABERTO (linha encerrada) ou em AINDA ABERTO
+    (vencida na programação). A situação por extenso foi para o *title*.
+- **App**: o mesmo, em cartões. O cartão NO DIA ocupa a largura toda, e o %
+  de cada item aparece à direita da 1ª linha.
+- **`.gs` v5.70**:
+  - O FIFO (`calcularProgramacao`) separa as caixas de cada linha pela data do
+    lançamento (`diaRow`).
+  - O `getAtendimentoLotes` manda essa separação e a descrição de toda linha. A
+    resposta fica em ~58 KB para 28 dias, abaixo dos 100 KB do cache.
+  - Saldo, FIFO, arquivamento e meta não mudam.
+
+**Atenção** (antes → depois):
+- Nenhum número que já existia muda.
+- O detalhe do lote mostrava só os itens que não completaram; agora mostra
+  todos, com o %.
+- A coluna SITUAÇÃO do detalhe saiu: a situação é a coluna onde está o que
+  faltou.
+- A coluna LOTES (ERP) não some mais abaixo de 1100 px.
+- Rótulos encurtados para caber cinco cartões:
+  - `FICOU ABERTO · ENCERRADO COM FALTA` → `FICOU ABERTO · ENCERRADO`;
+  - `AINDA EM ABERTO · LOTES VENCIDOS` → `AINDA EM ABERTO · VENCIDO`.
+
+⚠ **re-deploy** do `.gs` v5.70. Antes dele:
+- o cartão NO DIA diz *"precisa do .gs v5.70"*;
+- as colunas de tempo ficam com "—";
+- o resto funciona com a v5.69.
+
+---
+
 ## v7.261.0 — 17/11/2026 · sub-abas na PROGRAMAÇÃO
 
 O PPCP, com o atendimento por lote interno embaixo da programação: *"esta com
