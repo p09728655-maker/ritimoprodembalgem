@@ -749,9 +749,32 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
 - **Para depois, nesta ordem:**
   1. medir a causa dos 54% embalados depois do dia (lote a lote: NO DIA,
      adiantado, fora do plano, atraso de cada manhã);
-  2. pendências lidas de UMA fonte (o export do ERP colado numa aba do Sheets,
-     se a lista do Excel vier do ERP), com o FICOU ABERTO dizendo "pendente" ou
-     "finalizado";
+  2. ~~pendências lidas de UMA fonte (o export do ERP colado numa aba do Sheets,
+     se a lista do Excel vier do ERP)~~: **o ERP NÃO exporta a finalização**
+     (PPCP, 17/11/2026).
+     - **Plano B, pronto e mostrado em prévia, mas ADIADO** (PPCP: *"não vamos
+       fazer ainda, pode deixar como está hoje"*):
+       - uma coluna `FINALIZADO_EM` na PROGRAMACAO_CONCLUIDA. O PPCP digita a
+         data ao finalizar no ERP; texto como CANCELADO = fechada sem data;
+       - `getPendencias` no `.gs`, só leitura, achando as colunas pelo nome:
+         - abertas = linhas com X, falta > 0, sem a data, com o X dado a partir
+           do deploy (o ARQUIVADO_EM);
+         - finalizadas = com a data nos últimos 90 dias;
+         - dias úteis desde a DATA do lote, sem os FERIADOS;
+       - uma 3ª sub-aba na PROGRAMAÇÃO, PENDÊNCIAS DE PEÇA, com 4 cartões
+         (ABERTAS · A MAIS VELHA · 15 DIAS OU MAIS · TEMPO PARA FECHAR, este
+         com a mediana e o pior), as abertas por idade (âmbar de 15 a 30,
+         vermelho acima de 30: as faixas do Excel do PPCP) e as finalizadas
+         com LEVOU.
+     - Ditos ao PPCP, para quando voltar:
+       - o registro começa no deploy; as pendências de antes ficam só no Excel;
+       - "abertas" no painel são só linhas com X; o Excel também lista itens
+         inteiros não embalados, que no painel são AINDA PARA EMBALAR. Os
+         totais não batem, e é o esperado.
+     - **Recusado antes:** tirar o X e lançar no app para medir o tempo. Só
+       funciona com o código fora de outros lotes (o 25443 sim, o 25285 não: o
+       FIFO tira caixas do lote de 9/11). A simulação com o `.gs` real está
+       descrita na conversa de 17/11.
   3. mostrar à parte o adiantado (antes do dia) e a produção fora do plano;
   4. medir o custo do `getAtendimentoLotes` com o `relatorioTempos()`.
 
