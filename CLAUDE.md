@@ -394,6 +394,15 @@ via Google Apps Script (JSONP).
   tokens e classes; a FONTE é `.so-tela`); sem UEP, o papel de sempre em caixas.
   ⚠ Mudou a tela da aba, o papel muda junto — conferir os dois. ⚠ O dia
   passado do gerencial julga a UEP pela régua de 96% (em aberto, PPCP).
+- MELHOR H. / PIOR H. e a ANÁLISE POR HORÁRIO do HISTÓRICO em UEP (v7.268.0):
+  o % da META DE UEP DA HORA (meta do dia × minutos ÷ 527, a régua do
+  gerencial), conta pura `_histHorasMontar` (Σ ÷ Σ; só jornada de dia útil, hora
+  com todas as caixas com UEP, dia com o log cobrindo `DIR_COB_MIN`; hora extra
+  fora do ranking). A leitura é a `getProducaoModeloPeriodo ?cxHora=1&uepVer=1`
+  (`_histHorasCarregar`: cache 15 min por período, uma chamada por vez, só com a
+  aba aberta, até `HIST_HORAS_MAX_DIAS`); sem ela as colunas ficam (CX) e a
+  análise na média histórica de caixas. ⚠ A análise em UEP é do PERÍODO do
+  filtro, não do histórico inteiro.
 - Diretoria: um veredito só (a UEP); retrato guardado no aparelho; sem o
   `pollParadaTV` nem o `lerMediaHoras`.
 

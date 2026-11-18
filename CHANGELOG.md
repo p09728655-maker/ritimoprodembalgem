@@ -11,6 +11,57 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.268.0 — 18/11/2026 · MELHOR HORA e PIOR HORA em UEP (aba HISTÓRICO)
+
+O PPCP, com a aba e o papel já em UEP: *"melhor hora e pior hora colocar por
+uep tbm"*. Eram as últimas caixas com cara de veredito na aba: as colunas
+MELHOR H. / PIOR H. e a ANÁLISE POR HORÁRIO.
+
+**A régua** é a do gerencial: o **% da meta de UEP da hora** — a META UEP do
+dia repartida pelos minutos de cada hora. Em caixas a hora curta perdia sempre:
+o 12:12–13:00 tem 48 minutos e era o 10º de 11 horários com 142 cx; em caixas
+por hora cheia seriam 177, no meio da tabela.
+
+O que muda, **quando o período tem UEP gravada e até 62 dias**:
+- **MELHOR H. (UEP) e PIOR H. (UEP)** na tabela: a hora de jornada com o maior
+  e o menor % da meta da hora — *08:00 · 118%*. Fato, sem cor: o veredito do
+  dia continua sendo o STATUS.
+- **ANÁLISE POR HORÁRIO · UEP DO PERÍODO**: o ranking dos horários pelo % da
+  meta da hora (Σ UEP ÷ Σ meta da hora, nunca a média dos %), com o ritmo em
+  UEP por hora cheia e as caixas médias como fato. A cor é a régua da hora dos
+  gerenciais (96% / 90%); MELHOR e PIOR são marcas neutras.
+- **Hora extra e fim de semana ficam fora do ranking** (não têm meta); a nota
+  diz o ritmo médio deles.
+- **O 🖨 da aba** leva as mesmas duas colunas e o mesmo ranking (espera a
+  leitura antes de montar a folha).
+- A UEP de cada hora vem do log de produto do período, com a UEP que valia na
+  data — a leitura do PADRÃO × REALIZADO da aba ⚖ UEP. **Nada novo no Apps
+  Script, sem re-deploy.** É leitura cara: sai depois do histórico, só com a aba
+  aberta, com cache de 15 minutos por período.
+- Enquanto ela não chega (lendo, falhou, período sem as duas datas ou com mais
+  de 62 dias), as colunas ficam **MELHOR H. (CX) / PIOR H. (CX)**, com as
+  caixas de sempre, e a análise com a média histórica de caixas — a linha ao
+  lado do título diz o porquê, e a falha tem o TENTAR DE NOVO.
+- O dia só é julgado por hora quando o log cobre 95% ou mais das caixas dele
+  (a régua dos pontos): caixa lançada sem produto não está no log, e a hora
+  dela pareceria a pior sem ser. Hora com caixa de código sem UEP fica fora.
+
+**Atenção** (antes → depois):
+
+| | Antes | Depois |
+|---|---|---|
+| MELHOR H. / PIOR H. | as caixas da hora com mais e com menos caixas (263 · 88) | a hora e o % da meta de UEP da hora (*08:00 · 138%* · *10:00 · 94%*) |
+| Nome das colunas (período com UEP) | MELHOR H. · PIOR H. | MELHOR H. (UEP) · PIOR H. (UEP); sem a leitura das horas, (CX) |
+| ANÁLISE POR HORÁRIO | média de caixas de **todo o histórico** (101 dias no print) | % da meta de UEP da hora, **só do período do filtro** (até 62 dias) |
+| O 12:12–13:00 (48 min) | sempre entre os piores, por ter menos minutos | comparado com a meta dele (48 ÷ 527 da meta do dia) |
+| 05:00 e 06:00 (hora extra) | no ranking; o 05:00 era o PIOR HORÁRIO | fora do ranking (sem meta); o ritmo vai na nota |
+| Cor do ranking | verde o melhor, vermelho o pior, laranja o resto | a régua da hora: verde ≥ 96%, âmbar ≥ 90%, vermelho abaixo |
+
+⚠ A análise em UEP responde outra pergunta que a de caixas: é do **período do
+filtro**, não do histórico inteiro. Para ver um horário em mais dias, alargar o
+período (até 62 dias). ⚠ Hora sem nenhum lançamento não está no log e não entra
+— como já era no PIOR H. em caixas, que também só via hora com produção.
+
 ## v7.267.0 — 18/11/2026 · O 🖨 do HISTÓRICO com a UEP na frente
 
 O PPCP, com a aba já em UEP (v7.266.0) e o papel dela ainda em caixas: *"sim

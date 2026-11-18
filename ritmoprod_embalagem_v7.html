@@ -1166,6 +1166,11 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-historico .kpi-grid.hist-k1 .kpi-card.hist-hero .kpi-sub b{color:var(--txt);font-weight:600;letter-spacing:.5px}
 #sec-historico .kpi-val small{font-size:14px;color:var(--txt2);font-weight:600;margin-left:3px}
 #sec-historico .hist-charts.so-cx{grid-template-columns:1fr}
+/* a UEP por hora (v7.268.0): o estado da leitura ao lado do título e a nota do ranking */
+#sec-historico .hist-horas-st{margin-left:12px;font-family:var(--font-d);font-size:10.5px;letter-spacing:.3px;color:var(--txt2)}
+#sec-historico .hist-horas-st .btn{margin-left:8px;padding:2px 8px;font-size:9.5px}
+#sec-historico .hist-nota{font-family:var(--font-d);font-size:11px;color:var(--txt2);margin-top:10px;line-height:1.55}
+#sec-historico .hist-nota b{color:var(--txt);font-weight:600}
 .kpi-card{background:var(--surface);border:0.5px solid var(--border);border-radius:7px;padding:14px 16px;position:relative;overflow:hidden}
 .kpi-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--border)}
 .kpi-card.ok::before{background:var(--ok)}
@@ -3759,7 +3764,7 @@ if (_v7Instalado()) _v7EscondeBotao();
   </div>
 
   <div class="tbl-wrap">
-    <div class="tbl-hdr"><span class="tbl-hdr-ttl">DETALHAMENTO POR DIA</span></div>
+    <div class="tbl-hdr"><span class="tbl-hdr-ttl">DETALHAMENTO POR DIA</span><span id="hist-horas-st" class="hist-horas-st"></span></div>
     <div style="overflow-x:auto">
       <table>
         <!-- o cabeçalho é montado pelo _histThead: em UEP ou em caixas, com ou sem META DIA / ATRASO META -->
@@ -3773,8 +3778,12 @@ if (_v7Instalado()) _v7EscondeBotao();
   <!-- ── Análise por Horário (sub-aba desde a v7.266.0) ── -->
   <div class="ucv-pn" data-sub="horario">
   <div id="analise-horario">
-    <div class="tbl-hdr" style="margin-bottom:12px"><span class="tbl-hdr-ttl">ANÁLISE POR HORÁRIO · MÉDIA HISTÓRICA DE CX</span></div>
+    <div class="tbl-hdr" style="margin-bottom:12px"><span class="tbl-hdr-ttl" id="ah-ttl">ANÁLISE POR HORÁRIO · MÉDIA HISTÓRICA DE CX</span><span id="ah-st" class="hist-horas-st"></span></div>
 
+    <!-- v7.268.0: com a UEP por hora do período lida, o ranking é em % da meta de UEP da hora (#ah-uep,
+         desenhado pelo _histHorasHtml — o mesmo do papel); sem ela, a média histórica de caixas (#ah-cx) -->
+    <div id="ah-uep" style="display:none"></div>
+    <div id="ah-cx">
     <!-- Cards de destaque -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
       <div id="ah-melhor-card" class="kpi-card ok" style="padding:14px 18px">
@@ -3803,6 +3812,7 @@ if (_v7Instalado()) _v7EscondeBotao();
         </thead>
         <tbody id="ah-rank-body"><tr><td colspan="5" class="empty-msg">Carregando…</td></tr></tbody>
       </table>
+    </div>
     </div>
   </div>
   </div>
@@ -4283,7 +4293,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.267.0';
+const APP_VER = '7.268.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -18571,14 +18581,231 @@ function _histCxInfo(dias, heBackendOk){
     heSub: semBackend ? '⚠ Apps Script sem HE CX — re-deploy pendente'
       : (totReal>0?fmtP(totHE/totReal*100)+' do total':'—')+(semHE?` · ${plural(semHE,'dia fechado','dias fechados')} sem o dado`:'') };
 }
+// ── MELHOR HORA E PIOR HORA EM UEP (v7.268.0) ───────────────────────────────
+// PPCP, 18/11/2026, com a aba e o papel já em UEP: "melhor hora e pior hora
+// colocar por uep tbm". Eram as últimas caixas com cara de veredito na aba: as
+// colunas MELHOR H. / PIOR H. (as caixas da maior e da menor hora do dia) e a
+// ANÁLISE POR HORÁRIO (a média histórica de caixas de cada horário).
+// ⚠ Em caixas a hora curta perde sempre: o 12:12–13:00 tem 48 min e era o 10º de
+// 11 no ranking com 142 cx — em caixas por hora cheia (177) ficaria no meio. A
+// régua é a do gerencial (v7.243.0): o % DA META DE UEP DA HORA — a META UEP do
+// dia repartida pelos minutos da hora (a hora curta pede menos). Só hora de
+// jornada de dia útil (hora extra e fim de semana não têm meta) e só hora com
+// TODAS as caixas com UEP (com parte sem UEP a hora sairia fraca sem ser).
+// A UEP de cada hora vem do log de produto do período, com a UEP que valia na
+// data (getProducaoModeloPeriodo ?cxHora=1&uepVer=1, a leitura do PADRÃO ×
+// REALIZADO da aba ⚖ UEP — nada novo no .gs). É leitura cara: cache de 15 min
+// por período, voo compartilhado, 3 tentativas em sequência, só com a aba aberta
+// e só para período de até HIST_HORAS_MAX_DIAS. Sem ela (lendo, falhou, período
+// longo) as duas colunas ficam com as caixas de sempre — o nome da coluna diz
+// qual das duas está na tela — e a ANÁLISE POR HORÁRIO, com a média histórica
+// de caixas.
+const HIST_HORAS_TTL=15*60*1000;
+const HIST_HORAS_MAX_DIAS=62;      // acima disto a resposta passa dos 100 KB do cache do .gs e demora (F7)
+const HIST_HORAS_AMO_MIN=2;        // o horário entra no ranking com 2 dias ou mais (a regra da média de caixas)
+let HIST_HORAS={key:'', itens:null, ts:0, falha:null}, HIST_HORAS_VOO=null, HIST_HORAS_NA_TELA=null;
+// A chave do período (dd/MM/aaaa|dd/MM/aaaa), ou null quando a aba não pede a
+// UEP por hora: sem as duas datas, ou período longo demais.
+function _histHorasChave(de, ate){
+  const a=parseBR(de), b=parseBR(ate);
+  if(!a || !b || isNaN(a) || isNaN(b) || b<a) return null;
+  return Math.round((b-a)/86400000)+1<=HIST_HORAS_MAX_DIAS ? de+'|'+ate : null;
+}
+// Devolve uma promessa: true = leu agora (quem chamou redesenha); false = não
+// precisava (sem URL, período fora, ou o cache ainda vale). Pedido de OUTRO
+// período no meio de uma leitura entra depois dela — uma chamada por vez (F1) e
+// nenhum pedido engolido (F4).
+function _histHorasCarregar(de, ate, forcar){
+  const key=_histHorasChave(de, ate);
+  if(!CFG.sheetsUrl || !key) return Promise.resolve(false);
+  if(!forcar && HIST_HORAS.key===key && HIST_HORAS.ts && Date.now()-HIST_HORAS.ts<(HIST_HORAS.falha?60000:HIST_HORAS_TTL)) return Promise.resolve(false);
+  if(HIST_HORAS_VOO && HIST_HORAS_VOO.key===key) return HIST_HORAS_VOO.p;
+  const antes=HIST_HORAS_VOO?HIST_HORAS_VOO.p.catch(()=>false):Promise.resolve(false);
+  const p=antes.then(async()=>{
+    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getProducaoModeloPeriodo'
+      +'&de='+encodeURIComponent(de)+'&ate='+encodeURIComponent(ate)+'&cxHora=1&uepVer=1';
+    let itens=null, falha='sem-resposta', erro='';
+    for(let t=1;t<=3;t++){
+      try{
+        const r=await jsonpFetch(url, 60000);
+        if(r && r.ok && Array.isArray(r.itens)){
+          // .gs anterior à v5.24: responde o período, mas sem a UEP da data em cada hora
+          if(!r.uepVer){ falha='sem-endpoint'; break; }
+          itens=r.itens; falha=null; break;
+        }
+        if(r && r.ok===false){ falha='erro'; erro=String(r.erro||''); break; }
+        falha='sem-endpoint'; break;
+      }catch(e){ falha='sem-resposta'; erro=e.message; if(t<3) await new Promise(ok=>setTimeout(ok,2000*t)); }
+    }
+    HIST_HORAS={key, itens, ts:Date.now(), falha:falha?{tipo:falha, erro}:null};
+    return true;
+  }).finally(()=>{ if(HIST_HORAS_VOO && HIST_HORAS_VOO.key===key) HIST_HORAS_VOO=null; });
+  HIST_HORAS_VOO={key, p};
+  return p;
+}
+// O estado da leitura para o período pedido: 'ok' (com os itens) · 'lendo' ·
+// 'falha' (com a causa) · 'fora' (a aba não pede a UEP por hora deste período).
+function _histHorasEstado(de, ate){
+  const key=_histHorasChave(de, ate);
+  if(!CFG.sheetsUrl || !key) return {est:'fora'};
+  if(HIST_HORAS.key===key && HIST_HORAS.itens) return {est:'ok', itens:HIST_HORAS.itens};
+  if(HIST_HORAS_VOO && HIST_HORAS_VOO.key===key) return {est:'lendo'};
+  if(HIST_HORAS.key===key && HIST_HORAS.falha) return {est:'falha', falha:HIST_HORAS.falha};
+  return {est:'lendo'};
+}
+function _histHorasRetentar(){
+  _histHorasCarregar(dGet('hist-de'), dGet('hist-ate'), true).then(()=>{ if(_abaOn('historico')) renderHist(); });
+  renderHist();   // já mostra o "lendo…"
+}
+// Os slots da JORNADA, para repartir a meta do dia pelos minutos de cada hora: os
+// da planilha de hoje (o 16:00–16:59 vale 59 e a soma dá os 527 do UEP_MIN_DIA);
+// sem eles (DEMO, ou hoje é fim de semana — todo hora extra), os do turno do ⚙.
+function _histSlotsJornada(){
+  const ef=getEffectiveSlots().filter(sl=>!sl.he && sl.min>0);
+  return ef.length?ef:getSlots();
+}
+// CONTA PURA. itens = a leitura acima; U = o _histUepMontar (os dias, com a META
+// UEP de cada um); slots = os da jornada ({inicio, label, min}).
+//   • por dia: a hora de jornada com o maior e o menor % da meta da hora;
+//   • por horário: Σ UEP ÷ Σ meta da hora nos dias em que a hora foi julgada
+//     (E5: nunca a média dos %), com o ritmo em UEP por hora cheia;
+//   • a hora extra (fora do turno, e o fim de semana inteiro) fica à parte, sem
+//     meta e sem ranking.
+// O dia só é julgado se o log cobre as caixas dele (DIR_COB_MIN, a régua dos
+// pontos): caixa lançada sem produto não está no log, e a hora dela pareceria
+// a pior do dia sem ser.
+function _histHorasMontar(itens, U, slots){
+  const minDe={}, rotDe={};
+  (slots||[]).forEach(sl=>{ minDe[sl.inicio]=Number(sl.min)||60; rotDe[sl.inicio]=sl.label; });
+  const D={};
+  (itens||[]).forEach(it=>{
+    const cxH=it.cxHora||{}, uH=it.uepHora||{}, sH=it.semUepHora||{};
+    [...new Set([...Object.keys(cxH), ...Object.keys(uH), ...Object.keys(sH)])].forEach(h=>{
+      const hh=_uepHHMM(h); if(!hh) return;
+      const dia=D[it.data]=D[it.data]||{};
+      const o=dia[hh]=dia[hh]||{uep:0, cx:0, cxSem:0};
+      o.uep+=Number(uH[h])||0; o.cx+=Number(cxH[h])||0; o.cxSem+=Number(sH[h])||0;
+    });
+  });
+  const dias={}, S={}, he={uep:0, horas:0, dias:0}, fora={cobertura:0, semLog:0, semHora:0};
+  U.dias.forEach(x=>{
+    const H=D[x.data]||{}, hs=Object.keys(H).sort();
+    if(x.fds){   // sábado e domingo (e o dia sem meta): toda hora é hora extra
+      dias[x.data]={est:'fds'};
+      if(hs.length){ he.dias++; hs.forEach(hh=>{ he.uep+=H[hh].uep; he.horas++; }); }
+      return;
+    }
+    if(!x.temU){ dias[x.data]={est:'sem-uep'}; return; }
+    if(!hs.length){ dias[x.data]={est:'sem-log'}; fora.semLog++; return; }
+    const cxLog=hs.reduce((a,hh)=>a+H[hh].cx, 0), cob=x.cx>0?cxLog/x.cx*100:null;
+    if(cob!=null && cob<DIR_COB_MIN){ dias[x.data]={est:'cobertura', cob}; fora.cobertura++; return; }
+    let melhor=null, pior=null, n=0, parte=0, teveHe=false;
+    hs.forEach(hh=>{
+      const h=H[hh], min=minDe[hh];
+      if(!min){ he.uep+=h.uep; he.horas++; teveHe=true; return; }   // fora do turno: hora extra, sem meta
+      if(h.cxSem>0 || !(h.uep>0)){ parte++; return; }               // caixa sem UEP na hora: a UEP dela está incompleta
+      const metaH=x.meta*min/UEP_MIN_DIA, e={hora:hh, uep:h.uep, metaH, pct:h.uep/metaH*100};
+      n++;
+      if(!melhor || e.pct>melhor.pct) melhor=e;
+      if(!pior || e.pct<pior.pct) pior=e;
+      const s=S[hh]=S[hh]||{hora:hh, rot:rotDe[hh]||hh, min, uep:0, meta:0, cx:0, n:0};
+      s.uep+=h.uep; s.meta+=metaH; s.cx+=h.cx; s.n++;
+    });
+    if(teveHe) he.dias++;
+    if(n) dias[x.data]={est:'ok', melhor, pior, n, parte};
+    else { dias[x.data]={est:'sem-hora', parte}; fora.semHora++; }
+  });
+  const rank=Object.keys(S).map(k=>S[k]).filter(s=>s.n>=HIST_HORAS_AMO_MIN)
+    .map(s=>{ const pct=s.uep/s.meta*100;
+      return { hora:s.hora, rot:s.rot, n:s.n, pct, cls:sc(pct), uepH:s.uep/(s.min*s.n)*60, cxMed:s.cx/s.n }; })
+    .sort((a,b)=>b.pct-a.pct || (a.hora<b.hora?-1:1));
+  // a barra de cada horário, relativa ao melhor (o desenho não faz conta)
+  rank.forEach(s=>{ s.barra=Math.round(s.pct/rank[0].pct*100); });
+  return { dias, rank, melhor:rank.length?rank[0]:null, pior:rank.length>1?rank[rank.length-1]:null,
+           nDias:Object.keys(dias).filter(k=>dias[k].est==='ok').length, fora,
+           he:he.horas?{ uepH:he.uep/he.horas, horas:he.horas, dias:he.dias }:null,
+           curtos:(slots||[]).filter(sl=>Number(sl.min)>0 && Number(sl.min)<60).map(sl=>`${sl.label} tem ${sl.min} min`) };
+}
+// Por que o dia saiu sem melhor/pior hora em UEP (o title do traço).
+function _histHoraForaTxt(hd){
+  return hd.est==='cobertura' ? `só ${fmtP(hd.cob)} das caixas do dia foram apontadas com produto: a UEP por hora não fecha`
+    : hd.est==='sem-log' ? 'sem produção por produto registrada neste dia'
+    : hd.est==='sem-hora' ? 'nenhuma hora de jornada com todas as caixas com UEP'
+    : hd.est==='sem-uep' ? 'dia sem UEP gravada no fechamento' : 'sem a UEP por hora';
+}
+// O estado da leitura ao lado do título (F3: a falha tem causa, e a tela diz qual).
+// emUep = já está em UEP; nome = do que a linha fala.
+function _histHorasStHtml(E, emUep, nome){
+  if(emUep) return `${nome}: % da meta de UEP da hora`;
+  if(E.est==='lendo') return `${nome} em caixas · lendo a UEP por hora do período…`;
+  if(E.est==='falha'){
+    const f=E.falha||{}, causa=f.tipo==='sem-endpoint' ? 'o Apps Script publicado não manda a UEP por hora (falta o .gs v5.24 ou mais novo)'
+      : f.tipo==='erro' ? 'o Apps Script respondeu com erro: '+_rpEsc(f.erro||'sem detalhe') : 'o Apps Script não respondeu';
+    return `⚠ ${nome} em caixas · a UEP por hora não foi lida (${causa}) <button type="button" class="btn btn-ghost" onclick="_histHorasRetentar()">TENTAR DE NOVO</button>`;
+  }
+  if(E.est==='ok') return `${nome} em caixas · nenhuma hora de jornada do período tem a UEP completa`;
+  return `${nome} em caixas · em UEP com um período de até ${HIST_HORAS_MAX_DIAS} dias`;
+}
+// O DESENHO do ranking por horário em UEP (a tela e o papel leem o mesmo). Sem conta.
+function _histHorasHtml(R){
+  const r=v=>fmtN(Math.round(v));
+  const card=(tit, e)=>`<div class="kpi-card ${e?e.cls:''}" style="padding:14px 18px">
+      <div class="kpi-lbl">${tit}</div>
+      <div class="kpi-val" style="font-size:18px">${e?e.rot:'—'}</div>
+      <div class="kpi-sub">${e?`<b>${fmtP(e.pct)}</b> da meta da hora · ${r(e.uepH)} UEP/h · ${plural(e.n,'dia','dias')}`:'precisa de 2 horários com amostra'}</div>
+    </div>`;
+  const F=R.fora, junta=(a,b)=>a&&b?a+' · '+b:a||b;
+  const foraTxt=junta(junta(F.cobertura?`${plural(F.cobertura,'dia','dias')} com menos de ${DIR_COB_MIN}% das caixas apontadas com produto`:'',
+    F.semLog?`${plural(F.semLog,'dia','dias')} sem produção por produto no log`:''), F.semHora?`${plural(F.semHora,'dia','dias')} sem hora com a UEP completa`:'');
+  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">${card('🏆 MELHOR HORÁRIO', R.melhor)}${card('⚠ PIOR HORÁRIO', R.pior)}</div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th style="width:36px">#</th><th>HORÁRIO</th>
+          <th style="text-align:right" title="Σ UEP da hora ÷ Σ meta da hora, nos dias em que a hora foi julgada. A meta da hora é a META UEP do dia repartida pelos minutos da hora">% DA META DA HORA</th>
+          <th style="text-align:right" title="O ritmo da hora em UEP por hora cheia (UEP ÷ minutos × 60)">UEP/H</th>
+          <th style="text-align:right" title="As caixas médias da hora. Fato, sem cor">MÉDIA CX</th>
+          <th style="text-align:right">DIAS</th><th style="width:38%">DESEMPENHO RELATIVO</th></tr></thead>
+        <tbody>${R.rank.map((s,i)=>`<tr>
+          <td class="mono" style="color:var(--txt3);text-align:center">${i+1}</td>
+          <td class="mono" style="white-space:nowrap">${s.rot}${s===R.melhor?' <span class="badge b-mute">🏆 MELHOR</span>':s===R.pior?' <span class="badge b-mute">⚠ PIOR</span>':''}</td>
+          <td class="mono" style="text-align:right;color:var(--${s.cls});font-weight:700">${fmtP(s.pct)}</td>
+          <td class="mono" style="text-align:right">${r(s.uepH)}</td>
+          <td class="mono" style="text-align:right;color:var(--txt2)">${r(s.cxMed)}</td>
+          <td class="mono" style="text-align:right;color:var(--txt3)">${s.n}</td>
+          <td><div style="background:var(--bg2);border-radius:3px;height:8px;overflow:hidden"><div style="background:var(--${s.cls});width:${s.barra}%;height:100%;border-radius:3px"></div></div></td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>
+    <div class="hist-nota"><b>% DA META DA HORA</b> = Σ UEP da hora ÷ Σ meta da hora, em ${plural(R.nDias,'dia útil','dias úteis')} do período. A meta da hora é a META UEP do dia repartida pelos minutos da hora${R.curtos.length?` (${R.curtos.join('; ')}: pede menos)`:''}. Só entra hora de jornada com todas as caixas com UEP, e horário com ${HIST_HORAS_AMO_MIN} dias ou mais.
+      <b>Hora extra e fim de semana</b> não têm meta e ficam fora do ranking${R.he?`: ${r(R.he.uepH)} UEP/h em média, em ${plural(R.he.horas,'hora','horas')} de ${plural(R.he.dias,'dia','dias')}`:''}.${foraTxt?` <b>Fora da conta</b>: ${foraTxt}.`:''}</div>`;
+}
+// A sub-aba ANÁLISE POR HORÁRIO: em UEP (R com horário no ranking) ou a média
+// histórica de caixas de sempre (#ah-cx, pintada pelo renderAnaliseHorario).
+// emUepAba = a aba julga em UEP (o período tem UEP gravada).
+function _histHorasPintar(R, E, emUepAba, per){
+  const u=document.getElementById('ah-uep'), c=document.getElementById('ah-cx'), st=document.getElementById('ah-st');
+  const emUep=!!(R && R.rank.length);
+  HIST_HORAS_NA_TELA=emUep?R:null;
+  if(u){ u.style.display=emUep?'':'none'; u.innerHTML=emUep?_histHorasHtml(R):''; }
+  if(c) c.style.display=emUep?'none':'';
+  setTxt('ah-ttl', emUep?`ANÁLISE POR HORÁRIO · UEP DO PERÍODO${per?' · '+per:''}`:'ANÁLISE POR HORÁRIO · MÉDIA HISTÓRICA DE CX');
+  if(st) st.innerHTML=emUep||!emUepAba?'':_histHorasStHtml(E, false, 'a análise');
+  if(emUep) setTxt('hist-sb-horario', `melhor ${R.melhor.rot}${R.pior?' · pior '+R.pior.rot:''}`);
+}
 // O cabeçalho da tabela DETALHAMENTO POR DIA: em UEP (o período tem UEP gravada)
 // ou em caixas (histórico antigo). META DIA e ATRASO META entram só quando a META
 // difere da META DIA em algum dia (temMetaComp) — a MESMA decisão das células.
 // A marcação é UMA para a tela e o papel (v7.267.0): a FONTE é só da tela (.so-tela).
-function _histThead(temUep, temMetaComp){
-  const t=document.getElementById('hist-thead'); if(t) t.innerHTML=_histTheadHtml(temUep, temMetaComp);
+// horasUep (v7.268.0): MELHOR H. e PIOR H. em % da meta de UEP da hora — o nome
+// da coluna diz a unidade (sem a leitura das horas, ficam em caixas, como fato).
+function _histThead(temUep, temMetaComp, horasUep){
+  const t=document.getElementById('hist-thead'); if(t) t.innerHTML=_histTheadHtml(temUep, temMetaComp, horasUep);
 }
-function _histTheadHtml(temUep, temMetaComp){
+function _histTheadHtml(temUep, temMetaComp, horasUep){
+  const horas=horasUep
+    ? '<th title="A hora de jornada com o MAIOR % da meta de UEP da hora (a META UEP do dia repartida pelos minutos da hora: a hora curta pede menos). Só hora com todas as caixas com UEP. Fato, sem cor">MELHOR H. (UEP)</th>'
+      +'<th title="A hora de jornada com o MENOR % da meta de UEP da hora. Só hora com todas as caixas com UEP. Fato, sem cor">PIOR H. (UEP)</th>'
+    : '<th title="As caixas da hora com mais caixas no dia. Fato, sem cor">MELHOR H. (CX)</th><th title="As caixas da hora com menos caixas no dia. Fato, sem cor">PIOR H. (CX)</th>';
   const mcomp=temMetaComp
     ? '<th title="Soma das metas por hora da HORA_A_HORA no dia (o programado do dia), gravada no fechamento (.gs v5.55)">META DIA</th>'
       +'<th title="O que a META somou além da META DIA: o atraso da PROGRAMAÇÃO, com SOMAR ATRASO ligado no computador que fechou o dia (ou a diferença de uma meta ajustada à mão)">ATRASO META</th>'
@@ -18589,7 +18816,7 @@ function _histTheadHtml(temUep, temMetaComp){
       +'<th title="UEP de jornada ÷ META UEP do dia. Verde: bateu na jornada. Âmbar: bateu só com a hora extra. Vermelho: abaixo">% DA META</th>'
       +'<th title="Fato, sem cor: quem julga o dia é a UEP">CAIXAS</th><th>H. NORMAL</th><th>H. EXTRA</th>'
       +'<th title="CAIXAS PROGRAMADAS: a META em caixas gravada no fechamento (o mesmo número do card). Fato, sem cor">PROGRAMADAS</th>'+mcomp
-      +'<th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th><th>FECHAMENTO</th><th class="so-tela">FONTE</th></tr>'
+      +horas+'<th>STATUS</th><th>FECHAMENTO</th><th class="so-tela">FONTE</th></tr>'
     : '<tr><th>DATA</th><th>REALIZADO</th><th>H. NORMAL</th><th>H. EXTRA</th><th>META</th>'+mcomp
       +'<th>EFICIÊNCIA</th><th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th><th>FECHAMENTO</th><th class="so-tela">FONTE</th></tr>';
 }
@@ -18654,7 +18881,16 @@ async function renderHist(){
   // META diferente da META DIA — com atraso 0 em todos, a coluna META já diz tudo
   // (mesma regra da H. EXTRA e da MOTIVO: coluna sem informação some).
   const temMetaComp=_histTemMetaComp(dias);
-  _histThead(temUepHist, temMetaComp);
+  // MELHOR H. / PIOR H. e a análise por horário em UEP (v7.268.0): a UEP de cada
+  // hora é uma leitura cara do período, pedida DEPOIS do histórico (uma chamada
+  // por vez) e só com a aba aberta; quando ela chega, a aba se redesenha.
+  const HE=temUepHist?_histHorasEstado(deStr, ateStr):{est:'fora'};
+  let HR=null;
+  if(HE.est==='ok'){ try{ HR=_histHorasMontar(HE.itens, U, _histSlotsJornada()); }catch(e){ console.warn('[HIST] UEP por hora:', e.message); } }
+  if(temUepHist && HE.est!=='fora' && _abaOn('historico'))
+    _histHorasCarregar(deStr, ateStr).then(leu=>{ if(leu && _abaOn('historico') && dGet('hist-de')===deStr && dGet('hist-ate')===ateStr) renderHist(); });
+  { const st=document.getElementById('hist-horas-st'); if(st) st.innerHTML=temUepHist?_histHorasStHtml(HE, !!HR, 'MELHOR H. e PIOR H.'):''; }
+  _histThead(temUepHist, temMetaComp, !!HR);
   const g1=document.getElementById('hist-kpi-grid'), g2=document.getElementById('hist-kpi-grid2');
   if(temUepHist){
     g1.className='kpi-grid c6 hist-k1';
@@ -18688,20 +18924,24 @@ async function renderHist(){
   }
   renderChartHist(dias,periodo,temUepHist);
 
+  // a sub-aba ANÁLISE POR HORÁRIO: em UEP (as horas do período lidas) ou a média histórica de caixas
+  _histHorasPintar(HR, HE, temUepHist, deStr&&ateStr?`${deStr.slice(0,5)} a ${ateStr.slice(0,5)}`:'');
   renderAnaliseHorario();
   const tbody=document.getElementById('hist-tbl-body');
   const nCol=document.querySelectorAll('#hist-thead th').length||11;
   if(!dias.length){ tbody.innerHTML=`<tr><td colspan="${nCol}" class="empty-msg">Nenhum dado no período.</td></tr>`; return; }
   // o U.dias tem a ordem do dias (é um map dele): o mesmo índice é o mesmo dia
-  tbody.innerHTML=dias.map((d,i)=>_histLinhaHtml(d, temUepHist?U.dias[i]:null, temMetaComp)).join('');
+  tbody.innerHTML=dias.map((d,i)=>_histLinhaHtml(d, temUepHist?U.dias[i]:null, temMetaComp, HR?HR.dias[d.data]:null)).join('');
 
 }
 // Uma linha da tabela DETALHAMENTO POR DIA. x = o dia na montagem _gsemUepMontar
 // (a tabela em UEP); null = a tabela em caixas (período sem UEP). As células
 // comuns (caixas de jornada e hora extra, as metas, o fechamento, a fonte) são as
 // mesmas; o que muda é quem julga. Em UEP, MELHOR H. e PIOR H. ficam sem cor: o
-// veredito do dia é o da UEP.
-function _histLinhaHtml(d, x, temMetaComp){
+// veredito do dia é o da UEP. hd (v7.268.0) = o dia no _histHorasMontar: as duas
+// colunas em % da meta de UEP da hora; sem ele (a leitura das horas faltando),
+// as caixas da maior e da menor hora, como fato.
+function _histLinhaHtml(d, x, temMetaComp, hd){
   const cCx=`<td class="mono" style="color:var(--txt2)">${_heIndef(d)?'—':fmtN(d.real-d.heCx)}</td>
     <td class="mono" style="color:${!_heIndef(d)&&d.heCx>0?'var(--acc)':'var(--txt2)'}"${_heIndef(d)?' title="Dia fechado antes da coluna HE CX existir — sem como separar"':''}>${_heIndef(d)?'—':fmtN(d.heCx)}</td>
     <td class="mono" style="color:var(--txt2)">${_diaComMeta(d)||!d.fds?fmtN(d.meta):'—'}</td>
@@ -18712,6 +18952,9 @@ function _histLinhaHtml(d, x, temMetaComp){
       :`<td class="mono" style="color:var(--${cor?'ok':'txt2'})">${fmtN(d.melhor)}</td>
     <td class="mono" style="color:var(--${cor?'red':'txt2'})">${fmtN(d.pior)}</td>`;
   // hist-fech: no papel o fechamento é fato em tinta (o verde fica para o STATUS); a FONTE é só da tela
+  const cHoraU=e=>`<td class="mono" style="color:var(--txt2)" title="${e.hora} · ${fmtN(Math.round(e.uep))} UEP de ${fmtN(Math.round(e.metaH))} (a meta da hora)">${e.hora} · ${fmtN(Math.round(e.pct))}%</td>`;
+  const cHorasUep=()=>d.fds?cHoras(false):hd.est==='ok'?cHoraU(hd.melhor)+cHoraU(hd.pior)
+      :`<td class="mono" style="color:var(--txt3)" title="${_histHoraForaTxt(hd)}">—</td><td class="mono" style="color:var(--txt3)">—</td>`;
   const cFim=`<td>${d.fechado?(()=>{const f=fmtFechadoEm(d.fechadoEm,d.data);return `<span class="badge b-ok hist-fech" title="${f}">${f==='SIM'?'✓':'✓ '+f.substring(0,5)}</span>`;})():'<span class="badge b-mute hist-fech">—</span>'}</td>
     <td class="so-tela"><span class="badge b-mute" style="font-size:8px">${d.fonte==='sheets'?'☁ SHEETS':d.fonte==='local'?'💾 LOCAL':'📊 MEM'}</span></td>`;
   const bHe=d.heCount?` <span class="badge b-he">${d.heCount}HE</span>`:'';
@@ -18720,7 +18963,7 @@ function _histLinhaHtml(d, x, temMetaComp){
     ${u.cel}
     <td class="mono">${fmtN(d.real)}</td>
     ${cCx}
-    ${cHoras(false)}
+    ${hd?cHorasUep():cHoras(false)}
     <td>${u.selo}${bHe}</td>
     ${cFim}
   </tr>`; }
@@ -18826,7 +19069,7 @@ function renderAnaliseHorario(){
 
   const tbody=document.getElementById('ah-rank-body');
   // o número da sub-aba ANÁLISE POR HORÁRIO (v7.266.0): a melhor e a pior hora
-  setTxt('hist-sb-horario', slots.length?`melhor ${slots[0].label} · pior ${slots[slots.length-1].label}`:'histórico insuficiente');
+  if(!HIST_HORAS_NA_TELA) setTxt('hist-sb-horario', slots.length?`melhor ${slots[0].label} · pior ${slots[slots.length-1].label}`:'histórico insuficiente');
   if(!slots.length){
     document.getElementById('ah-melhor-slot').textContent='—';
     document.getElementById('ah-melhor-sub').textContent='Histórico insuficiente (mín. 2 dias)';
@@ -21989,7 +22232,7 @@ async function imprimir(){
 // a palavra junto, não veredito). O que a tela diz no title, o papel escreve na nota.
 const _HIST_DOC_CSS=`
   .hist-doc{--bg:#fff;--txt:#1F2328;--txt2:#5B6470;--txt3:#9AA3AD;--ok:#2E7D32;--warn:#B26A00;--red:#C62828;--acc:#E65100;
-            --border:#e2e8f0;color:#1F2328}
+            --border:#e2e8f0;--bg2:#e2e8f0;color:#1F2328}
   /* a META do desenho é referência, não veredito: tinta escura, como no papel da ⚖ UEP */
   .hist-doc{--uep-meta:#1F2328}
   .hist-doc svg,.hist-doc .badge,.hist-doc .kpi-card{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -22010,10 +22253,12 @@ const _HIST_DOC_CSS=`
   /* a tabela: o número é tinta (o verde e o laranja da tela viram grafite); âmbar e
      vermelho ficam para quem não bateu, e o selo diz o veredito com a palavra */
   .hist-doc table{--ok:#1F2328;--acc:#1F2328}
-  .hist-doc thead th{padding:5px 5px;font-size:7px;letter-spacing:.6px}
+  /* 3 px de lado: com MELHOR H. e PIOR H. em UEP ("09:00 · 118%") e META DIA + ATRASO META, as 14
+     colunas passavam 40 px da folha com 5 px (medido) */
+  .hist-doc thead th{padding:5px 3px;font-size:7px;letter-spacing:.5px}
   /* cada célula numa linha só: o selo e as horas de HE lado a lado (quebrando, a linha do dia com
      hora extra ficava com o dobro da altura) */
-  .hist-doc tbody td{padding:4px 5px;white-space:nowrap}
+  .hist-doc tbody td{padding:4px 3px;white-space:nowrap}
   .hist-doc td.mono{font-family:'IBM Plex Mono',monospace;font-size:9px;white-space:nowrap}
   .hist-doc .badge{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:7px;font-weight:700;padding:2px 4px;border-radius:2px;letter-spacing:.4px;white-space:nowrap;color:var(--txt2);border:0.5px solid #cbd5e0}
   .hist-doc .badge.b-ok{background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7}
@@ -22029,7 +22274,7 @@ const _HIST_DOC_CSS=`
 const HIST_DOC_W=690;
 // O DESENHO do papel em UEP. Nenhuma conta: U é o _histUepMontar e I o
 // _histCxInfo, os MESMOS que a tela lê; o U.dias tem a ordem do dias.
-function _histDocUepHtml(dias, U, I, temMetaComp){
+function _histDocUepHtml(dias, U, I, temMetaComp, HR){
   return `<div class="hist-doc">
 <div class="rp-sec-ttl">RESULTADO DO PERÍODO · UEP</div>
 <div class="kpi-grid">${_gerKpiHtml(_histKpisUep(U))}</div>
@@ -22043,13 +22288,14 @@ function _histDocUepHtml(dias, U, I, temMetaComp){
 
 <div class="rp-sec-ttl" style="margin-top:16px">DETALHAMENTO POR DIA</div>
 <table>
-  <thead>${_histTheadHtml(true, temMetaComp)}</thead>
-  <tbody>${dias.map((d,i)=>_histLinhaHtml(d, U.dias[i], temMetaComp)).join('')}</tbody>
+  <thead>${_histTheadHtml(true, temMetaComp, !!HR)}</thead>
+  <tbody>${dias.map((d,i)=>_histLinhaHtml(d, U.dias[i], temMetaComp, HR?HR.dias[d.data]:null)).join('')}</tbody>
 </table>
 <div class="hist-nota">
   <b>UEP</b> = caixas × UEP por caixa do cadastro, gravada no fechamento de cada dia. A meta é a META UEP gravada naquele dia e vale para a jornada normal: a hora extra, e o sábado e o domingo inteiros, ficam à parte.
   <b>STATUS</b>: ✓ META = a jornada bateu a meta do dia · ⚠ META COM HE = bateu só com a hora extra · ABAIXO = não bateu nem com ela · HORA EXTRA = sábado ou domingo, sem meta${U.semUep?' · SEM UEP = dia fechado sem UEP gravada, fora da conta':''}.
-  <b>Caixas</b>: fato, sem veredito. PROGRAMADAS = a meta em caixas gravada no fechamento; MELHOR H. e PIOR H. = as caixas da maior e da menor hora do dia.${U.escalaNota?`<br><b style="color:var(--warn)">${U.escalaNota}</b>`:''}
+  <b>Caixas</b>: fato, sem veredito. PROGRAMADAS = a meta em caixas gravada no fechamento.
+  <b>MELHOR H. e PIOR H.</b>: ${HR?'a hora de jornada com o maior e o menor % da meta de UEP da hora (a META UEP do dia repartida pelos minutos da hora); o traço é o dia sem a UEP completa por hora':'as caixas da maior e da menor hora do dia (a UEP por hora do período não foi lida)'}.${U.escalaNota?`<br><b style="color:var(--warn)">${U.escalaNota}</b>`:''}
 </div>
 </div>`;
 }
@@ -22109,6 +22355,16 @@ async function _imprimirHistoricoFormatado(){
   // (caixas, régua de 96%) podia ser o oposto do da tela (20/10: ✓ META × ABAIXO).
   // null = período sem UEP (histórico antigo): o papel de sempre, em caixas.
   const U=_histUepMontar(dias);
+  // v7.268.0: as horas em UEP — o papel ESPERA a leitura (a janela já diz "Gerando
+  // relatório…"); falhou ou o período não pede → as duas colunas e a análise em caixas
+  let HRp=null;
+  if(U){
+    try{
+      await _histHorasCarregar(deStr, ateStr);
+      const E=_histHorasEstado(deStr, ateStr);
+      if(E.est==='ok') HRp=_histHorasMontar(E.itens, U, _histSlotsJornada());
+    }catch(e){ console.warn('[HIST 🖨] UEP por hora:', e.message); }
+  }
   const totHorasP=dias.reduce((s2,d)=>s2+(Number(d.heCount)||0),0);
   const _heCelP=d=>{
     if(_heIndef(d)) return '—';
@@ -22199,7 +22455,7 @@ ${_rpCabecalho('HISTÓRICO',
     <div class="rp-periodo">${periodoLabel}</div>
     <div>Gerado em: ${agora} · ${plural(dias.length,'dia','dias')} no período</div>`)}
 
-${U?_histDocUepHtml(dias, U, _histCxInfo(dias, HE_BACKEND_OK), _histTemMetaComp(dias)):`<div class="rp-sec-ttl">RESUMO DO PERÍODO</div>
+${U?_histDocUepHtml(dias, U, _histCxInfo(dias, HE_BACKEND_OK), _histTemMetaComp(dias), HRp):`<div class="rp-sec-ttl">RESUMO DO PERÍODO</div>
 <div class="kpi-grid">
   <div class="kpi-card" style="border-left-color:#FF5C1F">
     <div class="kpi-lbl">TOTAL PRODUZIDO</div>
@@ -22263,7 +22519,10 @@ ${mhe.soComHE?`<div class="rp-alerta">
   </tbody>
 </table>`}
 
-${(()=>{
+${HRp&&HRp.rank.length?`<div class="hist-doc">
+<div class="rp-sec-ttl" style="margin-top:12px">ANÁLISE POR HORÁRIO · UEP DO PERÍODO</div>
+${_histHorasHtml(HRp)}
+</div>`:(()=>{
   const slotsPrint=Object.keys(MEDIA_HORAS)
     .map(k=>({label:k,media:MEDIA_HORAS[k],amo:AMOSTRA_HORAS[k]||0}))
     .filter(s=>s.amo>=2)
