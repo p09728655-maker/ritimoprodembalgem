@@ -397,12 +397,17 @@ via Google Apps Script (JSONP).
 - MELHOR H. / PIOR H. e a ANÁLISE POR HORÁRIO do HISTÓRICO em UEP (v7.268.0):
   o % da META DE UEP DA HORA (meta do dia × minutos ÷ 527, a régua do
   gerencial), conta pura `_histHorasMontar` (Σ ÷ Σ; só jornada de dia útil, hora
-  com todas as caixas com UEP, dia com o log cobrindo `DIR_COB_MIN`; hora extra
-  fora do ranking). A leitura é a `getProducaoModeloPeriodo ?cxHora=1&uepVer=1`
-  (`_histHorasCarregar`: cache 15 min por período, uma chamada por vez, só com a
-  aba aberta, até `HIST_HORAS_MAX_DIAS`); sem ela as colunas ficam (CX) e a
-  análise na média histórica de caixas. ⚠ A análise em UEP é do PERÍODO do
-  filtro, não do histórico inteiro.
+  com todas as caixas com UEP, dia com o log cobrindo `HIST_HORAS_COB_MIN`, 99%;
+  hora extra fora do ranking). FATO, SEM COR — o veredito da aba é o STATUS do
+  dia (⚠ não pintar a hora pela `sc`: dava ranking verde com dias ABAIXO). A
+  leitura é a `getProducaoModeloPeriodo ?cxHora=1&uepVer=1`
+  (`_histHorasCarregar`: uma por período, 4 guardados, uma chamada por vez e
+  depois do `_cicloVoo`, até `HIST_HORAS_MAX_DIAS`). ⚠ Quem pede é abrir a aba
+  (`_histHorasVencer`), trocar o período, o TENTAR DE NOVO e o 🖨 — NUNCA o
+  ciclo de 5 min, que redesenha a aba pelo `renderAll`. Sem ela as colunas
+  ficam (CX) e a análise na média histórica de caixas. A jornada:
+  `_histSlotsJornada` (quais horas, pelo ⚙; os minutos, pela planilha de hoje).
+  ⚠ A análise em UEP é do PERÍODO do filtro, não do histórico inteiro.
 - Diretoria: um veredito só (a UEP); retrato guardado no aparelho; sem o
   `pollParadaTV` nem o `lerMediaHoras`.
 

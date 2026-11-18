@@ -28,23 +28,26 @@ O que muda, **quando o período tem UEP gravada e até 62 dias**:
   dia continua sendo o STATUS.
 - **ANÁLISE POR HORÁRIO · UEP DO PERÍODO**: o ranking dos horários pelo % da
   meta da hora (Σ UEP ÷ Σ meta da hora, nunca a média dos %), com o ritmo em
-  UEP por hora cheia e as caixas médias como fato. A cor é a régua da hora dos
-  gerenciais (96% / 90%); MELHOR e PIOR são marcas neutras.
+  UEP por hora cheia e as caixas médias como fato. É comparação entre
+  horários, **sem cor**: MELHOR e PIOR são marcas neutras, e quem julga é o
+  STATUS de cada dia.
 - **Hora extra e fim de semana ficam fora do ranking** (não têm meta); a nota
   diz o ritmo médio deles.
 - **O 🖨 da aba** leva as mesmas duas colunas e o mesmo ranking (espera a
   leitura antes de montar a folha).
 - A UEP de cada hora vem do log de produto do período, com a UEP que valia na
   data — a leitura do PADRÃO × REALIZADO da aba ⚖ UEP. **Nada novo no Apps
-  Script, sem re-deploy.** É leitura cara: sai depois do histórico, só com a aba
-  aberta, com cache de 15 minutos por período.
+  Script, sem re-deploy.** É leitura cara: sai uma vez por período — ao abrir a
+  aba, ao trocar o período ou no TENTAR DE NOVO —, depois do ciclo do painel, e
+  fica guardada. O ciclo de 5 minutos redesenha a aba mas não relê.
 - Enquanto ela não chega (lendo, falhou, período sem as duas datas ou com mais
   de 62 dias), as colunas ficam **MELHOR H. (CX) / PIOR H. (CX)**, com as
   caixas de sempre, e a análise com a média histórica de caixas — a linha ao
   lado do título diz o porquê, e a falha tem o TENTAR DE NOVO.
-- O dia só é julgado por hora quando o log cobre 95% ou mais das caixas dele
-  (a régua dos pontos): caixa lançada sem produto não está no log, e a hora
-  dela pareceria a pior sem ser. Hora com caixa de código sem UEP fica fora.
+- O dia só é julgado por hora quando o log cobre **99%** ou mais das caixas
+  dele: caixa lançada sem produto não está no log, e a hora dela pareceria a
+  pior sem ser (1% do dia já é ~9% de uma hora). Hora com caixa de código sem
+  UEP fica fora.
 
 **Atenção** (antes → depois):
 
@@ -55,7 +58,27 @@ O que muda, **quando o período tem UEP gravada e até 62 dias**:
 | ANÁLISE POR HORÁRIO | média de caixas de **todo o histórico** (101 dias no print) | % da meta de UEP da hora, **só do período do filtro** (até 62 dias) |
 | O 12:12–13:00 (48 min) | sempre entre os piores, por ter menos minutos | comparado com a meta dele (48 ÷ 527 da meta do dia) |
 | 05:00 e 06:00 (hora extra) | no ranking; o 05:00 era o PIOR HORÁRIO | fora do ranking (sem meta); o ritmo vai na nota |
-| Cor do ranking | verde o melhor, vermelho o pior, laranja o resto | a régua da hora: verde ≥ 96%, âmbar ≥ 90%, vermelho abaixo |
+| Cor do ranking | verde o melhor, vermelho o pior, laranja o resto | sem cor: é comparação entre horários; o veredito é o STATUS do dia |
+
+**Da revisão, antes de publicar** (1 bloqueio e 7 ajustes):
+- O teste do ranking não provava o Σ ÷ Σ (com a mesma meta nos dois dias a
+  média dos % dava igual): entrou um dia com outra META UEP.
+- A leitura das horas saía também pelo ciclo de 5 minutos — a cada 15 min, e a
+  cada ciclo quando falhava (3 tentativas de 60 s), disputando o Apps Script
+  com a leitura do painel. Agora só por ação de quem usa, e depois do ciclo.
+- O guardado tinha uma vaga só: voltar ao período anterior relia, e a leitura
+  que terminava depois apagava a da tela. Agora guarda 4 períodos, e o pedido
+  que ficou velho na fila não é lido.
+- A cobertura do dia era a dos pontos (95%): 5% do dia é quase meia hora de
+  produção, e a hora com caixa sem produto saía como a pior. Passou a 99%.
+- O ranking pintava a hora pela régua de 96% com o dia julgado em ≥ meta: o
+  ranking inteiro verde e todos os dias ABAIXO. Ficou sem cor.
+- A jornada do período vinha da planilha de hoje (a hora com meta 0 hoje saía
+  do ranking do mês inteiro; no fim de semana tudo virava hora extra): agora
+  QUAIS horas vêm do turno do ⚙, e só os minutos, da planilha.
+- Com período de 1 dia a sub-aba dizia que nenhuma hora tinha a UEP completa
+  (com as colunas do mesmo dia em UEP): diz que o ranking pede 2 dias.
+- O rótulo do horário, que vem da planilha, passa pelo `_rpEsc`.
 
 ⚠ A análise em UEP responde outra pergunta que a de caixas: é do **período do
 filtro**, não do histórico inteiro. Para ver um horário em mais dias, alargar o
