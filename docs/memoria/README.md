@@ -85,6 +85,9 @@ de tema entra aqui também.
 - A ABA HISTÓRICO COM A UEP NA FRENTE (v7.266.0)
 - MELHOR HORA E PIOR HORA EM UEP NA ABA HISTÓRICO (v7.268.0)
 
+## A régua do dia fechado — `uep.md`
+- A RÉGUA DO DIA FECHADO EM UEP É UMA SÓ (v7.269.0 / rp-core 1.25.0 / mobile 1.60.0)
+
 ## UEP — `uep.md`
 - CAIXAS × PONTOS × UEP — a régua que mede o esforço (v7.184.0)
 - ABA 📏 RÉGUAS — a meta de pontos cabe no mix? (v7.187.0 / `.gs` v5.42)

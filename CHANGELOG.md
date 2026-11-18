@@ -11,6 +11,88 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.269.0 · mobile 1.60.0 · rp-core 1.25.0 — 18/11/2026 · Uma régua só para o dia fechado em UEP
+
+O PPCP, com a lista das telas que julgavam o MESMO dia de três jeitos: *"arrumar
+ficar igual"* → *"a régua tem que ser universal"* → escolheu **100% no
+fechado, 96% ao vivo**.
+
+**A régua, em todas as telas e papéis** — mora uma vez no núcleo comum
+(`uepDiaJulga`, `uepPeriodoJulga`, `uepDiaSelo`, no `rp-core.js`):
+
+| Dia, semana ou período **fechado** em UEP | |
+|---|---|
+| ✓ META (verde) | a UEP de **jornada** bateu a META UEP |
+| ⚠ META COM HE (âmbar) | não bateu na jornada, bateu com a hora extra |
+| ABAIXO (vermelho) | não bateu nem com a hora extra |
+| HORA EXTRA | sábado e domingo: todo hora extra, sem meta |
+
+O **ritmo ao vivo** (selo do dia em curso na TV, nos gerenciais e no celular) e a
+**hora** continuam em 96% / 90% (NO RITMO · ATENÇÃO · ABAIXO): o dia em curso
+ainda pode alcançar a meta; o dia fechado bateu ou não bateu.
+
+O que muda em cada tela:
+- **Gerencial do PC, dia passado** (era a régua de 96%): o card UEP DO DIA ·
+  META e a análise UEP DO DIA. O texto do selo é o do fechamento da semana
+  (*FALTARAM N UEP PARA A META* · *META BATIDA COM HORA EXTRA* · *META BATIDA NA
+  JORNADA NORMAL*). O card FALTOU PARA A META virou FALTOU NA JORNADA.
+- **Diretoria** (era ≥ meta sem o âmbar): o selo da semana passada tem o âmbar e
+  as palavras do bloco da semana do gerencial; nas barras dos últimos dias, o
+  dia que só bateu com a hora extra é âmbar (era vermelho). A legenda diz
+  *ÂMBAR = COM HORA EXTRA*.
+- **⚖ UEP · PERÍODO** (tela e papel; era ≥ meta sem o âmbar): o card MÉDIA POR
+  DIA e as barras do gráfico ganham o âmbar; a legenda e a nota do papel dizem
+  quais dias bateram só com a hora extra. O card DIAS QUE BATERAM fica sem cor
+  (a cor pela maioria dos dias era um 2º veredito) e o resumo do papel diz o
+  selo do período, com a contagem ao lado.
+- **🖨 Estudo de UEP** (era 96%): a cor do % da UEP GRAVADA, com a palavra
+  embaixo (em preto e branco o âmbar e o vermelho se confundem).
+- **🖨 CAIXAS × PONTOS × UEP** (era 96% nas três réguas): a coluna EM UEP pela
+  régua do dia fechado, com as palavras de REFERÊNCIA deste relatório (*NA
+  REFERÊNCIA* · *COM HE* · *ABAIXO*); caixas e pontos continuam pela régua deles
+  (a de 96%), e a página 4 diz as duas. O estudo passa a comparar o que cada
+  régua, como é usada, diz do mesmo dia. Dia útil sem META UEP fica fora.
+- **Celular, detalhe do dia** (era 96%): com a UEP gravada, o STATUS é o da UEP
+  (*✓ META · UEP* · *⚠ META COM HE · UEP* · *ABAIXO · UEP*) e as caixas ficam sem
+  cor — antes o STATUS das caixas dizia META em verde ao lado da UEP. Dia sem
+  UEP: as caixas julgam, como antes.
+- **Relatório semanal**: o selo de cada dia com as palavras do núcleo (*✓ META*
+  · *⚠ META COM HE* · *ABAIXO*; eram *NA META* e *COM HORA EXTRA*).
+- **HISTÓRICO e fechamento da semana**: já usavam esta régua; agora leem a do
+  núcleo comum. Mudam só os dois casos de borda abaixo.
+
+**Dois casos de borda** (da revisão):
+- **Julga o número que a tela mostra.** A UEP gravada tem decimais e toda tela a
+  escreve inteira: com 2.760,6 de 2.761 o selo dizia ABAIXO / *FALTARAM 0* ao
+  lado de *2.761 de 2.761 · 100,0%*. Agora a UEP inteira contra a meta (2.760,6
+  bate) e, abaixo da meta, o % nunca aparece como 100,0% (2.760 de 2.761 =
+  99,9%, *faltaram 1*). O *N de M dias que bateram* segue o mesmo veredito.
+- **Dia útil gravado com META UEP 0** (o feriado trabalhado, em aberto): a régua
+  não o julga (como o fim de semana); no desenho UEP POR DIA ele sai listrado em
+  hora extra — saía vermelho, com a tabela dizendo HORA EXTRA.
+
+**Atenção** (antes → depois):
+
+| | Antes | Depois |
+|---|---|---|
+| Dia fechado a 97,8% da META UEP (o 17/11 da prévia) | verde *DENTRO DA META* no gerencial, verde (só a cor) no celular, vermelho *ABAIXO* no HISTÓRICO | vermelho *ABAIXO* / *FALTARAM 61 UEP* em todas |
+| Dia que bateu só com a hora extra (o 11/11) | vermelho na diretoria e na ⚖ UEP; verde/âmbar conforme o % no gerencial | âmbar *META COM HE* em todas |
+| Semana passada na diretoria (a 46: 94,7% na jornada, 118% com a HE) | *ABAIXO DA META*, vermelho | *META BATIDA COM HORA EXTRA*, âmbar — o mesmo do gerencial |
+| 🖨 CAIXAS × PONTOS × UEP, 18 dias de set–out | 13 iguais · 5 caixas abaixo · 0 UEP abaixo | 13 iguais · 4 · 1 (23/09, UEP a 98,9%, deixa de estar "no ritmo"; 09/10, a 98,7%, passa a "UEP abaixo") |
+| O mesmo, 20 dias até 28/10 | 12 dias com veredito diferente | 13 (entra o 09/10, UEP a 98,7%; o 28/10, que já estava pelos pontos, passa a estar também pela UEP, a 96,2%) |
+| ⚖ UEP · papel, resumo do período | *8 DE 10 DIAS NA META*, cor pela maioria dos dias | o selo do período (*META BATIDA NA JORNADA NORMAL* …); a contagem na linha de cima |
+| Celular, STATUS de um dia com UEP | o das caixas (*DENTRO DA META* …) | o da UEP (*✓ META · UEP* …); as caixas sem cor |
+
+⚠ **Consequência da escolha *96% ao vivo***: depois das 17:00 a TV, o gerencial e o
+relatório do dia ainda dizem *NO RITMO* para um dia a 97–99,9% da meta; na manhã
+seguinte o mesmo dia aparece *ABAIXO*. É a diferença entre o ritmo do dia em curso
+e o dia fechado.
+
+⚠ Fica de fora, de propósito: o veredito em **caixas** de dia fechado (a régua de
+96% da casa, `META_PCT`) — no HISTÓRICO de período sem UEP, no relatório semanal
+sem UEP e na lista do HISTÓRICO do celular. É outra régua; a escolha do PPCP foi
+para a UEP. Também não muda o selo ao vivo nem a hora (96%).
+
 ## v7.268.0 — 18/11/2026 · MELHOR HORA e PIOR HORA em UEP (aba HISTÓRICO)
 
 O PPCP, com a aba e o papel já em UEP: *"melhor hora e pior hora colocar por

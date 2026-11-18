@@ -64,6 +64,7 @@ const G_MODULOS = [
   'nomeComCor','_rpOk','PDIA_LARG','pdiaVol','pdiaBase','pdiaCurto','pdiaMontar','pdiaParMontar','PDIA_PAR_ROT_PX','atrasoVencido','atrasoPtsTxt','loteIntMontar',
   'PARADA_A_INFORMAR','paradaAInformar',
   'UEP_HORA_TOL_MIN','uepHorasDia','uepHoraJulga','uepCxComHora','uepMinTxt','uepProj','uepDoProduto','uepGerMontar',
+  'uepDiaJulga','uepPeriodoJulga','uepDiaSelo',
 ];
 // Apps Script (ritmoprod_appscript.gs)
 const G_APPS_SCRIPT = [
