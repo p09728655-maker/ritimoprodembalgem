@@ -533,3 +533,106 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   print, a TV em caixas com a mesma semana, a semana sem UEP voltando às
   caixas e os rótulos, e o desenho sem conta.
 
+
+## A ABA HISTÓRICO COM A UEP NA FRENTE (v7.266.0)
+- PPCP, 18/11/2026, com o print da aba (período 19/10 a 18/11: 35.744 caixas
+  no 1º card, EFICIÊNCIA MÉDIA 94,1% em caixas no 3º, DIAS COM META 10 de 22,
+  MELHOR DIA 171,3% em caixas, e a UEP só no 6º card — *UEP / DIA (JORNADA)
+  2.623 · meta 2.695 · bateu em 9 de 21*): *"priorizar uep na aba historico"*.
+  É a aba entrando na UEP NA FRENTE; a v7.243.0 tinha deixado o HISTÓRICO
+  "para as próximas".
+- **A conta é UMA, a da semana**: `_histUepMontar(dias)` = `_gsemUepMontar(dias,
+  _relSemanalKPIs(dias))` mais o que é de período — `melhorDia` (o maior % da
+  META UEP do dia, só dias úteis), `abaixo` (os úteis com `cls !== 'ok'`: o que
+  bateu só com HE conta como abaixo, como o `bateu` do `uepHistResumo`), `nFds`,
+  `diasUep` (os dias com UEP, para o gráfico), `escalaSelo`/`escalaNota`
+  (`_uepEscalaSelo`/`_uepEscalaNota` com o `datasUep` da montagem) e o `k`.
+  `null` = nenhum dia com UEP → a aba fica em caixas, como era (os cards de
+  antes, a tabela de antes, o gráfico de antes): nunca uma tela sem veredito.
+- **As palavras do selo saíram do `_pintarUep` para `_gsemSeloTxt(U)`**, uma
+  vez: o bloco da semana e o hero da aba dizem o mesmo (✓ META BATIDA NA
+  JORNADA NORMAL · ⚠ META BATIDA COM HORA EXTRA · FALTARAM N UEP PARA A META).
+- **Cards** (`_gerKpiHtml`, o desenho do gerencial): 1ª linha `#hist-kpi-grid`
+  (`c6 hist-k1`, `_histKpisUep`): o hero UEP NA JORNADA · META N (2 colunas,
+  `hist-hero`, cor ok/warn/red pelo `U.selo` — o ÚNICO selo; sub: o selo, o %
+  da meta e *faltaram N UEP na jornada (N/dia)*), UEP / DIA (JORNADA), DIAS QUE
+  BATERAM (*abaixo: dd/mm, …* até 4 e *+N*), MELHOR DIA, UEP EM HORA EXTRA —
+  os quatro sem cor. 2ª linha `#hist-kpi-grid2` (`c9`, `_histKpisCx`): CAIXAS,
+  CAIXAS EM HORA EXTRA (vermelho só no aviso de backend sem HE CX — alerta, não
+  veredito), CAIXAS PROGRAMADAS (sem o % feito: v7.252.0), CAIXAS / DIA
+  (JORNADA) (`k.mediaNormal` × `k.mediaMeta`, a base do semanal).
+- **Gráficos** (`.charts-row.hist-charts`): UEP POR DIA · META DO DIA à
+  esquerda, pelo `_uepAbaPerSvg(U.diasUep, largura do card, 230)` — o mesmo
+  desenho da ⚖ UEP · PERÍODO e do papel; `HIST_CH_W_MIN` (760) quando o card
+  mede 0 (aba escondida). À direita, `renderChartHist(dias, periodo, soFato)`:
+  as caixas por dia numa cor só, sem meta nem Ef.%. Sem UEP: `so-cx` (uma
+  coluna) e o gráfico de sempre, com o título de sempre.
+- **Tabela**: o `<thead id="hist-thead">` é montado pelo `_histThead(temUep,
+  temMetaComp)` — em UEP: DATA · UEP · META UEP · % DA META · CAIXAS · H. NORMAL ·
+  H. EXTRA · META CX · [META DIA · ATRASO META] · MELHOR H. · PIOR H. · STATUS ·
+  FECHAMENTO · FONTE; em caixas, a de antes (sem a coluna UEP escondida). As
+  células comuns são peças (`cCx`, `cHoras(d, cor)`, `cFim`, `bHe`); as da UEP
+  e o selo vêm do `_histCelulasUep(d, U.dias[i])` (o `U.dias` tem a ordem do
+  `dias`). Em UEP, MELHOR H./PIOR H. ficam sem cor e a EFICIÊNCIA (caixas) sai.
+- ⚠ **A régua do dia é a da semana** (`_gsemUepMontar`: ok jornada ≥ meta; he
+  jornada + HE ≥ meta; ruim), **não a de 96%** (`sc`) que a coluna UEP usava
+  até a v7.265.0. O 23/10 (2.756 de 2.761, 99,8%) era verde e passa a vermelho
+  ABAIXO — e é vermelho também no bloco da semana. Motivo: um dia, uma cor nas
+  duas telas de período; e o *bateu* do card já era ≥ meta. **Em aberto**: o
+  dia passado do GERENCIAL (`renderGerencialHist`) julga o hero pela `sc`
+  (96%); alinhar os três é decisão do PPCP — não mudar um sem o outro.
+- Dia sem UEP gravada no meio de um período com UEP: traços nas três colunas,
+  STATUS *SEM UEP* (`b-mute`) — nunca 0 (E1) e nunca o veredito das caixas na
+  mesma coluna (dois vereditos). O card UEP / DIA diz *N sem UEP*.
+- **Fora desta versão**: o 🖨 IMPRIMIR / PDF da aba
+  (`_imprimirHistoricoFormatado`) segue em caixas (como o gerencial ficou na
+  v7.243.0 até o semanal virar na v7.251.0); a ANÁLISE POR HORÁRIO · MÉDIA
+  HISTÓRICA DE CX não muda.
+- Testes em `relatorios.test.js` (*aba HISTÓRICO: a UEP na frente*): os dias do
+  print (19/10 a 29/10, caixas, meta e UEP de jornada reais; META UEP e UEP HE
+  de exemplo) com um sábado e um dia sem UEP — a montagem, o null sem UEP, os
+  cards das duas linhas, as células (verde, âmbar, vermelho a 99,8%, sábado,
+  sem UEP), o cabeçalho nos quatro modos, o desenho sem conta e as chamadas do
+  `renderHist`. `tela-uep.test.js` confere que a nota da escala vem da montagem.
+- **Sub-abas PERÍODO · ANÁLISE POR HORÁRIO** (PPCP, 18/11/2026, logo depois, com
+  o print da análise embaixo da tabela: *"dividir em sub aba"* / *"analise
+  melhora hora"*): a faixa `.ucv-sub` da PROGRAMAÇÃO (os seletores
+  compartilhados ganharam o `#sec-historico`; `lote-interno.test.js` e o teste
+  do PLANO prendem a lista). `_histSub(k)` só mostra e esconde (`HIST_SUBS`);
+  as duas são pintadas pelo `renderHist`, estejam na tela ou não. O botão de
+  PERÍODO diz a UEP da jornada e o % da meta (`hist-sb-periodo`, pelo
+  `renderHist`; sem UEP, as caixas; sem dia, "sem dia fechado no período"); o da
+  análise, a melhor e a pior hora (`hist-sb-horario`, pelo
+  `renderAnaliseHorario`). ⚠ O filtro de datas fica dentro do PERÍODO: a análise
+  é a `MEDIA_HORAS` do `getMediaHoras`, o histórico inteiro — não é filtrada.
+- **A revisão (`/revisor-codigo`, 18/11/2026), 7 ajustes, 0 bloqueios**:
+  - `_uepAbaPerSvg(dias, W, H, pbMin, opc)`: `opc.pid` é o id do padrão
+    listrado — com a ⚖ UEP e o HISTÓRICO na mesma página o `url(#uepPerLis)` do
+    2º desenho resolvia para o pattern do 1º (em `display:none`) e o sábado saía
+    só com o contorno (o revisor reproduziu numa página mínima); `opc.cls` =
+    {data: ok|he|ruim} pinta a barra com a cor da tabela (o dia que bateu só com
+    HE é âmbar; sem `cls`, o desenho de sempre: cinza ≥ meta, vermelho abaixo).
+    O HISTÓRICO passa `{ pid:'histPerLis', cls:U.clsPorDia }`.
+  - `horasHe` do `_gsemUepMontar` = Σ `heCount` só dos dias com UEP (E4): no
+    período misto o card UEP EM HORA EXTRA somava horas de dias sem UEP.
+  - O sub do hero com selo vermelho não repete "faltaram" (C4): o selo diz o
+    total com a HE; a linha, *só na jornada: N (N/dia)*; sem HE, *N UEP/dia*.
+  - Coluna PROGRAMADAS (era "META CX"): um nome por indicador com o card.
+  - `_histLinhaHtml(d, x, temMetaComp)` saiu do `renderHist` para o teste montar
+    a linha de verdade (I2: as mutações "MELHOR H. com cor em UEP" e "hero com a
+    cor invertida" passavam verdes só com as regex).
+  - O papel diz *em caixas (a tela julga pela UEP)* no período (`periodoLabel`
+    do `_imprimirHistoricoFormatado`) — ver *Fora desta versão*.
+  - `HIST_CH_W_MIN` 760 → 600: na aba aberta vale a largura do card; o 760 só
+    encolhia o desenho a 1280 (card de 704 px).
+- **Medido no Chromium** (Apps Script simulado com os dias do print, 19/10 a
+  17/11, 23 dias; Chart.js stub — o cdnjs não passa pelo proxy do ambiente):
+  1920 · 1366 · 1280, nada passa da largura (documento = janela; a tabela de 13
+  colunas sem rolagem: 1878/1324/1238 px). 1ª linha de cards 125–129 px, 2ª
+  81–97 px, gráficos 283 px; o UEP POR DIA a 1920 mostra o número em cada barra
+  (1088 px, 23 dias), a 1366/1280 só o rótulo de 2 em 2 dias (como a ⚖ UEP a
+  760). O período sem UEP volta aos 5 cards de caixas e às 11 colunas.
+- **Ficou de fora / perguntas**: dia ÚTIL fechado com META UEP 0 (feriado
+  trabalhado?) — o `uepDiaMeta` dá 0, o `_gsemUepMontar` trata como fim de
+  semana (STATUS *HORA EXTRA*, só o `uepHe`) e no gráfico a barra sai com a
+  meta 0 (dica com % infinito). É de antes; se o caso existe, pede regra.

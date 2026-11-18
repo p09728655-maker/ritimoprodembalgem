@@ -11,6 +11,81 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.266.0 — 18/11/2026 · A aba HISTÓRICO com a UEP na frente
+
+O PPCP, com o print da aba (35.744 caixas em destaque, a EFICIÊNCIA MÉDIA em
+caixas no 3º card e a UEP só no 6º): *"priorizar uep na aba historico"*. É a
+aba entrando na UEP NA FRENTE — o gerencial (v7.243.0), o celular (1.50.0), o
+fechamento da semana (v7.250.0) e o relatório semanal (v7.251.0) já estavam.
+
+O que muda, **só quando o período tem algum dia fechado com UEP**:
+- **1ª linha de cards: a UEP julga.** UEP NA JORNADA · META é o hero, com o
+  único selo — a mesma régua do FECHAMENTO DA SEMANA PASSADA: verde só quando a
+  jornada bateu a soma das METAS UEP dos dias úteis; âmbar quando bateu com a
+  hora extra; vermelho, o que faltou. Ao lado, fatos em UEP, sem cor: UEP / DIA
+  (JORNADA), DIAS QUE BATERAM (com os dias abaixo), MELHOR DIA (em % da META
+  UEP do próprio dia) e UEP EM HORA EXTRA.
+- **2ª linha: as caixas como fato**, sem cor e sem % da meta (v7.252.0: *"dois
+  vereditos está confuso"*): CAIXAS, CAIXAS EM HORA EXTRA, CAIXAS PROGRAMADAS e
+  CAIXAS / DIA (JORNADA).
+- **Gráfico UEP POR DIA · META DO DIA** na frente — o mesmo desenho da aba
+  ⚖ UEP · PERÍODO (barra da UEP de jornada, a meta tracejada, o fim de semana
+  listrado em hora extra). As caixas por dia ficam ao lado, numa cor só, sem
+  meta e sem a linha da eficiência.
+- **Tabela**: DATA · UEP · META UEP · % DA META (cor) · CAIXAS · H. NORMAL ·
+  H. EXTRA · META CX · MELHOR H. · PIOR H. (sem cor) · STATUS (o selo pela UEP:
+  ✓ META · ⚠ META COM HE · ABAIXO · HORA EXTRA · SEM UEP) · FECHAMENTO · FONTE.
+  A coluna EFICIÊNCIA (caixas) sai. Dia sem UEP gravada: traços e SEM UEP,
+  nunca o veredito das caixas.
+- Período sem nenhum dia com UEP (histórico antigo): tudo em caixas, como era.
+- A conta é a MESMA do fechamento da semana (`_gsemUepMontar`, com as palavras
+  do selo agora em `_gsemSeloTxt`, uma vez); a aba só acrescenta o que é de
+  período (`_histUepMontar`). O RELATÓRIO SEMANAL (já em UEP) e a ANÁLISE POR
+  HORÁRIO não mudam de conta.
+
+**Sub-abas PERÍODO · ANÁLISE POR HORÁRIO** (PPCP, no mesmo dia, com o print da
+análise embaixo da tabela: *"dividir em sub aba"*): a mesma faixa da
+PROGRAMAÇÃO. A ANÁLISE POR HORÁRIO · MÉDIA HISTÓRICA DE CX (a melhor e a pior
+hora, o ranking) sai de baixo da tabela e ganha o seu painel. O botão de
+PERÍODO diz a UEP da jornada e o % da meta (ou as caixas, sem UEP); o da
+análise diz a melhor e a pior hora. Trocar só mostra e esconde. O filtro de
+datas vale só no PERÍODO — a análise é do histórico inteiro, como sempre foi.
+
+**Da revisão, antes de publicar:**
+- O `_uepAbaPerSvg` ganhou o id do padrão listrado por desenho (`pid`): com a
+  ⚖ UEP e o HISTÓRICO na mesma página, o sábado do HISTÓRICO saía só com o
+  contorno (o `url(#uepPerLis)` resolvia para o padrão da outra aba, escondida).
+- A barra do UEP POR DIA do HISTÓRICO tem a cor da tabela (`cls`): o dia que
+  bateu só com a hora extra é âmbar nos dois — o desenho de sempre da ⚖ UEP o
+  pintava vermelho, só pela jornada.
+- UEP EM HORA EXTRA: as horas são só dos dias com UEP (`_gsemUepMontar`, vale
+  também na semana). Num período com dias de antes da UEP o card dizia *13
+  horas em 4 dias* com os 4 dias somando 10.
+- O hero vermelho não repete "faltaram" com dois números: o selo diz o total
+  (com a hora extra) e a linha diz *só na jornada: N (N/dia)*.
+- A coluna da tabela é PROGRAMADAS — o mesmo número e nome do card CAIXAS
+  PROGRAMADAS — e não "META CX".
+- O 🖨 IMPRIMIR / PDF da aba ainda julga em caixas: o período do papel diz
+  *em caixas (a tela julga pela UEP)* até passar para a montagem da tela.
+
+**Atenção** (antes → depois), com o período do print (19/10 a 18/11):
+
+| | Antes | Depois |
+|---|---|---|
+| Quem julga o período | EFICIÊNCIA MÉDIA em caixas (94,1%, a média dos % diários) | UEP NA JORNADA ÷ soma das METAS UEP dos dias úteis (um % só, Σ ÷ Σ) |
+| EFICIÊNCIA MÉDIA · DIAS COM META (caixas) | cards com cor | saem — as caixas ficam em quantidade, sem % |
+| MELHOR DIA | 28/10, 171,3% em caixas | o dia útil com o maior % da META UEP do dia |
+| UEP / DIA (JORNADA) | verde ou laranja | sem cor (o selo é o do hero); o *bateu em 9 de 21* vira o card DIAS QUE BATERAM |
+| Coluna UEP da tabela | cor pela régua de 96% (`sc`) | a régua da semana: verde só ≥ meta; âmbar bateu com HE; vermelho abaixo. **23/10 (2.756 de 2.761, 99,8%) era verde e passa a vermelho ABAIXO** |
+| Gráfico | REALIZADO × META em caixas + Ef.% | UEP POR DIA · META DO DIA + caixas numa cor só |
+
+⚠ Em aberto (decisões do PPCP, ver *A ABA HISTÓRICO COM A UEP NA FRENTE* em
+`gerencial.md`): o dia passado do GERENCIAL ainda julga a UEP do dia pela régua
+de 96% (`sc`); na aba HISTÓRICO e no fechamento da semana o mesmo dia é julgado
+pela régua da semana (≥ meta) — um dia a 99,8% é verde lá e vermelho aqui. E o
+🖨 IMPRIMIR / PDF da aba segue em caixas: o STATUS de um dia no papel pode ser
+o oposto do da tela (20/10: ✓ META na UEP, ABAIXO em caixas).
+
 ## v7.265.0 · mobile 1.59.0 — 17/11/2026 · TV sem a hora extra na meta, e o selo pelos minutos
 
 O PPCP, com a TV na tela às 16:26: *"108% abaixo do ritmo?"*. Depois: *"tem

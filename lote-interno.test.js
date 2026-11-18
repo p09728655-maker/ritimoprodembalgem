@@ -589,7 +589,8 @@ console.log('\n── v7.261.0: sub-aba da PROGRAMAÇÃO ("esta com muita rolage
   ok('CSS: os painéis escondem e acendem (com a animação respeitando o reduced-motion) e a faixa é a das outras abas',
      [/#sec-programacao \.ucv-pn\{display:none\}/.test(html), /#sec-programacao \.ucv-pn\.on\{display:block;animation:ucvIn/.test(html),
       /prefers-reduced-motion:reduce\)\{#sec-programacao \.ucv-pn\.on\{animation:none\}/.test(html),
-      /#sec-plano \.ucv-sb,#sec-programacao \.ucv-sb\{flex:1 1 180px/.test(html), /#sec-plano \.ucv-sb\.on,#sec-programacao \.ucv-sb\.on\{/.test(html)],
+      // v7.266.0: o HISTÓRICO entrou na mesma faixa (`,#sec-programacao .ucv-sb,#sec-historico .ucv-sb{`)
+      /#sec-plano \.ucv-sb,#sec-programacao \.ucv-sb,#sec-historico \.ucv-sb\{flex:1 1 180px/.test(html), /#sec-plano \.ucv-sb\.on,#sec-programacao \.ucv-sb\.on,#sec-historico \.ucv-sb\.on\{/.test(html)],
      [true, true, true, true, true]);
   ok('ao abrir a aba: a programação e DEPOIS os lotes internos, em sequência (uma chamada por vez); sem esperar clique',
      /if\(tab==='programacao'\) carregarProgramacaoDetalhada\(\)\.then\(renderProgramacaoDetalhada\)\.then\(\(\)=>_pliCarregar\(\)\)\.then\(renderLotesInternos\);/.test(JS), true);

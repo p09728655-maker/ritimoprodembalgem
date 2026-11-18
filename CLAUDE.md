@@ -378,6 +378,18 @@ via Google Apps Script (JSONP).
   de caixas: um % só, o da UEP — v7.252.0); semana sem UEP fica em
   caixas. A Tela D da TV segue em caixas; o 🖨 IMPRIMIR SEMANA, desde a
   v7.251.0, vai em UEP (ONDE PERDEMOS, em `relatorios.md`).
+- A aba HISTÓRICO com a UEP na frente (v7.266.0): a conta é a `_gsemUepMontar`
+  da semana (`_histUepMontar` acrescenta média/dia, dias que bateram, melhor dia
+  e a nota da escala); o hero UEP NA JORNADA · META é o único selo
+  (`_gsemSeloTxt`, as palavras do bloco da semana); as caixas são fato na 2ª
+  linha, sem cor nem %; o gráfico é o `_uepAbaPerSvg` da ⚖ UEP · PERÍODO; a
+  tabela pelo `_histThead` + `_histLinhaHtml` (UEP · META UEP · % DA META ·
+  STATUS pela régua da semana, ≥ meta — **não** a de 96%). Sem UEP no período,
+  tudo em caixas. Sub-abas PERÍODO · ANÁLISE POR HORÁRIO (`_histSub`, a faixa
+  da PROGRAMAÇÃO). ⚠ O `_uepAbaPerSvg` leva `pid` (id do padrão listrado por
+  desenho — dois na página se misturavam) e `cls` (a cor da tabela por dia).
+  ⚠ O 🖨 IMPRIMIR / PDF da aba segue em caixas (e diz isso no período); o dia
+  passado do gerencial julga a UEP pela régua de 96% (em aberto, PPCP).
 - Diretoria: um veredito só (a UEP); retrato guardado no aparelho; sem o
   `pollParadaTV` nem o `lerMediaHoras`.
 
