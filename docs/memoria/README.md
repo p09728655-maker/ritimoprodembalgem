@@ -81,6 +81,7 @@ de tema entra aqui também.
 - DADO VELHO NO GERENCIAL DO PC E A ATUALIZAÇÃO PELA HORA MARCADA (v7.248.3)
 - O ATRASO TAMBÉM EM PONTOS (v7.249.0 / mobile 1.52.0 / rp-core 1.20.0)
 - FECHAMENTO DA SEMANA PASSADA COM A UEP NA FRENTE (v7.250.0)
+- A ABA HISTÓRICO COM A UEP NA FRENTE (v7.266.0)
 
 ## UEP — `uep.md`
 - CAIXAS × PONTOS × UEP — a régua que mede o esforço (v7.184.0)

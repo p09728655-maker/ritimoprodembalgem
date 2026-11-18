@@ -350,8 +350,9 @@ ok('semanal só com fim de semana: EFICIÊNCIA e SEM HORA EXTRA "—" sem cor, T
    && /\$\{totMeta\?fmtP\(efTotalSemHE\):'—'\}/.test(src) && /!totMeta\?'sem meta na semana':`gap:/.test(src), true);
 ok('semanal, 🖨 do histórico e aba HISTÓRICO dizem os dias sem meta pelo _relSemMetaTxt (não "dias − dias com meta = fim de semana")',
    [(src.match(/_relSemMetaTxt\(/g) || []).length >= 4, /de fim de semana em HE/.test(src), /sem meta \(fim de semana\)`/.test(src)], [true, false, false]);
+// v7.266.0: as células MELHOR H./PIOR H. são UMA peça (cHoras, no _histLinhaHtml) para a tabela em UEP e a em caixas
 ok('aba HISTÓRICO: o sábado sai — em MELHOR H./PIOR H. (o histDiaFds zera os dois)',
-   /\$\{d\.fds\?'<td class="mono" style="color:var\(--txt3\)" title="sábado e domingo: todo hora extra, sem melhor\/pior hora de jornada">—<\/td>/.test(src), true);
+   /const cHoras=cor=>d\.fds\?'<td class="mono" style="color:var\(--txt3\)" title="sábado e domingo: todo hora extra, sem melhor\/pior hora de jornada">—<\/td>/.test(src), true);
 ok('celular: Média / dia do histórico na base dos dias com meta (a do PC)',
    /const baseMed=comMeta\.length\?comMeta:lista;/.test(fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8')), true);
 ok('o gráfico de barras desenha a média dos dias com meta (a do card)', /const _bM=dias\.filter\(_diaComMeta\)/.test(src), true);
@@ -420,7 +421,7 @@ const _st = { dados: null };
 let _buscas = 0;
 function carregar() { _buscas++; }                       // a busca de verdade é assíncrona
 const _DIA_SEM = ['DOMINGO','SEGUNDA','TERÇA','QUARTA','QUINTA','SEXTA','SÁBADO'];
-eval(pega('function _gsemUepMontar(')); eval(pega('function _pintarUep(')); eval(pega('function pintar('));
+eval(pega('function _gsemSeloTxt(')); eval(pega('function _gsemUepMontar(')); eval(pega('function _pintarUep(')); eval(pega('function pintar('));
 
 // Sem semana carregada não se desenha nada: a Tela D fica fora do ciclo e o
 // bloco do gerencial se esconde — nenhum dos dois aparece vazio.
@@ -4038,8 +4039,10 @@ ok('régua e faixa redesenham a carteira junto com o retrospecto',
      [/#sec-plano \.ucv-pn\{display:none\}/.test(src), /#sec-plano \.ucv-pn\.on\{display:block;animation:ucvIn/.test(src),
       /@media \(prefers-reduced-motion:reduce\)\{#sec-plano \.ucv-pn\.on\{animation:none\}\}/.test(src),
       // a faixa também vale para a PROGRAMAÇÃO desde a v7.261.0 (`,#sec-plano .ucv-sb,#sec-programacao .ucv-sb{`)
+      // …e para o HISTÓRICO desde a v7.266.0 (`,#sec-programacao .ucv-sb,#sec-historico .ucv-sb{`)
       ['.ucv-sb{', '.ucv-sb.on{', '.ucv-sb.red span{', '.ucv-imp-m{', '.ucv-hdr{', '.ucv-hdr-bts .btn{']
-        .filter(c => !src.includes(',#sec-plano ' + c) && !src.includes(',#sec-plano ' + c.slice(0, -1) + ',#sec-programacao ' + c))],
+        .filter(c => !src.includes(',#sec-plano ' + c) && !src.includes(',#sec-plano ' + c.slice(0, -1) + ',#sec-programacao ' + c)
+                  && !src.includes(',#sec-plano ' + c.slice(0, -1) + ',#sec-programacao ' + c.slice(0, -1) + ',#sec-historico ' + c))],
      [true, true, true, []]);
   // _qpSub: acende painel e botão; nada é lido nem recalculado
   { const docA = global.document, el = d => ({ dataset:{ sub:d }, s:new Set(), at:{}, classList:{ toggle(c, on){ on ? this.o.s.add(c) : this.o.s.delete(c); } }, setAttribute(k, v){ this.at[k] = v; } });
@@ -6195,9 +6198,11 @@ console.log('\n── estudo de UEP ──');
      [/metaDia: \(d\.metaDia===null\|\|d\.metaDia===undefined\)\?null:Number\(d\.metaDia\)/.test(JS),
       /atrasoMeta: \(d\.atrasoMeta===null\|\|d\.atrasoMeta===undefined\)\?null:Number\(d\.atrasoMeta\)/.test(JS)], [true, true]);
   const rh = pega('async function renderHist(');
+  // v7.266.0: o cabeçalho é montado pelo _histThead (em UEP ou em caixas) com a MESMA
+  // decisão das células — META DIA e ATRASO META entram nos dois pelo temMetaComp
   ok('a tabela do HISTÓRICO mostra as duas colunas pela mesma decisão do cabeçalho',
-     [/const temMetaComp=_histTemMetaComp\(dias\)/.test(rh), /\.th-hist-mcomp/.test(rh), /\$\{temMetaComp\?/.test(rh),
-      (src.match(/class="th-hist-mcomp"/g) || []).length], [true, true, true, 2]);
+     [/const temMetaComp=_histTemMetaComp\(dias\)/.test(rh), /_histThead\(temUepHist, temMetaComp\)/.test(rh), /\$\{temMetaComp\?/.test(pega('function _histLinhaHtml(')) && /temUepHist\?U\.dias\[i\]:null, temMetaComp\)/.test(rh),
+      (pega('function _histThead(').match(/>META DIA<\/th>/g) || []).length, (pega('function _histThead(').match(/\+mcomp/g) || []).length], [true, true, true, 1, 2]);
   // o Exportar Excel do HISTÓRICO saiu na v7.248.2 (sem botão desde antes de
   // 06/11/2026; PPCP: o botão não volta)
   ok('o Exportar Excel do HISTÓRICO saiu', /function exportarExcel\(/.test(JS), false);
@@ -7072,6 +7077,131 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
     C2._L = SL.filter(s => !s.he).map(s => Object.assign(rowM(s.inicio, 100), { data:vm.runInContext('hojeStr()', C2), metaHora:200, metaDia:1800 }));
     ok('calcKPIs do celular: a jornada inteira lançada soma 527 min (o 16:00-16:59 vale 59, como no PC e no UEP_MIN_DIA)',
        vm.runInContext('DADOS = _L; calcKPIs().minNorm', C2), 527); }
+}
+
+// ── v7.266.0: a aba HISTÓRICO com a UEP na frente ───────────────────────────
+// PPCP, 18/11/2026, com o print da aba (35.744 caixas e a EFICIÊNCIA MÉDIA em
+// caixas na frente, a UEP no 6º card): "priorizar uep na aba historico". A conta
+// é a MESMA do fechamento da semana (_gsemUepMontar); a aba só acrescenta o que
+// é de período. Os dias são os do print (caixas, meta e UEP de jornada de 19/10
+// a 29/10); META UEP e UEP HE não aparecem no print — valores de exemplo.
+console.log('\n── aba HISTÓRICO: a UEP na frente (v7.266.0) ──');
+{ ['function _gsemSeloTxt(', 'function _gsemUepMontar(', 'function _uepEscalaSelo(', 'function _uepEscalaNota(', 'function _uepEscalaCorte(', 'function _cartNum(']
+    .forEach(f => { const n = f.slice(9, -1); if (typeof global[n] === 'undefined') eval(pega(f).replace(/^function /, 'global.' + n + ' = function ')); });
+  if (typeof global.UEP_ESCALAS === 'undefined') global.UEP_ESCALAS = [];
+  ['function _histUepMontar(', 'function _histKpisUep(', 'function _histKpisCx(', 'function _histThead(', 'function _histCelulasUep(', 'function _histLinhaHtml(', 'function _histSub(']
+    .forEach(f => eval(pega(f).replace(/^function /, 'global.' + f.slice(9, -1) + ' = function ')));
+  if (typeof fmtFechadoEm === 'undefined') global.fmtFechadoEm = () => 'SIM';
+  global.HIST_SUBS = JSON.parse(JS.match(/const HIST_SUBS=(\[[^\]]+\])/)[1].replace(/'/g, '"'));
+  const HD = [
+    { data:'19/10/2026', real:1509, meta:1157, ef:130.4, melhor:263, pior:88,  heCx:0,   heCount:0, uep:2940, uepHe:0,   metaUep:2530, fechado:true, fonte:'sheets' },
+    { data:'20/10/2026', real:2041, meta:2500, ef:81.6,  melhor:379, pior:129, heCx:0,   heCount:0, uep:2626, uepHe:0,   metaUep:2530, fechado:true, fonte:'sheets' },
+    { data:'21/10/2026', real:1004, meta:2200, ef:45.6,  melhor:155, pior:58,  heCx:0,   heCount:0, uep:2114, uepHe:0,   metaUep:2761, fechado:true, fonte:'sheets' },
+    { data:'22/10/2026', real:1960, meta:1550, ef:126.5, melhor:360, pior:139, heCx:0,   heCount:0, uep:3064, uepHe:0,   metaUep:2761, fechado:true, fonte:'sheets' },
+    { data:'23/10/2026', real:1483, meta:1550, ef:95.7,  melhor:226, pior:72,  heCx:0,   heCount:0, uep:2756, uepHe:0,   metaUep:2761, fechado:true, fonte:'sheets' },
+    // o sábado como o .gs v5.68 grava: todo hora extra, sem meta
+    { data:'24/10/2026', real:600,  meta:0,    ef:0,     melhor:0,   pior:0,   heCx:600, heCount:4, uep:0,    uepHe:800, metaUep:0,    fechado:true, fonte:'sheets' },
+    { data:'26/10/2026', real:1263, meta:1500, ef:84.2,  melhor:198, pior:95,  heCx:0,   heCount:0, uep:2762, uepHe:0,   metaUep:2761, fechado:true, fonte:'sheets' },
+    { data:'27/10/2026', real:1972, meta:2850, ef:69.2,  melhor:268, pior:146, heCx:180, heCount:2, uep:2869, uepHe:250, metaUep:2761, fechado:true, fonte:'sheets' },
+    { data:'28/10/2026', real:2141, meta:1250, ef:171.3, melhor:375, pior:60,  heCx:286, heCount:2, uep:2657, uepHe:400, metaUep:2761, fechado:true, fonte:'sheets' },
+    { data:'29/10/2026', real:1442, meta:2050, ef:70.3,  melhor:211, pior:86,  heCx:200, heCount:2, uep:2436, uepHe:280, metaUep:2761, fechado:true, fonte:'sheets' },
+    // dia fechado antes da UEP (sem UEP gravada), COM hora extra: fica só nas caixas — as 3 h
+    // dele não entram nas horas de HE em UEP (revisão: "13 horas em 4 dias" que somavam 10)
+    { data:'30/10/2026', real:1300, meta:1400, ef:92.9,  melhor:200, pior:70,  heCx:120, heCount:3, uep:null, uepHe:null, metaUep:null, fechado:true, fonte:'sheets' }
+  ].map(histDiaFds);
+  const U = _histUepMontar(HD);
+  // 9 dias úteis com UEP: jornada 24.224 contra 24.387 (2×2.530 + 7×2.761) → 99,3%;
+  // com a hora extra (250+400+280 + o sábado 800 = 1.730) passa: âmbar, faltaram 163 na jornada
+  ok('o período pela conta da semana: jornada × soma das metas, selo âmbar (bateu só com a hora extra)',
+     [U.jorn, U.meta, U.selo, U.falta, U.faltaPorDia, U.faltaTot, U.he, U.nComMeta, U.semUep, U.nFds],
+     [24224, 24387, 'he', 163, 18, 0, 1730, 9, 1, 1]);
+  ok('o que é de período: média por dia, dias que bateram (só na jornada), melhor dia em % da meta do dia, o gráfico só com dia com UEP',
+     [Math.round(U.media), Math.round(U.metaMedia), U.bateu, U.abaixo, U.melhorDia.data, U.melhorDia.pct.toFixed(1), U.melhorDia.uep, U.diasUep.length, U.k.totReal],
+     [2692, 2710, 5, ['21/10/2026', '23/10/2026', '28/10/2026', '29/10/2026'], '19/10/2026', '116.2', 2940, 10, 16715]);
+  ok('as horas de HE são só dos dias com UEP (o 30/10 tem 3 h e fica fora), e o k ainda soma todas',
+     [U.horasHe, U.nDiasHe, U.k.totHoras], [10, 4, 13]);
+  ok('a classe de cada dia para o gráfico: a da tabela, só os dias úteis com UEP (sem o sábado e sem o 30/10)',
+     U.clsPorDia, { '19/10/2026':'ok', '20/10/2026':'ok', '21/10/2026':'ruim', '22/10/2026':'ok', '23/10/2026':'ruim', '26/10/2026':'ok', '27/10/2026':'ok', '28/10/2026':'he', '29/10/2026':'ruim' });
+  ok('sem nenhum dia com UEP (histórico antigo), null: a aba fica em caixas', [_histUepMontar([HD[10]]), _histUepMontar([])], [null, null]);
+  const K1 = _histKpisUep(U), L = K1.map(c => c.l);
+  ok('1ª linha: a UEP julga — o hero com o ÚNICO selo (as palavras do bloco da semana) e, ao lado, fatos sem cor',
+     [L, K1[0].v, K1[0].sub, K1[0].c, K1.slice(1).map(c => c.c)],
+     [['UEP NA JORNADA · META 24.387', 'UEP / DIA (JORNADA)', 'DIAS QUE BATERAM', 'MELHOR DIA', 'UEP EM HORA EXTRA'],
+      '24.224 <small>UEP</small>', '<b>⚠ META BATIDA COM HORA EXTRA</b> · 99,3% da meta · faltaram 163 UEP na jornada (18/dia)', 'warn hist-hero', ['', '', '', '']]);
+  ok('os cards de período dizem a base (dias úteis, o fim de semana em HE, o dia sem UEP) e os dias abaixo',
+     [K1[1].v, K1[1].sub, K1[2].v, K1[2].sub, K1[3].v, K1[3].sub, K1[4].v, K1[4].sub],
+     ['2.692', 'meta 2.710 · 9 dias úteis · fim de semana em hora extra · 1 sem UEP', '5 <small>de 9</small>', 'abaixo: 21/10, 23/10, 28/10, 29/10',
+      '116,2%', '19/10/2026 · 2.940 UEP', '1.730', '10 horas em 4 dias']);
+  // o hero muda com o selo (revisão: o teste só cobria o âmbar); o vermelho não repete o número do selo
+  const Uok = { ...U, selo:'ok', falta:0, faltaPorDia:0, faltaTot:0 }, Uru = { ...U, selo:'ruim', falta:1500, faltaPorDia:167, faltaTot:1000 };
+  ok('o hero verde: sem "faltaram"; o vermelho: o selo diz o total (com a HE) e a linha só a jornada; sem HE nenhuma, só o por dia',
+     [_histKpisUep(Uok)[0].c, _histKpisUep(Uok)[0].sub, _histKpisUep(Uru)[0].c, _histKpisUep(Uru)[0].sub, _histKpisUep({ ...Uru, he:0 })[0].sub],
+     ['ok hist-hero', '<b>✓ META BATIDA NA JORNADA NORMAL</b> · 99,3% da meta', 'red hist-hero',
+      '<b>FALTARAM 1.000 UEP PARA A META</b> · 99,3% da meta · só na jornada: 1.500 (167/dia)', '<b>FALTARAM 1.000 UEP PARA A META</b> · 99,3% da meta · 167 UEP/dia']);
+  const K2 = _histKpisCx(U.k, 10, '1 dia de fim de semana, todo hora extra', '7,6% do total', false);
+  ok('2ª linha: as caixas como fato, sem cor e sem % da meta (v7.252.0)',
+     [K2.map(c => c.l), K2.map(c => c.c), K2[0].v, K2[0].sub, K2[2].v, K2[2].sub, K2[3].v, K2[3].sub],
+     [['CAIXAS', 'CAIXAS EM HORA EXTRA', 'CAIXAS PROGRAMADAS', 'CAIXAS / DIA (JORNADA)'], ['', '', '', ''],
+      '16.715', '15.329 na jornada · 1.386 em hora extra', '18.007', '10 dias com meta · 1 dia de fim de semana, todo hora extra', '1.533', 'meta 1.801/dia · 10 dias com meta']);
+  ok('o aviso de backend sem HE CX continua vermelho (alerta, não veredito)', _histKpisCx(U.k, 10, '', '⚠ Apps Script sem HE CX', true)[1], { l:'CAIXAS EM HORA EXTRA', v:'—', c:'red', sub:'⚠ Apps Script sem HE CX' });
+  // as células de cada dia: a régua da semana (verde ≥ meta; âmbar bateu com HE; vermelho abaixo)
+  const cel = i => _histCelulasUep(HD[i], U.dias[i]);
+  ok('19/10: bateu na jornada → verde ✓ META', [/color:var\(--ok\)">116,2%/.test(cel(0).cel), cel(0).selo], [true, '<span class="badge b-ok">✓ META</span>']);
+  ok('23/10 (2.756 de 2.761, 99,8%): abaixo na jornada e sem HE → vermelho ABAIXO (a régua é a da semana, não a de 96%)',
+     [/color:var\(--red\)">99,8%/.test(cel(4).cel), cel(4).selo, /2\.756 UEP de 2\.761/.test(cel(4).cel)], [true, '<span class="badge b-red">ABAIXO</span>', true]);
+  ok('28/10: 2.657 + 400 em HE ≥ 2.761 → âmbar META COM HE', [/color:var\(--warn\)">96,2%/.test(cel(8).cel), cel(8).selo, /\+400 em HE/.test(cel(8).cel)], [true, '<span class="badge b-warn">⚠ META COM HE</span>', true]);
+  ok('sábado: a UEP toda em HE, sem meta e sem %; o selo é HORA EXTRA', [/>800 HE<\/td>/.test(cel(5).cel), cel(5).selo], [true, '<span class="badge b-acc">HORA EXTRA</span>']);
+  ok('dia sem UEP gravada: traços (nunca 0) e SEM UEP — nunca o veredito das caixas',
+     [(cel(10).cel.match(/>—<\/td>/g) || []).length, /SEM UEP/.test(cel(10).selo), /b-ok|b-red|b-warn/.test(cel(10).selo)], [3, true, false]);
+  // o cabeçalho: em UEP ou em caixas, META DIA e ATRASO META pela mesma decisão
+  { const th = { innerHTML: '' }, docAntes = global.document;
+    global.document = { getElementById: id => id === 'hist-thead' ? th : null };
+    const cols = (u, m) => { _histThead(u, m); return (th.innerHTML.match(/<th[ >]/g) || []).length; };
+    const txt = (u, m) => { _histThead(u, m); return th.innerHTML.replace(/<th[^>]*>/g, '|').replace(/<\/th>|<\/?tr>/g, ''); };
+    ok('em UEP: UEP · META UEP · % DA META na frente, as caixas como fato, sem a coluna EFICIÊNCIA; em caixas, a tabela de antes',
+       [cols(true, false), cols(true, true), cols(false, false), cols(false, true), txt(true, false), txt(false, true)],
+       [13, 15, 11, 13, '|DATA|UEP|META UEP|% DA META|CAIXAS|H. NORMAL|H. EXTRA|PROGRAMADAS|MELHOR H.|PIOR H.|STATUS|FECHAMENTO|FONTE',
+        '|DATA|REALIZADO|H. NORMAL|H. EXTRA|META|META DIA|ATRASO META|EFICIÊNCIA|MELHOR H.|PIOR H.|STATUS|FECHAMENTO|FONTE']);
+    global.document = docAntes; }
+  // a linha inteira, montada de verdade (revisão: a tabela em UEP só era conferida por texto)
+  const tds = h => (h.match(/<td[ >]/g) || []).length;
+  const L8u = _histLinhaHtml(HD[8], U.dias[8], false), L8c = _histLinhaHtml(HD[8], null, false);
+  ok('28/10 em UEP: 13 células, a UEP na frente, MELHOR H. e PIOR H. sem cor (nunca o 2º veredito), o selo âmbar e o 2HE',
+     [tds(L8u), /^\s*<tr>\s*<td class="mono">28\/10\/2026<\/td>\s*<td class="mono" title="2\.657 UEP de 2\.761/.test(L8u),
+      /color:var\(--txt2\)">375<\/td>/.test(L8u), /color:var\(--txt2\)">60<\/td>/.test(L8u), /var\(--ok\)">375|var\(--red\)">60/.test(L8u),
+      /⚠ META COM HE<\/span> <span class="badge b-he">2HE<\/span>/.test(L8u), /b-ok" title="SIM">✓<\/span>/.test(L8u), /☁ SHEETS/.test(L8u)],
+     [13, true, true, true, false, true, true, true]);
+  ok('28/10 em caixas (período sem UEP): 11 células, a eficiência e o selo pelas caixas, MELHOR H. verde e PIOR H. vermelha como sempre',
+     [tds(L8c), /var\(--ok\)">171,3%<\/td>/.test(L8c), /var\(--ok\)">375<\/td>/.test(L8c), /var\(--red\)">60<\/td>/.test(L8c), /b-ok">✓ META<\/span> <span class="badge b-he">2HE/.test(L8c), /META COM HE/.test(L8c)],
+     [11, true, true, true, true, false]);
+  ok('o sábado e o dia sem UEP em UEP; META DIA e ATRASO META entram nas células com o temMetaComp (dia sem o dado: traços)',
+     [/>800 HE<\/td>/.test(_histLinhaHtml(HD[5], U.dias[5], false)), /HORA EXTRA<\/span> <span class="badge b-he">4HE/.test(_histLinhaHtml(HD[5], U.dias[5], false)),
+      /SEM UEP/.test(_histLinhaHtml(HD[10], U.dias[10], false)), tds(_histLinhaHtml(HD[10], U.dias[10], true)), (_histLinhaHtml(HD[10], U.dias[10], true).match(/antes da v5\.55/g) || []).length],
+     [true, true, true, 15, 1]);
+  ok('a montagem é conta pura; os cards, o cabeçalho, as células e a linha não contam (D1)',
+     ['function _histKpisUep(', 'function _histKpisCx(', 'function _histThead(', 'function _histCelulasUep(', 'function _histLinhaHtml('].map(f => /uepHistResumo|_relMetaHE|uepDiaMeta|uepDiaHe|\.reduce\(|\.filter\(/.test(pega(f))),
+     [false, false, false, false, false]);
+  const rh = pega('async function renderHist(');
+  ok('o renderHist lê a montagem uma vez: cards pela _gerKpiHtml, gráfico pelo _uepAbaPerSvg da aba ⚖ UEP (id próprio e a cor da tabela), caixas só fato, cabeçalho pelo _histThead, linha pelo _histLinhaHtml',
+     [/const U=_histUepMontar\(dias\)/.test(rh), /_gerKpiHtml\(_histKpisUep\(U\)\)/.test(rh), /_gerKpiHtml\(_histKpisCx\(U\.k,/.test(rh),
+      /_uepAbaPerSvg\(U\.diasUep, Math\.max\(HIST_CH_W_MIN, chBox\.clientWidth\|\|0\), 230, 0, \{ pid:'histPerLis', cls:U\.clsPorDia \}\)/.test(rh), /renderChartHist\(dias,periodo,temUepHist\)/.test(rh),
+      /_histLinhaHtml\(d, temUepHist\?U\.dias\[i\]:null, temMetaComp\)/.test(rh), /if\(soFato\)\{/.test(pega('function renderChartHist(')),
+      /chRow\.classList\.toggle\('so-cx', !temUepHist\)/.test(rh), /g2\.style\.display='none'; g2\.innerHTML='';/.test(rh), /setTxt\('hist-sb-periodo'/.test(rh)],
+     [true, true, true, true, true, true, true, true, true, true]);
+  // as sub-abas (PPCP, 18/11/2026: "dividir em sub aba"): PERÍODO · ANÁLISE POR HORÁRIO, trocar só mostra e esconde
+  { const mk = sub => { const e = { dataset:{ sub }, on:false, sel:null }; e.classList = { toggle:(c, v) => { if (c === 'on') e.on = v; } }; e.setAttribute = (a, v) => { e.sel = v; }; return e; };
+    const B = [mk('periodo'), mk('horario')], P = [mk('periodo'), mk('horario')], docAntes = global.document;
+    global.document = { querySelectorAll: s => /#hist-sub/.test(s) ? B : (/#sec-historico \.ucv-pn/.test(s) ? P : []) };
+    _histSub('horario');
+    ok('trocar de sub-aba acende o botão e o painel certos', [B.map(b => b.on), B.map(b => b.sel), P.map(p => p.on)], [[false, true], ['false', 'true'], [false, true]]);
+    _histSub('x');
+    ok('sub-aba desconhecida não muda nada', [B.map(b => b.on), P.map(p => p.on)], [[false, true], [false, true]]);
+    global.document = docAntes;
+    ok('a marcação: a faixa, os dois painéis e a análise por horário dentro do seu',
+       [/id="hist-sub" role="tablist"/.test(src), (src.match(/<div class="ucv-pn( on)?" data-sub="(periodo|horario)">/g) || []).length,
+        /<div class="ucv-pn" data-sub="horario">\s*<div id="analise-horario">/.test(src), /setTxt\('hist-sb-horario'/.test(pega('function renderAnaliseHorario(')),
+        (src.match(/#sec-programacao \.ucv-sb\.on,#sec-historico \.ucv-sb\.on\{/g) || []).length],
+       [true, 2, true, true, 1]); }
 }
 
 console.log(falhas === 0

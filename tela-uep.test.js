@@ -177,12 +177,22 @@ console.log('\n── TROCA DE ESCALA DA UEP com o passado travado (v7.151.0) �
      [/ESCALA NOVA DA UEP · 21\/10/.test(sd), sd.includes(`x1="${(20 + 2 * passo).toFixed(1)}"`)], [true, true]);
   ok('marca perto da borda direita: o texto vira para dentro', /text-anchor="end"[^>]*>ESCALA NOVA/.test(_uepAbaPerSvg(['17/10/2026', '18/10/2026', '19/10/2026', '20/10/2026', '21/10/2026'].map(d => dU(d, 2900)), 760)), true);
   UEP_ESCALAS.length = 0;
+  // v7.266.0: o HISTÓRICO usa o mesmo desenho — com o id do padrão próprio (dois desenhos na página
+  // não se misturam: o 2º resolvia para o pattern do 1º, em display:none, e o sábado saía vazio) e
+  // a cor da tabela por dia (o dia que bateu só com a hora extra é âmbar lá, e vermelho no desenho de sempre)
+  { const S = [dU('16/10/2026', 2900), dU('17/10/2026', 900), dU('19/10/2026', 3100)].map(histDiaFds);   // sexta · sábado · segunda
+    const sv1 = _uepAbaPerSvg(S, 760, 230, 0, { pid: 'histPerLis', cls: { '16/10/2026': 'he' } }), sv0 = _uepAbaPerSvg(S, 760);
+    ok('HISTÓRICO: id próprio do padrão listrado e a barra âmbar do dia que bateu só com HE; sem a opção, o desenho de sempre',
+       [/id="histPerLis"/.test(sv1), /url\(#histPerLis\)/.test(sv1), /uepPerLis/.test(sv1), /id="uepPerLis"/.test(sv0) && /url\(#uepPerLis\)/.test(sv0),
+        /fill="var\(--warn\)" opacity="\.85"/.test(sv1), /bateu com a hora extra/.test(sv1), /fill="var\(--red\)" opacity="\.85"/.test(sv0), /fill="var\(--warn\)" opacity="\.85"/.test(sv0)],
+       [true, true, false, true, true, true, true, false]); }
 
   // Onde a UEP de vários dias aparece junta, a nota sai pelas MESMAS funções.
   const pega = f => pegaJs(f);
   ok('as notas estão nos lugares que juntam UEP de dias diferentes',
      [/_uepEscalaNota\(P\.dias\.map/.test(pega('function renderUep(')), /_uepEscalaNota\(P\.dias\.map/.test(pega('function _uepDocHtml(')),
-      /_uepEscalaSelo\(uEsc\)/.test(JS), /_uepEscalaNota\(/.test(pega('function _rpUepFaixaHtml(')),
+      // v7.266.0: o card UEP / DIA do HISTÓRICO lê a nota e o selo da montagem (_histUepMontar)
+      /escalaSelo:_uepEscalaSelo\(U\.datasUep\), escalaNota:_uepEscalaNota\(U\.datasUep\)/.test(pega('function _histUepMontar(')), /_uepEscalaNota\(/.test(pega('function _rpUepFaixaHtml(')),
       /cart\.escNota = _uepEscalaNota\(_qpCurvaUepDias\(dias, QP_REGUA\)/.test(pega('async function _cartBlocos(')),
       /b\.cart\.escNota/.test(pega('function _cartBlocosHtml(')), /_uepEscalaNota\(SIM_UEP\.dias/.test(pega('function _simUepPintar(')),
       /_uepEscalaDesde\(hojeNum\)/.test(pega('function _tvUepPesoNormal('))],
