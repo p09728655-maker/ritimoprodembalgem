@@ -384,7 +384,7 @@ via Google Apps Script (JSONP).
   (`_gsemSeloTxt`, as palavras do bloco da semana); as caixas são fato na 2ª
   linha, sem cor nem %; o gráfico é o `_uepAbaPerSvg` da ⚖ UEP · PERÍODO; a
   tabela pelo `_histThead` + `_histLinhaHtml` (UEP · META UEP · % DA META ·
-  STATUS pela régua da semana, ≥ meta — **não** a de 96%). Sem UEP no período,
+  STATUS pela régua do dia fechado do rp-core, ≥ meta — **não** a de 96%). Sem UEP no período,
   tudo em caixas. Sub-abas PERÍODO · ANÁLISE POR HORÁRIO (`_histSub`, a faixa
   da PROGRAMAÇÃO). ⚠ O `_uepAbaPerSvg` leva `pid` (id do padrão listrado por
   desenho — dois na página se misturavam) e `cls` (a cor da tabela por dia).
@@ -392,8 +392,7 @@ via Google Apps Script (JSONP).
   (`_histDocUepHtml`: os cards, o `_uepAbaPerSvg`, `_histTheadHtml`,
   `_histLinhaHtml`, `_histCxInfo`) com a pele `_HIST_DOC_CSS` (`.hist-doc`: só
   tokens e classes; a FONTE é `.so-tela`); sem UEP, o papel de sempre em caixas.
-  ⚠ Mudou a tela da aba, o papel muda junto — conferir os dois. ⚠ O dia
-  passado do gerencial julga a UEP pela régua de 96% (em aberto, PPCP).
+  ⚠ Mudou a tela da aba, o papel muda junto — conferir os dois.
 - MELHOR H. / PIOR H. e a ANÁLISE POR HORÁRIO do HISTÓRICO em UEP (v7.268.0):
   o % da META DE UEP DA HORA (meta do dia × minutos ÷ 527, a régua do
   gerencial), conta pura `_histHorasMontar` (Σ ÷ Σ; só jornada de dia útil, hora
@@ -412,6 +411,18 @@ via Google Apps Script (JSONP).
   `pollParadaTV` nem o `lerMediaHoras`.
 
 ## UEP → `docs/memoria/uep.md`
+- **A RÉGUA DO DIA FECHADO EM UEP É UMA SÓ** (v7.269.0 / rp-core 1.25.0 / mobile
+  1.60.0; PPCP: *"a régua tem que ser universal"*): `uepDiaJulga(d)` (ok = jornada
+  ≥ META UEP · he = só com a hora extra, âmbar · ruim · fds), `uepPeriodoJulga(res)`
+  (a mesma régua na soma dos dias úteis) e `uepDiaSelo(J)` (a palavra e a cor), no
+  rp-core — com a REDE no `<head>` dos dois HTMLs para o rp-core antigo em cache
+  (a mesma regra, testada contra a do núcleo). Toda tela e papel que julga dia,
+  semana ou período FECHADO em UEP lê dela: HISTÓRICO, fechamento da semana,
+  relatório semanal, gerencial do dia passado, diretoria, ⚖ UEP · PERÍODO,
+  🖨 Estudo de UEP, a coluna EM UEP do 🖨 CAIXAS × PONTOS × UEP e o detalhe do dia
+  no celular. ⚠ **Não julgar dia fechado pela `sc`/`sl`/`slRitmo`** (96%/90%:
+  são do ritmo AO VIVO e da hora) nem por `uep >= meta` solto — o teste da régua
+  universal prende. ⚠ Caixas continuam na `META_PCT` (96%): outra régua.
 - A UEP é a régua do esforço: base MESA CABECEIRA MADERO = 1,00 UEP/cx; a meta
   é a do ⚙ (`META_UEP` na `CONFIG_PAINEL`; hoje 2.761, a referência) na jornada
   de 527 min; sem ela, `UEP_META_PADRAO` 2.530. **O padrão foi fechado em

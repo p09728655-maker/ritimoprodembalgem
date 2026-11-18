@@ -578,9 +578,11 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   jornada + HE ≥ meta; ruim), **não a de 96%** (`sc`) que a coluna UEP usava
   até a v7.265.0. O 23/10 (2.756 de 2.761, 99,8%) era verde e passa a vermelho
   ABAIXO — e é vermelho também no bloco da semana. Motivo: um dia, uma cor nas
-  duas telas de período; e o *bateu* do card já era ≥ meta. **Em aberto**: o
+  duas telas de período; e o *bateu* do card já era ≥ meta. ~~**Em aberto**: o
   dia passado do GERENCIAL (`renderGerencialHist`) julga o hero pela `sc`
-  (96%); alinhar os três é decisão do PPCP — não mudar um sem o outro.
+  (96%)~~ — resolvido na v7.269.0: a régua do dia fechado é UMA, no rp-core
+  (`uepDiaJulga`), e o dia passado, a diretoria, a ⚖ UEP, o Estudo e o celular
+  leem dela (ver *A RÉGUA DO DIA FECHADO EM UEP É UMA SÓ* em `uep.md`).
 - Dia sem UEP gravada no meio de um período com UEP: traços nas três colunas,
   STATUS *SEM UEP* (`b-mute`) — nunca 0 (E1) e nunca o veredito das caixas na
   mesma coluna (dois vereditos). O card UEP / DIA diz *N sem UEP*.
@@ -734,8 +736,10 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     planilha de hoje (acima, em *A jornada*);
   - **o ranking sem cor**: a hora era pintada pela `sc` (96%) e o dia é julgado
     em ≥ meta — com todas as horas a 97%, o ranking inteiro verde e todos os
-    dias ABAIXO. ⚠ Não devolver cor de veredito ao ranking nem às duas colunas
-    enquanto a régua do dia não for uma só (decisão do PPCP em aberto);
+    dias ABAIXO. ⚠ Não devolver cor de veredito ao ranking nem às duas colunas:
+    desde a v7.269.0 a régua do dia fechado é ≥ meta e a da HORA continua 96%
+    (decisão do PPCP, *"100% no fechado, 96% ao vivo"*) — no mesmo quadro as
+    duas dariam a contradição de novo;
   - período de 1 dia: as colunas ficam em UEP e o ranking não tem 2 dias por
     horário — o estado diz isso (dizia "nenhuma hora… tem a UEP completa");
   - `_rpEsc` no rótulo do horário (vem do `slotLabel` da planilha);

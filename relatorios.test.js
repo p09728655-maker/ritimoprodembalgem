@@ -4962,8 +4962,9 @@ console.log('\n── estudo de UEP ──');
     ok('o botão GRAVAR UEP grava em lotes, em sequência, pela escrita com retry',
        /for\(let i=0;i<lista\.length;i\+=UEP_GRAVAR_LOTE\)[\s\S]*await jsonpEscrita\(url\)/.test(pega('async function _gravarUepCadastro(')), true);
   }
-  ok('a UEP GRAVADA usa a cor da aba HISTÓRICO (sc do % da meta)',
-     /corSc\[sc\(d\.gravada\.pct\)\]/.test(pega('function _uepHtml(')), true);
+  // v7.269.0: a cor da UEP GRAVADA é a régua ÚNICA do dia fechado (uepDiaSelo) — a mesma da aba HISTÓRICO (era a sc de 96%)
+  ok('a UEP GRAVADA usa a cor da aba HISTÓRICO (a régua do dia fechado, não a sc)',
+     [/corSc\[d\.gravada\.cor\]/.test(pega('function _uepHtml(')), /cor:uepDiaSelo\(uepDiaJulga\(h\)\)\.cor/.test(JS), /corSc\[sc\(/.test(JS)], [true, true, false]);
   ok('com menos de 10 dias válidos não há faixa', _uepEstudo(itM.slice(0, 5), 'aparada', rbM, [50, 60], histM).meta.de, null);
   ok('a sanidade usa o TETO da âncora (a referência), não o ritmo médio', /ref\.teto>0\?ref\.teto/.test(pega('function _uepEstudo(')), true);
   ok('o estudo pede cxHora e espera mais; o comparativo não pede',
@@ -5992,6 +5993,7 @@ console.log('\n── estudo de UEP ──');
   global.CFG = global.CFG || {}; CFG.turnoInicio = CFG.turnoInicio || '07:00'; CFG.turnoFim = CFG.turnoFim || '17:00';
   global.DIR_COB_MIN = 95;
   global._rpEsc = global._rpEsc || (x => String(x));
+  if (typeof global._gsemSeloTxt === 'undefined') eval(pega('function _gsemSeloTxt(').replace(/^function /, 'global._gsemSeloTxt = function '));   // v7.269.0: o selo da diretoria
   const vj = JSON.parse(fs.readFileSync(path.join(__dirname, 'vercel.json'), 'utf8'));
   ok('endereço próprio: /diretoria aponta para o painel, sem cache velho',
      [vj.rewrites.some(r => r.source === '/diretoria' && r.destination === '/ritmoprod_embalagem_v7.html'), vj.headers.some(h => h.source === '/diretoria')], [true, true]);
@@ -7453,6 +7455,101 @@ console.log('\n── aba HISTÓRICO: a UEP na frente (v7.266.0) ──');
           /--bg2:#e2e8f0/.test(CSSh), /\.hist-doc \.hist-barra\{-webkit-print-color-adjust:exact/.test(CSSh)],
          [true, 0, true, true, true, true, true]); }
   }
+}
+
+// ── v7.269.0 · mobile 1.60.0 · rp-core 1.25.0: A RÉGUA DO DIA FECHADO EM UEP É UMA SÓ ──────────
+// PPCP, 18/11/2026: "arrumar ficar igual" → "a régua tem que ser universal" → "100% no fechado, 96% ao vivo".
+// O mesmo dia saía de três jeitos: HISTÓRICO e semana ≥ meta com o âmbar; ⚖ UEP · PERÍODO e diretoria ≥ meta
+// sem o âmbar; gerencial do dia passado, Estudo de UEP e celular a 96%. Agora é a régua do rp-core em todos.
+console.log('\n── a régua do dia fechado em UEP: uma só (v7.269.0) ──');
+{ const M = 2761;
+  // A bateu na jornada · B só com a hora extra · C a 97,8% (a 96% saía VERDE) · D sábado · E sem UEP
+  const A = { data: '09/11/2026', real: 1500, meta: 1400, heCx: 0, uep: 2800, uepHe: 0, metaUep: M },
+        B = { data: '10/11/2026', real: 1700, meta: 1600, heCx: 200, uep: 2657, uepHe: 400, metaUep: M },
+        C = { data: '11/11/2026', real: 1600, meta: 1500, heCx: 0, uep: 2700, uepHe: 0, metaUep: M },
+        Dd = histDiaFds({ data: '14/11/2026', real: 1145, meta: 0, heCx: 1145, uep: 0, uepHe: 1440, metaUep: 0 }),
+        E = { data: '12/11/2026', real: 1300, meta: 1400, heCx: 0, uep: null, uepHe: null, metaUep: null };
+  const J = [A, B, C, Dd, E].map(uepDiaJulga);
+  ok('rp-core: ok na jornada · âmbar só com a hora extra · abaixo (97,8%) · fim de semana sem veredito · sem UEP, null',
+     J.map(j => j && [j.cls, j.pct != null ? Math.round(j.pct * 10) / 10 : null, Math.round(j.falta), Math.round(j.faltaTot)]),
+     [['ok', 101.4, 0, 0], ['he', 96.2, 104, 0], ['ruim', 97.8, 61, 61], ['fds', null, 0, 0], null]);
+  ok('a palavra e a cor do selo: o mesmo texto em toda tela e papel', J.map(uepDiaSelo).map(s => s.txt + ':' + s.cor),
+     ['✓ META:ok', '⚠ META COM HE:warn', 'ABAIXO:red', 'HORA EXTRA:acc', 'SEM UEP:mute']);
+  ok('a régua do dia fechado NÃO é a do ritmo: o 97,8% que a sc dizia "ok" é ABAIXO', [sc(97.8), uepDiaJulga(C).cls], ['ok', 'ruim']);
+  const res = uepHistResumo([A, B, C, Dd, E]), PJ = uepPeriodoJulga(res);
+  ok('o período: a jornada dos dias úteis com UEP contra a soma das metas (8.157 de 8.283), âmbar com a hora extra (+1.840)',
+     [PJ.selo, Math.round(PJ.jorn), PJ.meta, Math.round(PJ.he), Math.round(PJ.pct * 10) / 10, Math.round(PJ.falta), PJ.faltaTot], ['he', 8157, 8283, 1840, 98.5, 126, 0]);
+  ok('o período sem dia julgado não tem selo (nunca um veredito inventado)', [uepPeriodoJulga(uepHistResumo([Dd, E])), uepPeriodoJulga(null)], [null, null]);
+  ok('o rp-core publica as três e sobe de versão', [['uepDiaJulga', 'uepPeriodoJulga', 'uepDiaSelo'].every(f => RP_CORE.fns.includes(f)), RP_CORE.versao], [true, '1.25.0']);
+  // a REDE do painel e do celular para o rp-core antigo em cache: a MESMA regra, nos mesmos casos
+  { const vm = require('vm');
+    const mob = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
+    [['PC', src], ['celular', mob]].forEach(([nome, h]) => {
+      const blo = h.match(/if \(typeof window\.uepDiaJulga !== 'function'\)[\s\S]*?\n    return;\n  \}/)[0].replace(/\n    return;\n  \}$/, '');
+      const Cx = { window: {}, uepDiaMeta, uepDiaHe, isFinite, Number, Math }; Cx.window = Cx; vm.createContext(Cx);
+      vm.runInContext(blo, Cx);
+      ok(`a rede do ${nome} (rp-core antigo em cache) dá o MESMO veredito que o rp-core`,
+         [[A, B, C, Dd, E].map(d => JSON.stringify(Cx.uepDiaJulga(d))), JSON.stringify(Cx.uepPeriodoJulga(res)), [A, B, C, Dd, E].map(d => JSON.stringify(Cx.uepDiaSelo(Cx.uepDiaJulga(d))))],
+         [[A, B, C, Dd, E].map(d => JSON.stringify(uepDiaJulga(d))), JSON.stringify(PJ), J.map(j => JSON.stringify(uepDiaSelo(j)))]);
+    }); }
+  // ── o MESMO dia, o MESMO veredito, em toda tela que julga dia fechado em UEP ──
+  ['function _uepAbaPerSvg(', 'function _uepEscalaMarca(', 'function _fdsNome(', 'function _rpEsc(', 'function _dirSemSvg(', 'function _dirSemana(', 'function _dirSemanaHtml(',
+   'function _dirF(', 'function _dirMsg(', 'function _dirComHe(', 'function _relSemanaPassada(', 'function _relSemanaJanela(', 'function _relDiasDaSemana(', 'function _uepAbaPeriodo(', 'function _uepAbaPerCards(', 'function _uepPerFdsTxt(',
+   'function _gsemSeloTxt(', 'function _gsemUepMontar(', 'function _histCelulasUep(']
+    .forEach(f => { const n = f.slice(9, -1); if (eval('typeof ' + n) === 'undefined') eval(pega(f).replace(/^function /, 'global.' + n + ' = function ')); });
+  if (typeof global.UEP_ESCALAS === 'undefined') global.UEP_ESCALAS = [];
+  if (typeof global.DIR_COB_MIN === 'undefined') global.DIR_COB_MIN = 95;
+  const W = [A, B, C, Dd];
+  const G = _gsemUepMontar(W, _relSemanalKPIs(W));
+  ok('fechamento da semana / aba HISTÓRICO: ok · âmbar · ABAIXO no 97,8% · o sábado âmbar (todo hora extra) — e o selo do período',
+     [G.dias.map(x => x.cls), G.selo], [['ok', 'he', 'ruim', 'he'], 'he']);
+  ok('a tabela do HISTÓRICO diz a palavra do rp-core em cada dia',
+     G.dias.map((x, i) => _histCelulasUep(W[i], x).selo.replace(/<[^>]+>/g, '')), ['✓ META', '⚠ META COM HE', 'ABAIXO', 'HORA EXTRA']);
+  const corBarra = sv => (sv.match(/<rect [^>]*fill="([^"]+)"[^>]*opacity="\.85"><title>(\d\d\/\d\d)/g) || []).map(t => t.match(/fill="([^"]+)"/)[1] + ' ' + t.slice(-5));
+  ok('o desenho UEP POR DIA da ⚖ UEP (tela e papel) — sem o mapa de cores, a cor é a da régua do dia: âmbar no B, vermelho no 97,8%',
+     corBarra(_uepAbaPerSvg(W, 760)), ['var(--txt2) 09/11', 'var(--warn) 10/11', 'var(--red) 11/11']);
+  const corDir = (_dirSemSvg(W, 1600).match(/fill="([^"]+)"[^>]*><title>[^<]*<\/title>/g) || []).map(t => t.match(/fill="([^"]+)"/)[1]);
+  ok('as barras da diretoria: a mesma régua (âmbar no dia que só bateu com a hora extra; era vermelho)', corDir, ['#5d6b7e', 'var(--warn)', 'var(--red)', 'var(--warn)']);
+  const P = _uepAbaPeriodo(W, 30, new Date(2026, 10, 18)), PC = _uepAbaPerCards(P);
+  ok('⚖ UEP · PERÍODO: o card MÉDIA POR DIA com o selo do período (âmbar: bateu com a hora extra; era vermelho), e quem bateu só com HE',
+     [P.selo, PC[0].c, /bateu com a hora extra/.test(PC[0].sub), P.comHe, PC[1].v, PC[1].sub], ['he', 'warn', true, ['10/11/2026'], '1 <small>de 3</small>', 'abaixo: 10/11, 11/11']);
+  // a diretoria lê a semana passada: 18/11 → 09 a 15/11
+  const S = _dirSemana(W, new Date(2026, 10, 18), null), SH = _dirSemanaHtml(S, [], false, 'falha');
+  ok('diretoria · semana passada: o MESMO selo do bloco da semana (âmbar, com as palavras do _gsemSeloTxt), não mais o binário',
+     [S.selo, /dir-selo warn">● META BATIDA COM HORA EXTRA</.test(SH), /dir-k dest warn/.test(SH), /ABAIXO DA META/.test(SH)], ['he', true, true, false]);
+  ok('diretoria · semana sem dia julgado (só o sábado): nenhum selo inventado',
+     (s => [s.selo, /SEM UEP GRAVADA NA SEMANA|dir-selo">/.test(_dirSemanaHtml(Object.assign({}, s, { nUep: 0 }), [], false, 'falha'))])(_dirSemana([Dd], new Date(2026, 10, 18), null)), [null, true]);
+  // ── o celular: o detalhe do dia roda de verdade (rp-core + a função do app) ──
+  { const vm = require('vm'), mob = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
+    const mjs = [...mob.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
+    const i = mjs.indexOf('function abrirDia('), corpo = mjs.slice(i, mjs.indexOf('\n}\n', i) + 2);
+    const el = () => ({ textContent: '', innerHTML: '', classList: { add() {}, remove() {} } }), dom = { 'md-data': el(), 'md-body': el(), 'modal-dia': el() };
+    const Cm = { window: {}, document: { getElementById: id => dom[id] }, mediaCxH: () => 150, sl: x => String(x) };
+    Cm.window = Cm; vm.createContext(Cm);
+    vm.runInContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'), Cm);
+    vm.runInContext(corpo, Cm);
+    const linhaUep = d => { Cm._histDias = [d]; vm.runInContext(`abrirDia(${JSON.stringify(d.data)})`, Cm);
+      const m = dom['md-body'].innerHTML.match(/<span class="k">UEP \(JORNADA\)<\/span><span class="v ([a-z]*)">([^<]*)<\/span>/); return m ? m[1] + ' | ' + m[2] : null; };
+    ok('celular · detalhe do dia: a régua do dia fechado (o 97,8% era verde aqui e ABAIXO no PC)',
+       [linhaUep(A), linhaUep(B), linhaUep(C)],
+       ['ok | 2.800 de 2.761 · 101,4% · ✓ META', 'warn | 2.657 de 2.761 · 96,2% · ⚠ META COM HE', 'red | 2.700 de 2.761 · 97,8% · ABAIXO']); }
+  // ── o que não roda aqui (o render do dia passado, o estudo de UEP, o comparativo): a ligação ──
+  const GH = pega('function renderGerencialHist(');
+  ok('gerencial · dia passado: o hero, o card de reserva e a análise pela régua do dia fechado; nenhum % de UEP pela sc',
+     [/const JD=comUep&&uepDiaMeta\(diaU\)>0\?uepDiaJulga\(diaU\):null;/.test(GH), /c:\(JD\?uepDiaSelo\(JD\)\.cor:'acc'\)\+' ger-hero'/.test(GH),
+      /<b>\$\{_gsemSeloTxt\(\{selo:JD\.cls, faltaTot:JD\.faltaTot\}\)\}<\/b>/.test(GH), /c:JD\?uepDiaSelo\(JD\)\.cor:''\}/.test(GH),
+      /_gerAnaliseUepHistHtml\(horasU, pctUep, dia, fdsDia\?uepDiaHe\(diaU\):null, JD&&JD\.cls!=='fds'\?uepDiaSelo\(JD\)\.cor:null\)/.test(GH),
+      /sc\(pctUep\)|sc\(dia\.uep|sl\(pctUep\)/.test(GH), /sc\(pctUep\)/.test(pega('function _gerAnaliseUepHistHtml('))],
+     [true, true, true, true, true, false, false]);
+  ok('o hero do dia passado diz as palavras do bloco da semana (o 97,8% é "FALTARAM 61 UEP", o B é "META BATIDA COM HORA EXTRA")',
+     [_gsemSeloTxt({ selo: uepDiaJulga(C).cls, faltaTot: uepDiaJulga(C).faltaTot }), _gsemSeloTxt({ selo: uepDiaJulga(B).cls, faltaTot: 0 })],
+     ['FALTARAM 61 UEP PARA A META', '⚠ META BATIDA COM HORA EXTRA']);
+  // a GUARDA da régua universal: nenhum dia FECHADO em UEP julgado pela sc/sl/slRitmo nem por u>=m solto
+  ok('a régua é universal: nenhum lugar julga dia fechado em UEP por conta própria (sc, sl, u >= m)',
+     [/sc\(_pu\)/.test(fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8')), /corSc\[sc\(/.test(JS), /clsU: sc\(/.test(JS),
+      /u>=m\?'var\(--txt2\)':'var\(--red\)'/.test(JS), /u >= m \? '#5d6b7e'/.test(JS), /ok = S\.pct != null && S\.pct >= 100/.test(JS),
+      /mh\.soComHE \? 'he' : jorn >= meta/.test(JS), /uj >= m \? 'ok' : uj \+ uh >= m/.test(JS), /P\.res\.media>=P\.res\.metaMedia\?'ok':'red'/.test(JS)],
+     [false, false, false, false, false, false, false, false, false]);
 }
 
 console.log(falhas === 0

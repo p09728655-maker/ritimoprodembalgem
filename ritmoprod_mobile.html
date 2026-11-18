@@ -1152,6 +1152,26 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
     if (typeof window.uepDiaHe !== 'function') window.uepDiaHe = function(d){ return Number(d && d.uepHe) || 0; };
     // rp-core 1.20.0: os pontos do card ATRASO — com o antigo, o card fica sem eles
     if (typeof window.atrasoPtsTxt !== 'function') window.atrasoPtsTxt = function(){ return ''; };
+    // rp-core 1.25.0 (a régua ÚNICA do dia fechado em UEP): com o antigo em cache, a mesma
+    // regra aqui — sem ela o HISTÓRICO, a semana e o dia passado ficariam sem veredito.
+    if (typeof window.uepDiaJulga !== 'function') window.uepDiaJulga = function(d){
+      if (!d || d.uep === null || d.uep === undefined || !isFinite(Number(d.uep))) return null;
+      var meta = uepDiaMeta(d), he = uepDiaHe(d), uep = Number(d.uep);
+      if (!(meta > 0)) return { cls: 'fds', uep: null, he: he, meta: 0, pct: null, falta: 0, faltaTot: 0 };
+      return { cls: uep >= meta ? 'ok' : uep + he >= meta ? 'he' : 'ruim', uep: uep, he: he, meta: meta, pct: uep / meta * 100,
+               falta: Math.max(0, meta - uep), faltaTot: Math.max(0, meta - uep - he) };
+    };
+    if (typeof window.uepPeriodoJulga !== 'function') window.uepPeriodoJulga = function(res){
+      if (!res || !res.n || !(res.metaTot > 0)) return null;
+      var jorn = res.total, he = res.he || 0, meta = res.metaTot;
+      return { selo: jorn >= meta ? 'ok' : jorn + he >= meta ? 'he' : 'ruim', jorn: jorn, he: he, meta: meta, pct: jorn / meta * 100,
+               falta: Math.max(0, meta - jorn), faltaTot: Math.max(0, meta - jorn - he) };
+    };
+    if (typeof window.uepDiaSelo !== 'function') window.uepDiaSelo = function(J){
+      if (!J) return { txt: 'SEM UEP', cor: 'mute' };
+      return J.cls === 'fds' ? { txt: 'HORA EXTRA', cor: 'acc' } : J.cls === 'ok' ? { txt: '✓ META', cor: 'ok' }
+           : J.cls === 'he' ? { txt: '⚠ META COM HE', cor: 'warn' } : { txt: 'ABAIXO', cor: 'red' };
+    };
     return;
   }
   var n = 0;
@@ -1184,7 +1204,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.59.0';
+const APP_VER   = '1.60.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -4573,8 +4593,10 @@ function abrirDia(data){
   if(d.uep!=null && !(uepDiaMeta(d)>0)){
     linhas.push(['UEP EM HORA EXTRA', fmtN(Math.round(uepDiaHe(d)))+(d.fds?' · todo o dia':''), 'acc']);
   } else if(d.uep!=null){
-    const _pu=Number(d.uep)/uepDiaMeta(d)*100;
-    linhas.push(['UEP (JORNADA)', fmtN(Math.round(d.uep))+' de '+fmtN(uepDiaMeta(d))+' · '+fmtP(_pu), sc(_pu)]);
+    // a régua ÚNICA do dia fechado (rp-core 1.25.0 / 1.60.0): verde só com a jornada, âmbar se bateu
+    // com a hora extra — era a sc de 96%, e o mesmo dia saía verde aqui e ABAIXO no HISTÓRICO do PC
+    const _pu=Number(d.uep)/uepDiaMeta(d)*100, _sl=uepDiaSelo(uepDiaJulga(d));
+    linhas.push(['UEP (JORNADA)', fmtN(Math.round(d.uep))+' de '+fmtN(uepDiaMeta(d))+' · '+fmtP(_pu)+' · '+_sl.txt, _sl.cor==='mute'?'':_sl.cor]);
     if(Number(d.uepHe)>0) linhas.push(['UEP EM HORA EXTRA', fmtN(Math.round(d.uepHe)), 'acc']);
   }
   if(d.fechadoEm) linhas.push(['FECHADO', d.fechadoEm, '']);

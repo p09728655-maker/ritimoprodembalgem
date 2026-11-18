@@ -332,7 +332,7 @@ console.log('\n── as regras da conta ──');
   ok('além dos 10 fechados, entra o mais velho que ainda tem saldo vencido; o AINDA ABERTO do resumo é de todos os vencidos',
      [Y.lotes.length, Y.lotes[Y.lotes.length - 1].li, Y.resumo.nLotes, Y.resumo.aberto, Y.resumo.lisAberto], [11, '200/26', 10, 40, ['200/26']]);
   ok('a conta sem a lista não inventa: null', loteIntMontar(null, 20261117), null);
-  ok('o rp-core publica a função e sobe de versão', [RP_CORE.fns.includes('loteIntMontar'), RP_CORE.versao], [true, '1.24.0']);
+  ok('o rp-core publica a função e sobe de versão', [RP_CORE.fns.includes('loteIntMontar'), RP_CORE.versao], [true, '1.25.0']);
 }
 
 console.log('\n── v7.262.0: o % de cada item e o TEMPO (no dia · D+1 · D+2+) ──');

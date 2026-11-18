@@ -72,16 +72,22 @@ const HIST = [D('21/09', 1794, 1800, 0, 2823.2), D('22/09', 1579, 1250, 245, 276
   D('08/10', 1241, 1000, 0, 3159.4), D('09/10', 1683, 1650, 0, 2496.1), D('13/10', 2651, 1750, 0, 2615.4),
   D('14/10', 1849, 2250, 0, 2897.7), D('15/10', 1640, 2700, 0, 2751.1), D('16/10', 1971, 2350, 0, 3115.8)];
 const R = _cxUepMontar(HIST, 20261019, 30);
-ok('18 dias: 13 com o mesmo veredito, 5 com caixas ABAIXO e UEP no ritmo, nenhum o contrário',
-   [R.n, R.iguais, R.cxAbaixo, R.uepAbaixo], [18, 13, 5, 0]);
-ok('e os 5 vieram da META em caixas acima da capacidade em UEP (não do ritmo)',
+// v7.269.0 (PPCP: "a régua tem que ser universal"): o dia em UEP pela régua ÚNICA do dia fechado (≥ meta).
+// Mudam os dois dias com a UEP entre 96% e 100% da meta: 23/09 (2.502,5 de 2.530 = 98,9%, com as caixas a
+// 83,6%) deixa de ser "caixas abaixo, UEP no ritmo" e vira igual; 09/10 (98,7%, caixas a 102%) vira o contrário.
+ok('18 dias: 13 com o mesmo veredito, 4 com caixas ABAIXO e a UEP na meta, 1 o contrário (09/10, UEP a 98,7%)',
+   [R.n, R.iguais, R.cxAbaixo, R.uepAbaixo, R.dias.filter(d => d.tipo === 'uep-abaixo').map(d => d.data.slice(0, 5))], [18, 13, 4, 1, ['09/10']]);
+ok('e os 4 vieram da META em caixas acima da capacidade em UEP (não do ritmo)',
    R.dias.filter(d => d.tipo === 'cx-abaixo').map(d => [d.data.slice(0, 5), d.porque]),
-   [['23/09', 'meta-alta'], ['30/09', 'meta-alta'], ['14/10', 'meta-alta'], ['15/10', 'meta-alta'], ['16/10', 'meta-alta']]);
+   [['30/09', 'meta-alta'], ['14/10', 'meta-alta'], ['15/10', 'meta-alta'], ['16/10', 'meta-alta']]);
 const d16 = R.dias.find(d => d.data === '16/10/2026');
 ok('16/10: 83,9% em caixas, 123,2% em UEP; a meta de 2.350 cx no mix do dia pedia 146,8% da meta UEP',
    [fmtP(d16.pctCx), fmtP(d16.pctU), fmtP(d16.pctMetaCx)], ['83,9%', '123,2%', '146,8%']);
 ok('hora extra fora das caixas (22/09: 1.579 − 245)', R.dias.find(d => d.data === '22/09/2026').cx, 1334);
-ok('veredito pela régua do selo (sc)', [d16.clsCx, d16.clsU], ['red', 'ok']);
+// caixas pela régua delas (sc, 96%); a UEP pela régua ÚNICA do dia fechado (≥ meta) — a mesma das outras telas
+{ const d23 = R.dias.find(d => d.data === '23/09/2026'), d09 = R.dias.find(d => d.data === '09/10/2026');
+  ok('o veredito: caixas pela sc, UEP pela régua do dia fechado (23/09 a 98,9% e 09/10 a 98,7% não batem; a palavra é a do dia fechado)',
+     [d16.clsCx, d16.clsU, d16.stU, fmtP(d23.pctU), d23.clsU, d23.stU, d09.clsCx, d09.clsU], ['red', 'ok', 'META', '98,9%', 'red', 'ABAIXO', 'ok', 'red']); }
 
 console.log('\n── CAIXAS × UEP: bordas ──');
 const R2 = _cxUepMontar([D('18/10', 900, 1000, 0, 2600), D('19/10', 1, 1000, 0, 2600), D('10/09', 900, 1000, 0, 2600),
@@ -157,15 +163,17 @@ const RM = _cxUepMontar(HOUT, 20261029, 30, { pts: PH, tabela: 'hoje', metaPts: 
 const RMG = _cxUepMontar(HOUT, 20261029, 30, { pts: PM, tabela: 'gravada', metaPts: 198740, trava: '16/10/2026' });
 ok('a meta NÃO julga os pontos gravados (seriam 9 abaixo, 16/10 e 20/10 só pela troca de tabela): sem veredito e diz por quê',
    [RMG.metaPts, RMG.metaSemTabela, RMG.ptsAbaixo, RMG.dias[0].clsP], [false, true, 0, null]);
-ok('com meta: 11 dias com pontos no ritmo, 18 com UEP; 7 com UEP no ritmo e pontos abaixo',
-   [RM.reguas.pts.noRitmo, RM.reguas.uep.noRitmo, RM.ptsAbaixo, RM.ptsAcima], [11, 18, 7, 0]);
-ok('e os 7 pelo mix de VALOR do dia (batendo a meta de UEP, faltariam pontos)',
+// v7.269.0: 09/10 (2.496,1 de 2.530 = 98,7%) e 28/10 (2.656,9 de 2.761 = 96,2%) não batem mais a meta de UEP
+ok('com meta: 11 dias com pontos no ritmo, 16 com a UEP na meta; 6 com a UEP na meta e pontos abaixo, 1 o contrário (09/10)',
+   [RM.reguas.pts.noRitmo, RM.reguas.uep.noRitmo, RM.ptsAbaixo, RM.ptsAcima, RM.dias.filter(d => d.tipoP === 'pts-acima').map(d => d.data.slice(0, 5))], [11, 16, 6, 1, ['09/10']]);
+ok('e os 6 pelo mix de VALOR do dia (batendo a meta de UEP, faltariam pontos) — o 28/10 sai: a UEP também não bateu',
    RM.dias.filter(d => d.tipoP === 'pts-abaixo').map(d => [d.data.slice(0, 5), d.porqueP]),
-   ['30/09', '01/10', '07/10', '13/10', '15/10', '23/10', '28/10'].map(d => [d, 'pts-barato']));
-ok('sem os pontos (leitura falhou), caixas × UEP como sempre (12 iguais, 8 com caixas abaixo — conferido fora do painel)', (() => {
+   ['30/09', '01/10', '07/10', '13/10', '15/10', '23/10'].map(d => [d, 'pts-barato']));
+// v7.269.0: 12 → 10 iguais — 09/10 e 28/10 (UEP a 98,7% e 96,2%, caixas a 102% e 148%) passam a "UEP abaixo"
+ok('sem os pontos (leitura falhou), caixas × UEP como sempre (10 iguais, 8 com caixas abaixo, 2 com a UEP abaixo)', (() => {
   const R0 = _cxUepMontar(HOUT, 20261029, 30), R1 = _cxUepMontar(HOUT, 20261029, 30, { pts: null, trava: '16/10/2026' });
   return [R0.iguais, R0.cxAbaixo, R1.iguais, R1.cxAbaixo, R1.reguas.pts, R1.reguas.n];
-})(), [12, 8, 12, 8, null, 20]);
+})(), [10, 8, 10, 8, null, 20]);
 ok('dia sem item no período: pontos null (não zero) e fora da base das três réguas', (() => {
   const pm = Object.assign({}, PM); delete pm['21/10/2026'];
   const r = _cxUepMontar(HOUT, 20261029, 30, { pts: pm, tabela: 'gravada' });
@@ -177,7 +185,8 @@ const HP = _cxUepHtml(RP, { data: '29/10/2026', hora: '08:00' }), HM = _cxUepHtm
 ok('sem a capacidade (sem o D): resumo, desvios e dados, cada um em folha nova',
    [HP.indexOf('1 ▸ RESUMO GERENCIAL') > 0, HP.indexOf('1 ▸ RESUMO GERENCIAL') < HP.indexOf('2 ▸ ANÁLISE DOS DESVIOS'), HP.indexOf('2 ▸ ANÁLISE DOS DESVIOS') < HP.indexOf('3 ▸ DADOS E CRITÉRIOS'),
     (HP.match(/cxu-quebra/g) || []).length], [true, true, true, 2]);
-ok('sem a capacidade, as conclusões apontam os desvios na página 2 (não na 3)', [HP.includes('referência de UEP — página 2.'), HP.includes('página 3')], [true, false]);
+// v7.269.0: com dias de UEP abaixo também, a conclusão aponta os motivos dia a dia (não só a meta em caixas)
+ok('sem a capacidade, as conclusões apontam os desvios na página 2 (não na 3)', [HP.includes('Os motivos, dia a dia, na página 2.'), HP.includes('página 3')], [true, false]);
 ok('a frase sai do dado: a que menos variou, e as outras duas com o número',
    HP.includes('A <b>UEP</b> é a régua que menos varia de um dia para o outro: <b>±10,4%</b>, contra ±18,5% dos pontos e ±26,9% das caixas.'), true);
 ok('a prova diz que, depois da trava, a UEP só muda por cronoanálise (tempo medido, não a produção do dia) — v7.188.1',
@@ -396,7 +405,7 @@ console.log('\n── ABA 📏 RÉGUAS: o mix contra a meta de pontos, produto a
       PAP.indexOf('cxu-ref') < PAP.indexOf('2 ▸ CAPACIDADE')], [true, true]);
   ok('a UEP nunca é chamada de meta no papel nem na aba (é REFERÊNCIA)', [/meta de UEP|META DE UEP|META UEP/.test(PAP), /meta de UEP|META DE UEP|META UEP/i.test(HR)], [false, false]);
   ok('página 1: as conclusões saem do dado e apontam a página que detalha',
-     ['<b>Sem vantagem para a UEP:</b>', '<b>Vereditos diferentes em 12 de 20 dias.</b> Nos 8 em que as caixas deram ABAIXO e a UEP NO RITMO, a meta em caixas pedia mais que a referência de UEP — página 3.',
+     ['<b>Sem vantagem para a UEP:</b>', '<b>Vereditos diferentes em 13 de 20 dias.</b> Os motivos, dia a dia, na página 3.',
       '<b>A meta de pontos não cabe no mix.</b> O período rendeu 70 pontos por UEP e a meta pede 72: com a linha na referência de UEP todo dia, 97% da meta de pontos — página 2.',
       '<b>Dos 3 produtos que rodaram, 1 chega à meta de pontos</b> na referência de UEP; 83% das caixas foram nos que não chegam — página 2.'].filter(t => !PAP.includes(t)), []);
   ok('página 2: o título é a conclusão (os que rodaram: chegam e nem no limite)',
@@ -405,9 +414,10 @@ console.log('\n── ABA 📏 RÉGUAS: o mix contra a meta de pontos, produto a
   ok('página 2: capacidade estimada, limite físico e realizado com esses nomes, e capacidade não é produção garantida',
      ['CAPACIDADE ESTIMADA<br>NA REFERÊNCIA DE UEP', 'LIMITE FÍSICO<br>ESTEIRA SEM PARADA', 'REALIZADO<br>CX · 30 DIAS', 'Nenhum dos dois é produção garantida'].filter(t => !PAP.includes(t)), []);
   const P3 = PAP.split('3 ▸ ANÁLISE DOS DESVIOS')[1].split('4 ▸ DADOS')[0];
-  ok('página 3: 12 dias com veredito diferente (8 em caixas, 7 em pontos, juntos), cada dia contra a referência DA SUA DATA',
-     [P3.includes('Em <b>12 de 20</b> dias o veredito em caixas ou em pontos foi diferente do da UEP.'), (P3.match(/<tr><td>\d\d\/\d\d<\/td>/g) || []).length,
-      P3.includes('2.751 de 2.530'), P3.includes('2.869 de 2.761'), P3.includes('1.640 de 2.700')], [true, 12, true, true, true]);
+  // v7.269.0: 12 → 13 — entram 09/10 e 28/10 (UEP abaixo da meta); o 28/10 já estava pelos pontos
+  ok('página 3: 13 dias com veredito diferente (10 em caixas, 7 em pontos, juntos), cada dia contra a referência DA SUA DATA',
+     [P3.includes('Em <b>13 de 20</b> dias o veredito em caixas ou em pontos foi diferente do da UEP.'), (P3.match(/<tr><td>\d\d\/\d\d<\/td>/g) || []).length,
+      P3.includes('2.751 de 2.530'), P3.includes('2.869 de 2.761'), P3.includes('1.640 de 2.700')], [true, 13, true, true, true]);
   ok('página 3: o que investigar ou decidir — só o que o dado sustenta, e a decisão da referência sempre',
      ['Datação da programação.</b> Em 8 dia(s) a meta em caixas pedia mais que a referência de UEP (até 179,0%)', 'Meta de pontos × mix.', 'Referência de UEP.</b> Em avaliação — ainda não é a meta oficial da embalagem: decidir']
        .map(t => P3.includes(t)).concat([P3.includes('UEP acima do limite da esteira.'), P3.includes('Vão não medido.')]), [true, true, true, false, false]);
