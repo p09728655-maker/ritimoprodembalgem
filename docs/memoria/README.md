@@ -72,6 +72,7 @@ de tema entra aqui também.
 - O relatório semanal é DOCUMENTO, não painel
 - Enxugamento das telas (v7.118.0 em diante)
 - O RELATÓRIO SEMANAL COM A UEP NA FRENTE: ONDE PERDEMOS (v7.251.0)
+- O 🖨 DO HISTÓRICO COM A UEP NA FRENTE (v7.267.0)
 
 ## Gerencial do PC, do celular e diretoria — `gerencial.md`
 - PRODUTOS EMBALADOS HOJE — gerencial do celular (mobile 1.39.0) e do PC (v7.201.0)
@@ -82,6 +83,7 @@ de tema entra aqui também.
 - O ATRASO TAMBÉM EM PONTOS (v7.249.0 / mobile 1.52.0 / rp-core 1.20.0)
 - FECHAMENTO DA SEMANA PASSADA COM A UEP NA FRENTE (v7.250.0)
 - A ABA HISTÓRICO COM A UEP NA FRENTE (v7.266.0)
+- MELHOR HORA E PIOR HORA EM UEP NA ABA HISTÓRICO (v7.268.0)
 
 ## UEP — `uep.md`
 - CAIXAS × PONTOS × UEP — a régua que mede o esforço (v7.184.0)

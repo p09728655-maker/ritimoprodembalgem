@@ -192,7 +192,9 @@ console.log('\n── TROCA DE ESCALA DA UEP com o passado travado (v7.151.0) �
   ok('as notas estão nos lugares que juntam UEP de dias diferentes',
      [/_uepEscalaNota\(P\.dias\.map/.test(pega('function renderUep(')), /_uepEscalaNota\(P\.dias\.map/.test(pega('function _uepDocHtml(')),
       // v7.266.0: o card UEP / DIA do HISTÓRICO lê a nota e o selo da montagem (_histUepMontar)
-      /escalaSelo:_uepEscalaSelo\(U\.datasUep\), escalaNota:_uepEscalaNota\(U\.datasUep\)/.test(pega('function _histUepMontar(')), /_uepEscalaNota\(/.test(pega('function _rpUepFaixaHtml(')),
+      // v7.267.0: a faixa de UEP dos papéis saiu — o semanal diz a nota no ONDE PERDEMOS e o 🖨 do histórico lê a da montagem
+      /escalaSelo:_uepEscalaSelo\(U\.datasUep\), escalaNota:_uepEscalaNota\(U\.datasUep\)/.test(pega('function _histUepMontar(')),
+      /_uepEscalaNota\(U\.datasUep\)/.test(pega('function _relSemUepCorpoHtml(')) && /U\.escalaNota\?/.test(pega('function _histDocUepHtml(')),
       /cart\.escNota = _uepEscalaNota\(_qpCurvaUepDias\(dias, QP_REGUA\)/.test(pega('async function _cartBlocos(')),
       /b\.cart\.escNota/.test(pega('function _cartBlocosHtml(')), /_uepEscalaNota\(SIM_UEP\.dias/.test(pega('function _simUepPintar(')),
       /_uepEscalaDesde\(hojeNum\)/.test(pega('function _tvUepPesoNormal('))],

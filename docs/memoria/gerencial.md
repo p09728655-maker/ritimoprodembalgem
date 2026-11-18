@@ -584,7 +584,8 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
 - Dia sem UEP gravada no meio de um período com UEP: traços nas três colunas,
   STATUS *SEM UEP* (`b-mute`) — nunca 0 (E1) e nunca o veredito das caixas na
   mesma coluna (dois vereditos). O card UEP / DIA diz *N sem UEP*.
-- **Fora desta versão**: o 🖨 IMPRIMIR / PDF da aba
+- **Fora da v7.266.0** (o papel entrou na v7.267.0 — ver *O 🖨 DO HISTÓRICO COM A
+  UEP NA FRENTE* em `relatorios.md`): o 🖨 IMPRIMIR / PDF da aba
   (`_imprimirHistoricoFormatado`) segue em caixas (como o gerencial ficou na
   v7.243.0 até o semanal virar na v7.251.0); a ANÁLISE POR HORÁRIO · MÉDIA
   HISTÓRICA DE CX não muda.
@@ -621,8 +622,9 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   - `_histLinhaHtml(d, x, temMetaComp)` saiu do `renderHist` para o teste montar
     a linha de verdade (I2: as mutações "MELHOR H. com cor em UEP" e "hero com a
     cor invertida" passavam verdes só com as regex).
-  - O papel diz *em caixas (a tela julga pela UEP)* no período (`periodoLabel`
-    do `_imprimirHistoricoFormatado`) — ver *Fora desta versão*.
+  - ~~O papel diz *em caixas (a tela julga pela UEP)* no período (`periodoLabel`
+    do `_imprimirHistoricoFormatado`)~~ — revogado na v7.267.0: o papel passou
+    para a UEP e o aviso saiu.
   - `HIST_CH_W_MIN` 760 → 600: na aba aberta vale a largura do card; o 760 só
     encolhia o desenho a 1280 (card de 704 px).
 - **Medido no Chromium** (Apps Script simulado com os dias do print, 19/10 a
@@ -636,3 +638,114 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   trabalhado?) — o `uepDiaMeta` dá 0, o `_gsemUepMontar` trata como fim de
   semana (STATUS *HORA EXTRA*, só o `uepHe`) e no gráfico a barra sai com a
   meta 0 (dica com % infinito). É de antes; se o caso existe, pede regra.
+
+## MELHOR HORA E PIOR HORA EM UEP NA ABA HISTÓRICO (v7.268.0)
+- PPCP, 18/11/2026, com a aba (v7.266.0) e o papel (v7.267.0) já em UEP e os
+  PDFs na mão: *"melhor hora e pior hora colocar por uep tbm"*. Feitos os dois
+  lugares em que a aba fala de melhor e pior hora: as colunas MELHOR H. / PIOR H.
+  da tabela e a sub-aba ANÁLISE POR HORÁRIO (no pedido das sub-abas ele a tinha
+  chamado de *"analise melhora hora"*).
+- **A régua: o % DA META DE UEP DA HORA** — a META UEP do dia × minutos da hora
+  ÷ 527 (a do gerencial, v7.243.0: *"em caixas o 12:12 de 48 min era sempre o
+  vale"*). No print de 18/11 o 12:12–13:00 era o 10º de 11 horários com 142 cx
+  (em hora cheia, 177: no meio) e o PIOR HORÁRIO era o 05:00–06:00, hora extra.
+- **A conta, pura: `_histHorasMontar(itens, U, slots)`** (U = `_histUepMontar`):
+  - por dia (`dias[data]`): `est` ok com `melhor`/`pior` ({hora, uep, metaH,
+    pct}), `n` horas julgadas e `parte` (horas com caixa sem UEP, fora);
+  - por horário (`rank`): Σ UEP ÷ Σ meta da hora (E5), `uepH` em hora cheia,
+    `cxMed` (fato), `barra` relativa ao melhor; só com `HIST_HORAS_AMO_MIN` (2)
+    dias, a regra que a média de caixas já tinha. **Sem `cls`, sem cor** (ver
+    *A revisão*, abaixo);
+  - hora extra (hora fora dos slots da jornada em dia útil, e o fim de semana
+    inteiro): `he` = só o ritmo (cada hora vale 60 min), fora do ranking;
+  - **o dia só é julgado com o log cobrindo `HIST_HORAS_COB_MIN` (99%) das caixas
+    dele** (`est:'cobertura'`): caixa lançada sem produto não está no log, e a
+    hora dela pareceria a pior sem ser. ⚠ Não é o `DIR_COB_MIN` (95%, o aviso
+    dos pontos): a conta é por dia e o defeito é por hora — 5% do dia são ~45%
+    de uma hora; 1%, ~9%. Conferir hora a hora pediria a `HISTORICO_HORA` do
+    período (leitura que não existe). Outros estados: `sem-log`, `sem-hora`, `sem-uep`,
+    `fds` — na tela, traço com o motivo no `title` (`_histHoraForaTxt`).
+- **De onde vem a UEP da hora**: `getProducaoModeloPeriodo ?cxHora=1&uepVer=1`
+  — a leitura do PADRÃO × REALIZADO (`_uepPadCarregar`), com `cxHora`,
+  `uepHora` (a UEP que VALIA NA DATA, pela `UEP_VERSOES`) e `semUepHora` por
+  dia × produto. Nada novo no `.gs`. ⚠ Não é a UEP congelada no fechamento: a
+  soma das horas pode diferir um pouco do total do dia.
+- **A leitura `_histHorasCarregar(de, ate, o)`** (F2): UMA por período, guardada
+  em `HIST_HORAS[chave]` (os `HIST_HORAS_GUARDA` = 4 mais novos; lido OU falha).
+  Com o período guardado ela não lê — por mais velho que esteja. ⚠ **Quem
+  renova é ação de quem usa, nunca o ciclo**: abrir a aba (`_histHorasVencer`
+  no `setTab`: tira o que passou de `HIST_HORAS_TTL` e as falhas), trocar o
+  período (chave nova), o TENTAR DE NOVO (`o.forcar`) e o 🖨 (`o.papel`). O
+  `renderHist` roda também no ciclo de 5 min (`renderAll`): na 1ª versão ele
+  relia a cada 15 min e, com falha, a cada ciclo (3 × 60 s), junto com o
+  `getPontosDia`. Fila: voo compartilhado para a mesma chave; pedido de OUTRO
+  período entra DEPOIS do que está em voo (`antes.then`); o da TELA que ficou
+  velho na fila (`HIST_HORAS_TELA` já é outro) não lê; cada leitura espera o
+  `_cicloVoo`. 3 tentativas em sequência só no "sem resposta". Devolve `true`
+  quando leu: o `renderHist` se redesenha só nesse caso (sem laço), para o mesmo
+  período, com a aba aberta. `_histHorasChave` = null sem as duas datas ou com
+  mais de `HIST_HORAS_MAX_DIAS` (62: acima disso a resposta passa dos 100 KB do
+  cache do `.gs`). Estado para a tela: `_histHorasEstado` (ok · lendo · falha ·
+  fora). Sem efeito colateral em estado de outras abas (o
+  `lerProducaoModeloPeriodo` troca `PH_UEP_PROD` e `PREP_PERIODO` — não usar).
+- **Sem a leitura, nada some** (*número nunca sai*): as colunas ficam MELHOR H.
+  (CX) / PIOR H. (CX) com as caixas de sempre (o nome diz a unidade —
+  `_histTheadHtml(temUep, temMetaComp, horasUep)`), a análise fica na MÉDIA
+  HISTÓRICA DE CX (`#ah-cx`), e a linha ao lado do título diz o porquê
+  (`_histHorasStHtml`: lendo · a falha com a causa e o TENTAR DE NOVO · o
+  período que a aba não pede). No período em caixas (sem UEP) nada mudou.
+- **Desenho**: `_histLinhaHtml(d, x, temMetaComp, hd)` (as duas células, *08:00
+  · 118%*, sem cor, a UEP e a meta da hora no `title`) e `_histHorasHtml(R)` (os
+  dois cards, o ranking e a nota) — a tela (`#ah-uep`, pelo `_histHorasPintar`)
+  e o papel leem o mesmo. O botão da sub-aba diz o melhor e o pior do que está
+  na tela (`HIST_HORAS_NA_TELA` impede o `renderAnaliseHorario` de escrever por
+  cima).
+- **A jornada: `_histSlotsJornada()`**. QUAIS horas são jornada = o turno do ⚙
+  (`getSlots`, a régua do `_horaEhHE`); QUANTOS minutos = os da planilha de hoje
+  quando ela tem a hora (`getEffectiveSlots`: o 16:00–16:59 vale 59 e a soma dá
+  os 527), senão os do turno. Na 1ª versão as horas vinham só da planilha de
+  hoje: a hora com meta 0 hoje saía do ranking do mês inteiro e ia para a nota
+  de "hora extra", e no fim de semana tudo era hora extra. O início do slot é
+  normalizado (`_uepHHMM`) também na conta. ⚠ Dia antigo que rodou com outro
+  turno é repartido pelo de hoje.
+- **No papel** (`_imprimirHistoricoFormatado`): espera a leitura antes de
+  escrever (`await _histHorasCarregar`), mesmas colunas e mesmo ranking dentro
+  da `.hist-doc`; sem ela, as colunas (CX) e a análise em caixas de sempre.
+  ⚠ Com as duas colunas em UEP e META DIA + ATRASO META as 14 colunas passavam
+  40 px da folha: a pele do papel foi de 5 para 3 px de lado (medido).
+- ⚠ **A análise em UEP é do PERÍODO do filtro**, não do histórico inteiro (a
+  de caixas somava 101 dias no print): outra pergunta. Para o histórico inteiro
+  em UEP seria preciso gravar a UEP por hora no fechamento (`HISTORICO_HORA`,
+  `.gs` + re-deploy) — não pedido.
+- ⚠ Hora sem nenhum lançamento não está no log e não entra (igual ao PIOR H.
+  em caixas: o `_resumoHoraAHora` do `.gs` só vê hora com `real > 0`). A hora
+  que a linha ficou parada inteira não aparece como pior hora.
+- **Medido no Chromium** (os 23 dias do print com a UEP por hora simulada):
+  tela a 1920 · 1366 · 1280 sem passar da largura (13 colunas, 1878/1324/1238
+  px); papel A4 em pé, 2 folhas, nada fora com 14 colunas; o caminho da falha
+  (colunas (CX), estado com a causa, análise em caixas).
+- **A revisão (`/revisor-codigo`, 18/11/2026): 1 bloqueio, 7 ajustes** — todos
+  aplicados antes do merge:
+  - BLOQUEIO: o teste do ranking não provava o Σ ÷ Σ (dois dias com a MESMA
+    meta: a média dos % dava igual). Entrou o 22/10, com META 2.761: 93,2% × os
+    93,6% da média. A mutação agora reprova 3 testes.
+  - a leitura no ciclo de 5 min, a guarda de uma vaga só e o pedido velho na
+    fila (acima, em *A leitura*); a cobertura de 95% para 99%; a jornada pela
+    planilha de hoje (acima, em *A jornada*);
+  - **o ranking sem cor**: a hora era pintada pela `sc` (96%) e o dia é julgado
+    em ≥ meta — com todas as horas a 97%, o ranking inteiro verde e todos os
+    dias ABAIXO. ⚠ Não devolver cor de veredito ao ranking nem às duas colunas
+    enquanto a régua do dia não for uma só (decisão do PPCP em aberto);
+  - período de 1 dia: as colunas ficam em UEP e o ranking não tem 2 dias por
+    horário — o estado diz isso (dizia "nenhuma hora… tem a UEP completa");
+  - `_rpEsc` no rótulo do horário (vem do `slotLabel` da planilha);
+  - a barra do ranking com `print-color-adjust:exact` (`.hist-barra`).
+- Testes em `relatorios.test.js` (*MELHOR HORA e PIOR HORA em UEP*): a conta
+  com um caso conferido à mão (o 12:12 com menos UEP que o 08:00 e % maior; a
+  hora "7:00" sem o zero; cobertura 89,6% e 97,0%; sábado; dia sem UEP; ranking
+  Σ ÷ Σ com metas diferentes), as células, o cabeçalho, o ranking sem cor e a
+  nota, o `_rpEsc`, o período de 1 dia, a jornada, os desenhos sem conta, e a
+  leitura REAL rodando com o Apps Script simulado (uma chamada por vez, o
+  pedido velho descartado, os dois períodos guardados, o render do ciclo sem
+  ler, o abrir a aba vencendo, as três falhas sem retentar sozinhas, a espera
+  do ciclo do painel, o limite da guarda).

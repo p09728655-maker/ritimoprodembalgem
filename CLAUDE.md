@@ -388,8 +388,26 @@ via Google Apps Script (JSONP).
   tudo em caixas. Sub-abas PERÍODO · ANÁLISE POR HORÁRIO (`_histSub`, a faixa
   da PROGRAMAÇÃO). ⚠ O `_uepAbaPerSvg` leva `pid` (id do padrão listrado por
   desenho — dois na página se misturavam) e `cls` (a cor da tabela por dia).
-  ⚠ O 🖨 IMPRIMIR / PDF da aba segue em caixas (e diz isso no período); o dia
+  O 🖨 IMPRIMIR / PDF da aba (v7.267.0) é feito das MESMAS peças da tela
+  (`_histDocUepHtml`: os cards, o `_uepAbaPerSvg`, `_histTheadHtml`,
+  `_histLinhaHtml`, `_histCxInfo`) com a pele `_HIST_DOC_CSS` (`.hist-doc`: só
+  tokens e classes; a FONTE é `.so-tela`); sem UEP, o papel de sempre em caixas.
+  ⚠ Mudou a tela da aba, o papel muda junto — conferir os dois. ⚠ O dia
   passado do gerencial julga a UEP pela régua de 96% (em aberto, PPCP).
+- MELHOR H. / PIOR H. e a ANÁLISE POR HORÁRIO do HISTÓRICO em UEP (v7.268.0):
+  o % da META DE UEP DA HORA (meta do dia × minutos ÷ 527, a régua do
+  gerencial), conta pura `_histHorasMontar` (Σ ÷ Σ; só jornada de dia útil, hora
+  com todas as caixas com UEP, dia com o log cobrindo `HIST_HORAS_COB_MIN`, 99%;
+  hora extra fora do ranking). FATO, SEM COR — o veredito da aba é o STATUS do
+  dia (⚠ não pintar a hora pela `sc`: dava ranking verde com dias ABAIXO). A
+  leitura é a `getProducaoModeloPeriodo ?cxHora=1&uepVer=1`
+  (`_histHorasCarregar`: uma por período, 4 guardados, uma chamada por vez e
+  depois do `_cicloVoo`, até `HIST_HORAS_MAX_DIAS`). ⚠ Quem pede é abrir a aba
+  (`_histHorasVencer`), trocar o período, o TENTAR DE NOVO e o 🖨 — NUNCA o
+  ciclo de 5 min, que redesenha a aba pelo `renderAll`. Sem ela as colunas
+  ficam (CX) e a análise na média histórica de caixas. A jornada:
+  `_histSlotsJornada` (quais horas, pelo ⚙; os minutos, pela planilha de hoje).
+  ⚠ A análise em UEP é do PERÍODO do filtro, não do histórico inteiro.
 - Diretoria: um veredito só (a UEP); retrato guardado no aparelho; sem o
   `pollParadaTV` nem o `lerMediaHoras`.
 
