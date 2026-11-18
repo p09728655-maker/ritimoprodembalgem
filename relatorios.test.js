@@ -2844,7 +2844,7 @@ console.log('\n── dia passado: hora extra não é julgada, e a meta/h não �
   ok('o papel: resultado em UEP com o veredito da tela, o dia a dia, os motivos e o anexo das caixas — sem a cascata, e o aviso de que a meta já tem as paradas',
      [/JORNADA NORMAL<\/div>\s*<div class="kpi-val" style="color:#B4650A">13\.068/.test(H), /⚠ META BATIDA COM HORA EXTRA/.test(H), /FALTOU NA JORNADA[\s\S]*737/.test(H),
       /META × PARADAS × RITMO|GANHO DE RITMO|GAP DE RITMO|casc-flow/.test(H), /já tem as paradas normais dentro/.test(H),
-      /ONDE PERDEMOS — DIA A DIA/.test(H), /ONDE PERDEMOS — PARADAS ACIMA DO NORMAL/.test(H), /COM HORA EXTRA<\/span>/.test(H), H.endsWith('<!--ANEXO-->')],
+      /ONDE PERDEMOS — DIA A DIA/.test(H), /ONDE PERDEMOS — PARADAS ACIMA DO NORMAL/.test(H), /⚠ META COM HE<\/span>/.test(H), H.endsWith('<!--ANEXO-->')],   // v7.269.0: as palavras do selo do dia são as do rp-core
      [true, true, true, false, true, true, true, true, true]);
   ok('a tabela do acima do normal: o motivo, o normal, o acima e a UEP; o resto somado; a regra do normal e o que ficou fora da jornada escritos',
      [/FALTA DE MATERIAL<\/td>[\s\S]*?15 min<\/td>\s*<td class="td-bold" style="text-align:right">\+20 min<\/td>/.test(H), /\(5,0 min por troca\)/.test(H),
@@ -5230,7 +5230,8 @@ console.log('\n── estudo de UEP ──');
   // informação" → "tirar texto". O resumo é só o veredito: a frase embaixo do
   // selo repetia os números dos cards logo abaixo.
   ok('folha 1: o resumo é só o selo de hoje e do período; os números ficam nos cards, uma vez só',
-     [DOC.includes('NO RITMO'), DOC.includes('8 DE 10 DIAS NA META'), /ud-f\b/.test(DOC), DOC.includes('Mais 410 UEP em hora extra'),
+     // v7.269.0: o selo do período é o veredito do período (a régua do dia fechado), e a contagem vai na linha de cima
+     [DOC.includes('NO RITMO'), DOC.includes('8 DE 10 NA META') && DOC.includes('<div class="ud-selo">META BATIDA NA JORNADA NORMAL</div>') && !DOC.includes('DIAS NA META</div>'), /ud-f\b/.test(DOC), DOC.includes('Mais 410 UEP em hora extra'),
       DOC.includes('<div class="kpi-val">1.413</div>')], [true, true, false, false, true]);
   ok('o % da meta do período é UMA conta (pctMeta), lida pelo card e pelo papel',
      [Math.round(PP.pctMeta*10)/10, _uepAbaPerCards(PP)[0].sub.startsWith(fmtP(PP.pctMeta)), DOC.includes(_uepAbaPerCards(PP)[0].sub)], [106.3, true, true]);
@@ -7485,13 +7486,29 @@ console.log('\n── a régua do dia fechado em UEP: uma só (v7.269.0) ──'
   { const vm = require('vm');
     const mob = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
     [['PC', src], ['celular', mob]].forEach(([nome, h]) => {
-      const blo = h.match(/if \(typeof window\.uepDiaJulga !== 'function'\)[\s\S]*?\n    return;\n  \}/)[0].replace(/\n    return;\n  \}$/, '');
+      const blo = h.match(/var _pctJ = [\s\S]*?\n    return;\n  \}/)[0].replace(/\n    return;\n  \}$/, '');
       const Cx = { window: {}, uepDiaMeta, uepDiaHe, isFinite, Number, Math }; Cx.window = Cx; vm.createContext(Cx);
       vm.runInContext(blo, Cx);
       ok(`a rede do ${nome} (rp-core antigo em cache) dá o MESMO veredito que o rp-core`,
          [[A, B, C, Dd, E].map(d => JSON.stringify(Cx.uepDiaJulga(d))), JSON.stringify(Cx.uepPeriodoJulga(res)), [A, B, C, Dd, E].map(d => JSON.stringify(Cx.uepDiaSelo(Cx.uepDiaJulga(d))))],
          [[A, B, C, Dd, E].map(d => JSON.stringify(uepDiaJulga(d))), JSON.stringify(PJ), J.map(j => JSON.stringify(uepDiaSelo(j)))]);
     }); }
+  // a FRONTEIRA (revisão I2): "≥" e o arredondamento — julga a UEP que a tela mostra (inteira)
+  { const F = (uep, he) => (j => [j.cls, fmtP(j.pct), j.falta, j.faltaTot])(uepDiaJulga({ data: '11/11/2026', uep, uepHe: he || 0, metaUep: M }));
+    ok('fronteira: exatamente na meta bateu; 2.760,6 (a tela mostra 2.761) bateu; 2.760,4 (mostra 2.760) é ABAIXO com 99,9% e falta 1 — nunca "100,0%" ABAIXO nem "FALTARAM 0"',
+       [F(2761), F(2760.6), F(2760.4), F(2700, 61), F(2700, 60.4)],
+       [['ok', '100,0%', 0, 0], ['ok', '100,0%', 0, 0], ['ruim', '99,9%', 1, 1], ['he', '97,8%', 61, 0], ['ruim', '97,8%', 61, 1]]);
+    const R5 = (jorn, he, meta) => (p => [p.selo, p.falta, p.faltaTot])(uepPeriodoJulga({ n: 1, total: jorn, he, metaTot: meta }));
+    ok('fronteira do período: jornada = meta bateu; jornada + HE = meta é âmbar; meio UEP abaixo do inteiro não bate',
+       [R5(5522, 0, 5522), R5(5400, 122, 5522), R5(5400, 121.4, 5522), R5(5521.6, 0, 5522)], [['ok', 0, 0], ['he', 122, 0], ['ruim', 122, 1], ['ok', 0, 0]]);
+    ok('o "bateu" do resumo é o mesmo veredito do dia (2.760,6 conta; 2.760,4 não)',
+       uepHistResumo([{ data: '10/11/2026', uep: 2760.6, metaUep: M }, { data: '11/11/2026', uep: 2760.4, metaUep: M }]).bateu, 1); }
+  // a cor da análise do dia passado sai da régua (revisão: a mutação "sempre verde" passava)
+  { if (typeof global._gerAnaliseUepHistHtml === 'undefined') eval(pega('function _gerAnaliseUepHistHtml(').replace(/^function /, 'global._gerAnaliseUepHistHtml = function '));
+    if (typeof global._gerHoraJulga === 'undefined') global._gerHoraJulga = () => null;
+    const cor = c => (_gerAnaliseUepHistHtml([], 97.8, { fechado: true }, null, c).match(/<div class="a-val" style="color:([^"]+)">97,8%/) || [])[1];
+    ok('a análise do dia passado: a cor do UEP DO DIA é a do selo do dia fechado (âmbar, vermelho), nunca a da sc',
+       [cor('warn'), cor('red'), cor('ok'), cor(null)], ['var(--warn)', 'var(--red)', 'var(--ok)', 'var(--txt2)']); }
   // ── o MESMO dia, o MESMO veredito, em toda tela que julga dia fechado em UEP ──
   ['function _uepAbaPerSvg(', 'function _uepEscalaMarca(', 'function _fdsNome(', 'function _rpEsc(', 'function _dirSemSvg(', 'function _dirSemana(', 'function _dirSemanaHtml(',
    'function _dirF(', 'function _dirMsg(', 'function _dirComHe(', 'function _relSemanaPassada(', 'function _relSemanaJanela(', 'function _relDiasDaSemana(', 'function _uepAbaPeriodo(', 'function _uepAbaPerCards(', 'function _uepPerFdsTxt(',
@@ -7512,7 +7529,9 @@ console.log('\n── a régua do dia fechado em UEP: uma só (v7.269.0) ──'
   ok('as barras da diretoria: a mesma régua (âmbar no dia que só bateu com a hora extra; era vermelho)', corDir, ['#5d6b7e', 'var(--warn)', 'var(--red)', 'var(--warn)']);
   const P = _uepAbaPeriodo(W, 30, new Date(2026, 10, 18)), PC = _uepAbaPerCards(P);
   ok('⚖ UEP · PERÍODO: o card MÉDIA POR DIA com o selo do período (âmbar: bateu com a hora extra; era vermelho), e quem bateu só com HE',
-     [P.selo, PC[0].c, /bateu com a hora extra/.test(PC[0].sub), P.comHe, PC[1].v, PC[1].sub], ['he', 'warn', true, ['10/11/2026'], '1 <small>de 3</small>', 'abaixo: 10/11, 11/11']);
+     [P.selo, PC[0].c, /bateu com a hora extra/.test(PC[0].sub), P.comHe, PC[1].v, PC[1].sub], ['he', 'warn', true, ['10/11/2026'], '1 <small>de 3</small>', 'abaixo na jornada: 10/11, 11/11']);
+  // revisão: a cor do DIAS QUE BATERAM pela maioria dos dias era um 2º veredito ao lado do card âmbar
+  ok('⚖ UEP · PERÍODO: um veredito só — DIAS QUE BATERAM sem cor; o papel usa o selo do período', [PC[1].c, PC[2].c], ['', 'acc']);
   // a diretoria lê a semana passada: 18/11 → 09 a 15/11
   const S = _dirSemana(W, new Date(2026, 10, 18), null), SH = _dirSemanaHtml(S, [], false, 'falha');
   ok('diretoria · semana passada: o MESMO selo do bloco da semana (âmbar, com as palavras do _gsemSeloTxt), não mais o binário',
@@ -7528,11 +7547,17 @@ console.log('\n── a régua do dia fechado em UEP: uma só (v7.269.0) ──'
     Cm.window = Cm; vm.createContext(Cm);
     vm.runInContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'), Cm);
     vm.runInContext(corpo, Cm);
-    const linhaUep = d => { Cm._histDias = [d]; vm.runInContext(`abrirDia(${JSON.stringify(d.data)})`, Cm);
-      const m = dom['md-body'].innerHTML.match(/<span class="k">UEP \(JORNADA\)<\/span><span class="v ([a-z]*)">([^<]*)<\/span>/); return m ? m[1] + ' | ' + m[2] : null; };
-    ok('celular · detalhe do dia: a régua do dia fechado (o 97,8% era verde aqui e ABAIXO no PC)',
-       [linhaUep(A), linhaUep(B), linhaUep(C)],
-       ['ok | 2.800 de 2.761 · 101,4% · ✓ META', 'warn | 2.657 de 2.761 · 96,2% · ⚠ META COM HE', 'red | 2.700 de 2.761 · 97,8% · ABAIXO']); }
+    const linhas = d => { Cm._histDias = [d]; vm.runInContext(`abrirDia(${JSON.stringify(d.data)})`, Cm);
+      return [...dom['md-body'].innerHTML.matchAll(/<span class="k">([^<]*)<\/span><span class="v ([a-z]*)">([^<]*)<\/span>/g)].reduce((o, m) => (o[m[1]] = m[2] + ' | ' + m[3], o), {}); };
+    const LA = linhas(A), LB = linhas(B), LC = linhas(C);
+    ok('celular · detalhe do dia: o STATUS é o da UEP pela régua do dia fechado (o 97,8% era verde aqui e ABAIXO no PC)',
+       [LA.STATUS, LB.STATUS, LC.STATUS, LC['UEP (JORNADA)']],
+       ['ok | ✓ META · UEP', 'warn | ⚠ META COM HE · UEP', 'red | ABAIXO · UEP', ' | 2.700 de 2.761 · 97,8%']);
+    // revisão: o STATUS das caixas dizia META em verde e a UEP ABAIXO em vermelho no mesmo quadro
+    ok('celular · com a UEP gravada, as caixas são fato: EFICIÊNCIA, GAP, MELHOR e PIOR HORA sem cor (um veredito só)',
+       [LC['EFICIÊNCIA'].split(' | ')[0], LC['GAP DA META'].split(' | ')[0], LC['MELHOR HORA'].split(' | ')[0], LC['PIOR HORA'].split(' | ')[0]], ['', '', '', '']);
+    ok('celular · dia sem UEP gravada: as caixas julgam, como antes (nunca uma tela sem veredito)',
+       (L => [L.STATUS.split(' | ')[0] !== '', L['UEP (JORNADA)']])(linhas(Object.assign({}, E, { ef: 92.9 }))), [true, undefined]); }
   // ── o que não roda aqui (o render do dia passado, o estudo de UEP, o comparativo): a ligação ──
   const GH = pega('function renderGerencialHist(');
   ok('gerencial · dia passado: o hero, o card de reserva e a análise pela régua do dia fechado; nenhum % de UEP pela sc',

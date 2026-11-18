@@ -1792,9 +1792,11 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
 - **O celular**: a linha UEP (JORNADA) leva a palavra (*· ⚠ META COM HE*); a 360
   e 390 px ela quebra em duas linhas, sem cortar; a 430, uma. Mobile 1.60.0 e o
   `CACHE` do `sw-mobile.js` v73.
-- **Não medido**: o gerencial do dia passado (o texto do hero ficou mais longo e
-  quebra dentro do card de 2 colunas) e a ⚖ UEP · PERÍODO (um item a mais na
-  legenda).
+- **Medido depois da revisão**: o gerencial do dia passado a 1920 · 1366 · 1280
+  (nada passa da largura; o hero quebra o texto e a linha de cards vai de 96 para
+  113 px a 1366/1280); o STATUS do celular cabe numa linha a 360. A ⚖ UEP ·
+  PERÍODO não renderiza sem a leitura do dia (não simulada): a legenda é
+  `flex-wrap` — o item a mais desce de linha, não estoura.
 - Testes em `relatorios.test.js` (*a régua do dia fechado em UEP: uma só*): a
   regra com 5 casos (o 97,8% que a `sc` dizia ok é ABAIXO), o período, a rede dos
   dois HTMLs contra o rp-core, e o MESMO dia com o MESMO veredito no bloco da
@@ -1805,3 +1807,35 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   `uep-relatorios.test.js`, os números novos do CAIXAS × PONTOS × UEP, com o
   porquê de cada dia. Mutações conferidas: o celular de volta à `sc` e a
   diretoria sem o âmbar reprovam.
+- **A revisão (`/revisor-codigo`, 18/11/2026): 0 bloqueios, 10 ajustes** — todos
+  aplicados antes do PR:
+  - **Julga o número que a tela mostra** (E4): `uepDiaJulga` compara a UEP
+    INTEIRA (`Math.round`) com a meta, e `_uepPctJulgado` nunca devolve 100,0%
+    abaixo da meta (no máximo 99,9%; fora da borda, o % de sempre — cortar tudo
+    mudava o 94,7% da semana 46 para 94,6%). O período, igual
+    (`Math.round(jorn)`). O `uepHistResumo.bateu` passou a contar pelo
+    `uepDiaJulga` (a mesma borda). Os consumidores leem o `pct` da régua (hero e
+    análise do dia passado, celular, diretoria, ⚖ UEP, Estudo, `_gsemUepMontar`).
+    O card FALTOU NA JORNADA usa o `falta` da régua.
+  - **Dia útil gravado com META UEP 0**: o `_uepAbaPerSvg` trata como o fim de
+    semana (`ehF` = sem meta, listrado; o title diz *dia sem META UEP gravada*); o
+    `_cxUepMontar` tira o dia da base (sem veredito em UEP não há comparação). ⚠ O
+    fixture do teste tinha um DOMINGO (18/10) com meta de caixas: saiu da base.
+  - **⚖ UEP · PERÍODO, um veredito**: DIAS QUE BATERAM sem cor (*abaixo na
+    jornada:*); o resumo do papel usa o selo do período (`perCards[0].c` e as
+    palavras do `_gsemSeloTxt`), com *N DE M NA META* na linha de cima.
+  - **Celular**: com UEP gravada o STATUS é o da UEP e as caixas ficam sem cor
+    (EFICIÊNCIA, GAP, MELHOR e PIOR HORA). A linha UEP (JORNADA) só o número.
+  - **CAIXAS × PONTOS × UEP**: neste relatório a UEP é REFERÊNCIA
+    (`UEP_REF_STATUS`) — palavras *NA REFERÊNCIA* · *COM HE* · *ABAIXO*, frases
+    "a UEP atingiu a referência"; a página 4 diz as duas réguas (sem escrever
+    "EM PONTOS": o teste do relatório sem meta de pontos prende).
+  - **Estudo de UEP**: a palavra do selo embaixo do % (P&B).
+  - **Relatório semanal**: o chip do dia pelo `uepDiaSelo` (C4).
+  - Testes: a fronteira (`=` meta, 2.760,6 × 2.760,4, `jornada + HE = meta`, o
+    período), a cor da análise rodando o `_gerAnaliseUepHistHtml`; as mutações
+    que passavam verdes (`>` no lugar de `≥` no ok, no âmbar e no período; sem o
+    arredondamento; análise sempre verde) reprovam.
+  - Ficou registrado (consequência da escolha do PPCP): depois das 17:00 a TV, o
+    gerencial e o relatório do dia (ritmo ao vivo, 96%) dizem NO RITMO para um
+    dia a 97–99,9%; no dia seguinte ele é ABAIXO.

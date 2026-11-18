@@ -87,12 +87,14 @@ ok('hora extra fora das caixas (22/09: 1.579 − 245)', R.dias.find(d => d.data 
 // caixas pela régua delas (sc, 96%); a UEP pela régua ÚNICA do dia fechado (≥ meta) — a mesma das outras telas
 { const d23 = R.dias.find(d => d.data === '23/09/2026'), d09 = R.dias.find(d => d.data === '09/10/2026');
   ok('o veredito: caixas pela sc, UEP pela régua do dia fechado (23/09 a 98,9% e 09/10 a 98,7% não batem; a palavra é a do dia fechado)',
-     [d16.clsCx, d16.clsU, d16.stU, fmtP(d23.pctU), d23.clsU, d23.stU, d09.clsCx, d09.clsU], ['red', 'ok', 'META', '98,9%', 'red', 'ABAIXO', 'ok', 'red']); }
+     // a palavra da UEP neste relatório é de REFERÊNCIA (UEP_REF_STATUS): NA REFERÊNCIA · COM HE · ABAIXO
+     [d16.clsCx, d16.clsU, d16.stU, fmtP(d23.pctU), d23.clsU, d23.stU, d09.clsCx, d09.clsU], ['red', 'ok', 'NA REFERÊNCIA', '98,9%', 'red', 'ABAIXO', 'ok', 'red']); }
 
 console.log('\n── CAIXAS × UEP: bordas ──');
 const R2 = _cxUepMontar([D('18/10', 900, 1000, 0, 2600), D('19/10', 1, 1000, 0, 2600), D('10/09', 900, 1000, 0, 2600),
                          D('17/10', 900, 1000, 0, null), D('16/10', 1200, 1000, 0, 2100)], 20261019, 30);
-ok('hoje fora, mais de 30 dias fora, dia sem UEP fora (não vira zero)', R2.dias.map(d => d.data.slice(0, 5)), ['16/10', '18/10']);
+// v7.269.0: o 18/10 é DOMINGO — sem META UEP (a régua do dia fechado não o julga), fica fora como o fim de semana
+ok('hoje fora, mais de 30 dias fora, dia sem UEP fora (não vira zero), domingo (sem meta de UEP) fora', R2.dias.map(d => d.data.slice(0, 5)), ['16/10']);
 ok('caixas no ritmo e UEP abaixo, com a meta em caixas leve para o mix',
    [R2.dias[0].tipo, R2.dias[0].porque], ['uep-abaixo', 'meta-baixa']);
 

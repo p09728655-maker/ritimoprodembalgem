@@ -403,7 +403,8 @@ function uepHistResumo(dias){
   // dia sem meta (sábado, domingo) não é julgado: sai do n, do bateu, da média e da meta somada
   const com = comUep.filter(d => uepDiaMeta(d) > 0);
   const tot = com.reduce((s, d) => s + Number(d.uep), 0);
-  const bateu = com.filter(d => Number(d.uep) >= uepDiaMeta(d)).length;
+  // v7.269.0: bateu = o veredito do dia fechado (uepDiaJulga: a UEP inteira ≥ meta) — a mesma régua da cor
+  const bateu = com.filter(d => (uepDiaJulga(d) || {}).cls === 'ok').length;
   return { n: com.length, semUep: (dias || []).length - comUep.length,
            total: tot, media: com.length ? tot / com.length : null,
            nMedia: com.length, nFds: comUep.filter(d => uepFimDeSemana(d.data)).length,
@@ -426,25 +427,32 @@ function uepHistResumo(dias){
 //   ruim = não bateu nem com ela;
 //   fds  = sábado, domingo ou dia sem meta: todo hora extra, sem veredito.
 // null = dia sem UEP gravada: sem veredito (nunca as caixas no lugar).
+// ⚠ Julga o NÚMERO QUE A TELA MOSTRA (revisão da v7.269.0): a UEP gravada tem
+// decimais e toda tela a escreve inteira. Com 2.760,6 de 2.761 o selo dizia
+// ABAIXO / "FALTARAM 0" ao lado de "2.761 de 2.761 · 100,0%". Agora: a UEP
+// inteira contra a meta; e, abaixo da meta, o % nunca chega a 100,0% (no
+// máximo 99,9%): 2.760 de 2.761 = 99,9%, ABAIXO, faltaram 1. Fora da borda, o %
+// é o de sempre (a semana 46 continua 94,7%).
 // ⚠ Os 96%/90% (sc, slRitmo, uepHoraJulga) são do RITMO AO VIVO e da hora: o dia
 // em curso ainda pode alcançar a meta; o dia fechado bateu ou não bateu. Não
 // julgar dia fechado pela `sc`.
+function _uepPctJulgado(v, meta){ return v >= meta ? v / meta * 100 : Math.min(99.9, v / meta * 100); }
 function uepDiaJulga(d){
   if (!d || d.uep === null || d.uep === undefined || !isFinite(Number(d.uep))) return null;
   const meta = uepDiaMeta(d), he = uepDiaHe(d);
   if (!(meta > 0)) return { cls: 'fds', uep: null, he, meta: 0, pct: null, falta: 0, faltaTot: 0 };
-  const uep = Number(d.uep);
-  return { cls: uep >= meta ? 'ok' : uep + he >= meta ? 'he' : 'ruim', uep, he, meta, pct: uep / meta * 100,
-           falta: Math.max(0, meta - uep), faltaTot: Math.max(0, meta - uep - he) };
+  const uep = Number(d.uep), u = Math.round(uep), ut = Math.round(uep + he);
+  return { cls: u >= meta ? 'ok' : ut >= meta ? 'he' : 'ruim', uep, he, meta, pct: _uepPctJulgado(u, meta),
+           falta: Math.max(0, meta - u), faltaTot: Math.max(0, meta - ut) };
 }
 // O PERÍODO fechado (a semana, o mês, os N dias): a mesma régua na soma — a
 // JORNADA dos dias úteis com UEP contra a soma das metas deles. res = o
 // uepHistResumo dos dias. null = nenhum dia julgado no período.
 function uepPeriodoJulga(res){
   if (!res || !res.n || !(res.metaTot > 0)) return null;
-  const jorn = res.total, he = res.he || 0, meta = res.metaTot;
-  return { selo: jorn >= meta ? 'ok' : jorn + he >= meta ? 'he' : 'ruim', jorn, he, meta, pct: jorn / meta * 100,
-           falta: Math.max(0, meta - jorn), faltaTot: Math.max(0, meta - jorn - he) };
+  const jorn = res.total, he = res.he || 0, meta = res.metaTot, j = Math.round(jorn), jt = Math.round(jorn + he);
+  return { selo: j >= meta ? 'ok' : jt >= meta ? 'he' : 'ruim', jorn, he, meta, pct: _uepPctJulgado(j, meta),
+           falta: Math.max(0, meta - j), faltaTot: Math.max(0, meta - jt) };
 }
 // A palavra e a cor do selo de UM dia (J = uepDiaJulga): a tabela do HISTÓRICO e
 // o celular dizem o mesmo. A cor nunca vai sem a palavra.

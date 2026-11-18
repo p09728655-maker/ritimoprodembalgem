@@ -1154,18 +1154,19 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
     if (typeof window.atrasoPtsTxt !== 'function') window.atrasoPtsTxt = function(){ return ''; };
     // rp-core 1.25.0 (a régua ÚNICA do dia fechado em UEP): com o antigo em cache, a mesma
     // regra aqui — sem ela o HISTÓRICO, a semana e o dia passado ficariam sem veredito.
+    var _pctJ = function(v, meta){ return v >= meta ? v / meta * 100 : Math.min(99.9, v / meta * 100); };
     if (typeof window.uepDiaJulga !== 'function') window.uepDiaJulga = function(d){
       if (!d || d.uep === null || d.uep === undefined || !isFinite(Number(d.uep))) return null;
-      var meta = uepDiaMeta(d), he = uepDiaHe(d), uep = Number(d.uep);
+      var meta = uepDiaMeta(d), he = uepDiaHe(d), uep = Number(d.uep), u = Math.round(uep), ut = Math.round(uep + he);
       if (!(meta > 0)) return { cls: 'fds', uep: null, he: he, meta: 0, pct: null, falta: 0, faltaTot: 0 };
-      return { cls: uep >= meta ? 'ok' : uep + he >= meta ? 'he' : 'ruim', uep: uep, he: he, meta: meta, pct: uep / meta * 100,
-               falta: Math.max(0, meta - uep), faltaTot: Math.max(0, meta - uep - he) };
+      return { cls: u >= meta ? 'ok' : ut >= meta ? 'he' : 'ruim', uep: uep, he: he, meta: meta, pct: _pctJ(u, meta),
+               falta: Math.max(0, meta - u), faltaTot: Math.max(0, meta - ut) };
     };
     if (typeof window.uepPeriodoJulga !== 'function') window.uepPeriodoJulga = function(res){
       if (!res || !res.n || !(res.metaTot > 0)) return null;
-      var jorn = res.total, he = res.he || 0, meta = res.metaTot;
-      return { selo: jorn >= meta ? 'ok' : jorn + he >= meta ? 'he' : 'ruim', jorn: jorn, he: he, meta: meta, pct: jorn / meta * 100,
-               falta: Math.max(0, meta - jorn), faltaTot: Math.max(0, meta - jorn - he) };
+      var jorn = res.total, he = res.he || 0, meta = res.metaTot, j = Math.round(jorn), jt = Math.round(jorn + he);
+      return { selo: j >= meta ? 'ok' : jt >= meta ? 'he' : 'ruim', jorn: jorn, he: he, meta: meta, pct: _pctJ(j, meta),
+               falta: Math.max(0, meta - j), faltaTot: Math.max(0, meta - jt) };
     };
     if (typeof window.uepDiaSelo !== 'function') window.uepDiaSelo = function(J){
       if (!J) return { txt: 'SEM UEP', cor: 'mute' };
@@ -4565,7 +4566,11 @@ function abrirDia(data){
   if(!d) return;
   const real=parseFloat(d.real)||0, meta=parseFloat(d.meta)||0;
   const ef=d.ef!=null&&meta>0?parseFloat(d.ef):null;
-  const cls=ef!=null?sc(ef):'';
+  // com a UEP gravada (e meta de UEP), o veredito do dia é o da UEP — a régua do dia fechado
+  // (rp-core 1.25.0); as caixas ficam como fato, sem cor (1.60.0, revisão: o STATUS das caixas
+  // dizia "DENTRO DA META" em verde e a UEP "ABAIXO" em vermelho no mesmo quadro)
+  const JU=d.uep!=null&&uepDiaMeta(d)>0?uepDiaJulga(d):null, SU=JU?uepDiaSelo(JU):null;
+  const cls=SU?'':ef!=null?sc(ef):'';
   const gap=meta-real;
   // sábado e domingo (1.51.0 / .gs v5.68): todo hora extra, sem meta — sem
   // eficiência, sem gap, sem melhor/pior hora de jornada
@@ -4578,10 +4583,10 @@ function abrirDia(data){
     ['MÉDIA CX/H', fmtN(mediaCxH(d))+' cx/h', ''],
     ['META', fmtN(meta)+' CX', ''],
     ['EFICIÊNCIA', ef!=null?fmtP(ef):'—', cls],
-    ['STATUS', ef!=null?sl(ef):'—', cls],
-    ['GAP DA META', gap>0?fmtN(gap)+' CX':'✓ atingida', gap>0?'red':'ok'],
-    ['MELHOR HORA', fmtN(d.melhor||0)+' CX', 'ok'],
-    ['PIOR HORA', fmtN(d.pior||0)+' CX', 'red'],
+    SU?['STATUS', SU.txt+' · UEP', SU.cor]:['STATUS', ef!=null?sl(ef):'—', cls],
+    ['GAP DA META', gap>0?fmtN(gap)+' CX':'✓ atingida', SU?'':gap>0?'red':'ok'],
+    ['MELHOR HORA', fmtN(d.melhor||0)+' CX', SU?'':'ok'],
+    ['PIOR HORA', fmtN(d.pior||0)+' CX', SU?'':'red'],
   ];
   const _heCx = (d.heCx===null||d.heCx===undefined) ? null : Number(d.heCx);
   if(_heCx>0){
@@ -4593,10 +4598,8 @@ function abrirDia(data){
   if(d.uep!=null && !(uepDiaMeta(d)>0)){
     linhas.push(['UEP EM HORA EXTRA', fmtN(Math.round(uepDiaHe(d)))+(d.fds?' · todo o dia':''), 'acc']);
   } else if(d.uep!=null){
-    // a régua ÚNICA do dia fechado (rp-core 1.25.0 / 1.60.0): verde só com a jornada, âmbar se bateu
-    // com a hora extra — era a sc de 96%, e o mesmo dia saía verde aqui e ABAIXO no HISTÓRICO do PC
-    const _pu=Number(d.uep)/uepDiaMeta(d)*100, _sl=uepDiaSelo(uepDiaJulga(d));
-    linhas.push(['UEP (JORNADA)', fmtN(Math.round(d.uep))+' de '+fmtN(uepDiaMeta(d))+' · '+fmtP(_pu)+' · '+_sl.txt, _sl.cor==='mute'?'':_sl.cor]);
+    // o número da UEP; o veredito (a régua ÚNICA do dia fechado — era a sc de 96%) está no STATUS
+    linhas.push(['UEP (JORNADA)', fmtN(Math.round(d.uep))+' de '+fmtN(uepDiaMeta(d))+' · '+fmtP(JU.pct), '']);
     if(Number(d.uepHe)>0) linhas.push(['UEP EM HORA EXTRA', fmtN(Math.round(d.uepHe)), 'acc']);
   }
   if(d.fechadoEm) linhas.push(['FECHADO', d.fechadoEm, '']);
