@@ -584,7 +584,8 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
 - Dia sem UEP gravada no meio de um período com UEP: traços nas três colunas,
   STATUS *SEM UEP* (`b-mute`) — nunca 0 (E1) e nunca o veredito das caixas na
   mesma coluna (dois vereditos). O card UEP / DIA diz *N sem UEP*.
-- **Fora desta versão**: o 🖨 IMPRIMIR / PDF da aba
+- **Fora da v7.266.0** (o papel entrou na v7.267.0 — ver *O 🖨 DO HISTÓRICO COM A
+  UEP NA FRENTE* em `relatorios.md`): o 🖨 IMPRIMIR / PDF da aba
   (`_imprimirHistoricoFormatado`) segue em caixas (como o gerencial ficou na
   v7.243.0 até o semanal virar na v7.251.0); a ANÁLISE POR HORÁRIO · MÉDIA
   HISTÓRICA DE CX não muda.
@@ -621,8 +622,9 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   - `_histLinhaHtml(d, x, temMetaComp)` saiu do `renderHist` para o teste montar
     a linha de verdade (I2: as mutações "MELHOR H. com cor em UEP" e "hero com a
     cor invertida" passavam verdes só com as regex).
-  - O papel diz *em caixas (a tela julga pela UEP)* no período (`periodoLabel`
-    do `_imprimirHistoricoFormatado`) — ver *Fora desta versão*.
+  - ~~O papel diz *em caixas (a tela julga pela UEP)* no período (`periodoLabel`
+    do `_imprimirHistoricoFormatado`)~~ — revogado na v7.267.0: o papel passou
+    para a UEP e o aviso saiu.
   - `HIST_CH_W_MIN` 760 → 600: na aba aberta vale a largura do card; o 760 só
     encolhia o desenho a 1280 (card de 704 px).
 - **Medido no Chromium** (Apps Script simulado com os dias do print, 19/10 a

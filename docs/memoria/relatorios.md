@@ -250,3 +250,80 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   EFICIÊNCIA, EF. S/ HE e o gap em caixas — com a UEP na frente, o único % da
   meta do papel é o da UEP. Ficam as quantidades, a META e a META/H.
 
+
+## O 🖨 DO HISTÓRICO COM A UEP NA FRENTE (v7.267.0)
+- PPCP, 18/11/2026, com a tela da aba já em UEP (v7.266.0) e a pergunta sobre o
+  papel ainda em caixas: *"sim passar para papel, qual falta atualizar?"*. Na
+  v7.266.0 o papel só avisava *em caixas (a tela julga pela UEP)*; o revisor
+  tinha apontado o defeito: 20/10 ✓ META na tela × ABAIXO no papel, 28/10
+  ⚠ META COM HE × NA META (171%), 23/10 ABAIXO × ATENÇÃO.
+- **O papel não tem conta nem marcação próprias (D2).** O
+  `_imprimirHistoricoFormatado` chama `_histUepMontar(dias)`; com UEP, o corpo
+  é o `_histDocUepHtml(dias, U, I, temMetaComp)`, feito das peças da TELA:
+  `_gerKpiHtml(_histKpisUep(U))`, `_gerKpiHtml(_histKpisCx(U.k, …))`,
+  `_uepAbaPerSvg(U.diasUep, HIST_DOC_W, 200, 0, { pid:'histDocLis',
+  cls:U.clsPorDia })`, `_histTheadHtml(true, temMetaComp)` e
+  `_histLinhaHtml(d, U.dias[i], temMetaComp)`. `null` (período sem UEP) → o
+  corpo de sempre, em caixas, intocado.
+  - `_histTheadHtml` saiu do `_histThead` (que só escreve no DOM) para o papel
+    ler o mesmo cabeçalho.
+  - `_histCxInfo(dias, heBackendOk)` (pura) = `nComMeta`, `semMetaTxt`,
+    `heSub`, `semBackend`: o que os cards de caixas dizem além dos números. A
+    tela (em UEP e em caixas) e o papel leem a mesma; antes era conta solta no
+    `renderHist`.
+- **A pele `_HIST_DOC_CSS` (`.hist-doc`)** só redefine o que a marcação da tela
+  lê: os tokens na tinta do papel (os do `_UEP_DOC_SKIN`), `.kpi-card.ok/warn/
+  red`, `.hist-hero` (2 colunas, o ÚNICO número em cor do resumo), `.badge` e
+  `td.mono`. Regras do documento (*O relatório semanal é DOCUMENTO*):
+  - na tabela o número é tinta — `.hist-doc table{--ok:…;--acc:…}` em grafite:
+    o % de quem bateu e o H. EXTRA não ganham cor; âmbar e vermelho ficam para
+    o % de quem não bateu, e o selo diz o veredito com a palavra;
+  - o FECHAMENTO não é selo (`.badge.hist-fech`: o ✓ da tela é verde; no papel,
+    tinta) e a FONTE é só da tela (`.so-tela`, a convenção do projeto);
+  - cada célula numa linha (`white-space:nowrap`): o selo e as horas de HE
+    quebravam e a linha do dia com hora extra dobrava de altura.
+- **O que a tela diz no `title`, o papel escreve**: a legenda do desenho e a
+  nota do pé (a UEP, cada STATUS, as caixas como fato; *SEM UEP* só quando há
+  dia sem UEP; a nota da escala). ⚠ Mudou um `title` da tela → conferir a nota.
+- **Saíram do papel com UEP**: os seis cards em caixas (EFICIÊNCIA DO PERÍODO,
+  DIAS COM META, TOTAL META com o gap, MELHOR DIA, DIA MAIS FRACO), o alerta de
+  meta batida com hora extra em caixas, o `_svgBarChart` (PRODUÇÃO × META) e a
+  FAIXA DE UEP. A ANÁLISE POR HORÁRIO segue no fim, nos dois modos (é ranking
+  de horas, não veredito contra a meta; o 🖨 fica na sub-aba PERÍODO).
+- **`_rpUepFaixaHtml` saiu do código** (B5): no semanal o corpo em caixas só
+  roda sem UEP (`${U?…:…}`), onde a faixa devolvia `''`; no histórico, idem
+  depois desta versão. Era a faixa com régua própria (100/90%, sem a hora
+  extra) que já tinha dado dois vereditos no semanal (v7.251.0).
+- **As palavras do selo em UEP num lugar só**: o `_relSemUepCorpoHtml` tinha
+  uma cópia; agora lê o `_gsemSeloTxt(U)` (o bloco da tela, a aba HISTÓRICO e
+  os dois papéis). As mesmas palavras existem no caminho em CAIXAS (Tela D,
+  semana sem UEP) — é outro veredito, não cópia.
+- **O período do cabeçalho** (`.rp-periodo`) saía em `#1a1a2e` sobre a faixa
+  escura do `_rpCabecalho` (impressa com `print-color-adjust:exact`): ilegível.
+  Agora `#fff`. A classe só existe neste papel.
+- **Medido** (Chromium, mídia de impressão, 718 px = os 190 mm úteis da folha
+  A4 em pé, com Barlow, Barlow Condensed e IBM Plex Mono carregadas; os 23
+  dias de 19/10 a 17/11 com META DIA e ATRASO META ligados — o pior caso, 14
+  colunas): nada passa da largura; 2 folhas, a tabela parte entre linhas com o
+  cabeçalho repetido; a 1ª folha leva o resultado, as caixas, o desenho e 15
+  dias. O papel sem UEP: igual ao de antes, 10 colunas.
+- Testes em `relatorios.test.js` (*aba HISTÓRICO*, bloco do 🖨): o `_histCxInfo`;
+  o papel CONTÉM os cards, o cabeçalho e cada linha que a tela gera (a mesma
+  marcação, comparada texto a texto); nenhum veredito em caixas no corpo em
+  UEP; o desenho com o id próprio e a cor da tabela; a nota; a pele (só regras
+  `.hist-doc`); o desenho sem conta; os dois caminhos do
+  `_imprimirHistoricoFormatado`; o selo num lugar só.
+- **A revisão (`/revisor-codigo`, 18/11/2026): 0 bloqueios, 3 ajustes.**
+  - Teste: o desenho do papel só com os dias COM UEP (com `dias` no lugar de
+    `U.diasUep`, o dia sem UEP virava uma barra "0" com a linha da meta — a
+    mutação passava verde).
+  - A nota da escala pelo token (`var(--warn)`), não em hexadecimal (D5).
+  - **Em aberto, decisão do PPCP**: no desenho UEP POR DIA as três cores (cinza,
+    âmbar, vermelho) têm quase a mesma luminância — impresso em preto e branco
+    viram três cinzas parecidos e a legenda descreve uma diferença que não se
+    vê. O veredito continua legível pelo selo com a palavra, na tabela. O
+    desenho é o da ⚖ UEP (tela e papel): mudar (hachura para o âmbar?) é
+    decidir para os dois.
+  - Já existia: com os DOIS campos de data vazios a tela mostra o histórico
+    inteiro e o papel os últimos 30 dias (o papel sempre teve esse corte). O
+    boot preenche as datas, então é raro; se virar caso real, alinhar.

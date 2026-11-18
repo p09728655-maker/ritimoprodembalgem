@@ -11,6 +11,58 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.267.0 — 18/11/2026 · O 🖨 do HISTÓRICO com a UEP na frente
+
+O PPCP, com a aba já em UEP (v7.266.0) e o papel dela ainda em caixas: *"sim
+passar para papel"*. O STATUS de um dia no papel podia ser o oposto do da tela
+— 20/10: ✓ META na tela (UEP 103,8%), ABAIXO no papel (81,6% em caixas).
+
+O que muda no 🖨 IMPRIMIR / PDF da aba, **quando o período tem UEP gravada**:
+- **O papel é feito das peças da tela** — a mesma conta (`_histUepMontar`) e a
+  mesma marcação (os cards, o desenho UEP POR DIA, o cabeçalho e as linhas da
+  tabela); só a pele muda. Um veredito, o da UEP, com as mesmas palavras.
+- **RESULTADO DO PERÍODO · UEP**: UEP NA JORNADA · META (o selo), UEP / DIA,
+  DIAS QUE BATERAM, MELHOR DIA e UEP EM HORA EXTRA. No resumo, um número em
+  cor: o do selo.
+- **CAIXAS · FATO, SEM VEREDITO**: CAIXAS, CAIXAS EM HORA EXTRA, CAIXAS
+  PROGRAMADAS e CAIXAS / DIA — sem cor, sem % da meta.
+- **UEP POR DIA · META DO DIA**, com a legenda escrita (o papel não tem o
+  hover): cinza bateu na jornada, âmbar bateu só com a hora extra, vermelha
+  abaixo, listrada sábado e domingo.
+- **Tabela**: as colunas da tela (UEP · META UEP · % DA META · CAIXAS · H.
+  NORMAL · H. EXTRA · PROGRAMADAS · MELHOR H. · PIOR H. · STATUS · FECHAMENTO),
+  sem a FONTE. O número é tinta; âmbar e vermelho só no % de quem não bateu; o
+  veredito é o selo.
+- **A nota do pé** escreve o que a tela diz ao passar o mouse: o que é a UEP,
+  o que cada STATUS quer dizer e que as caixas são fato.
+- Saem do papel com UEP: EFICIÊNCIA DO PERÍODO, DIAS COM META, TOTAL META com o
+  gap, MELHOR DIA e DIA MAIS FRACO em caixas, o alerta de meta batida com hora
+  extra em caixas, o gráfico PRODUÇÃO × META e a faixa de UEP (que tinha outra
+  régua). A ANÁLISE POR HORÁRIO continua no fim.
+- Período sem UEP (histórico antigo): o papel de sempre, em caixas.
+
+Junto:
+- **O período do cabeçalho do papel não se lia**: saía em tinta escura sobre a
+  faixa escura (a cor de quando o cabeçalho era claro). Agora em branco.
+- A FAIXA DE UEP dos papéis (`_rpUepFaixaHtml`, v7.87.0) saiu do código: no
+  semanal ela não desenhava mais nada desde a v7.251.0, e no histórico era um
+  segundo veredito (régua 100/90%, sem a hora extra).
+- As palavras do selo em UEP passam a ter um lugar só (`_gsemSeloTxt`): o
+  relatório semanal tinha uma cópia.
+
+**Atenção** (antes → depois), o papel do período 19/10 a 17/11:
+
+| No papel | Antes | Depois |
+|---|---|---|
+| Quem julga o período | EFICIÊNCIA DO PERÍODO em caixas (Σ ÷ Σ, com a hora extra) | UEP NA JORNADA ÷ soma das METAS UEP dos dias úteis — o número da tela |
+| STATUS do dia | caixas, régua de 96%: NA META · ATENÇÃO · ABAIXO | UEP, a régua da semana: ✓ META · ⚠ META COM HE · ABAIXO — o da tela |
+| 20/10 | ABAIXO (81,6% em caixas) | ✓ META (103,8% da META UEP) |
+| 28/10 | NA META (171,3% em caixas) | ⚠ META COM HE (96,2% na jornada) |
+| MELHOR DIA | 28/10, 171,3% em caixas | o dia com o maior % da META UEP |
+| Coluna UEP | só o número, sem meta nem % | UEP · META UEP · % DA META |
+| Período no cabeçalho | *… · em caixas (a tela julga pela UEP)*, ilegível na faixa escura | só as datas, em branco |
+| Folhas (23 dias) | 2 | 2 |
+
 ## v7.266.0 — 18/11/2026 · A aba HISTÓRICO com a UEP na frente
 
 O PPCP, com o print da aba (35.744 caixas em destaque, a EFICIÊNCIA MÉDIA em
@@ -84,7 +136,8 @@ datas vale só no PERÍODO — a análise é do histórico inteiro, como sempre 
 de 96% (`sc`); na aba HISTÓRICO e no fechamento da semana o mesmo dia é julgado
 pela régua da semana (≥ meta) — um dia a 99,8% é verde lá e vermelho aqui. E o
 🖨 IMPRIMIR / PDF da aba segue em caixas: o STATUS de um dia no papel pode ser
-o oposto do da tela (20/10: ✓ META na UEP, ABAIXO em caixas).
+o oposto do da tela (20/10: ✓ META na UEP, ABAIXO em caixas) — **resolvido na
+v7.267.0**.
 
 ## v7.265.0 · mobile 1.59.0 — 17/11/2026 · TV sem a hora extra na meta, e o selo pelos minutos
 

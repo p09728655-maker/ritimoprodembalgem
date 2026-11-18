@@ -4693,14 +4693,12 @@ console.log('\n── estudo de UEP ──');
     ok('o relatório semanal e o do dia levam a UEP',
        // v7.251.0: com a UEP na frente o semanal é o ONDE PERDEMOS; a tabela de UEP antiga fica para a semana sem UEP
        [/\$\{U\?'':_relUepSemanaHtml\(diasSem\)\}/.test(JS), /UEP DO DIA \(\$\{uepDoc\.fds\?'sábado\/domingo: todo hora extra':'jornada normal'\}\)/.test(JS)], [true, true]);
-    // v7.87.0 — UEP em destaque em todas as impressões
-    eval(pega('function _rpUepFaixaHtml('));
-    const fx = _rpUepFaixaHtml([{ data: '22/09/2026', uep: 2400, metaUep: 2530, uepHe: 100 }, { data: '23/09/2026', uep: 2700, metaUep: 2530 }, { data: '24/09/2026', uep: null }]);
-    ok('faixa de UEP: total contra a soma das metas dos dias COM UEP, selo com a palavra, dia sem UEP contado',
-       [/5\.100/.test(fx), /de 5\.060 UEP/.test(fx), /NA META/.test(fx), /1 dia sem UEP/.test(fx), /\+100 UEP/.test(fx)], [true, true, true, true, true]);
-    ok('faixa de UEP: período sem UEP gravada não sai', _rpUepFaixaHtml([{ uep: null }]), '');
-    ok('a faixa destacada está no semanal e no histórico',
-       [/\$\{_rpUepFaixaHtml\(diasSem\)\}/.test(JS), /\$\{_rpUepFaixaHtml\(dias\)\}/.test(JS)], [true, true]);
+    // v7.87.0 — UEP em destaque em todas as impressões. A FAIXA DE UEP (_rpUepFaixaHtml, régua
+    // 100/90% sem a hora extra) saiu na v7.267.0: com a UEP na frente o semanal (v7.251.0) e o 🖨
+    // do histórico (v7.267.0) abrem com a UEP pela montagem da tela, e no papel em caixas (período
+    // sem UEP) ela já não desenhava nada — era um 2º veredito esperando voltar.
+    ok('a faixa de UEP saiu dos dois papéis: quem diz a UEP é a montagem da tela (um veredito)',
+       [/_rpUepFaixaHtml/.test(JS), /\$\{U\?_relSemUepCorpoHtml\(U,/.test(JS), /\$\{U\?_histDocUepHtml\(dias, U,/.test(JS)], [false, true, true]);
     ok('o relatório do dia abre com o card UEP DO DIA, pela mesma conta do gerencial',
        [/const uepDoc=\(PONTOS_DIA\.uep&&PONTOS_DIA\.uep\.codigos>0\)\?uepCard\(/.test(pega('async function gerarRelatorioProducaoModelo(')),
         /UEP DO DIA · \$\{uepDoc\.fds\?'TODO HORA EXTRA':'JORNADA'\}/.test(pega('async function gerarRelatorioProducaoModelo('))], [true, true]);
@@ -5278,7 +5276,9 @@ console.log('\n── estudo de UEP ──');
        /<div class="ud-alerta ud-larga"><b>ATENÇÃO AO DADO<\/b>/.test(_uepDocHtml(Object.assign({}, Dd, { avisos:['x'] }), ctxD)), true);
     ok('a META é a mesma tinta nos dois gráficos do papel (token --uep-meta); a tela segue com a cor de sempre',
        [/stroke="var\(--uep-meta,var\(--txt\)\)"/.test(svH), /stroke="var\(--uep-meta,var\(--acc\)\)"/.test(svD),
-        /\.uep-doc\{--uep-meta:#1F2328\}/.test(src), /--uep-meta:/.test(src.replace(/\.uep-doc\{--uep-meta:#1F2328\}/, ''))], [true, true, true, false]);
+        // v7.267.0: o papel do HISTÓRICO usa o mesmo desenho e define o token na pele dele — só os papéis definem
+        /\.uep-doc\{--uep-meta:#1F2328\}/.test(src), /--uep-meta:/.test(src.replace(/\.(uep|hist)-doc\{--uep-meta:#1F2328\}/g, '')),
+        /\.hist-doc\{--uep-meta:#1F2328\}/.test(src)], [true, true, true, false, true]);
     ok('sem dia fechado no período: nada de título nem gráfico vazio do lado direito',
        [/DIA A DIA EM UEP/.test(DOCsemP), /UEP por dia/.test(DOCsemP)], [false, false]); }
   ok('tela e papel mostram a linha da hora extra e o total do dia quando houve HE',
@@ -6202,7 +6202,7 @@ console.log('\n── estudo de UEP ──');
   // decisão das células — META DIA e ATRASO META entram nos dois pelo temMetaComp
   ok('a tabela do HISTÓRICO mostra as duas colunas pela mesma decisão do cabeçalho',
      [/const temMetaComp=_histTemMetaComp\(dias\)/.test(rh), /_histThead\(temUepHist, temMetaComp\)/.test(rh), /\$\{temMetaComp\?/.test(pega('function _histLinhaHtml(')) && /temUepHist\?U\.dias\[i\]:null, temMetaComp\)/.test(rh),
-      (pega('function _histThead(').match(/>META DIA<\/th>/g) || []).length, (pega('function _histThead(').match(/\+mcomp/g) || []).length], [true, true, true, 1, 2]);
+      (pega('function _histTheadHtml(').match(/>META DIA<\/th>/g) || []).length, (pega('function _histTheadHtml(').match(/\+mcomp/g) || []).length], [true, true, true, 1, 2]);
   // o Exportar Excel do HISTÓRICO saiu na v7.248.2 (sem botão desde antes de
   // 06/11/2026; PPCP: o botão não volta)
   ok('o Exportar Excel do HISTÓRICO saiu', /function exportarExcel\(/.test(JS), false);
@@ -7089,7 +7089,7 @@ console.log('\n── aba HISTÓRICO: a UEP na frente (v7.266.0) ──');
 { ['function _gsemSeloTxt(', 'function _gsemUepMontar(', 'function _uepEscalaSelo(', 'function _uepEscalaNota(', 'function _uepEscalaCorte(', 'function _cartNum(']
     .forEach(f => { const n = f.slice(9, -1); if (typeof global[n] === 'undefined') eval(pega(f).replace(/^function /, 'global.' + n + ' = function ')); });
   if (typeof global.UEP_ESCALAS === 'undefined') global.UEP_ESCALAS = [];
-  ['function _histUepMontar(', 'function _histKpisUep(', 'function _histKpisCx(', 'function _histThead(', 'function _histCelulasUep(', 'function _histLinhaHtml(', 'function _histSub(']
+  ['function _histUepMontar(', 'function _histKpisUep(', 'function _histKpisCx(', 'function _histCxInfo(', 'function _histThead(', 'function _histTheadHtml(', 'function _histCelulasUep(', 'function _histLinhaHtml(', 'function _histSub(', 'function _histDocUepHtml(']
     .forEach(f => eval(pega(f).replace(/^function /, 'global.' + f.slice(9, -1) + ' = function ')));
   if (typeof fmtFechadoEm === 'undefined') global.fmtFechadoEm = () => 'SIM';
   global.HIST_SUBS = JSON.parse(JS.match(/const HIST_SUBS=(\[[^\]]+\])/)[1].replace(/'/g, '"'));
@@ -7169,7 +7169,7 @@ console.log('\n── aba HISTÓRICO: a UEP na frente (v7.266.0) ──');
   ok('28/10 em UEP: 13 células, a UEP na frente, MELHOR H. e PIOR H. sem cor (nunca o 2º veredito), o selo âmbar e o 2HE',
      [tds(L8u), /^\s*<tr>\s*<td class="mono">28\/10\/2026<\/td>\s*<td class="mono" title="2\.657 UEP de 2\.761/.test(L8u),
       /color:var\(--txt2\)">375<\/td>/.test(L8u), /color:var\(--txt2\)">60<\/td>/.test(L8u), /var\(--ok\)">375|var\(--red\)">60/.test(L8u),
-      /⚠ META COM HE<\/span> <span class="badge b-he">2HE<\/span>/.test(L8u), /b-ok" title="SIM">✓<\/span>/.test(L8u), /☁ SHEETS/.test(L8u)],
+      /⚠ META COM HE<\/span> <span class="badge b-he">2HE<\/span>/.test(L8u), /b-ok hist-fech" title="SIM">✓<\/span>/.test(L8u), /<td class="so-tela"><span class="badge b-mute" style="font-size:8px">☁ SHEETS/.test(L8u)],
      [13, true, true, true, false, true, true, true]);
   ok('28/10 em caixas (período sem UEP): 11 células, a eficiência e o selo pelas caixas, MELHOR H. verde e PIOR H. vermelha como sempre',
      [tds(L8c), /var\(--ok\)">171,3%<\/td>/.test(L8c), /var\(--ok\)">375<\/td>/.test(L8c), /var\(--red\)">60<\/td>/.test(L8c), /b-ok">✓ META<\/span> <span class="badge b-he">2HE/.test(L8c), /META COM HE/.test(L8c)],
@@ -7202,6 +7202,63 @@ console.log('\n── aba HISTÓRICO: a UEP na frente (v7.266.0) ──');
         /<div class="ucv-pn" data-sub="horario">\s*<div id="analise-horario">/.test(src), /setTxt\('hist-sb-horario'/.test(pega('function renderAnaliseHorario(')),
         (src.match(/#sec-programacao \.ucv-sb\.on,#sec-historico \.ucv-sb\.on\{/g) || []).length],
        [true, 2, true, true, 1]); }
+  // ── v7.267.0: o 🖨 IMPRIMIR / PDF da aba com a UEP na frente (PPCP, 18/11/2026: "sim passar para papel").
+  // Na v7.266.0 a tela julgava pela UEP e o papel em caixas: o STATUS de um dia podia ser o oposto
+  // (20/10: ✓ META em UEP × ABAIXO em caixas). O papel não tem conta nem marcação próprias (D2).
+  { ['function _gerKpiHtml(', 'function _uepAbaPerSvg(', 'function _uepEscalaMarca(', 'function _fdsNome(', 'function _rpEsc(']
+      .forEach(f => { const n = f.slice(9, -1); if (eval('typeof ' + n) === 'undefined') eval(pega(f).replace(/^function /, 'global.' + n + ' = function ')); });
+    global.HIST_DOC_W = Number(JS.match(/const HIST_DOC_W=(\d+)/)[1]);
+    const I = _histCxInfo(HD, null);
+    ok('_histCxInfo: os dias com meta, o rótulo dos sem meta e a parte da hora extra — a mesma peça para a tela e o papel',
+       I, { nComMeta: 10, semBackend: false, semMetaTxt: '1 dia de fim de semana, todo hora extra', heSub: '8,3% do total' });
+    ok('_histCxInfo: backend sem HE CX (a leitura do dia disse, ou um dia veio sem o campo) e dia sem como separar',
+       [_histCxInfo(HD, false).heSub, _histCxInfo(HD, false).semBackend, _histCxInfo([{ data:'01/09/2026', real:100, meta:100, heCxAusente:true }], true).semBackend,
+        _histCxInfo([{ data:'01/09/2026', real:100, meta:100, heCx:null }, { data:'02/09/2026', real:100, meta:100, heCx:20 }], true).heSub, _histCxInfo([], null)],
+       ['⚠ Apps Script sem HE CX — re-deploy pendente', true, true, '10,0% do total · 1 dia fechado sem o dado', { nComMeta: 0, semBackend: false, semMetaTxt: '', heSub: '—' }]);
+    const DOC = _histDocUepHtml(HD, U, I, false);
+    ok('o papel em UEP é feito das peças da TELA: os mesmos cards (as duas linhas), o mesmo cabeçalho e as mesmas linhas, dia a dia',
+       [DOC.includes(_gerKpiHtml(_histKpisUep(U))), DOC.includes(_gerKpiHtml(_histKpisCx(U.k, I.nComMeta, I.semMetaTxt, I.heSub, I.semBackend))),
+        DOC.includes('<thead>' + _histTheadHtml(true, false) + '</thead>'), HD.filter((d, i) => !DOC.includes(_histLinhaHtml(d, U.dias[i], false))).length,
+        (DOC.match(/<tr>\s*<td class="mono">\d\d\/\d\d\/\d{4}<\/td>/g) || []).length],
+       [true, true, true, 0, 11]);
+    ok('…com as mesmas palavras do selo e o mesmo STATUS da tela (20/10 ✓ META, 23/10 ABAIXO, 28/10 ⚠ META COM HE), e nenhum veredito em caixas',
+       [/<b>⚠ META BATIDA COM HORA EXTRA<\/b> · 99,3% da meta/.test(DOC), /RESULTADO DO PERÍODO · UEP/.test(DOC), /CAIXAS · FATO, SEM VEREDITO/.test(DOC),
+        /EFICIÊNCIA|DIAS COM META|DENTRO DA META|sbadge|PRODUÇÃO × META/.test(DOC)], [true, true, true, false]);
+    ok('o desenho é o UEP POR DIA da tela (id próprio do padrão, a cor da tabela), na largura da folha, com a legenda que o papel não tem no hover',
+       [/id="histDocLis"/.test(DOC), new RegExp('viewBox="0 0 ' + HIST_DOC_W + ' 200"').test(DOC), /fill="var\(--warn\)" opacity="\.85"/.test(DOC),
+        /âmbar = bateu só com a hora extra/.test(DOC), HIST_DOC_W <= 698], [true, true, true, true, true]);
+    // revisão (I2): com `dias` no lugar de `U.diasUep` o 30/10 (sem UEP gravada) virava uma barra "0" com a
+    // linha da meta — um zero inventado no papel (E1), ao lado da tabela dizendo SEM UEP
+    { const svg = DOC.slice(DOC.indexOf('<svg'), DOC.indexOf('</svg>'));
+      ok('o desenho do papel só tem os dias COM UEP: o 30/10 (sem UEP) não vira barra, nem zero',
+         [(svg.match(/<title>\d\d\/\d\d\/\d{4}/g) || []).length, /30\/10\/2026/.test(svg), /29\/10\/2026/.test(svg), /<title>24\/10\/2026 \(sábado\)/.test(svg)],
+         [10, false, true, true]); }
+    ok('a nota da escala sai pelo token da pele (D5), nunca em hexadecimal no meio da marcação',
+       [/style="color:var\(--warn\)">\$\{U\.escalaNota\}/.test(pega('function _histDocUepHtml(')), /#[0-9A-Fa-f]{6}/.test(pega('function _histDocUepHtml('))], [true, false]);
+    ok('a nota escreve o que a tela diz no title: a UEP, o STATUS (com o SEM UEP só quando há dia sem UEP) e as caixas como fato',
+       [/<b>STATUS<\/b>: ✓ META = a jornada bateu a meta do dia · ⚠ META COM HE = bateu só com a hora extra · ABAIXO = não bateu nem com ela/.test(DOC),
+        /SEM UEP = dia fechado sem UEP gravada, fora da conta/.test(DOC), /SEM UEP = dia fechado/.test(_histDocUepHtml(HD.slice(0, 10), _histUepMontar(HD.slice(0, 10)), _histCxInfo(HD.slice(0, 10), null), false)),
+        /<b>Caixas<\/b>: fato, sem veredito/.test(DOC)], [true, true, false, true]);
+    ok('META DIA e ATRASO META entram no papel pela mesma decisão da tela (15 colunas, a FONTE entre elas, só da tela)',
+       [(_histDocUepHtml(HD, U, I, true).match(/<th[ >]/g) || []).length, /<th class="so-tela">FONTE<\/th>/.test(DOC)], [15, true]);
+    const CSS = JS.match(/const _HIST_DOC_CSS=`([\s\S]*?)`;/)[1];
+    ok('a pele do papel: só redefine o que a marcação da tela lê — a FONTE some, o número da tabela é tinta, o fechamento não é selo, um número em cor (o hero)',
+       [/\.hist-doc \.so-tela\{display:none\}/.test(CSS), /\.hist-doc table\{--ok:#1F2328;--acc:#1F2328\}/.test(CSS), /\.hist-doc \.badge\.hist-fech\{background:none;border:0/.test(CSS),
+        /\.hist-doc \.kpi-card\.hist-hero\{grid-column:span 2\}/.test(CSS), /\.hist-doc \.badge\.b-warn\{/.test(CSS), CSS.split('\n').filter(l => /\{/.test(l) && !/^\s*(\.hist-doc|\/\*)/.test(l) && !/^\s+--/.test(l)).length],
+       [true, true, true, true, true, 0]);
+    ok('o desenho do papel não conta (D1)', /uepHistResumo|_relMetaHE|uepDiaMeta|uepDiaHe|\.reduce\(|\.filter\(/.test(pega('function _histDocUepHtml(')), false);
+    const imp = pega('async function _imprimirHistoricoFormatado(');
+    ok('o 🖨 lê a montagem da tela: com UEP, o corpo e a pele do papel em UEP; sem UEP (null), o papel de sempre, em caixas — e não se desculpa mais no período',
+       [/const U=_histUepMontar\(dias\);/.test(imp), /\$\{U\?_HIST_DOC_CSS:''\}/.test(imp),
+        /\$\{U\?_histDocUepHtml\(dias, U, _histCxInfo\(dias, HE_BACKEND_OK\), _histTemMetaComp\(dias\)\):`<div class="rp-sec-ttl">RESUMO DO PERÍODO<\/div>/.test(imp),
+        /EFICIÊNCIA DO PERÍODO/.test(imp) && /_svgBarChart\(dias\)/.test(imp), /a tela julga pela UEP|temUepP/.test(imp), /ANÁLISE POR HORÁRIO · MÉDIA HISTÓRICA DE CX/.test(imp)],
+       [true, true, true, true, false, true]);
+    ok('o período do cabeçalho em branco (ficava em tinta escura sobre a faixa escura: ilegível) e cada célula da tabela numa linha só',
+       [/\.rp-periodo\{[^}]*color:#fff\}/.test(imp), /\.rp-periodo\{[^}]*color:#1a1a2e/.test(imp), /\.hist-doc tbody td\{padding:4px 5px;white-space:nowrap\}/.test(CSS)], [true, false, true]);
+    // (as mesmas palavras existem no caminho em CAIXAS — Tela D e semana sem UEP —, que é outro veredito; aqui conta a frase da UEP)
+    ok('a tela lê a mesma peça das caixas (_histCxInfo) e as palavras do selo em UEP moram num lugar só (bloco, aba e os dois papéis)',
+       [/const \{ semBackend, heSub, semMetaTxt \}=_histCxInfo\(dias, HE_BACKEND_OK\);/.test(rh), /: _gsemSeloTxt\(U\);/.test(pega('function _relSemUepCorpoHtml(')),
+        (JS.match(/UEP PARA A META`/g) || []).length, /UEP PARA A META`/.test(pega('function _gsemSeloTxt('))], [true, true, 1, true]); }
 }
 
 console.log(falhas === 0

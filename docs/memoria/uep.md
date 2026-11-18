@@ -574,8 +574,10 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   isso. Falhou ou não há UEP → `null` e a coluna some.
 - **UEP EM DESTAQUE NA SEMANA E NAS IMPRESSÕES** (v7.87.0, PPCP 24/09/2026:
   *"na semana tbm colocar a UEP e em todas impressões destacando"*).
-  `_rpUepFaixaHtml(dias)` é a faixa ÚNICA do relatório semanal e do histórico,
-  logo abaixo do resumo. É desenho: a conta é o `uepHistResumo`, que ganhou
+  ~~`_rpUepFaixaHtml(dias)` é a faixa ÚNICA do relatório semanal e do histórico,
+  logo abaixo do resumo~~ (revogada: saiu do semanal com UEP na v7.251.0 e do
+  código na v7.267.0, quando o 🖨 do histórico passou a abrir com a UEP pela
+  montagem da tela — a faixa tinha régua própria, 100/90% sem a hora extra). É desenho: a conta é o `uepHistResumo`, que ganhou
   `metaTot`, a soma das metas dos dias COM UEP. PDF do dia: 1º card
   `uepDoc = uepCard(...)`. PDF do período: card UEP APONTADA
   (`_phUepTotal`, todas as horas e só as caixas apontadas; não é a UEP de
@@ -1519,7 +1521,8 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   UEP · dd/mm*, no vão entre as barras; perto da borda direita o texto vira).
 - **Onde aparece:** marca nos gráficos `_uepAbaPerSvg` (bloco 5, tela e papel) e
   `_dirSemSvg` (diretoria); nota no bloco 5 (tela e papel), card UEP / DIA do
-  HISTÓRICO, `_rpUepFaixaHtml` (semanal e histórico), carteira em UEP do PLANO
+  HISTÓRICO (tela e, desde a v7.267.0, o papel — a nota do pé; a faixa
+  `_rpUepFaixaHtml` saiu), o ONDE PERDEMOS do semanal, carteira em UEP do PLANO
   (`cart.escNota`, pela `_qpCurvaUepDias` — os MESMOS dias da régua) e custo
   por UEP do SIMULADOR. O **peso normal das Telas F/G** (`_tvUepPesoNormal`)
   **só usa dias da régua de hoje** — na TV não cabe nota, e a mediana antiga

@@ -388,7 +388,11 @@ via Google Apps Script (JSONP).
   tudo em caixas. Sub-abas PERÍODO · ANÁLISE POR HORÁRIO (`_histSub`, a faixa
   da PROGRAMAÇÃO). ⚠ O `_uepAbaPerSvg` leva `pid` (id do padrão listrado por
   desenho — dois na página se misturavam) e `cls` (a cor da tabela por dia).
-  ⚠ O 🖨 IMPRIMIR / PDF da aba segue em caixas (e diz isso no período); o dia
+  O 🖨 IMPRIMIR / PDF da aba (v7.267.0) é feito das MESMAS peças da tela
+  (`_histDocUepHtml`: os cards, o `_uepAbaPerSvg`, `_histTheadHtml`,
+  `_histLinhaHtml`, `_histCxInfo`) com a pele `_HIST_DOC_CSS` (`.hist-doc`: só
+  tokens e classes; a FONTE é `.so-tela`); sem UEP, o papel de sempre em caixas.
+  ⚠ Mudou a tela da aba, o papel muda junto — conferir os dois. ⚠ O dia
   passado do gerencial julga a UEP pela régua de 96% (em aberto, PPCP).
 - Diretoria: um veredito só (a UEP); retrato guardado no aparelho; sem o
   `pollParadaTV` nem o `lerMediaHoras`.
