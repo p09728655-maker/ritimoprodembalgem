@@ -109,6 +109,39 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
       fontes reais: o recado vai de 469 a 547 px, numa linha em 1920, 1366 e
       1280. Teste: +1.000 UEP de hora extra em 04/11 não mexe no % (mutação:
       somar o `d.he` no `exUep` derruba o teste).
+    - **v7.274.2 (19/11/2026) — hora de linha não é hora de relógio.** O PPCP,
+      com a segunda 16/11 na tela (barra do feito 9h38, ritmo 110%): *"seg tem
+      8h47 como 9h38"* → (a explicação: ~3.028 UEP na jornada ÷ 314 UEP por hora
+      de linha) → *"entendi que dizer que fez mais de 314 uep hora"* → *"faz 1 e
+      2"* (legenda e title) → *"tem que ser com fácil compreensão para não gerar
+      dúvidas e descrédito"*. A barra do feito em horas de linha passa da
+      jornada de relógio quando a linha roda acima da média, e nada dizia por
+      quê — lia-se como erro do painel.
+      - Conta (`_taktMontar`, D1 — o desenho só lê): `d.velHora` = feito na
+        jornada ÷ `d.min` × 60 e `d.velMedia` = META UEP do dia × 60 ÷ 527, só
+        com `d.ritmo` (dia útil com minuto; senão null); `T.horaLinha` = META ×
+        60 ÷ 527 (314,3 com 2.761). velHora ÷ velMedia = o ritmo (o teste
+        prende). Nomes novos: `uepHora` e `uepPorHora` já existiam (a UEP por
+        slot do `.gs` e a função do rp-core).
+      - Title da barra do feito (`_taktSvg`): *"03/11 · na jornada: 3.028 UEP em
+        8h47 = 345 UEP por hora (a média é 314) — equivale a 9h38 de linha,
+        ritmo 109,7% da média"*; hora extra à parte, *"fora do ritmo"*; hoje,
+        *"até agora, … já lançadas"*, com o `*` das caixas sem UEP; dia sem
+        ritmo, só *"N UEP na jornada — equivale a Xh de linha (1 hora de linha =
+        314 UEP)"*; sábado só com hora extra, sem *"0 UEP na jornada"*.
+      - Legenda da TELA (`.tks-lh`, texto sem marca, entre a linha branca e o
+        ritmo): *"hora de linha não é hora de relógio: 1 hora de linha = 314
+        UEP, a média em 1 hora"* e, com algo feito, *"— o azul passa da linha
+        branca quando a linha faz mais de 314 UEP por hora na jornada"*. Ficou
+        "média" (a palavra da tela) — o "META" é a fase UM NOME POR INDICADOR.
+        A do papel NÃO (703 de 718 px).
+      - Medido no Chromium com as fontes reais (o pior caso, com o *embalou
+        antes* na legenda): 1920 e 1366 de 2 para 3 linhas (44 → 74 px), 1280
+        de 3 para 4 (74 → 104 px); nada passa da largura, sem rolagem lateral.
+      - Teste: o caso da segunda (3.028 UEP), o 04/11 com hora extra, o hoje
+        (997 UEP em 4h00), o sábado só com hora extra e a legenda com e sem
+        feito. Mutação: sem o `velHora`, o title antigo, a legenda sem a
+        `.tks-lh` e o *"0 UEP na jornada"* no sábado derrubam o teste.
     - Medido no Chromium (o caso de 03–06/11, 5 e 7 dias): 1920, 1366 e 1280
       sem texto sobre texto, nada passa da largura; a legenda vai a 2 linhas em
       1366 e 1280; o 🖨 TAKT 700 px antes e depois (folha de 718).
