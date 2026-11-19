@@ -1,5 +1,18 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.73 — A LARGURA DA CAIXA FECHADA VAI PARA O APP DE CRONOANÁLISE.
+//               PPCP, 19/11/2026: "PARA VIDEO CRONOANALISE VAMOS USAR LARGURA".
+//               A MEDIDA DA CAIXA do cadastro é a caixa ABERTA, do começo da
+//               linha (825 na Mesa Cabeceira Sleep); na seladora, onde o vídeo
+//               mede, ela passa FECHADA (440) — e o entre-peças saía metade do
+//               real. A PRODUTO_CODIGO ganhou MEDIDA_EXT_ALTURA, _LARGURA e
+//               _PROFUNDIDADE (medida externa do ERP). lerCatalogoProdutos lê a
+//               LARGURA (por prefixo, `largura`; vazio = 0) e o getTemposAlvo a
+//               manda em cada linha (`largura`: a mesma em todo código da linha,
+//               senão null — a média de duas caixas não é a caixa de ninguém).
+//               Vai mesmo sem esteira (o vídeo precisa da caixa sem velocidade).
+//               A MEDIDA DA CAIXA (aberta) continua a do tempo-alvo e do teto da
+//               esteira: nada no painel muda. ⚠ re-deploy manual.
 // Versão: 5.72 — A COR DO PRODUTO NO ATENDIMENTO POR LOTE INTERNO.
 //               PPCP, 17/11/2026, com os itens do 212/26 abertos ("VOL 2/2
 //               CRISTALEIRA ORION" duas vezes, cores diferentes): "consegue trazer
@@ -665,7 +678,7 @@
 
 // A versão deste arquivo, a mesma do cabeçalho (v5.58). Vai no getDados para o
 // rodapé do painel dizer qual .gs está implantado — o GitHub não sabe.
-const GS_VERSAO = '5.72';
+const GS_VERSAO = '5.73';
 
 const SHEET_DADOS     = 'HORA_A_HORA';
 const SHEET_HIST      = 'HISTORICO';
@@ -2741,6 +2754,13 @@ function _taCaixaDe(cods) {
   const igual = cods.every(function (c) { return c.medida === c0.medida && c.vel === c0.vel && c.entre === c0.entre; });
   return igual && c0.medida > 0 && c0.vel > 0 ? { medida: c0.medida, vel: c0.vel, entre: c0.entre } : null;
 }
+// v5.73: a LARGURA da caixa fechada da linha (a do vídeo, na seladora): só
+// quando todo código dela tem a mesma (o jogo de volumes diferentes: null).
+// Não depende da esteira: o vídeo mede a caixa mesmo sem velocidade no cadastro.
+function _taLarguraDe(cods) {
+  const l0 = cods[0] ? cods[0].largura : 0;
+  return l0 > 0 && cods.every(function (c) { return c.largura === l0; }) ? l0 : null;
+}
 function _temposAlvoMontar(catalogo, cfg) {
   cfg = cfg || {};
   const meta = Number(cfg.metaUep) > 0 ? Number(cfg.metaUep) : UEP_META_PADRAO_GS;
@@ -2762,13 +2782,15 @@ function _temposAlvoMontar(catalogo, cfg) {
     const g = G[k] = G[k] || { modelo: cod.slice(0, 6), nome: nome, nVol: 1, cods: [] };
     g.nVol = Math.max(g.nVol, v.nVol);
     g.cods.push({ cod: cod, vol: v.vol, nVol: v.nVol, uep: Number(c.uep) > 0 ? Number(c.uep) : null,
-                  esteira: _taEsteiraS(c), medida: Number(c.medida) || 0, vel: Number(c.velocidade) || 0, entre: Number(c.entrePeca) || 0 });
+                  esteira: _taEsteiraS(c), medida: Number(c.medida) || 0, vel: Number(c.velocidade) || 0, entre: Number(c.entrePeca) || 0,
+                  largura: Number(c.largura) || 0 });
   });
   const r2 = function (x) { return Math.round(x * 100) / 100; };
   const linha = function (rot, uep, est, cods) {
     const u = uep === '' ? null : uep, cx = est != null ? _taCaixaDe(cods) : null;
     return { rot: rot, uep: u, esteira: est != null ? r2(est) : null, alvo: est != null ? r2(est * 100 / ef) : null,
-             medida: cx ? cx.medida : null, vel: cx ? cx.vel : null, entre: cx ? cx.entre : null };
+             medida: cx ? cx.medida : null, vel: cx ? cx.vel : null, entre: cx ? cx.entre : null,
+             largura: _taLarguraDe(cods) };
   };
   const L = [];
   Object.keys(G).forEach(function (k) {
@@ -4781,6 +4803,10 @@ function lerCatalogoProdutos() {
     return i >= 0 ? i : hdr.findIndex(function (h) { return h.indexOf(pref) === 0; });
   };
   const iMedida = _porPrefixo('MEDIDA DA CAIXA');
+  // v5.73: a caixa FECHADA (medida externa do ERP), para o vídeo da
+  // cronoanálise. Por prefixo: o título é MEDIDA_EXT_LARGURA (com unidade ou
+  // não). A MEDIDA DA CAIXA acima é a ABERTA — a da esteira, não esta.
+  const iLarg   = _porPrefixo('MEDIDA_EXT_LARG');
   const iVel    = _porPrefixo('VELOCIDADE');
   const iEntre  = _porPrefixo('ENTRE_PECA');
   const iPontos = hdr.indexOf('PONTOS');
@@ -4806,6 +4832,7 @@ function lerCatalogoProdutos() {
       peso:       iPeso   >= 0 ? _numBR(row[iPeso]) : 0,
       ean:        iEan    >= 0 ? String(row[iEan] || '').trim() : '',
       medida:     iMedida >= 0 ? _numBR(row[iMedida]) : 0,
+      largura:    iLarg   >= 0 ? _numBR(row[iLarg]) : 0,
       velocidade: iVel    >= 0 ? _numBR(row[iVel]) : 0,
       entrePeca:  iEntre  >= 0 ? _numBR(row[iEntre]) : 0,
       pontos:     iPontos >= 0 ? _numBR(row[iPontos]) : 0,

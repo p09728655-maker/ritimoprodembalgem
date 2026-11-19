@@ -11,6 +11,29 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.271.0 · .gs v5.73 — 19/11/2026 · A largura da caixa fechada vai para o vídeo da cronoanálise
+
+⚠ **re-deploy** do `.gs` (colar no editor do Apps Script e reimplantar a
+implantação de sempre — a URL `/exec` não muda).
+
+O PPCP criou na `PRODUTO_CODIGO` as colunas da medida externa da caixa
+(`MEDIDA_EXT_ALTURA`, `MEDIDA_EXT_LARGURA`, `MEDIDA_EXT_PROFUDIADE`) com o
+relatório do ERP: *"PARA VIDEO CRONOANALISE VAMOS USAR LARGURA"*.
+
+- A `MEDIDA DA CAIXA` do cadastro é a caixa **aberta**, do começo da linha
+  (825 mm na Mesa Cabeceira Sleep). O vídeo mede na seladora, onde a caixa
+  passa **fechada** (440 mm, a LARGURA do ERP). Com a aberta, o entre-peças do
+  vídeo saía a metade do real.
+- O `getTemposAlvo` passa a mandar a `largura` de cada produto e volume ao app
+  de cronoanálise (app 2.119.0 em diante), que a usa como a caixa do vídeo.
+- Produto de volumes com caixas diferentes, ou cores com caixas diferentes: a
+  linha do produto inteiro vai sem largura (cada volume vai com a sua).
+
+**Atenção:** nenhum número do painel muda. O tempo-alvo, o teto da esteira e a
+UEP estimada continuam pela `MEDIDA DA CAIXA` (aberta). Até o re-deploy, o
+rodapé do painel fica em âmbar (`gs v5.72`) e o app fica sem a largura (pede a
+medida da caixa no quadro).
+
 ## v7.270.0 — 19/11/2026 · A TV não mostra mais o lembrete de lançamento
 
 O PPCP: *"mensagem na tv que não lançou ainda pode tirar, deixar só no app do

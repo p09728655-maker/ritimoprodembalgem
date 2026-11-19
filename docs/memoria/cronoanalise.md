@@ -522,6 +522,32 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   - TAKT POR PRODUTO do painel: o TEMPO-ALVO ganhou o cx/h embaixo (`cxhRef`),
     na régua do PELO TAKT (hora de relógio, o setup na média).
 
+## A CAIXA FECHADA DO VÍDEO: MEDIDA_EXT_LARGURA (v7.271.0 / `.gs` v5.73 / app 2.119.0)
+- PPCP, 19/11/2026: criou na PRODUTO_CODIGO as colunas **`MEDIDA_EXT_ALTURA`,
+  `MEDIDA_EXT_LARGURA`, `MEDIDA_EXT_PROFUDIADE`** (sic — o título veio sem o
+  "N"; só a LARGURA é lida, por prefixo `MEDIDA_EXT_LARG`) com o relatório
+  *MEDIDA EXTERNA* do ERP (Estoque · Lógica, itens ativos) → *"PARA VIDEO
+  CRONOANALISE VAMOS USAR LARGURA"*.
+- Por quê: a **`MEDIDA DA CAIXA` é a caixa ABERTA**, do começo da linha (825 na
+  Mesa Cabeceira Sleep); o vídeo mede na seladora, onde ela passa **FECHADA**
+  (440 = a LARGURA do ERP: o caso real confere). Com a aberta, o entre-peças
+  do vídeo saía metade do real (o aviso *Confira a caixa* do app 2.115.1).
+- O que vale: o `getTemposAlvo` manda `largura` em cada linha (a mesma em
+  todo código da linha, senão null; vai mesmo sem esteira); o app usa a
+  LARGURA como a caixa do vídeo (o analista ainda troca no quadro). Sem
+  largura no cadastro, o campo fica vazio e pede a medida — **nunca a aberta
+  no lugar**. A `MEDIDA DA CAIXA` (aberta) continua a do tempo-alvo, do teto
+  da esteira e da UEP estimada: nada no painel muda.
+- Preenchimento de 19/11/2026 (pela API, número como número): 417 de 431
+  códigos; 12 fora do relatório do ERP (não ativos lá) e o EXPOSITOR U
+  (501.076.001/002, 0 × 0 × 0 no ERP) ficaram em BRANCO, nunca 0.
+- ⚠ Em 4 códigos a fechada é MAIOR que a aberta (501.081.001 1.770 × 2.565,
+  501.081.002 1.195 × 2.415, 501.129.005/006 530 × 650) — nos outros 412 a
+  aberta é maior. Ou a caixa anda em outro sentido, ou a MEDIDA DA CAIXA está
+  errada (e com ela o tempo-alvo e o teto da esteira): conferir.
+- Teste: `crono-registro.test.js` (*v5.73*); no app, `tempo-alvo.test.js` e o
+  e2e `video-esteira`.
+
 ## A RÉGUA DA CRONOANÁLISE É O SEM AS LACUNAS (v7.200.0 / `.gs` v5.44)
 - PPCP, 04/11/2026, com o PDF da **HOME ANGEL 1.8 · VOL 2/2** na tela (60
   volumes, nenhuma parada marcada, período = rodando = 20,4 s, **5 lacunas** —
