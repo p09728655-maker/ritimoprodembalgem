@@ -211,24 +211,27 @@ ok('EXECUTADO = (3 × 527 + 240) min, menos o setup na mesma proporção (× 463
       /\.uepSoma|\*|\/ *g\./.test(pega('function _taktPorCaixaHtml(').replace(/\/\*[\s\S]*?\*\//g, '').replace(/3600|_tkS\([^)]*\)/g, '')), _taktPorCaixa(null), _taktPorCaixaHtml([], T2)],
      [true, true, false, [], '']); }
 
-console.log('\n── por que não acompanhou: dia a dia nos dias fechados ──');
-const C = T.cas;
-ok('03/11: pediu 3.229, fez 2.686 → 75 de ritmo (até a referência) e 468 de carga; 04/11: pediu 4.304 e fez 2.869 (acima da referência) → 1.435 tudo carga; 05/11: pediu 2.727,6 (abaixo da referência) e fez 2.095,2 → 632,4 tudo ritmo',
-   C.dias.map(d => [d.data.slice(0, 5), r1(d.carga), r1(d.ritmo), r1(d.adiant)]),
-   [['03/11', 468, 75, 0], ['04/11', 1435, 0, 0], ['05/11', 0, 632.4, 0]]);
-ok('a soma: pedido 10.260,7 − carga 1.903 − ritmo 707,4 = feito 7.650,3 (+ 586,7 em hora extra), e fecha',
-   [C.n, r1(C.pedido), r1(C.carga), r1(C.ritmo), r1(C.feito), r1(C.he), r1(C.pedido - C.carga - C.ritmo + C.adiant - C.feito)],
-   [3, 10260.7, 1903, 707.4, 7650.3, 586.7, 0]);
-// a semana somada daria 1.978 / 633 (a prévia): o 04/11 acima da referência
-// cobria o 05/11, que pediu MENOS que a referência — a folga do 05/11 não era trabalho que a linha tinha.
+console.log('\n── por que venceu: dia a dia nos dias que passaram (v7.273.0; era o "por que não acompanhou", T.cas) ──');
+// v7.273.0: o T.cas saiu (nenhum desenho o lia); a regra dele — DIA A DIA, nunca a semana somada — vale no
+// POR QUE VENCEU, agora com a hora extra como capacidade do próprio dia.
+const VD = T.venc.dias.filter(d => d.pedido > 0);
+ok('03/11: pediu 3.229, a linha fez 2.686 → 75 de ritmo (até a média) e 468 de excesso; 04/11: pediu 4.304,1 e fez 3.455,8 com a hora extra (acima da média) → 848,3 tudo excesso; 05/11: pediu 2.727,6 (ABAIXO da média) e fez 2.095,2 → 632,4 tudo ritmo',
+   VD.map(d => [d.data.slice(0, 5), r1(d.cap), r1(d.carga), r1(d.ritmo)]),
+   [['03/11', 2686, 468, 75], ['04/11', 3455.8, 848.3, 0], ['05/11', 2095.2, 0, 632.4]]);
+// a semana SOMADA (a 1ª versão do POR QUE VENCEU, bloqueada na revisão): o 04/11 acima da média e com
+// a hora extra apagava o 05/11 a 76% — ritmo 12,6 em vez de 707,4 ("ritmo da linha 0h02").
 { const D = ['03/11', '04/11', '05/11'].map(x => T.dias.find(d => d.data.startsWith(x)));
-  const somada = { carga:Math.max(0, D.reduce((s, d) => s + d.uep, 0) - 3 * 2761), ritmo:3 * 2761 - D.reduce((s, d) => s + d.feito, 0) };
-  ok('dia a dia, e não a semana somada (que daria 1.978 de carga e 632,7 de ritmo)', [r1(somada.carga), r1(somada.ritmo), r1(C.carga) !== r1(somada.carga)], [1977.7, 632.7, true]); }
-{ const S2 = Object.assign({}, S, { linhas:S.linhas.map(l => l.data === '05/11/2026' ? Object.assign({}, l, { qtde:Math.round(l.qtde / 2), uep:l.uep != null ? Math.round(l.uep / 2 * 10) / 10 : null }) : l) });
-  const C2 = _taktMontar(S2, HIST, HOJE).cas, d5 = C2.dias[2];
-  ok('dia que fez MAIS que o pedido: ADIANTOU (sem carga, sem ritmo) e a conta ainda fecha',
-     [r1(d5.pedido) < r1(d5.feito), r1(d5.carga), r1(d5.ritmo), r1(d5.adiant), r1(C2.pedido - C2.carga - C2.ritmo + C2.adiant - C2.feito)],
-     [true, 0, 0, r1(d5.feito - d5.pedido), 0]); }
+  const cap = D.reduce((a, d) => a + d.feito + d.he, 0), med = D.reduce((a, d) => a + Math.min(d.uep, d.meta), 0);
+  ok('dia a dia, e não a semana somada (que daria ritmo 12,6 — o 04/11 pagando o 05/11)',
+     [r1(Math.max(0, med - cap)), r1(T.venc.ritmo), r1(VD.reduce((a, d) => a + d.ritmo, 0))], [12.6, 707.4, 707.4]); }
+// o caso mínimo da revisão: segunda pediu 2.761 e a linha fez 80%; terça pediu 3.300 e entregou 120% — o dia
+// forte NÃO paga o fraco: a segunda é ritmo, a terça é excesso
+{ const U = q => ({ codigo:'501000001', desc:'VOL 1/1 TESTE', cor:'', uepCx:1, aba:'aberta', encerrada:false, foraEsteira:false, qtde:q, uep:q });
+  const Sm = { ok:true, de:'09/11/2026', ate:'15/11/2026', hoje:'11/11/2026', feriados:[],
+    linhas:[Object.assign(U(2761), { data:'09/11/2026', dataNum:20261109, saldo:552 }), Object.assign(U(3300), { data:'10/11/2026', dataNum:20261110, saldo:0 })] };
+  const Tm = _taktMontar(Sm, [{ data:'09/11/2026', uep:2208.8, uepHe:0, metaUep:2761 }, { data:'10/11/2026', uep:3313.2, uepHe:0, metaUep:2761 }], { num:20261111, minNorm:0, restMin:527, uep:0, he:0, meta:2761 });
+  ok('o dia forte não paga o fraco: segunda a 80% (552 de ritmo), terça 3.300 pedidas e 3.313 feitas (nada); vencido 552 = ritmo',
+     [r1(Tm.venc.ritmo), r1(Tm.venc.carga), r1(Tm.venc.seq), Tm.venc.min.ritmo, Tm.venc.min.uep], [552, 0, 0, 105, 105]); }
 
 console.log('\n── a falta da semana: o saldo dos lotes ──');
 ok('saldo 2.370 cx = 5.096,8 UEP; 2.526,3 de dias que já passaram; nenhuma linha sem saldo',
@@ -243,7 +246,7 @@ ok('os minutos que faltam: a hora em andamento só o resto, o almoço não é sl
 { const Hseg = Object.assign({}, HOJE, { num:20261103, minNorm:120, restMin:407, uep:600 });
   const Tseg = _taktMontar(S, HIST.filter(d => d.data !== '03/11/2026'), Hseg);
   ok('na terça (03/11) a semana ainda tem 3 dias úteis pela frente: cabem o resto de hoje + 3 × 2.761, até 06/11; nenhum dia fechado ainda',
-     [r1(Tseg.falta.capRest), Tseg.falta.ate, Tseg.cas.n, Tseg.exec.nFech, Tseg.exec.minHoje], [r1(407 * 2761 / 527 + 3 * 2761), '06/11', 0, 0, 120]); }
+     [r1(Tseg.falta.capRest), Tseg.falta.ate, Tseg.venc.dias.filter(d => d.cap > 0 || d.pedido > 0).length, Tseg.exec.nFech, Tseg.exec.minHoje], [r1(407 * 2761 / 527 + 3 * 2761), '06/11', 0, 0, 120]); }
 
 console.log('\n── o que fica fora, e diz ──');
 { const L = S.linhas.slice();
@@ -253,7 +256,7 @@ console.log('\n── o que fica fora, e diz ──');
   L.push({ data:'05/11/2026', dataNum:20261105, codigo:'501004001', qtde:20, uepCx:1.5, uep:30, saldo:null, aba:'aberta', foraEsteira:false });
   const Tx = _taktMontar(Object.assign({}, S, { linhas:L }), HIST.filter(d => d.data !== '04/11/2026'), HOJE);
   ok('sábado com lote entra no pedido e não na jornada; sem UEP fora do takt; fora da esteira fora de tudo; sem saldo fora da falta; dia sem histórico fora do executado',
-     [Tx.nUteis, r1(Tx.progForaUtil), Tx.cxSemUep, Tx.cxFora, Tx.falta.semSaldo, Tx.falta.cxSemUep, Tx.semDado, Tx.cas.n, Tx.exec.nFech,
+     [Tx.nUteis, r1(Tx.progForaUtil), Tx.cxSemUep, Tx.cxFora, Tx.falta.semSaldo, Tx.falta.cxSemUep, Tx.semDado, Tx.venc.dias.filter(d => d.cap > 0).length, Tx.exec.nFech,
       Tx.dias.find(d => d.data === '07/11/2026').util, r1(Tx.progUep - T.progUep)],
      [4, 200, 50, 30, 1, 50, ['04/11/2026'], 2, 2, false, r1(200 + 30)]); }
 { // sábado trabalhado (07/11): a produção dele vai para o "fora da jornada", não para o executado nem para o que cabe
@@ -418,14 +421,14 @@ console.log('\n── v7.273.0: o ritmo de cada dia ──');
   // falta; sequência = vencido − falta (havia capacidade e a linha embalou outros lotes).
   {
     const v = T.venc;
-    ok('03–05/11 (o retrato de 06/11): vencido 2.526,3 UEP (524 + 272 + 1.731 de saldo) = falta de capacidade 2.023,7 (10.260,7 programadas − 8.237 feitas com a hora extra) + sequência 502,5; da falta, ritmo 12,6 (8.249,6 que cabiam na média − 8.237) e excesso 2.011,1',
-       [r1(v.uep), r1(v.prog), r1(v.cap), r1(v.media), r1(v.ritmo), r1(v.carga), r1(v.seq), r1(v.carga + v.ritmo + v.seq)],
-       [2526.3, 10260.7, 8237, 8249.6, 12.6, 2011.1, 502.5, 2526.3]);
-    ok('em horas de linha (o que a tela escreve): 8h02 = excesso 6h24 + sequência 1h36 + ritmo 0h02, na ordem do tamanho; a evidência: 26h12 feitas para 32h38',
-       [v.min.uep, v.min.carga, v.min.seq, v.min.ritmo,
-        _taktVencHtml(T).includes('<b>Por que venceu:</b> 8h02 de lotes da semana em aberto — <b>excesso de programação 6h24</b> <i>(programado acima do que a linha fez)</i> · <b>sequência 1h36</b> <i>(havia capacidade; a linha embalou outros lotes)</i> · <b>ritmo da linha 0h02</b>'),
-        _taktVencHtml(T).includes('A linha fez 26h12 de linha (jornada + hora extra) para 32h38 programadas nos dias que passaram.')],
-       [482, 384, 96, 2, true, true]);
+    ok('03–05/11 (o retrato de 06/11), DIA A DIA: vencido 2.526,3 UEP (524 + 272 + 1.731 de saldo) = falta 2.023,7 (543 + 848,3 + 632,4) + sequência 502,5; da falta, ritmo 707,4 (75 + 632,4) e excesso 1.316,3 (468 + 848,3)',
+       [r1(v.uep), r1(v.prog), r1(v.cap), r1(v.ritmo), r1(v.carga), r1(v.seq), r1(v.carga + v.ritmo + v.seq)],
+       [2526.3, 10260.7, 8237, 707.4, 1316.3, 502.5, 2526.3]);
+    ok('em horas de linha (o que a tela escreve): 8h02 vencidos desta semana = excesso 4h11 + ritmo 2h15 + sequência 1h36 (somam o vencido), na ordem do tamanho, com o "(o que é)" de cada um; a evidência: 26h12 feitas para 32h38 e o aproximado (8 lotes com X lidos sem o embalado)',
+       [v.min.uep, v.min.carga, v.min.ritmo, v.min.seq, v.min.carga + v.min.ritmo + v.min.seq,
+        _taktVencHtml(T).includes('<b>Por que venceu:</b> 8h02 vencidos desta semana — <b>excesso de programação 4h11</b> <i>(programado acima de 1 dia de linha)</i> · <b>ritmo da linha 2h15</b> <i>(a linha fez menos que a média, contando a hora extra)</i> · <b>sequência 1h36</b> <i>(havia capacidade; ela foi para outros lotes — adiantados, atraso de antes da semana ou à espera de peça)</i>.'),
+        _taktVencHtml(T).includes('A linha fez 26h12 de linha (jornada + hora extra) para 32h38 programadas nos dias que passaram; divisão aproximada: 8 lotes fechados com X sem o embalado na planilha contam inteiros.')],
+       [482, 251, 135, 96, 482, true, true]);
     // A semana do print de 19/11 13:35: programado (barras) 9h06 · 8h58 · 9h53 e 14h20 hoje, com 6h23 embaladas antes;
     // o HISTORICO real de 16–18/11; 2h45 vencidas; 20/11 CONSCIÊNCIA NEGRA. Em UEP pela régua (min × 2.761 ÷ 527).
     const U = m => Math.round(m * 2761 / 527);
@@ -436,15 +439,15 @@ console.log('\n── v7.273.0: o ritmo de cada dia ──');
     const T16 = _taktMontar(S16, H16, { num:20261119, minNorm:323, restMin:205, uep:1400, he:600, meta:2761, fim:'17:00' });
     ok('a semana de 16/11: a linha fez 32h00 (jornada + hora extra) para 27h57 programadas — nenhuma falta de capacidade: as 2h45 vencidas são SEQUÊNCIA (era "83% ritmo da linha"); a evidência, 6h23 dos lotes de hoje embaladas antes',
        [T16.venc.min.uep, T16.venc.min.prog, T16.venc.min.cap, T16.venc.min.carga, T16.venc.min.ritmo, T16.venc.min.seq, T16.venc.min.adiFrente,
-        _taktVencHtml(T16).includes('<b>Por que venceu:</b> 2h45 de lotes da semana em aberto — <b>sequência 2h45</b> <i>(havia capacidade; a linha embalou outros lotes)</i>.'),
-        _taktVencHtml(T16).includes('A linha fez 32h00 de linha (jornada + hora extra) para 27h57 programadas nos dias que passaram e adiantou 6h23 dos lotes de hoje em diante.'),
+        _taktVencHtml(T16).includes('<b>Por que venceu:</b> 2h45 vencidos desta semana — <b>sequência 2h45</b> <i>(havia capacidade; ela foi para outros lotes — adiantados, atraso de antes da semana ou à espera de peça)</i>.'),
+        _taktVencHtml(T16).includes('A linha fez 32h00 de linha (jornada + hora extra) para 27h57 programadas nos dias que passaram; adiantou 6h23 dos lotes de hoje em diante.'),
         /excesso de programação|ritmo da linha/.test(_taktVencHtml(T16))],
        [165, 1677, 1920, 0, 0, 165, 383, true, true, false]);
     // a falta de capacidade MAIOR que o vencido (lote fechado com X, adiantado da semana passada): excesso e ritmo na proporção, até o vencido
     const Tx = _taktMontar(Object.assign({}, S, { linhas:S.linhas.map(l => l.data === '05/11/2026' ? Object.assign({}, l, { saldo:0 }) : l) }), HIST, HOJE);
     ok('falta de capacidade maior que o vencido: sequência 0, excesso e ritmo na proporção da falta, somando o vencido',
-       [r1(Tx.venc.seq), r1(Tx.venc.carga + Tx.venc.ritmo), r1(Tx.venc.uep), r1(Tx.venc.carga / Tx.venc.ritmo), r1(2011.1 / 12.6)],
-       [0, r1(Tx.venc.uep), r1(Tx.venc.uep), r1(2011.1 / 12.6), r1(2011.1 / 12.6)]);
+       [r1(Tx.venc.seq), r1(Tx.venc.carga + Tx.venc.ritmo), r1(Tx.venc.uep), r1(Tx.venc.carga / Tx.venc.ritmo), r1(1316.3 / 707.4)],
+       [0, r1(Tx.venc.uep), r1(Tx.venc.uep), r1(1316.3 / 707.4), r1(1316.3 / 707.4)]);
     // sem o histórico de um dia útil que passou: a capacidade sairia menor e o ritmo, culpado à toa — a divisão não sai
     const Th = _taktMontar(S, HIST.filter(h => h.data !== '04/11/2026'), HOJE);
     ok('sem o histórico de 04/11: o vencido sai, a divisão não (a capacidade daquele dia não se sabe)',
@@ -452,11 +455,65 @@ console.log('\n── v7.273.0: o ritmo de cada dia ──');
        [['04/11/2026'], true, false]);
     ok('no papel, sem o histórico: "Venceram 8h02: sem o histórico de 04/11, a divisão não sai."',
        _taktVencHtml(Th, { papel:true }).startsWith(' Venceram <b>') && _taktVencHtml(Th, { papel:true }).endsWith(': sem o histórico de 04/11, a divisão não sai.'), true);
-    ok('nada vencido (segunda de manhã), nada; o papel: uma frase curta, sem os "(o que é)", a evidência nem div própria (o 🖨 ia a 2 folhas); na tela, entre o PARA FECHAR e o DIA A DIA',
-       [_taktVencHtml(_taktMontar(S, [], Object.assign({}, HOJE, { num:20261103 }))), /<i>|<div|A linha fez/.test(_taktVencHtml(T, { papel:true })),
+    ok('nada vencido (segunda de manhã), nada; o papel: uma frase curta com os nomes curtos, sem os "(o que é)", a evidência nem div própria (o 🖨 ia a 2 folhas); na tela, entre o PARA FECHAR e o DIA A DIA',
+       [_taktVencHtml(_taktMontar(S, [], Object.assign({}, HOJE, { num:20261103 }))), /<i>|<div|A linha fez|excesso de programação|ritmo da linha/.test(_taktVencHtml(T, { papel:true })),
         HT.indexOf('<b>Para fechar:</b>') < HT.indexOf('<b>Por que venceu:</b>') && HT.indexOf('<b>Por que venceu:</b>') < HT.indexOf('<b>DIA A DIA</b>')],
        ['', false, true]);
+    // revisão: os minutos fecham — a soma das causas exibidas = o vencido exibido = a parte "vencidos desta
+    // semana" da barra PRECISA, que arredonda o ACUMULADO (antes + desta semana). Caso: 1.006,5 UEP de atraso
+    // de antes de 16/11 (a barra dizia 1h37 e a 1ª versão do POR QUE VENCEU, 1h36)
+    { const Ta = _taktMontar(S16, H16, { num:20261119, minNorm:323, restMin:205, uep:1400, he:600, meta:2761, fim:'17:00', antes:{ uep:1006.5, cx:400, cxSemUep:0, desde:20261112 } });
+      const Va = _taktVeredito(Ta, null, null), Pa = _taktPrecisaPartes(Ta, Va), barra = (Pa.find(x => x.k === 'venc') || {}).min;
+      ok('com 1.006,5 UEP de atraso de antes: o vencido do POR QUE VENCEU = a parte da barra PRECISA (o acumulado), e as causas somam ele; a evidência cita o atraso de antes',
+         [Ta.venc.min.uep === barra, Ta.venc.min.carga + Ta.venc.min.ritmo + Ta.venc.min.seq === Ta.venc.min.uep,
+          _taktVencHtml(Ta).includes('há ' + _fmtHM(Math.round(1006.5 * 527 / 2761)) + ' de atraso de antes de 16/11, que a linha atende primeiro')],
+         [true, true, true]); }
+    // a soma exibida fecha em qualquer divisão (o arredondamento de cada parte sozinha somava ±1 min)
+    ok('a soma das três causas em minutos = o vencido em minutos, sempre (cumulativo)',
+       [T.venc.min, T16.venc.min, Tx.venc.min].map(m => m.carga + m.ritmo + m.seq === m.uep), [true, true, true]);
+    // o caso que separa: 526,8 UEP de atraso de antes (100,55 min) e 164,92 min desta semana — sozinho daria 165;
+    // a barra (o acumulado: 265,47 → 265 − 101) diz 164, e o POR QUE VENCEU também
+    { const Tb = _taktMontar(S16, H16, { num:20261119, minNorm:323, restMin:205, uep:1400, he:600, meta:2761, fim:'17:00', antes:{ uep:526.8, cx:200, cxSemUep:0, desde:20261112 } });
+      const Pb = _taktPrecisaPartes(Tb, _taktVeredito(Tb, null, null)), barra = (Pb.find(x => x.k === 'venc') || {}).min;
+      ok('o vencido em minutos é o da barra (o acumulado com o de antes): 164, não os 165 da semana sozinha',
+         [barra, Tb.venc.min.uep, Math.round(Tb.venc.uep * 527 / 2761)], [164, 164, 165]); }
+    // causas com frações de 0,4 · 0,4 · 0,2 min: cada uma arredondada sozinha somaria 30 para 31 vencidos
+    { const K = 2761 / 527, L = (d, n, q, sal) => ({ data:d, dataNum:n, codigo:'501000001', desc:'VOL 1/1 TESTE', cor:'', qtde:q, uepCx:1, uep:q, saldo:sal, adiantadoCx:0, aba:'aberta', encerrada:false, foraEsteira:false });
+      const Sr = { ok:true, de:'09/11/2026', ate:'15/11/2026', hoje:'11/11/2026', feriados:[],
+        linhas:[L('09/11/2026', 20261109, 2761, 31.0 * K), L('10/11/2026', 20261110, 2761 + 10.4 * K, 0)] };
+      const Tr = _taktMontar(Sr, [{ data:'09/11/2026', uep:2761 - 10.4 * K, uepHe:0, metaUep:2761 }, { data:'10/11/2026', uep:2761, uepHe:0, metaUep:2761 }],
+        { num:20261111, minNorm:0, restMin:527, uep:0, he:0, meta:2761 });
+      const m = Tr.venc.min;
+      ok('ritmo 10,4 min (segunda) · excesso 10,4 (terça) · sequência 10,2: a soma exibida fecha nos 31 vencidos (sozinhas: 10 + 10 + 10 = 30)',
+         [m.uep, m.carga + m.ritmo + m.seq, [Tr.venc.carga, Tr.venc.ritmo, Tr.venc.seq].map(x => Math.round(x * 527 / 2761)).reduce((a, b) => a + b, 0)],
+         [31, 31, 30]); }
+    // revisão: feriado TRABALHADO com lote e SEM a linha no HISTORICO (o fechamento das 17:05 só roda com PC aberto)
+    // virava capacidade 0, calado — e a causa mudava. Com a linha no HISTORICO, a capacidade dele conta (sem META: o
+    // pedido do feriado não vira ritmo).
+    { const Sf = Object.assign({}, S16, { hoje:'21/11/2026', feriados:S16.feriados,
+        linhas:S16.linhas.map(l => Object.assign({}, l, { saldo:l.data === '19/11/2026' ? 0 : l.saldo, adiantadoCx:0 })).concat([
+          { data:'20/11/2026', dataNum:20261120, codigo:'501000001', desc:'VOL 1/1 TESTE', cor:'', qtde:1500, uepCx:1, uep:1500, saldo:300, adiantadoCx:0, aba:'aberta', encerrada:false, foraEsteira:false }]) });
+      const Hj = { num:20261121, minNorm:0, restMin:0, uep:0, he:0, meta:2761 };
+      const H19 = H16.concat([{ data:'19/11/2026', uep:3100, uepHe:500, metaUep:2761 }]);
+      const Tsem = _taktMontar(Sf, H19, Hj), Tcom = _taktMontar(Sf, H19.concat([{ data:'20/11/2026', uep:0, uepHe:1200, metaUep:0 }]), Hj);
+      const d20 = Tcom.venc.dias.find(d => d.data.startsWith('20/11'));
+      ok('feriado trabalhado (20/11) com lote e SEM histórico: o vencido sai, a divisão não; COM o histórico: a capacidade dele conta (hora extra) e o pedido dele não vira ritmo (sem META)',
+         [Tsem.venc.semHist, /sem o histórico de 20\/11, a divisão não sai/.test(_taktVencHtml(Tsem)),
+          r1(d20.cap), r1(d20.ritmo), r1(d20.carga), Tcom.venc.semHist],
+         [['20/11/2026'], true, 1200, 0, 300, []]); }
+    // revisão: o lote fechado com X conta o que EMBALOU (.gs v5.75); sem o campo, o lote inteiro e "aproximado"
+    { const Se = Object.assign({}, S16, { linhas:S16.linhas.concat([{ data:'16/11/2026', dataNum:20261116, codigo:'501000002', desc:'VOL 1/1 TESTE X', cor:'', qtde:2761, uepCx:1, uep:2761, saldo:0, adiantadoCx:0, aba:'aberta', encerrada:true, foraEsteira:false, embaladoCx:2000 }]) });
+      const Hd = { num:20261119, minNorm:323, restMin:205, uep:1400, he:600, meta:2761, fim:'17:00' };
+      const Te = _taktMontar(Se, H16, Hd), Tn = _taktMontar(Object.assign({}, Se, { linhas:Se.linhas.map(l => l.encerrada ? Object.assign({}, l, { embaladoCx:undefined }) : l) }), H16, Hd);
+      ok('lote de 2.761 fechado com X em 16/11 depois de 2.000 embaladas: o pedido conta 2.000 (o X fechou 761, que não vencem) — sem o campo, os 2.761 e a divisão "aproximada"',
+         [r1(Te.venc.dias.find(d => d.data.startsWith('16/11')).pedido - T16.venc.dias.find(d => d.data.startsWith('16/11')).pedido), Te.venc.encSemEmb,
+          r1(Tn.venc.dias.find(d => d.data.startsWith('16/11')).pedido - T16.venc.dias.find(d => d.data.startsWith('16/11')).pedido), Tn.venc.encSemEmb,
+          /divisão aproximada: 1 lote fechado com X/.test(_taktVencHtml(Tn)), /aproximad/.test(_taktVencHtml(Te)), Te.dias.find(d => d.data.startsWith('16/11')).uep - T16.dias.find(d => d.data.startsWith('16/11')).uep],
+         [2000, 0, 2761, 1, true, false, 2761]); }
     ok('o desenho do POR QUE VENCEU não faz conta (minutos prontos na montagem)', /\*\s*UEP_MIN_DIA|\/\s*T\.meta|soma\(/.test(pega('function _taktVencHtml(')), false);
+    ok('os "(o que é)" das três causas são diferentes e dizem o que as separa (a média, a hora extra, para onde foi a capacidade)',
+       [TKS_VENC_CAUSAS.map(c => c[2]), new Set(TKS_VENC_CAUSAS.map(c => c[2])).size],
+       [['programado acima de 1 dia de linha', 'a linha fez menos que a média, contando a hora extra', 'havia capacidade; ela foi para outros lotes — adiantados, atraso de antes da semana ou à espera de peça'], 3]);
   }
   // o caminho no painel: a ⚖ UEP · HOJE sabe as caixas sem UEP (conf.sem; sem a conferência, as do .gs) e o _taktHoje as leva
   ok('as caixas de hoje sem UEP chegam ao TAKT: _uepAbaDados as devolve e o _taktHoje as passa',
@@ -589,7 +646,7 @@ ok('a semana que vem: da segunda seguinte ao domingo — de sexta, de domingo (a
    [{ de:'09/11/2026', ate:'15/11/2026' }, { de:'09/11/2026', ate:'15/11/2026' }, { de:'16/11/2026', ate:'22/11/2026' }, { de:'30/11/2026', ate:'06/12/2026' }]);
 const T1 = _taktMontar(SP, [], { num:20261106, meta:2761 }), P1 = _taktProxMontar(T1);
 ok('09–13/11: 9.050 cx = 14.504,2 UEP em 5 dias úteis → takt 5 × 463 × 60 ÷ 14.504,2 = 9,58 s por UEP, 2.900,8/dia, 105,1% da referência; nada feito ainda',
-   [T1.progCx, r1(T1.progUep), T1.nUteis, Math.round(T1.takt * 100) / 100, r1(T1.porDia), r1(T1.pede), T1.exec.s, T1.cas.n],
+   [T1.progCx, r1(T1.progUep), T1.nUteis, Math.round(T1.takt * 100) / 100, r1(T1.porDia), r1(T1.pede), T1.exec.s, T1.venc.dias.length],
    [9050, 14504.2, 5, 9.58, 2900.8, 105.1, null, 0]);
 ok('a semana × a jornada pelo saldo: pedem 2h48 de linha (14.503,5 × 527 ÷ 2.761) para 43h55 — faltam 2h13, o MESMO "semana que vem: faltam 2h13" do PRÓXIMOS DIAS',
    [r1(P1.uep), r1(P1.cap), r1(P1.passa), Math.round(P1.minPede), P1.minJorn, P1.saldoMin, _fmtHM(P1.saldoMin)],
@@ -798,7 +855,8 @@ console.log('\n── v7.212.0: a falta também em pontos; "média da linha entr
      [h1.includes('<span><b>≈ 50 mil</b> pontos</span>'), h1.includes('no ritmo atual da linha (90,6% da média): faltam <b>' + _fmtHM(SIM[1].min) + '</b>'),
       D2.includes(_fmtHM(819) + '</b> (' + _tkPts(V1p.faltaPts + V0p.faltaPts) + ') somando'), h1.includes('referência'),
       D2.includes('a semana que vem, <b>2h13</b> de linha (' + _tkPts(V1p.faltaPts) + ')'), D2.includes('<b>Pontos</b> = a falta em UEP × os pontos por UEP dos lotes da semana (esta semana 72, a que vem 72 pontos por UEP'),
-      D2.includes('média que a linha entrega sem hora extra: 1 dia de linha = ' + _fmtHM(527) + ' de jornada = 2.761 UEP</b> (a referência de UEP do painel, ' + UEP_REF_STATUS)],
+      // v7.273.0: o td-def mais curto (as três causas do POR QUE VENCEU entraram e o 🖨 tinha de caber numa folha)
+      D2.includes('média que a linha entrega sem hora extra: 1 dia de linha = ' + _fmtHM(527) + ' de jornada = 2.761 UEP</b> (' + UEP_REF_STATUS + ')')],
      [true, true, true, false, true, true, true]); }
 ok('os detalhes recolhidos lembram se estavam abertos (o refresh da tela redesenha o painel)',
    [_taktDetHtml('x').includes('<details class="tks-det" ontoggle="TKS_DET=this.open">'), (global.TKS_DET = true, _taktDetHtml('x').includes('<details class="tks-det" open')), (global.TKS_DET = false)],
@@ -807,7 +865,8 @@ ok('os detalhes recolhidos lembram se estavam abertos (o refresh da tela redesen
   ok('🖨 direta: uma frase no topo com os dois vereditos e a soma; por semana a palavra, o quanto falta e o porquê — desde a v7.273.0 o POR QUE VENCEU, o mesmo da tela',
      ['<b>Nenhuma das duas semanas cabe na linha.</b> Esta semana faltam <b>' + _fmtHM(686) + '</b> de linha; a semana que vem, <b>2h13</b> de linha — <b>' + _fmtHM(819) + '</b> somando o que não fechar desta.',
       '<div class="tks-hv">NÃO FECHA<small>', '<div class="tks-hv">NÃO CABE<small>',
-      'e a linha rodou a <b>90,6%</b> dessa média. Venceram <b>8h02</b>: <b>excesso de programação 6h24</b> · <b>sequência 1h36</b> · <b>ritmo da linha 0h02</b>.</div>',
+      '<b>Por quê:</b> a programação pediu <b>116,2%</b> da média, e a linha rodou a <b>90,6%</b> dessa média. Venceram <b>8h02</b>: <b>excesso 4h11</b> · <b>ritmo 2h15</b> · <b>sequência 1h36</b> (aproximado).</div>',
+      '<b>Venceram</b> = lotes da semana com data antes de hoje em aberto: <b>excesso</b> = programado acima de 1 dia de linha · <b>ritmo</b> = a linha abaixo da média (com hora extra) · <b>sequência</b> = havia capacidade e ela foi para outros lotes.',
       '<b>Para fechar:</b> hora extra de ≈ 11h30, ou ≈ 1.700 caixas passam para a semana que vem.', '<b>Para fechar:</b> hora extra de ≈ 2h, ou adiar ≈ 440 caixas para depois de 13/11',
       'Onde está o excesso · horas de linha programadas',
       '1 dia de linha = ' + _fmtHM(527) + ' de jornada = 2.761 UEP'].filter(x => !DOC.includes(x)), []);

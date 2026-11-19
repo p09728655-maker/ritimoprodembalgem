@@ -11,7 +11,11 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
-## v7.273.0 — 19/11/2026 · TAKT DA SEMANA: o ritmo de cada dia e por que venceu
+## v7.273.0 · .gs v5.75 — 19/11/2026 · TAKT DA SEMANA: o ritmo de cada dia e por que venceu
+
+⚠ **re-deploy** do `.gs` (mesma implantação): o lote fechado com X passa a
+mandar o que embalou. Sem ele a divisão sai *"aproximada"* quando há lote com
+X nos dias que passaram.
 
 O PPCP, com a tela de 19/11: *"como mostrar ritmo da linha"* → *"sim 1"* →
 *"de forma fácil compreensão"* → *"passo 2 ok"*.
@@ -20,25 +24,29 @@ O PPCP, com a tela de 19/11: *"como mostrar ritmo da linha"* → *"sim 1"* →
 o vencido da semana — o mesmo número da barra PRECISA — dividido em três
 causas, com o tempo de cada uma:
 
-- **excesso de programação**: programado acima do que a linha fez;
-- **ritmo da linha**: a linha rendeu abaixo do pedido (contado dia a dia: um
-  dia que pediu menos que a média não vira culpa do ritmo);
-- **sequência**: havia capacidade, mas a linha embalou outros lotes — os dos
-  próximos dias, atraso de antes da segunda ou o que não estava programado.
+- **excesso de programação**: programado acima de 1 dia de linha;
+- **ritmo da linha**: a linha fez menos que a média, contando a hora extra;
+- **sequência**: havia capacidade, mas ela foi para outros lotes — adiantados,
+  atraso de antes da semana ou à espera de peça.
 
-A capacidade é jornada + hora extra dos dias que passaram. Embaixo, a
-evidência: *"A linha fez 32h00 de linha para 27h57 programadas e adiantou
-6h23 dos lotes de hoje em diante"*. Na semana de 16/11, as 2h45 vencidas são
-**sequência** — a tela dizia *"83% ritmo da linha"*. Sem o histórico de algum
-dia que passou, a divisão não sai (a tela diz qual dia falta).
+A conta é **dia a dia**: a capacidade de cada dia (jornada + hora extra) contra
+o programado DAQUELE dia — o dia forte não cobre o fraco. O lote fechado com X
+conta só o que embalou (o X fechou o resto, que não vence). Embaixo, a
+evidência: *"A linha fez 32h00 de linha para 27h57 programadas; adiantou 6h23
+dos lotes de hoje em diante"* (e o atraso de antes da semana, quando há). Na
+semana de 16/11, as 2h45 vencidas são **sequência** — a tela dizia *"83% ritmo
+da linha"*. O vencido é o mesmo número da barra PRECISA, e as três sempre somam
+ele. Sem o histórico de algum dia que passou, a divisão não sai (a tela diz
+qual dia falta).
 
 **Atenção:** a divisão muda de base. Antes: *"do que não saiu: X% excesso de
 programação · Y% ritmo da linha"*, a falta DE CADA DIA (o total feito contra o
 total pedido no dia, sem a hora extra), em %. Agora: o VENCIDO, em horas, com a
 sequência e a hora extra como capacidade. No retrato de 06/11: antes *"73%
-excesso · 27% ritmo"*; agora *"8h02: excesso 6h24 · sequência 1h36 · ritmo
-0h02"*. No 🖨 TAKT a frase é curta (sem a evidência) e o papel segue numa
-folha (700 px, como antes).
+excesso · 27% ritmo"*; agora *"8h02: excesso 4h11 · ritmo 2h15 · sequência
+1h36"*. No 🖨 TAKT a frase é curta (*"Venceram 8h02: excesso 4h11 · ritmo 2h15
+· sequência 1h36"*), as três ficam definidas no rodapé e o papel segue numa
+folha (710 px com as duas semanas; eram 709).
 
 **O ritmo de cada dia:**
 

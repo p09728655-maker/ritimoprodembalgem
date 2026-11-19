@@ -90,8 +90,9 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
       contra a média — 100% é a linha branca"* (`.tks-lt`, sem marca); a do
       papel NÃO (o 🖨 iria a 2 folhas).
     - O recado do gráfico (`tks-sec-r`) passa a ser *"ritmo da linha na semana:
-      N% da média · a programação pede N%"* (o mesmo número do veredito); a
-      divisão carga × ritmo fica no `title` (porT) e no papel.
+      N% da média · a programação pede N%"* (o mesmo número do veredito). A
+      divisão carga × ritmo ficou no `title` e no papel só até o passo 2 (POR
+      QUE VENCEU, na mesma publicação), que a substituiu nos dois.
     - Medido no Chromium (o caso de 03–06/11, 5 e 7 dias): 1920, 1366 e 1280
       sem texto sobre texto, nada passa da largura; a legenda vai a 2 linhas em
       1366 e 1280; o 🖨 TAKT 700 px antes e depois (folha de 718).
@@ -126,8 +127,8 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
       NÃO veio só do ritmo: em 16 e 18/11 a linha fez mais que o programado do
       dia e mesmo assim havia 2h45 vencidas — a linha adiantou lotes de outros
       dias (*"embalou 6h23 antes"*). É SEQUÊNCIA, que a conta carga × ritmo
-      (UEP do dia contra o pedido do dia) não enxerga. Separar a 3ª causa foi
-      oferecido ao PPCP (passo 2) e espera o ok — muda a conta.
+      (UEP do dia contra o pedido do dia) não enxerga. O passo 2 (POR QUE
+      VENCEU, abaixo) foi aprovado pelo PPCP no mesmo dia e saiu junto.
   - **POR QUE VENCEU (v7.273.0**, o passo 2 — PPCP 19/11/2026: *"passo 2 ok"*,
     depois da regra mostrada com a semana de 16/11). O "do que não saiu"
     (`cas`) dividia a falta de CADA DIA (total feito × total pedido no dia, sem
@@ -135,46 +136,80 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     linha (jornada + hora extra) para 27h57 programadas nos dias que passaram e
     o recado dizia *"83% ritmo da linha"* para 2h45 vencidas — ela tinha
     embalado 6h23 dos lotes de 19/11 antes (*"embalou 6h23 antes"*).
-    - A conta (`_taktMontar` → `T.venc`, minutos prontos em `venc.min`):
-      vencido = `falta.uepVenc` (o do veredito); dos dias que passaram,
-      **capacidade** = Σ (jornada + hora extra) — todo dia passado, útil ou
-      não; **falta de capacidade** = máx(0, programado − capacidade);
-      **ritmo** = mín(falta, máx(0, Σ mín(pedido, META do dia útil) −
-      capacidade)) — o mín dia a dia preserva a regra do "porquê dia a dia" (a
-      folga de um dia que pediu menos que a média não vira ritmo); **excesso**
-      = falta − ritmo; **sequência** = vencido − falta. Falta maior que o
-      vencido (lote fechado com X, adiantado da semana passada): excesso e
-      ritmo na proporção, até o vencido; sequência 0. Fecha sempre: excesso +
-      ritmo + sequência = vencido (o teste prende).
-    - A hora extra é capacidade: o dia fraco coberto pela hora extra de outro
-      não vira ritmo NO VENCIDO (o ritmo de cada dia continua embaixo da barra,
-      o "ritmo 76%" de 05/11).
+    - A conta (`_taktMontar` → `T.venc`, minutos prontos em `venc.min`),
+      **DIA A DIA** nos dias que passaram (útil ou não): **capacidade** =
+      jornada + hora extra do dia; **falta** = máx(0, pedido − capacidade);
+      **ritmo** = máx(0, mín(pedido, META do dia útil) − capacidade); **excesso**
+      = falta − ritmo; somam-se os resultados. **Sequência** = vencido − Σ falta.
+      Σ falta maior que o vencido (outro dia recuperou o lote; adiantado da
+      semana passada): excesso e ritmo na proporção, até o vencido; sequência 0.
+      Fecha sempre: excesso + ritmo + sequência = vencido (o teste prende).
+    - ⚠ **Dia a dia, nunca a semana somada** (a regra do tema, logo acima). A
+      1ª versão somava a capacidade da semana e o revisor BLOQUEOU antes do
+      merge: o 04/11 acima da média (e com 586,7 de hora extra) apagava o 05/11
+      a 76%, cujos lotes são 69% do vencido — *"ritmo 0h02"*; dia a dia, 2h15
+      (os mesmos 707 UEP do "porquê dia a dia" de antes). A semana de 16/11, o
+      caso mostrado ao PPCP, dá o mesmo nas duas (nenhum dia ficou curto).
+    - O pedido do lote **fechado com X** é o que ele EMBALOU (`d.pedVenc`, o
+      `prodConf` da linha — `embaladoCx` do `getProgramacaoSemana`, `.gs`
+      v5.75): o resto o X fechou e não vence; contado inteiro, virava falta de
+      capacidade e engolia a sequência (revisão: um lote com X de 2.761 feito
+      2.000 jogava 2h25 no ritmo de uma semana a 100%). Sem o campo (`.gs`
+      antigo) ou com a célula que não é da linha (null): o lote inteiro, e a
+      divisão sai *"aproximada"* (`encSemEmb`).
+    - **Minutos** (`venc.min`): o vencido é o MESMO da barra PRECISA, que
+      arredonda o acumulado (antes da semana + desta semana, como o
+      `_taktPrecisaPartes`); as causas se repartem pelo acumulado e fecham
+      nele (cada uma sozinha somava ±1 min — o defeito da v7.242.0).
+    - A hora extra é capacidade NO DIA: ela cobre o próprio dia, nunca o dia
+      fraco de outro (o ritmo de cada dia continua embaixo da barra).
     - ⚠ **A sequência inclui** a capacidade que foi para o atraso de ANTES da
       segunda (o FIFO serve o mais antigo primeiro — é cascata, não erro de
       ordem) e para o que não estava programado. A evidência escrita é só o
       adiantado de hoje em diante (`adiFrente` = Σ `adiUep` dos dias ≥ hoje). O
       lote ABERTO por falta de peça antes do X também cai na sequência. Para
       saber QUAL lote: o ATENDIMENTO POR LOTE INTERNO.
-    - Sem o histórico de algum dia útil que passou (`semHist`): o vencido sai,
-      a divisão não (a capacidade daquele dia não se sabe — o ritmo seria
-      culpado à toa).
+    - Sem o histórico de um dia que passou e tinha jornada OU lote
+      (`semHist`: útil, ou feriado/sábado com lote — revisão: o 20/11 com lote
+      e sem a linha no HISTORICO virava capacidade 0, calado): o vencido sai,
+      a divisão não.
     - Desenho `_taktVencHtml(T, o)` (`TKS_VENC_CAUSAS`): tela, uma linha
-      `.tks-por.tks-pv` entre o PARA FECHAR e o DIA A DIA, as causas com tempo
-      na ordem do tamanho, o *(o que é)* em tom de apoio e a evidência embaixo;
+      `.tks-por.tks-pv` entre o PARA FECHAR e o DIA A DIA — *"Por que venceu:
+      8h02 vencidos desta semana — …"* (o NOME da barra PRECISA; era "de lotes
+      da semana em aberto", que no herói é o PRECISA inteiro) —, as causas com
+      tempo na ordem do tamanho, o *(o que é)* em tom de apoio (excesso =
+      *programado acima de 1 dia de linha*; ritmo = *a linha fez menos que a
+      média, contando a hora extra*; sequência = *havia capacidade; ela foi
+      para outros lotes — adiantados, atraso de antes da semana ou à espera de
+      peça*; na 1ª versão o do excesso e o do ritmo diziam a mesma coisa) e a
+      evidência embaixo (feito × programado, o adiantado de hoje em diante, o
+      atraso de antes da semana que a linha atende primeiro, o "aproximado");
       papel (`papel:true`), uma frase DENTRO do "Por quê" (*"Venceram 8h02:
       excesso de programação 6h24 · sequência 1h36 · ritmo da linha 0h02."*),
       no lugar da divisão antiga — como div própria com a evidência o 🖨 ia de
-      700 a 740 px (folha de 718); assim, 700. O `title` do recado perdeu a
-      divisão antiga.
-    - O `T.cas` segue montado (o teste prende a conta antiga e o fecha-sempre),
-      sem desenho.
-    - Retrato de 06/11: 8h02 = excesso 6h24 + sequência 1h36 + ritmo 0h02 (era
-      *"73% excesso · 27% ritmo"*). Semana de 16/11 (barras do print + o
-      HISTORICO): 2h45 = sequência 2h45, *"fez 32h00 … para 27h57 … adiantou
-      6h23"*. Mutações: 10 de 10 (sem a hora extra na capacidade, sem o mín da
-      média, sem a sequência, sem limitar ao vencido, sem a evidência, dividir
-      sem o histórico, fora da ordem, fora da tela, fora do papel, hoje na
-      conta).
+      700 a 740 px (folha de 718); assim, 700. A definição das três vai no
+      `td-def` do papel (*"Venceram = … excesso … ritmo … sequência …"*). O
+      `title` do recado perdeu a divisão antiga.
+    - O `T.cas` (o "do que não saiu" por dia, sem a hora extra) SAIU: ninguém
+      o lia depois do POR QUE VENCEU (regra B5); o teste do "dia a dia, não a
+      semana somada" passou para o `venc`.
+    - Retrato de 06/11: 8h02 = excesso 4h11 + ritmo 2h15 + sequência 1h36 (era
+      *"73% excesso · 27% ritmo"*; a 1ª versão, somada, dava 6h24 · 0h02 ·
+      1h36 — bloqueada). Semana de 16/11 (barras do print + o HISTORICO): 2h45
+      = sequência 2h45, *"fez 32h00 … para 27h57 …; adiantou 6h23"*.
+    - Mutações (antes do merge): a semana somada de volta → 7; o vencido sem o
+      acumulado da barra → 2; as três arredondadas sozinhas → 2; feriado sem
+      histórico calado → 2; o X conta o lote inteiro → 2; os "(o que é)"
+      iguais → 3; sem o atraso de antes na evidência → 2; e as 10 da 1ª
+      versão.
+    - ⚠ **Papel medido (A4 deitada, mídia de impressão, folha de 718)**: com as
+      três causas em nome longo e a definição no rodapé, o 🖨 TAKT foi a 727–740
+      px (2 folhas) com as duas semanas. Ficou: nomes curtos no papel
+      (*"Venceram 8h02: excesso 4h11 · ritmo 2h15 · sequência 1h36"*, o 4º campo
+      de `TKS_VENC_CAUSAS`), o "Por quê" sem o *"que a linha entrega sem hora
+      extra"* (o `td-def` define a média) e o `td-def` mais curto — 682 (só esta
+      semana) · 710 (as duas, com e sem o atraso de antes), contra 686 · 709
+      antes. Texto novo no papel: medir de novo, com as DUAS semanas.
   - **AGORA na MESMA unidade**: takt e referência × UEP/cx do código de agora
     = segundos por caixa; a última hora de jornada FECHADA em s por caixa
     também (só desse produto e cor: as caixas; com outro produto ou cor: o
@@ -212,8 +247,9 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     contas (`_taktHoje` é o hoje da tela e do papel) e desenha
     `_taktDocHtml` + `_TKS_DOC_SKIN`. **Uma folha A4 deitada** (medido no PDF
     do Chromium: com gráficos de 190 e o título longo transbordava para a 2ª;
-    `TKS_DOC_SVG_H` = 165). ⚠ A conclusão mostra as DUAS causas (carga e
-    ritmo) e a referência como *em avaliação* (`UEP_REF_STATUS`).
+    `TKS_DOC_SVG_H` = 165). ⚠ A conclusão mostra TODAS as causas (desde a
+    v7.273.0, as três do POR QUE VENCEU; eram carga e ritmo) e a referência
+    como *em avaliação* (`UEP_REF_STATUS`).
   - **DIRETO (v7.211.0**, PPCP: *"deixar nível direto para qualquer um olhar
     e entender se cabe ou não, está muito poluído. A tela também"*): a tela e a
     folha falam **HORAS DE LINHA** (UEP × 527 ÷ META UEP; 1 dia de linha =

@@ -920,6 +920,12 @@ console.log('\n── v5.59: a programação da semana ──');
   ok('a UEP pela do cadastro (null sem UEP, nunca 0), a encerrada e a fora da esteira marcadas',
      [de('501060001').uep, de('501060001').uepCx, de('501093001').uep, de('501136003').encerrada, de('501141002').foraEsteira, de('501060001').encerrada],
      [328.7, 1.73, null, true, true, false]);
+  // v5.75 (PPCP, 19/11/2026: o POR QUE VENCEU do TAKT): o lote fechado com X manda o que EMBALOU — o
+  // prodConf da linha (nunca QTDE − SALDO: o SALDO da encerrada é 0); só na encerrada
+  ok('v5.75: a encerrada (L5: 370 programadas, 300 produzidas) manda embaladoCx 300; as outras não têm o campo',
+     [de('501136003').embaladoCx, r.linhas.filter(x => !x.encerrada).some(x => 'embaladoCx' in x),
+      vm.runInContext("_produzidoConfiavel('300', '', 'ENCERRADO', 370)", m.ctx)],
+     [300, false, 300]);
   ok('os feriados do período (só os da semana)', r.feriados, [{ data: '02/11/2026', desc: 'FINADOS' }]);
   // A REGRA DA META DO DIA: o dia daqui (sem a fora da esteira) é o programadoHoje.
   const doDia = (lst, d) => lst.filter(x => x.data === d && !x.foraEsteira).reduce((a, x) => a + x.qtde, 0);
