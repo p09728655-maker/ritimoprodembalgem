@@ -4316,7 +4316,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.274.0';
+const APP_VER = '7.274.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -11484,7 +11484,10 @@ function _taktHtml(T, G, opt){
   // excesso de programação · 83% ritmo da linha" ao lado de um veredito que dizia
   // 105,5% da média: dois números do ritmo que pareciam se contradizer. A
   // divisão das causas é o POR QUE VENCEU (do vencido), na tela e no papel.
-  const porR=X.pct!=null ? `ritmo da linha na semana: <b>${fmtP(X.pct)}</b> da média · a programação pede <b>${fmtP(T.pede)}</b>`
+  // v7.274.1 (PPCP, 19/11/2026: "ritmo da linha na semana jornada normal ou com hora extra?"): o exec.pct é
+  // só a jornada (a hora extra fica fora), mas o rótulo não dizia — e ao lado do "32h00 (jornada + hora extra)"
+  // do POR QUE VENCEU e das barras com a hora extra, lia-se como o total. O rótulo diz; o número não muda.
+  const porR=X.pct!=null ? `ritmo da linha na semana (só jornada): <b>${fmtP(X.pct)}</b> da média · a programação pede <b>${fmtP(T.pede)}</b>`
     : `a programação pede <b>${fmtP(T.pede)}</b> da média`;
   return tit+_taktHeroHtml(o.V, { semana:'esta', ate:F.ate, partes:_taktPrecisaPartes(T, o.V) })+_taktAntesAviso(T)
     +_taktFecharHtml(_taktFecharDados(o.V, { semana:'esta', ate:F.ate }))+_taktVencHtml(T)

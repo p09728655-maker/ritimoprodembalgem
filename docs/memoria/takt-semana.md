@@ -93,6 +93,22 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
       N% da média · a programação pede N%"* (o mesmo número do veredito). A
       divisão carga × ritmo ficou no `title` e no papel só até o passo 2 (POR
       QUE VENCEU, na mesma publicação), que a substituiu nos dois.
+    - **v7.274.1 (19/11/2026) — o rótulo diz *"(só jornada)"*.** O PPCP, com a
+      semana de 16/11 na tela (ritmo 102,5%): *"ritimo da linha na semana
+      jornada normal ou com hora extra?"* → *"só rotulo"*. O número sempre foi só
+      a jornada (`exec.pct` = Σ UEP na jornada dos dias úteis ÷ Σ META × min ÷
+      527; a hora extra à parte, no `exec.he`), mas o rótulo não dizia — e ficava
+      ao lado do *"a linha fez 32h00 de linha (jornada + hora extra)"* do POR QUE
+      VENCEU e das barras com o laranja. Agora: *"ritmo da linha na semana (só
+      jornada): N% da média · a programação pede N%"*. O número não muda. A
+      semana: 102,5% na jornada; com a hora extra, ≈ 119% (estimado da tela das
+      16:05: 40h54 de linha para ~34h14 de jornada) — a hora extra (~5h50) cobriu a diferença até os 120,3%
+      que a programação pede. O PPCP recusou o *"com hora extra: N%"* ao lado
+      (um número a mais). ⚠ O 🖨 TAKT **não** mudou (*"a linha rodou a N%
+      dessa média"*): o papel está em 703 de 718 px. Medido no Chromium, com as
+      fontes reais: o recado vai de 469 a 547 px, numa linha em 1920, 1366 e
+      1280. Teste: +1.000 UEP de hora extra em 04/11 não mexe no % (mutação:
+      somar o `d.he` no `exUep` derruba o teste).
     - Medido no Chromium (o caso de 03–06/11, 5 e 7 dias): 1920, 1366 e 1280
       sem texto sobre texto, nada passa da largura; a legenda vai a 2 linhas em
       1366 e 1280; o 🖨 TAKT 700 px antes e depois (folha de 718).

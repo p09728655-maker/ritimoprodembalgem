@@ -352,8 +352,20 @@ ok('a ordem do olhar: título → veredito → para fechar → dia a dia (com o 
     HT.includes('<div class="tks-hl">FALTAM</div><div class="tks-hn">' + _fmtHM(686) + '<small> de linha</small></div>'),
     // v7.273.0: o recado é o RITMO da semana (o do veredito); a divisão das causas ficou no title
     // v7.273.0: o title sem a divisão antiga (do que não saiu NO DIA) — a divisão é o POR QUE VENCEU
-    HT.includes('<span class="tks-sec-r" title="A programação pediu 116,2% da média que a linha entrega sem hora extra (8,7 contra 10,1 s por UEP, sem o setup), e a linha rodou a 90,6% dessa média.">ritmo da linha na semana: <b>90,6%</b> da média · a programação pede <b>116,2%</b></span>')],
+    HT.includes('<span class="tks-sec-r" title="A programação pediu 116,2% da média que a linha entrega sem hora extra (8,7 contra 10,1 s por UEP, sem o setup), e a linha rodou a 90,6% dessa média.">ritmo da linha na semana (só jornada): <b>90,6%</b> da média · a programação pede <b>116,2%</b></span>')],
    [true, true, true]);
+// v7.274.1 (PPCP, 19/11/2026, com a semana de 16/11 na tela: "ritimo da linha na semana jornada normal ou com hora
+// extra?"): o número é só a jornada (exec.pct: Σ UEP na jornada ÷ Σ META × min ÷ 527), mas o rótulo não dizia — e
+// ficava ao lado do "32h00 de linha (jornada + hora extra)" do POR QUE VENCEU e das barras com a hora extra. O
+// rótulo diz "(só jornada)"; e o número tem de ser o mesmo com +1.000 UEP de hora extra em 04/11 (se a hora extra
+// entrasse na conta, o rótulo mentiria).
+{ const Th = _taktMontar(S, HIST.map(h => h.data === '04/11/2026' ? Object.assign({}, h, { uepHe:h.uepHe + 1000 }) : h), HOJE);
+  const Hh = _taktHtml(Th, G, { largura:1200, V:_taktVeredito(Th, null, Th.exec.uep / Th.exec.min * 527) });
+  ok('v7.274.1: o ritmo da semana diz "(só jornada)" e é só a jornada — +1.000 UEP de hora extra em 04/11 não mexe no %',
+     [HT.includes('ritmo da linha na semana (só jornada): <b>'), /ritmo da linha na semana: </.test(HT),
+      r1(Th.exec.pct) === r1(T.exec.pct), r1(Th.exec.he) === r1(T.exec.he + 1000),
+      Hh.includes('ritmo da linha na semana (só jornada): <b>' + fmtP(T.exec.pct) + '</b>')],
+     [true, false, true, true, true]); }
 ok('v7.232.0: o PARA FECHAR numa linha logo depois do veredito, sem repetir as caixas dele (eram dois cartões com os mesmos números)',
    [HT.includes('<div class="tks-por tks-fl"><b>Para fechar:</b> hora extra de ≈ 11h30 da linha inteira, ou o que não couber passa para a semana que vem.</div>'),
     (h => h.slice(h.indexOf('tks-fl'), h.indexOf('</div>', h.indexOf('tks-fl'))))(HT).includes('caixas'),
@@ -410,7 +422,7 @@ console.log('\n── v7.273.0: o ritmo de cada dia ──');
   const csM = _taktCenarios(2761, Tm, null).find(c => c.id === 'sem'), Vm = _taktVeredito(Tm, null, csM.uepDia, csM.pct);
   ok('META de 03/11 em 2.530: o "no ritmo atual" do veredito é o MESMO % do recado do gráfico (o exec.pct), não o ritmo ÷ a META de hoje',
      [r1(Vm.ritmo.pct), r1(Tm.exec.pct), _taktHtml(Tm, null, { V:Vm }).includes(`no ritmo atual da linha (${fmtP(Tm.exec.pct)} da média)`),
-      _taktHtml(Tm, null, { V:Vm }).includes(`ritmo da linha na semana: <b>${fmtP(Tm.exec.pct)}</b>`), r1(_taktVeredito(Tm, null, csM.uepDia).ritmo.pct) !== r1(Tm.exec.pct)],
+      _taktHtml(Tm, null, { V:Vm }).includes(`ritmo da linha na semana (só jornada): <b>${fmtP(Tm.exec.pct)}</b>`), r1(_taktVeredito(Tm, null, csM.uepDia).ritmo.pct) !== r1(Tm.exec.pct)],
      [r1(Tm.exec.pct), r1(Tm.exec.pct), true, true, true]);
   // AJUSTE: o texto nunca sai do SVG nem passa da coluna — com 7 colunas no papel (sábado e domingo com produção)
   const H7 = HIST.concat([{ data:'07/11/2026', uep:0, uepHe:700, metaUep:0 }, { data:'08/11/2026', uep:0, uepHe:500, metaUep:0 }]);
