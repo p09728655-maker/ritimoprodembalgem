@@ -30,16 +30,22 @@ causas, com o tempo de cada uma:
 - **sequência**: havia capacidade, mas ela foi para outros lotes — adiantados,
   atraso de antes da semana ou à espera de peça.
 
-A conta segue os dias **em ordem, como uma fila** (o lote mais antigo primeiro,
-como o FIFO da planilha): a capacidade de cada dia (jornada + hora extra) paga
-primeiro o que ficou dos dias anteriores, com a causa de lá, e depois o
-programado do dia — o dia forte não cobre o fraco, e a falta que outro dia já
-recuperou não explica o vencido. "Abaixo da média" conta o trabalho que o dia
-tinha na mão (o programado dele + o atraso herdado). O programado do dia não
-conta o que já foi embalado antes dele, e o lote fechado com X conta só o que
-embalou. Embaixo, a
-evidência: *"A linha fez 32h00 de linha para 27h57 programadas; adiantou 6h23
-dos lotes de hoje em diante"* (e o atraso de antes da semana, quando há). Na
+A conta segue os dias **em ordem** (o lote mais antigo primeiro, como o FIFO
+da planilha), com a capacidade de cada dia (jornada + hora extra):
+
+- o que ficou **em aberto** é o que a linha não fez do programado;
+- **excesso** é o que ficaria em aberto MESMO se cada dia útil tivesse rodado
+  pelo menos na média;
+- **abaixo da média** é a diferença: o que a linha deixou de fazer com
+  trabalho na mão (no 06/11, os dias 03/11 e 05/11 abaixo da média);
+- **sequência** é o vencido que sobra: havia capacidade.
+
+Assim a linha rodar pior nunca aumenta o "excesso", e o dia que recupera o
+anterior zera os dois. O programado do dia não conta o que já foi embalado
+antes dele, e o lote fechado com X conta só o que embalou. Embaixo, a
+evidência: *"A linha fez 32h00 de linha (jornada + hora extra) para 27h57
+programadas nos dias que passaram (5h20 delas já embaladas antes); adiantou
+6h23 dos lotes de hoje em diante"* (e o atraso de antes da semana, quando há). Na
 semana de 16/11, as 2h45 vencidas são **sequência** — a tela dizia *"83% ritmo
 da linha"*. O vencido é o mesmo número da barra PRECISA, e as três sempre somam
 ele. Sem o histórico de algum dia que passou, a divisão não sai (a tela diz

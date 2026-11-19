@@ -11077,61 +11077,39 @@ function _taktMontar(S, hist, H, pts, est){
   // ~32h de linha (jornada + hora extra) para 27h57 programadas e ele culpava o
   // ritmo (83%) por 2h45 vencidas — ela tinha embalado 6h23 dos lotes de 19/11
   // antes. Aqui se explica o VENCIDO (o saldo dos lotes desta semana com data
-  // antes de hoje, o da barra PRECISA), DIA A DIA nos dias que passaram — o dia
-  // forte não paga o fraco (a regra do tema; na 1ª versão a capacidade era somada
-  // e o 04/11 apagava o 05/11 a 76%: "ritmo 0h02" em vez de 2h15):
-  //   capacidade = jornada + hora extra do dia
-  //   falta      = máx(0, pedido − capacidade)            (o lote com X: o embalado)
-  //   ritmo      = máx(0, mín(pedido, META do dia útil) − capacidade)
-  //                (dia que pediu menos que a média não empurra folga para o ritmo)
-  //   excesso    = falta − ritmo    (programado acima de 1 dia de linha)
-  //   sequência  = vencido − Σ falta: havia capacidade e ela foi para outros
-  //                lotes (adiantados, atraso de antes da semana, à espera de peça,
-  //                fora da programação).
-  // Σ falta maior que o vencido (outro dia recuperou o lote; adiantado da semana
-  // passada): excesso e ritmo na proporção, até o vencido; sequência 0. Fecha
-  // sempre: excesso + ritmo + sequência = vencido. Sem o histórico de um dia que
-  // passou e tinha jornada ou lote: só o vencido (a capacidade daquele dia não se
-  // sabe — o ritmo seria culpado à toa).
-  // ⚠ 2ª revisão: a FILA, na ordem dos dias (o FIFO do .gs — o lote mais antigo
-  // primeiro). Dia a dia sem a fila, a falta de um dia que OUTRO dia recuperou
-  // continuava explicando o vencido (seg a 80%, ter recupera com hora extra, qua
-  // adianta o lote de quinta: dizia "ritmo" com a evidência dizendo adiantou).
-  //   pedido do dia = o que ele pede SEM o que já foi embalado antes dele
-  //                   (adiUep — capacidade de outro dia; o 16/11 tinha 5h20 da
-  //                   semana anterior) e com o lote do X pelo embalado
-  //   a capacidade do dia (jornada + hora extra) vai 1º para a fila (o mais
-  //   antigo), depois para o pedido do dia
-  //   o que o dia não faz entra na fila: 1º o que a linha deixou de fazer com
-  //   trabalho na mão — abaixo da média até mín(pedido + a fila de antes, META)
-  //   − capacidade (3ª revisão: só contra o pedido do dia, o dia leve que
-  //   herdou atraso e rodou a 80% jogava a falta dele na causa de ontem); depois,
-  //   até o que a fila tomou dele, a causa da fila (a falta de antes passando
-  //   para frente); o resto é excesso
-  //   sequência = vencido − o que sobrou na fila (havia capacidade e ela foi para
-  //   outros lotes); a fila maior que o vencido: na proporção, sequência 0.
-  // Dia útil sem histórico: a divisão não sai. Feriado ou fim de semana sem
-  // histórico = não trabalhou (o fechamento só grava com lançamento):
-  // capacidade 0, e o lote dele é excesso de programação (sem META).
-  const pas=dias.filter(d=>d.passado), fila=[];
+  // antes de hoje, o da barra PRECISA), pelos dias que passaram, na ordem deles
+  // (o histórico da conta — três versões bloqueadas — está no takt-semana.md):
+  //   pedido do dia = o programado SEM o já embalado antes dele (adiUep: o 16/11
+  //                   tinha 5h20 da semana anterior), o lote do X pelo embalado
+  //   capacidade    = jornada + hora extra do dia
+  //   ABERTO        = máx(0, ABERTO + pedido − capacidade): o que a linha deixou
+  //                   em aberto (a fila do FIFO, o mais antigo primeiro)
+  //   EXCESSO       = máx(0, EXCESSO + pedido − máx(capacidade, META do dia útil)):
+  //                   o que ficaria em aberto MESMO com cada dia útil pelo menos
+  //                   na média — programado acima de 1 dia de linha
+  //   abaixo da média = ABERTO − EXCESSO: o que a linha deixou de fazer com
+  //                   trabalho na mão (06/11: os 75 de 03/11 + os 665,8 de 05/11)
+  //   sequência     = vencido − ABERTO: havia capacidade e ela foi para outros
+  //                   lotes (adiantados, atraso de antes da semana, à espera de
+  //                   peça, fora da programação)
+  // A conta é pelo "e se a linha rodasse na média" (4ª revisão): a 3ª, em fila
+  // com a causa herdada, fazia a linha rodar PIOR aumentar o excesso (seg 4.500 a
+  // 100%, ter 800: com a terça a 1.739, 2h33 abaixo da média; a 1.500, 0h46 de
+  // excesso). Aqui mais capacidade num dia nunca aumenta o excesso, e o dia que
+  // recupera o de antes zera os dois. ABERTO maior que o vencido (outro dia
+  // recuperou o lote; adiantado da semana passada): excesso e abaixo da média na
+  // proporção, até o vencido; sequência 0. Fecha sempre. Dia útil sem histórico:
+  // a divisão não sai. Feriado ou fim de semana sem histórico = não trabalhou
+  // (o fechamento só grava com lançamento): capacidade 0 e, sem META, o lote
+  // dele é excesso de programação.
+  const pas=dias.filter(d=>d.passado);
+  let aberto=0, exc=0;
   const vDias=pas.map(d=>{
     const p=Math.max(0, d.pedVenc-(Number(d.adiUep)||0)), cap=(Number(d.feito)||0)+(Number(d.he)||0), r=d.util ? Number(d.meta)||0 : 0;
-    const f0=soma(fila, b=>b.carga+b.ritmo);   // o trabalho herdado, antes de o dia pagar a fila
-    let c=cap, hc=0, hr=0;
-    for(const b of fila){
-      const tot=b.carga+b.ritmo;
-      if(!(c>0)) break;
-      if(!(tot>0)) continue;
-      const t=Math.min(c, tot), f=t/tot;
-      hc+=b.carga*f; hr+=b.ritmo*f; b.carga-=b.carga*f; b.ritmo-=b.ritmo*f; c-=t;
-    }
-    const fal=Math.max(0, p-c), rD=Math.min(fal, Math.max(0, Math.min(p+f0, r)-cap));
-    const her=Math.min(fal-rD, hc+hr), hC=her>0 ? her*hc/(hc+hr) : 0, resto=fal-rD-her;
-    const x={ data:d.data, pedido:p, cap, falta:fal, carga:hC+resto, ritmo:her-hC+rD };
-    if(fal>0) fila.push({ carga:x.carga, ritmo:x.ritmo });
-    return x;
+    aberto=Math.max(0, aberto+p-cap); exc=Math.max(0, exc+p-Math.max(cap, r));
+    return { data:d.data, pedido:p, cap, aberto, carga:exc, ritmo:aberto-exc };   // o estado DEPOIS do dia
   });
-  const fC=soma(fila, b=>b.carga), fR=soma(fila, b=>b.ritmo), fT=fC+fR, vUep=Math.max(0, Number(falta.uepVenc)||0);
+  const fC=exc, fR=aberto-exc, fT=aberto, vUep=Math.max(0, Number(falta.uepVenc)||0);
   const vEsc=fT>vUep && fT>0 ? vUep/fT : 1;
   const venc={ uep:vUep, carga:fC*vEsc, ritmo:fR*vEsc, seq:Math.max(0, vUep-fT),
     // prog = o programado das BARRAS (Σ d.uep) e adiAntes = o que dele já tinha sido embalado antes do dia — a

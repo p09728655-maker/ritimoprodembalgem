@@ -137,20 +137,23 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     o recado dizia *"83% ritmo da linha"* para 2h45 vencidas — ela tinha
     embalado 6h23 dos lotes de 19/11 antes (*"embalou 6h23 antes"*).
     - A conta (`_taktMontar` → `T.venc`, minutos prontos em `venc.min`): uma
-      **FILA na ordem dos dias** que passaram (o FIFO do `.gs`, o lote mais
-      antigo primeiro). Pedido do dia = o programado SEM o embalado antes dele
-      (`adiUep`) e com o lote do X pelo embalado; a capacidade do dia (jornada
-      + hora extra) vai 1º para a fila, depois para o pedido; o que o dia não
-      faz entra na fila: 1º **linha abaixo da média** = mín(falta, máx(0,
-      mín(pedido + a fila herdada, META do dia útil) − capacidade)) — o que a
-      linha deixou de fazer com trabalho NA MÃO; depois, até o que a fila tomou
-      dele, a CAUSA da fila (a falta de antes passando para frente); o resto é
-      **excesso**. **Sequência** = vencido − o que sobrou na fila; a fila maior
-      que o vencido: na proporção, sequência 0. Fecha sempre (o teste prende;
-      a 3ª revisão rodou 20.000 semanas aleatórias: a soma fecha, nenhuma causa
-      negativa, a barra igual).
-    - ⚠ **Dia a dia, nunca a semana somada; e em FILA** (três revisões antes
-      do merge): (1) a 1ª versão somava a capacidade da semana — o 04/11 acima
+      conta pelos dias que passaram, na ordem (o FIFO do `.gs`, o lote mais
+      antigo primeiro), pelo **"e se a linha rodasse na média"** (4ª revisão).
+      Pedido do dia = o programado SEM o embalado antes dele (`adiUep`) e com o
+      lote do X pelo embalado; capacidade = jornada + hora extra;
+      **ABERTO** = máx(0, ABERTO + pedido − capacidade);
+      **excesso** = máx(0, EXCESSO + pedido − máx(capacidade, META do dia
+      útil)) — o que ficaria aberto MESMO com cada dia útil pelo menos na
+      média; **linha abaixo da média** = ABERTO − EXCESSO — o que a linha
+      deixou de fazer com trabalho NA MÃO. **Sequência** = vencido − ABERTO;
+      ABERTO maior que o vencido: na proporção, sequência 0. Em
+      `venc.dias`, cada dia é o estado DEPOIS dele (`aberto`, `carga` =
+      excesso, `ritmo` = abaixo da média). Propriedades na suíte (3.000
+      semanas sorteadas): a soma fecha em UEP e em minutos, nenhuma causa
+      negativa, cada dia fecha, e **mais capacidade num dia nunca aumenta o
+      excesso**.
+    - ⚠ **Dia a dia, nunca a semana somada; e na ordem dos dias** (quatro
+      revisões antes do merge): (1) a 1ª versão somava a capacidade da semana — o 04/11 acima
       da média apagava o 05/11 a 76% (*"ritmo 0h02"*; pela regra de hoje,
       2h21). (2) A 2ª,
       dia a dia SEM a fila, deixava a falta que OUTRO dia recuperou explicar o
@@ -161,9 +164,16 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
       "abaixo da média" só contra o pedido do próprio dia: o dia LEVE que
       herdou atraso e rodou a 80% jogava a falta na causa de ontem (seg 3.761,
       ter 1.761, ter a 80% → "excesso 1h45" com a terça a "ritmo 80%" no
-      gráfico). Agora conta o trabalho que o dia tinha (pedido + fila): o
+      gráfico). A correção contou o trabalho que o dia tinha (pedido + fila): o
       06/11 vai de 4h11 · 2h15 · 1h36 para **4h05 · 2h21 · 1h36** (o 05/11 tinha
-      1.391,3 herdados e rodou a 76%). O 16/11 não muda em nenhuma.
+      1.391,3 herdados e rodou a 76%). (4) A 4ª, a 3ª com o herdado, ainda
+      limitava o "abaixo da média" à falta do pedido do próprio dia: quando a
+      capacidade nem pagava a fila, o resto ficava com a causa de ontem — a
+      linha rodar PIOR aumentava o excesso (seg 4.500 a 100%, ter 800: com a
+      terça a 1.739, 2h33 abaixo da média; a 1.500, *"excesso 0h46"* + 2h32;
+      138 violações em 5.000 sorteios). A conta virou o contrafactual de cima
+      (0 violações). O 06/11 fica 4h05 · 2h21 · 1h36 na tela (em UEP, 1.282,9
+      / 740,8, era 1.284,7 / 739). O 16/11 não muda em nenhuma.
     - **Linha abaixo da média**, nunca "ritmo" (revisão): o recado do gráfico já
       é o *"ritmo da linha na semana: N%"* — a causa com o mesmo nome repetia a
       confusão que abriu a v7.273.0.
@@ -179,9 +189,10 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
       `_taktPrecisaPartes`); as causas se repartem pelo acumulado e fecham
       nele (cada uma sozinha somava ±1 min — o defeito da v7.242.0).
     - ~~A hora extra é capacidade NO DIA: ela cobre o próprio dia, nunca o dia
-      fraco de outro~~ (revogado na 2ª revisão da v7.273.0: na fila, a hora
-      extra de um dia paga a falta mais antiga — a terça que recupera a
-      segunda). O ritmo de cada dia continua embaixo da barra.
+      fraco de outro~~ (revogado na 2ª revisão da v7.273.0: a hora extra de um
+      dia paga o que ficou aberto antes — a terça que recupera a segunda zera
+      o aberto e as duas causas). O ritmo de cada dia continua embaixo da
+      barra.
     - ⚠ **A sequência inclui** a capacidade que foi para o atraso de ANTES da
       segunda (o FIFO serve o mais antigo primeiro — é cascata, não erro de
       ordem) e para o que não estava programado. A evidência escrita é só o
@@ -223,16 +234,22 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
       o lia depois do POR QUE VENCEU (regra B5); o teste do "dia a dia, não a
       semana somada" passou para o `venc`.
     - Retrato de 06/11: 8h02 = excesso 4h05 + abaixo da média 2h21 +
-      sequência 1h36 (era *"73% excesso · 27% ritmo"*; as versões bloqueadas
-      deram 6h24 · 0h02 · 1h36 e 4h11 · 2h15 · 1h36). Semana de 16/11 (barras
-      do print + o HISTORICO): 2h45 = sequência 2h45, *"fez 32h00 … para 27h57
-      …; adiantou 6h23"*.
+      sequência 1h36 — em UEP 1.282,9 + 740,8 (75 de 03/11 + 665,8 de 05/11)
+      + 502,6 (era *"73% excesso · 27% ritmo"*; as versões bloqueadas deram
+      6h24 · 0h02 · 1h36 e 4h11 · 2h15 · 1h36). Semana de 16/11 (barras do
+      print + o HISTORICO + as 1.676 UEP do 16/11 embaladas na semana
+      anterior): 2h45 = sequência 2h45, *"A linha fez 32h00 de linha (jornada
+      + hora extra) para 27h57 programadas nos dias que passaram (5h20 delas
+      já embaladas antes); adiantou 6h23 dos lotes de hoje em diante."*
     - Mutações (antes do merge): sem a fila → 4; o pedido com o adiantado → 3;
       sem herdar a causa da fila → 9; o vencido fora da conta da barra → 3;
       saldo null calado → 2; feriado sem histórico escondendo a divisão → 2; o
       nome do % de volta → 2; o singular errado → 2; a semana somada → 7; as
       três arredondadas sozinhas → 2; o X inteiro → 2; abaixo da média sem o
-      herdado → 8; "programadas" sem o adiantado → 2; e as da 1ª versão.
+      herdado → 8; "programadas" sem o adiantado → 2; a conta da 3ª versão
+      de volta → 6 (o caso 4.500/800 e o sorteio entre elas); o excesso sem a
+      META (`máx(cap, r)` → `cap`) → 11; sem o *"(… delas já embaladas
+      antes)"* → 2; e as da 1ª versão.
     - ⚠ **Papel medido (A4 deitada, mídia de impressão, folha de 718, COM AS
       FONTES REAIS** — o Chromium pelo proxy, `preferCSSPageSize`; sem elas os
       números saem diferentes e enganam): com as três causas em nome longo e a
