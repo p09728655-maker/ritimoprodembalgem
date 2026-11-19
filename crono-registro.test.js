@@ -701,7 +701,16 @@ console.log('\n── v5.62/v5.65: o tempo-alvo de cada produto, pela esteira �
       ['501.076.001', 'VOL 1/1 EXPOSITOR U', 'PRETO AC', 1770, 9, 400, 2, '', '', ''],
       // cores com larguras diferentes: a linha do produto não escolhe uma (null); cada volume não existe à parte (1/1)
       ['501.200.001', 'VOL 1/1 RACK DUAS CAIXAS', 'BRANCO', 1000, 9, 400, 1, 100, 1200, 400],
-      ['501.200.002', 'VOL 1/1 RACK DUAS CAIXAS', 'PRETO', 1000, 9, 400, 1, 100, '1.250', 400]] }, null, '19/11/2026');
+      ['501.200.002', 'VOL 1/1 RACK DUAS CAIXAS', 'PRETO', 1000, 9, 400, 1, 100, 1250, 400],
+      // a MESMA caixa, uma cor em número e a outra em texto pt-BR ('1.250', gravada como texto): 1250 (o _numBR),
+      // nunca 1,25 — com Number(), as duas não batiam e a linha ia sem largura
+      ['501.201.001', 'VOL 1/1 RACK TEXTO', 'BRANCO', 1000, 9, 400, 1, 100, 1250, 400],
+      ['501.201.002', 'VOL 1/1 RACK TEXTO', 'PRETO', 1000, 9, 400, 1, 100, '1.250', 400],
+      // o RACK ESTRELA de 19/11: a cor PRETO ACETINADO fora do relatório do ERP (em branco) e as outras com 1640.
+      // Vazio não é outra caixa: a linha vai com 1640 (revisão da v7.271.0: 36 de 171 linhas iam sem largura)
+      ['501.098.001', 'VOL 1/1 RACK ESTRELA', 'PRETO ACETINADO', 1700, 9, 400, 1.5, '', '', ''],
+      ['501.098.002', 'VOL 1/1 RACK ESTRELA', 'OFF WHITE', 1700, 9, 400, 1.5, 100, 1640, 505],
+      ['501.098.004', 'VOL 1/1 RACK ESTRELA', 'NATURE', 1700, 9, 400, 1.5, 100, 1640, 505]] }, null, '19/11/2026');
     const rl = PL.run('return getTemposAlvo();');
     const pl = {}; (rl.produtos || []).forEach(x => { pl[x.rot] = x; });
     const cat = PL.run('return lerCatalogoProdutos();');
@@ -717,8 +726,12 @@ console.log('\n── v5.62/v5.65: o tempo-alvo de cada produto, pela esteira �
     ok('v5.73: sem velocidade (sem esteira nem alvo), a largura vai mesmo assim; sem largura no cadastro, null — nunca 0',
        [pl['501130 · MESA LATERAL SEM VEL'].alvo, pl['501130 · MESA LATERAL SEM VEL'].largura, pl['501076 · EXPOSITOR U'].largura],
        [null, 670, null]);
-    ok('v5.73: cores com caixas diferentes (1200 e 1.250 em texto): a linha não escolhe uma — null',
+    ok('v5.73: cores com caixas diferentes (1200 e 1250): a linha não escolhe uma — null',
        [pl['501200 · RACK DUAS CAIXAS'].largura], [null]);
+    ok('v5.73: a mesma caixa em número (1250) e em texto pt-BR ("1.250"): 1250 — o _numBR, nunca 1,25',
+       [pl['501201 · RACK TEXTO'].largura], [1250]);
+    ok('v5.73: o RACK ESTRELA com a cor em branco (fora do ERP): a linha vai com a 1640 das outras — vazio não é outra caixa',
+       [pl['501098 · RACK ESTRELA'] && pl['501098 · RACK ESTRELA'].largura], [1640]);
     ok('v5.73: o cabeçalho do .gs conta a mudança',
        [/^\/\/ Versão: 5\.73 — A LARGURA DA CAIXA FECHADA VAI PARA O APP DE CRONOANÁLISE/m.test(GS)], [true]);
   }

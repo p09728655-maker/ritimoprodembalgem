@@ -5,12 +5,16 @@
 //               A MEDIDA DA CAIXA do cadastro é a caixa ABERTA, do começo da
 //               linha (825 na Mesa Cabeceira Sleep); na seladora, onde o vídeo
 //               mede, ela passa FECHADA (440) — e o entre-peças saía metade do
-//               real. A PRODUTO_CODIGO ganhou MEDIDA_EXT_ALTURA, _LARGURA e
-//               _PROFUNDIDADE (medida externa do ERP). lerCatalogoProdutos lê a
-//               LARGURA (por prefixo, `largura`; vazio = 0) e o getTemposAlvo a
-//               manda em cada linha (`largura`: a mesma em todo código da linha,
-//               senão null — a média de duas caixas não é a caixa de ninguém).
-//               Vai mesmo sem esteira (o vídeo precisa da caixa sem velocidade).
+//               real. A PRODUTO_CODIGO ganhou MEDIDA_EXT_ALTURA, MEDIDA_EXT_LARGURA
+//               e MEDIDA_EXT_PROFUDIADE (sic, sem o N, como foi digitado em
+//               19/11; só a LARGURA é lida). lerCatalogoProdutos lê a LARGURA (por
+//               prefixo, `largura`; vazio = 0) e o getTemposAlvo a manda em cada
+//               linha (`largura`: a dos códigos da linha que têm largura, quando
+//               é uma só; duas diferentes → null, a média de duas caixas não é a
+//               caixa de ninguém; a cor em branco — fora do relatório do ERP, só
+//               itens ativos — não conta: vazio não é outra caixa, como a esteira
+//               no _taEsteiraCad). Vai mesmo sem esteira (o vídeo precisa da
+//               caixa sem velocidade).
 //               A MEDIDA DA CAIXA (aberta) continua a do tempo-alvo e do teto da
 //               esteira: nada no painel muda. ⚠ re-deploy manual.
 // Versão: 5.72 — A COR DO PRODUTO NO ATENDIMENTO POR LOTE INTERNO.
@@ -2754,12 +2758,15 @@ function _taCaixaDe(cods) {
   const igual = cods.every(function (c) { return c.medida === c0.medida && c.vel === c0.vel && c.entre === c0.entre; });
   return igual && c0.medida > 0 && c0.vel > 0 ? { medida: c0.medida, vel: c0.vel, entre: c0.entre } : null;
 }
-// v5.73: a LARGURA da caixa fechada da linha (a do vídeo, na seladora): só
-// quando todo código dela tem a mesma (o jogo de volumes diferentes: null).
-// Não depende da esteira: o vídeo mede a caixa mesmo sem velocidade no cadastro.
+// v5.73: a LARGURA da caixa fechada da linha (a do vídeo, na seladora): a
+// dos códigos que têm largura, quando é uma só (o jogo de volumes diferentes,
+// ou cores de caixas diferentes: null). O código em branco não conta — vazio
+// não é outra caixa (o RACK ESTRELA PRETO, fora do ERP, tirava a 1640 das
+// outras cores). Não depende da esteira: o vídeo mede a caixa mesmo sem
+// velocidade no cadastro.
 function _taLarguraDe(cods) {
-  const l0 = cods[0] ? cods[0].largura : 0;
-  return l0 > 0 && cods.every(function (c) { return c.largura === l0; }) ? l0 : null;
+  const ls = cods.map(function (c) { return c.largura; }).filter(function (l) { return l > 0; });
+  return ls.length && ls.every(function (l) { return l === ls[0]; }) ? ls[0] : null;
 }
 function _temposAlvoMontar(catalogo, cfg) {
   cfg = cfg || {};
