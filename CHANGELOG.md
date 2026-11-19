@@ -11,6 +11,21 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.274.1 — 19/11/2026 · TAKT DA SEMANA: o ritmo da semana diz que é só a jornada
+
+O PPCP, com a semana de 16/11 na tela: *"ritimo da linha na semana jornada
+normal ou com hora extra?"* → *"só rotulo"*.
+
+- O recado do DIA A DIA passa a dizer *"ritmo da linha na semana **(só
+  jornada)**: 102,5% da média · a programação pede 120,3%"*. **O número não
+  muda:** sempre foi a UEP feita na jornada dos dias úteis contra a média nos
+  minutos de jornada, com a hora extra fora — como o ritmo embaixo de cada dia.
+- Por que dizer: logo acima, o POR QUE VENCEU conta *"32h00 de linha (jornada
+  + hora extra)"* e as barras têm o laranja da hora extra; sem o rótulo, o
+  102,5% parecia o total. Com a hora extra a semana passa de ~119%: foi ela que
+  cobriu a diferença até os 120,3% que a programação pede.
+- O 🖨 TAKT não muda (o papel está no limite de uma folha).
+
 ## v7.274.0 · .gs v5.76 — 19/11/2026 · META DO DIA: quanto já foi embalado antes
 
 ⚠ **re-deploy** do `.gs` (mesma implantação): o cálculo da programação passa a

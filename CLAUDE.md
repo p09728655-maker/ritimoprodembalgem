@@ -516,7 +516,8 @@ via Google Apps Script (JSONP).
 - O porquê é dia a dia, nunca a semana somada. Embaixo de cada dia do DIA A
   DIA, o RITMO (v7.273.0: feito na jornada ÷ a média, só dia útil, inteiro,
   *"ritmo 110% da média"*, sem cor); o recado do gráfico é o ritmo da semana
-  (o mesmo % do veredito). POR QUE VENCEU (v7.273.0 / `.gs` v5.75): o VENCIDO
+  (o mesmo % do veredito; só a jornada, e o rótulo diz *"(só jornada)"* desde
+  a v7.274.1 — o POR QUE VENCEU e as barras contam a hora extra). POR QUE VENCEU (v7.273.0 / `.gs` v5.75): o VENCIDO
   (o da barra PRECISA) em excesso · linha abaixo da média · SEQUÊNCIA, dia a
   dia na ordem, pelo "e se a linha rodasse na média": excesso = o que ficaria
   aberto com cada dia útil pelo menos na META; abaixo da média = o aberto −
