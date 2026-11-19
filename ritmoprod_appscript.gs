@@ -14,6 +14,16 @@
 //               cache (relê a planilha), nunca meia resposta. A geração por
 //               grupo (rp_gen) continua valendo: gravar órfã as partes junto.
 //               O formato que chega aos painéis não muda. ⚠ re-deploy manual.
+//               Revisão: (1) a chave de leitura passa de 'rp:' a 'rp2:' — o
+//               cache é do SCRIPT, não da versão: uma implantação antiga (ou
+//               voltar à v5.73) leria o marcador "#PARTES:…" como resposta e o
+//               JSONP quebraria; com o prefixo novo ela nunca o acha. (2) Cada
+//               gravação em partes leva um id (marcador "#PARTES:n:tam:id",
+//               partes em chave#id#i): duas gravações cruzadas nunca se
+//               misturam. (3) onEdit na PRODUTO_CODIGO renova o cache de 'cat'
+//               DEPOIS de desfazer a UEP travada e de gravar a UEP_VERSOES: uma
+//               leitura no meio guardaria a UEP digitada por 5 min (até a v5.73
+//               o getProdutos nunca ia ao cache, e a janela não pegava ele).
 // Versão: 5.73 — A LARGURA DA CAIXA FECHADA VAI PARA O APP DE CRONOANÁLISE.
 //               PPCP, 19/11/2026: "PARA VIDEO CRONOANALISE VAMOS USAR LARGURA".
 //               A MEDIDA DA CAIXA do cadastro é a caixa ABERTA, do começo da
@@ -1620,12 +1630,12 @@ function _gruposDaAba(nome) {
 // v5.74 — RESPOSTA GRANDE EM PARTES. O CacheService recusa valor acima de
 // 100 KB: o getProdutos (113,6 KB em 19/11/2026) nunca ia ao cache. Cabe numa
 // chave → como sempre. Não cabe → partes de CACHE_PARTE_CHARS caracteres
-// (30.000 = no máximo 90 KB mesmo se todo caractere ocupar 3 bytes em UTF-8;
-// o limite é em bytes), cada uma em `chave#i`, e por ÚLTIMO o marcador
-// "#PARTES:n:tamanho" na própria chave — quem lê no meio da gravação não acha
-// o marcador e relê a planilha; partes de duas gravações cruzadas da mesma
-// chave com tamanhos diferentes também viram falta (não sai JSON quebrado
-// para o painel por isso). Uma parte nunca
+// (30.000 unidades = no máximo 90 KB em UTF-8, com 3 bytes por caractere, e
+// 60 KB em UTF-16: cabe nos "100 KB" seja qual for a conta do Google, que não
+// é documentada), cada uma em `chave#id#i`, e por ÚLTIMO o marcador
+// "#PARTES:n:tamanho:id" na própria chave — quem lê no meio da gravação não
+// acha o marcador e relê a planilha; o id (um por gravação) faz duas gravações
+// cruzadas da mesma chave nunca se misturarem. Uma parte nunca
 // termina no meio de um par substituto (o caractere fora do BMP vira dois).
 // JSON nunca começa com "#".
 const CACHE_PARTE_CHARS = 30000;
@@ -1642,9 +1652,10 @@ function _cachePutJson(cache, chave, json, ttl) {
     i = f;
     if (partes.length > CACHE_MAX_PARTES) return false;
   }
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   try {
-    for (let i = 0; i < partes.length; i++) cache.put(chave + '#' + i, partes[i], ttl);
-    cache.put(chave, CACHE_MARCA_PARTES + partes.length + ':' + json.length, ttl);
+    for (let i = 0; i < partes.length; i++) cache.put(chave + '#' + id + '#' + i, partes[i], ttl);
+    cache.put(chave, CACHE_MARCA_PARTES + partes.length + ':' + json.length + ':' + id, ttl);
     return true;
   } catch (e) { return false; }
 }
@@ -1653,11 +1664,11 @@ function _cachePutJson(cache, chave, json, ttl) {
 function _cacheGetJson(cache, chave) {
   const v = cache.get(chave);
   if (!v || v.indexOf(CACHE_MARCA_PARTES) !== 0) return v || null;
-  const m = /^(\d+):(\d+)$/.exec(v.slice(CACHE_MARCA_PARTES.length));
+  const m = /^(\d+):(\d+):([0-9a-z]+)$/.exec(v.slice(CACHE_MARCA_PARTES.length));
   const n = m ? Number(m[1]) : 0, tam = m ? Number(m[2]) : 0;
   if (!(n > 0 && n <= CACHE_MAX_PARTES)) return null;
   const ks = [];
-  for (let i = 0; i < n; i++) ks.push(chave + '#' + i);
+  for (let i = 0; i < n; i++) ks.push(chave + '#' + m[3] + '#' + i);
   const achou = cache.getAll(ks);
   let out = '';
   for (let i = 0; i < n; i++) {
@@ -1729,7 +1740,10 @@ function doGet(e) {
   if (ttl) {
     try {
       cache = CacheService.getScriptCache();
-      cacheKey = 'rp:' + _cacheGens(cache, CACHE_DEP_LEITURA[actEf] || CACHE_GRUPOS) + ':' + actEf + ':' +
+      // v5.74: 'rp2:' (era 'rp:'). O CacheService é do SCRIPT, não da versão:
+      // um .gs antigo ainda implantado (ou a volta à v5.73) leria o marcador
+      // "#PARTES:…" como se fosse o JSON. Com o prefixo novo, nunca o acha.
+      cacheKey = 'rp2:' + _cacheGens(cache, CACHE_DEP_LEITURA[actEf] || CACHE_GRUPOS) + ':' + actEf + ':' +
         ['data', 'de', 'ate', 'codigo', 'modelo', 'cxHora', 'uepVer', 'ptsCad'].map(function (k) { return p[k] || ''; }).join('|');
       const hit = _cacheGetJson(cache, cacheKey);   // v5.74: junta as partes
       if (hit) { _medirTempo(actEf, t0, true); return _saidaJson(hit, callback); }
@@ -7347,8 +7361,14 @@ function onEdit(e) {
       // v5.64: UEP travada pelo PPCP não muda pela digitação de uma célula
       let desfez = false;
       try { desfez = _travaDesfazEdicao(e, sh); } catch (errT) { Logger.log('UEP_TRAVA (onEdit) falhou: ' + errT.message); }
-      if (desfez) return;
-      try { _uepVerDaEdicao(e, sh); } catch (errV) { Logger.log('UEP_VERSOES (onEdit) falhou: ' + errV.message); }
+      if (!desfez) {
+        try { _uepVerDaEdicao(e, sh); } catch (errV) { Logger.log('UEP_VERSOES (onEdit) falhou: ' + errV.message); }
+      }
+      // v5.74: de novo DEPOIS de desfazer a UEP travada (o desfazer é por
+      // script e não troca a geração) e de gravar a UEP_VERSOES — uma leitura
+      // no meio guardaria a UEP digitada por 5 min, e desde a v5.74 o
+      // getProdutos também vai ao cache.
+      invalidarCacheLeitura(['cat']);
       return;
     }
     if (sh.getName() !== SHEET_DADOS) return;

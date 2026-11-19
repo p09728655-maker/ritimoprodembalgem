@@ -26,6 +26,12 @@ O PPCP: *"trata getProdutos"*.
   parte expirou, o `.gs` relê a planilha — nunca manda meia lista. Gravar no
   cadastro continua renovando a lista na hora.
 - Vale para qualquer leitura acima de 100 KB, não só a lista de produtos.
+- A UEP digitada à mão num código travado é desfeita e não fica no cache: o
+  `.gs` renova a lista depois de desfazer (e depois de gravar a versão da UEP
+  digitada num código não travado).
+- Correção feita na planilha pela API (não pelo app nem à mão) continua sem
+  renovar o cache sozinha — agora também na lista de produtos, por até 5 min.
+  Rodar `invalidarCacheLeitura()` no editor resolve na hora.
 
 **Atenção:** nenhum número muda, e o formato que chega ao PC e ao celular é o
 mesmo. Até o re-deploy, o rodapé do painel fica em âmbar (`gs v5.73`).

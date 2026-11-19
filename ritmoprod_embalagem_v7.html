@@ -18654,7 +18654,7 @@ function _histCxInfo(dias, heBackendOk){
 // ficam com as caixas de sempre — o nome da coluna diz qual das duas está na
 // tela — e a ANÁLISE POR HORÁRIO, com a média histórica de caixas.
 const HIST_HORAS_TTL=15*60*1000;   // abrir a aba depois disto relê o período (o dia de hoje pode ter fechado)
-const HIST_HORAS_MAX_DIAS=62;      // acima disto a resposta passa dos 100 KB do cache do .gs e demora (F7)
+const HIST_HORAS_MAX_DIAS=62;      // acima disto a resposta demora; até o .gs v5.73 passava também dos 100 KB do cache (desde a v5.74 vai em partes — F7)
 const HIST_HORAS_AMO_MIN=2;        // o horário entra no ranking com 2 dias ou mais (a regra da média de caixas)
 const HIST_HORAS_GUARDA=4;         // quantos períodos ficam guardados (voltar ao período anterior não relê)
 // O log tem de cobrir as caixas do dia para a hora ser julgada: caixa lançada sem

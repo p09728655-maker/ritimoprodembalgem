@@ -36,25 +36,32 @@ const MODELOS = [
   ['VOL 1/1 RACK ESTRELA', 'PRETO ACETINADO', 29.8, '(8006)78985990784240102', 1700, 9, 400, 238.4353, 5, 1.73, '30/10/2026 DIGITADA', '', '', '', ''],
 ];
 const tres = n => String(n).padStart(3, '0');
+// JSON.parse que não derruba a suíte: resposta quebrada vira null e o teste falha com a mensagem.
+const abre = t => { try { return JSON.parse(t); } catch (e) { return null; } };
 function catalogo(n) {
   const linhas = [HDR];
   for (let i = 0; i < n; i++) linhas.push([`501.${tres(100 + Math.floor(i / 6))}.${tres(1 + (i % 6))}`, ...MODELOS[i % 6]]);
   return linhas;
 }
 
-// O cache do Google: recusa valor acima de 100 KB (em bytes, UTF-8).
+// O cache do Google: recusa valor acima de 100 KB (aqui, em bytes UTF-8 — a
+// conta dele não é documentada; 30.000 unidades cabem em qualquer uma) e guarda
+// o texto em UTF-8: a metade solta de um par substituto voltaria como U+FFFD.
+// OPS registra a ordem das gravações e o prazo de cada uma.
 const LIMITE = 100 * 1024;
 function montar(abas) {
   const ABAS = abas;
   const leituras = {};
   const STORE = {};
+  const OPS = [];
   let recusados = 0;
   const cache = {
     get: k => (k in STORE ? STORE[k] : null),
     getAll: ks => { const o = {}; ks.forEach(k => { if (k in STORE) o[k] = STORE[k]; }); return o; },
-    put: (k, v) => {
+    put: (k, v, ttl) => {
       if (Buffer.byteLength(String(v), 'utf8') > LIMITE) { recusados++; throw new Error('Argumento grande demais: value'); }
-      STORE[k] = String(v);
+      STORE[k] = Buffer.from(String(v), 'utf8').toString('utf8');
+      OPS.push([k, ttl]);
     },
     putAll: o => { Object.keys(o).forEach(k => cache.put(k, o[k])); },
     remove: k => { delete STORE[k]; },
@@ -98,7 +105,7 @@ function montar(abas) {
     return vm.runInContext(`doGet({ parameter: { action: ${JSON.stringify(acao)} } })`, ctx).s;
   };
   const run = code => vm.runInContext(code, ctx);
-  return { ABAS, STORE, leituras, get, run, recusados: () => recusados };
+  return { ABAS, STORE, OPS, leituras, get, run, recusados: () => recusados };
 }
 
 console.log('\n── o getProdutos de 19/11 (431 códigos) passa de 100 KB ──');
@@ -106,15 +113,26 @@ console.log('\n── o getProdutos de 19/11 (431 códigos) passa de 100 KB ─�
   const T = montar({ PRODUTO_CODIGO: catalogo(431) });
   const r1 = T.get('getProdutos');
   ok('a resposta tem os 431 códigos e passa dos 100 KB (o CacheService recusaria numa chave só)',
-     [JSON.parse(r1).produtos.length, Buffer.byteLength(r1) > LIMITE], [431, true]);
+     [(abre(r1) || {}).produtos?.length, Buffer.byteLength(r1) > LIMITE], [431, true]);
   ok('a 1ª chamada lê a PRODUTO_CODIGO uma vez e tenta a chave única (recusada)',
      [T.leituras.PRODUTO_CODIGO, T.recusados()], [1, 1]);
-  const marca = Object.entries(T.STORE).find(([k, v]) => /:getProdutos:/.test(k) && !/#\d+$/.test(k));
-  const partes = Object.entries(T.STORE).filter(([k]) => /:getProdutos:.*#\d+$/.test(k));
-  ok('vai ao cache em partes: o marcador "#PARTES:n:tamanho" e n partes, cada uma abaixo dos 100 KB',
-     [!!marca && /^#PARTES:\d+:\d+$/.test(marca[1]), partes.length > 1, partes.length === Number(marca && marca[1].split(':')[1]),
-      partes.every(([, v]) => Buffer.byteLength(v) <= LIMITE), marca && Number(marca[1].split(':')[2]) === r1.length],
+  // Sem marcador (o defeito de volta: a resposta grande não vai ao cache), os
+  // testes abaixo falham com a mensagem — nunca a suíte quebrando no meio.
+  const marca = Object.entries(T.STORE).find(([k]) => /:getProdutos:/.test(k) && !/#/.test(k)) || ['(sem marcador)', ''];
+  const [, nM, tamM, idM] = marca[1].match(/^#PARTES:(\d+):(\d+):([0-9a-z]+)$/) || [];
+  const partes = Object.entries(T.STORE).filter(([k]) => k.startsWith(marca[0] + '#' + idM + '#'));
+  ok('vai ao cache em partes: o marcador "#PARTES:n:tamanho:id" e n partes (chave#id#i), cada uma abaixo dos 100 KB',
+     [!!idM, partes.length > 1, partes.length === Number(nM), partes.every(([, v]) => Buffer.byteLength(v) <= LIMITE), Number(tamM) === r1.length],
      [true, true, true, true, true]);
+  // O marcador por ÚLTIMO (quem lê no meio da gravação não o acha) e o mesmo prazo em todas.
+  const ordem = T.OPS.filter(([k]) => k.startsWith(marca[0]));
+  ok('o marcador é gravado depois de todas as partes, e todas com o prazo da leitura (300 s)',
+     [ordem.length > 1 && ordem[ordem.length - 1][0] === marca[0], ordem.every(([, ttl]) => ttl === 300)], [true, true]);
+  // O CacheService é do SCRIPT: um .gs antigo ainda implantado (ou a volta à
+  // v5.73) lê as chaves 'rp:' e entregaria o marcador como JSON. A v5.74 só
+  // grava em 'rp2:'.
+  ok('as leituras vão em chaves "rp2:" — nenhuma em "rp:", a que um .gs antigo leria',
+     [marca[0].startsWith('rp2:'), Object.keys(T.STORE).some(k => k.startsWith('rp:'))], [true, false]);
 
   const r2 = T.get('getProdutos');
   ok('a 2ª chamada sai do CACHE: nenhuma leitura nova da planilha, a MESMA resposta',
@@ -122,18 +140,18 @@ console.log('\n── o getProdutos de 19/11 (431 códigos) passa de 100 KB ─�
 
   // Uma parte expirou (o cache pode soltar uma chave antes da outra): falta no
   // cache — relê a planilha e devolve a resposta INTEIRA, nunca a metade.
-  const k1 = partes[1][0];
+  const k1 = (partes.find(([k]) => k.endsWith('#1')) || ['(sem parte)'])[0];
   delete T.STORE[k1];
   const r3 = T.get('getProdutos');
   ok('uma parte sumiu: relê a planilha e a resposta sai inteira (o JSON abre, 431 códigos)',
-     [T.leituras.PRODUTO_CODIGO, JSON.parse(r3).produtos.length, r3 === r1], [2, 431, true]);
+     [T.leituras.PRODUTO_CODIGO, (abre(r3) || {}).produtos?.length, r3 === r1], [2, 431, true]);
 
   // Gravar no cadastro troca a geração do grupo 'cat': as partes ficam órfãs.
   T.ABAS.PRODUTO_CODIGO[1][1] = 'VOL 1/2 BERCO ARCO-IRIS NOVO';
   T.run("invalidarCacheLeitura(['cat'])");
   const r4 = T.get('getProdutos');
   ok('gravou no cadastro (geração nova): relê e traz o dado novo',
-     [T.leituras.PRODUTO_CODIGO, JSON.parse(r4).produtos[0].desc], [3, 'VOL 1/2 BERCO ARCO-IRIS NOVO']);
+     [T.leituras.PRODUTO_CODIGO, ((abre(r4) || {}).produtos || [{}])[0].desc], [3, 'VOL 1/2 BERCO ARCO-IRIS NOVO']);
   ok('e a seguinte já sai do cache de novo', [T.get('getProdutos') === r4, T.leituras.PRODUTO_CODIGO], [true, 3]);
 }
 
@@ -152,20 +170,29 @@ console.log('\n── as bordas das partes ──');
   const T = montar({});
   const ida = (k, s) => [T.run(`_cachePutJson(CacheService.getScriptCache(), ${JSON.stringify(k)}, ${JSON.stringify(s)}, 300)`),
     T.run(`_cacheGetJson(CacheService.getScriptCache(), ${JSON.stringify(k)})`) === s];
-  // O emoji (fora do BMP) são DOIS caracteres em JS: a parte não pode terminar no meio dele.
+  // O emoji (fora do BMP) são DOIS caracteres em JS: a parte não pode terminar
+  // no meio dele — o cache guarda em UTF-8, e a metade solta voltaria como U+FFFD.
   const emoji = 'a'.repeat(29999) + '😀' + 'b'.repeat(40000) + 'ç'.repeat(40000);
-  ok('par substituto na fronteira (o 30.000º caractere é a 1ª metade do emoji): volta idêntico',
-     [ida('k1', emoji), Object.keys(T.STORE).filter(k => /^k1#/.test(k)).every(k => !/[\uD800-\uDBFF]$/.test(T.STORE[k]))],
-     [[true, true], true]);
+  ok('par substituto na fronteira (o 30.000º caractere é a 1ª metade do emoji): volta idêntico, com o emoji inteiro',
+     [ida('k1', emoji)], [[true, true]]);
   // 3 bytes por caractere em UTF-8 ("—"): 30.000 caracteres = 90 KB, ainda abaixo do limite.
   ok('texto de 3 bytes por caractere (240 KB): cada parte abaixo dos 100 KB, volta idêntico',
      [ida('k2', '—'.repeat(80000)), Object.keys(T.STORE).filter(k => /^k2#/.test(k)).every(k => Buffer.byteLength(T.STORE[k]) <= LIMITE)],
      [[true, true], true]);
-  // Acima de 10 partes não guarda (como antes da v5.74): a resposta sai, só não vai ao cache.
-  ok('acima de 10 partes (310.000 caracteres): não guarda nada', [ida('k3', 'x'.repeat(310000)), 'k3' in T.STORE], [[false, false], false]);
-  // Marcador cujas partes não somam o tamanho (duas gravações cruzadas): falta, nunca JSON quebrado.
-  T.STORE.k4 = '#PARTES:2:10'; T.STORE['k4#0'] = 'abc'; T.STORE['k4#1'] = 'de';
-  T.STORE.k5 = '#PARTES:x:1';
+  // A borda: 10 partes (300.000 caracteres) guarda; uma a mais não (como antes da v5.74).
+  ok('exatamente 10 partes (300.000 caracteres): guarda e volta idêntico', ida('k3a', 'x'.repeat(300000)), [true, true]);
+  ok('acima de 10 partes (300.001 caracteres): não guarda nada', [ida('k3', 'x'.repeat(300001)), 'k3' in T.STORE], [[false, false], false]);
+  // Duas gravações da MESMA chave: cada uma com o seu id — o marcador só junta as partes dele.
+  const c = T.run('CacheService.getScriptCache()');
+  T.run(`_cachePutJson(CacheService.getScriptCache(), 'k6', ${JSON.stringify('a'.repeat(110000))}, 300)`);
+  const marcaA = T.STORE.k6;
+  T.run(`_cachePutJson(CacheService.getScriptCache(), 'k6', ${JSON.stringify('b'.repeat(110000))}, 300)`);
+  T.STORE.k6 = marcaA;                                   // o marcador da 1ª ficou por último (corrida)
+  ok('duas gravações cruzadas da mesma chave: o marcador junta só as partes do seu id — nunca a mistura',
+     [c && T.run("_cacheGetJson(CacheService.getScriptCache(), 'k6')") === 'a'.repeat(110000)], [true]);
+  // Marcador cujas partes não somam o tamanho, ou estragado: falta, nunca JSON quebrado.
+  T.STORE.k4 = '#PARTES:2:10:abc'; T.STORE['k4#abc#0'] = 'abc'; T.STORE['k4#abc#1'] = 'de';
+  T.STORE.k5 = '#PARTES:x:1:abc';
   ok('partes que não somam o tamanho do marcador, ou marcador estragado: falta no cache (null)',
      [T.run("_cacheGetJson(CacheService.getScriptCache(), 'k4')"), T.run("_cacheGetJson(CacheService.getScriptCache(), 'k5')"),
       T.run("_cacheGetJson(CacheService.getScriptCache(), 'nao-tem')")],

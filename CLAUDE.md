@@ -552,8 +552,9 @@ via Google Apps Script (JSONP).
   nos 4 manifests (o `deploy.test.js` confere).
 - ⚠ Gravar na planilha pela API (correções à mão): número vai como NÚMERO
   JSON, nunca texto (`"170.578"` vira milhar); fórmula em pt-BR (`;` e
-  vírgula); e a API não passa pelo `onEdit` (não versiona UEP nem desfaz edição
-  de UEP travada).
+  vírgula); e a API não passa pelo `onEdit` (não versiona UEP, não desfaz edição
+  de UEP travada e não renova o cache — depois, `invalidarCacheLeitura()` no
+  editor; desde a v5.74 o `getProdutos` também fica no cache).
 - ⚠ `localStorage['rpe_cfg']` vence a URL do código. As colunas de lançamento
   são `LANÇ 1…10`: o `startsWith('L')` é o que faz o lançamento funcionar — não
   endurecer.

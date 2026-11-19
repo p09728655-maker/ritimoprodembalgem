@@ -126,7 +126,9 @@ diferente se corrige só na linha que você já está mexendo.
 - **F6.** No `.gs`, leitura usa o memo da execução; escrita lê direto da
   planilha e roda sob o lock dos lançamentos.
 - **F7.** Campo novo em leitura pesada: conferir o tamanho da resposta contra
-  os 100 KB do cache do `.gs`.
+  o cache do `.gs` — 100 KB numa chave; acima, em partes até 300.000
+  caracteres (`CACHE_MAX_PARTES` × `CACHE_PARTE_CHARS`, v5.74); acima disso,
+  não cacheia. Até a v5.73 o teto era 100 KB.
 
 ## G. Segurança
 
