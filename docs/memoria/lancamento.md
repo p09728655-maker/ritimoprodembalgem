@@ -281,9 +281,21 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   Script não tem a troca e não grava nada; o EXCLUIR segue funcionando.
 
 ## LEMBRETE DE LANÇAMENTO (desktop)
-- O modal ⏰ com bipe (`iniciarAlertaLancamento` / `dispararAlerta`, a cada
-  minuto, slot encerrando em 5 min ou fechado sem lançamento) **não aparece no
-  perfil GERENCIAL nem na diretoria** desde a v7.150.1 (PPCP, 20/10/2026: *"tira
-  essa lembrete no gerencial"*). Segue no perfil do operador e na TV. ⚠ O texto
-  dele ainda manda *"preencher o REALIZADO na planilha"* — o lançamento hoje é
-  pelo app; não mexido. O mobile não tem lembrete.
+- **Saiu do PC inteiro na v7.270.0** (PPCP, 19/11/2026: *"mensagem na tv que
+  não lançou ainda pode tirar, deixar só no app do operador"*). A TV era a
+  última plateia: o perfil OPERADOR do PC é a TV (login OPERADOR e `?tv` abrem
+  só a aba TV). Na TV da parede ninguém clica em JÁ LANCEI, e o modal (z-index
+  9999, com blur) cobria os números até a TV recarregar (28 min). Saíram o
+  modal, o bipe, a notificação do sistema, o pedido de permissão de notificação
+  e o evento `rpe-sheets-loaded` (só o lembrete ouvia). ⚠ Não recolocar no PC;
+  o `relatorios.test.js` prende.
+- No celular a hora fechada sem lançamento, dentro da tolerância, aparece na
+  lista como *SEM LANÇAMENTO · AINDA ACEITA* (`slotLancavel`). O app não tem
+  modal nem bipe — se um dia pedirem aviso sonoro, é lá, não na TV.
+- Histórico (revogado na v7.270.0):
+  ~~O modal ⏰ com bipe (`iniciarAlertaLancamento` / `dispararAlerta`, a cada
+    minuto, slot encerrando em 5 min ou fechado sem lançamento) **não aparece no
+    perfil GERENCIAL nem na diretoria** desde a v7.150.1 (PPCP, 20/10/2026: *"tira
+    essa lembrete no gerencial"*). Segue no perfil do operador e na TV. ⚠ O texto
+    dele ainda manda *"preencher o REALIZADO na planilha"* — o lançamento hoje é
+    pelo app; não mexido. O mobile não tem lembrete.~~

@@ -11,6 +11,24 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.270.0 — 19/11/2026 · A TV não mostra mais o lembrete de lançamento
+
+O PPCP: *"mensagem na tv que não lançou ainda pode tirar, deixar só no app do
+operador"*.
+
+- **Saiu o modal ⏰ LEMBRETE DE LANÇAMENTO** (com bipe), que cobria a TV quando
+  uma hora fechava sem lançamento ou faltavam 5 min para fechar. O gerencial e a
+  diretoria já não tinham desde a v7.150.1; a TV era a última, e na TV da
+  parede ninguém clica em JÁ LANCEI — o modal ficava na frente dos números até
+  a TV recarregar (até 28 min). O texto ainda mandava preencher a planilha, e o
+  lançamento é pelo celular.
+- O painel do PC deixa de pedir permissão de notificação do navegador.
+- **No app do operador nada muda:** a hora fechada sem lançamento continua na
+  lista como *SEM LANÇAMENTO · AINDA ACEITA*, com o horário-limite. O app não
+  tem modal nem bipe (nunca teve).
+
+**Atenção:** nenhum número muda.
+
 ## v7.269.0 · mobile 1.60.0 · rp-core 1.25.0 — 18/11/2026 · Uma régua só para o dia fechado em UEP
 
 O PPCP, com a lista das telas que julgavam o MESMO dia de três jeitos: *"arrumar

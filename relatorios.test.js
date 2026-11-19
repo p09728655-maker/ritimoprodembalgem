@@ -6163,11 +6163,15 @@ console.log('\n── estudo de UEP ──');
   ok('pelo endereço da diretoria o painel só mostra a diretoria, e o celular vai para ela',
      [/if\(\/\^diretoria\[-\.\]\/i\.test\(location\.hostname\) \|\| /.test(src), /if\(\/\^diretoria\[-\.\]\/i\.test\(location\.hostname\)\) location\.replace\('\/diretoria'\);/.test(mob)], [true, true]); }
 
-// v7.150.1 — o LEMBRETE DE LANÇAMENTO não aparece no gerencial nem na diretoria
-{ const i = src.indexOf('function dispararAlerta(){'), corpo = src.slice(i, src.indexOf('\n  }\n', i));
-  ok('o lembrete de lançamento sai antes de tudo no perfil gerencial e na tela da diretoria',
-     /if\(PERFIL==='gerencial' \|\| document\.documentElement\.classList\.contains\('modo-dir'\)\) return;/.test(corpo)
-       && corpo.indexOf("PERFIL==='gerencial'") < corpo.indexOf('getSlotPendente()'), true);
+// v7.270.0 — o LEMBRETE DE LANÇAMENTO (modal ⏰) saiu do PC: a TV era a última
+// plateia (gerencial e diretoria saíram na v7.150.1). PPCP, 19/11/2026: "mensagem
+// na tv que não lançou ainda pode tirar, deixar só no app do operador".
+{ const mob = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
+  ok('o painel do PC (TV, gerencial, diretoria) não tem o lembrete de lançamento nem pede permissão de notificação',
+     ['function dispararAlerta', "modal.id='alerta-lancamento'", 'alerta-slot-msg', 'Notification.requestPermission', 'new Notification(']
+       .filter(t => src.includes(t)), []);
+  ok('no app do operador a hora fechada sem lançamento continua chamando para lançar',
+     [mob.includes("badgeText='AINDA ACEITA'"), mob.includes("nome='SEM LANÇAMENTO'")], [true, true]);
 }
 // ── v7.202.0 / .gs v5.55 (opção A): META DO DIA = META DIA + ATRASO META ──
 { global.fmtN = global.fmtN || (n => Number(n).toLocaleString('pt-BR'));
