@@ -67,6 +67,41 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     virava ritmo, e o 04/11 acima da referência "pagava" o 05/11 — culpava a
     produção por trabalho que não estava programado. Fecha sempre: pedido −
     carga − ritmo + adiantou = feito (o teste prende).
+  - **O RITMO DE CADA DIA (v7.273.0**, PPCP 19/11/2026, com a tela da semana
+    16–20/11: *"como mostrar ritmo da linha"* → *"sim 1"* → *"de forma fácil
+    compreensão"*). Na tela o recado do gráfico dizia *"do que não saiu: 17%
+    excesso de programação · 83% ritmo da linha"* e o veredito *"no ritmo atual
+    da linha (105,5% da média)"*: dois números do ritmo que pareciam se
+    contradizer — o 83% é a parte do que não saiu que a conta põe no ritmo,
+    não o ritmo — e nenhum dizia QUAL dia rodou abaixo.
+    - Conta (`_taktMontar`): `d.mediaUep` = META UEP × min ÷ 527 e `d.ritmo` =
+      feito NA JORNADA ÷ `d.mediaUep` × 100 — a régua do `exec.pct`, dia a dia
+      (a média ponderada dos dias = o ritmo da semana; o teste prende); hoje,
+      pelos minutos lançados (`h.minNorm`). Hora extra fora. Sem meta (fim de
+      semana) ou sem minuto: null, nunca 0.
+    - Desenho (`_taktSvg`, sem `fut`): uma linha própria embaixo da data (na
+      mesma linha colava no dia vizinho com 6–7 dias), `pb` +14 — a altura do
+      SVG não muda, as barras perdem 14 px; o *"embalou Xh antes"* desce uma
+      linha. O texto é o mais longo que cabe na coluna (`cw − 8`, 0,62 em por
+      caractere): *"ritmo 110% da média"* (hoje *"… até agora"*) → *"ritmo
+      110% até agora"* → *"ritmo 110%"* (o papel, 86 px por dia). Inteiro,
+      em tinta, sem cor (o veredito é o FECHA / NÃO FECHA); o decimal e a conta
+      no `title`. A legenda da TELA ganha *"ritmo: o feito na jornada (azul)
+      contra a média — 100% é a linha branca"* (`.tks-lt`, sem marca); a do
+      papel NÃO (o 🖨 iria a 2 folhas).
+    - O recado do gráfico (`tks-sec-r`) passa a ser *"ritmo da linha na semana:
+      N% da média · a programação pede N%"* (o mesmo número do veredito); a
+      divisão carga × ritmo fica no `title` (porT) e no papel.
+    - Medido no Chromium (o caso de 03–06/11, 5 e 7 dias): 1920, 1366 e 1280
+      sem texto sobre texto, nada passa da largura; a legenda vai a 2 linhas em
+      1366 e 1280; o 🖨 TAKT 700 px antes e depois (folha de 718).
+    - Na semana de 16/11 (HISTORICO): 3.028,6 → 110% · 2.462,6 → 89% (com 584,2
+      de hora extra) · 3.441,6 → 125% (com 543,9). O que não saiu dessa semana
+      NÃO veio só do ritmo: em 16 e 18/11 a linha fez mais que o programado do
+      dia e mesmo assim havia 2h45 vencidas — a linha adiantou lotes de outros
+      dias (*"embalou 6h23 antes"*). É SEQUÊNCIA, que a conta carga × ritmo
+      (UEP do dia contra o pedido do dia) não enxerga. Separar a 3ª causa foi
+      oferecido ao PPCP (passo 2) e espera o ok — muda a conta.
   - **AGORA na MESMA unidade**: takt e referência × UEP/cx do código de agora
     = segundos por caixa; a última hora de jornada FECHADA em s por caixa
     também (só desse produto e cor: as caixas; com outro produto ou cor: o

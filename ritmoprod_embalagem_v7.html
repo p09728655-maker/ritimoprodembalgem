@@ -975,6 +975,7 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-uep .uep-leg .tks-lb::before{background:var(--tks-base)} #sec-uep .uep-leg .tks-lx::before{background:var(--red)}
 #sec-uep .uep-leg .tks-lr::before{height:0;border-top:2px solid var(--txt);width:14px;background:none;vertical-align:3px}
 #sec-uep .uep-leg .tks-la::before{background:repeating-linear-gradient(135deg,var(--tks-feito) 0 2.5px,var(--tks-base) 2.5px 5px)}   /* v7.246.0: embalou antes (o listrado da barra) */
+#sec-uep .uep-leg .tks-lt::before{display:none}   /* v7.273.0: o que é o "ritmo N% da média" embaixo de cada dia (texto, sem marca) */
 .pg-sim-wrap .pg-sim{border:1px solid var(--border);border-radius:8px;padding:13px 15px;background:var(--surface)}
 .pg-sim-wrap .pg-sim-tag{font-family:var(--font-d);font-size:9.5px;font-weight:700;letter-spacing:1px;color:var(--warn);border:1px solid var(--warn);border-radius:3px;padding:1px 5px;margin-left:8px;vertical-align:1px}
 .pg-sim-wrap .pg-sim-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:18px}
@@ -4314,7 +4315,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.272.0';
+const APP_VER = '7.273.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -11039,6 +11040,16 @@ function _taktMontar(S, hist, H, pts, est){
   const SU=h.setup || _taktSetup(), setupDia=SU.setupsDia*SU.setupMin, minProd=UEP_MIN_DIA-setupDia>0 ? UEP_MIN_DIA-setupDia : UEP_MIN_DIA, fProd=minProd/UEP_MIN_DIA;
   const takt=nUteis>0 && progUep>0 ? nUteis*minProd*60/progUep : null;
   const porDia=nUteis>0 && progUep>0 ? progUep/nUteis : null;
+  // v7.273.0 — O RITMO DE CADA DIA (PPCP, 19/11/2026: "como mostrar ritmo da
+  // linha"): o feito NA JORNADA ÷ a média nos minutos de jornada do dia (META
+  // UEP × min ÷ 527) — a régua do exec.pct da semana, dia a dia; hoje, pelos
+  // minutos já lançados. Hora extra fora. Sem meta (fim de semana) ou sem
+  // minuto: null, nunca 0.
+  // mediaUep = a média nos minutos do dia (o title do gráfico diz a conta).
+  dias.forEach(d=>{
+    d.mediaUep=d.feito!=null && d.meta>0 && d.min>0 ? d.meta*d.min/UEP_MIN_DIA : null;
+    d.ritmo=d.mediaUep ? d.feito/d.mediaUep*100 : null;
+  });
   // EXECUTADO: só a jornada dos dias úteis (hora extra e dia não útil à parte)
   const ex=uteis.filter(d=>d.feito!=null && d.min>0);
   const exUep=soma(ex, d=>d.feito), exMin=soma(ex, d=>d.min), exMeta=soma(ex, d=>d.meta*d.min/UEP_MIN_DIA);
@@ -11388,12 +11399,17 @@ function _taktHtml(T, G, opt){
   const porT=`A programação pediu ${fmtP(T.pede)} da média que a linha entrega sem hora extra (${_tkS(T.takt)} contra ${_tkS(T.ref)} s por UEP, sem o setup)`
     +(X.pct!=null ? `, e a linha rodou a ${fmtP(X.pct)} dessa média` : '')
     +(tot>=1 ? `. Do que não saiu nos dias fechados, ${pc(C.carga)} foi excesso de programação e ${pc(C.ritmo)} ritmo da linha` : '')+'.';
-  const porR=tot>=1 ? `do que não saiu: <b>${pc(C.carga)} excesso de programação</b> · <b>${pc(C.ritmo)} ritmo da linha</b>`
-    : `a programação pede <b>${fmtP(T.pede)}</b> da média${X.pct!=null ? ` · a linha rodou a <b>${fmtP(X.pct)}</b>` : ''}`;
+  // v7.273.0 (PPCP: "como mostrar ritmo da linha"): o recado é o RITMO da semana
+  // — o mesmo número do "no ritmo atual" do veredito. Era "do que não saiu: 17%
+  // excesso de programação · 83% ritmo da linha" ao lado de um veredito que dizia
+  // 105,5% da média: dois números do ritmo que pareciam se contradizer. A
+  // divisão das causas segue no title (porT) e no papel.
+  const porR=X.pct!=null ? `ritmo da linha na semana: <b>${fmtP(X.pct)}</b> da média · a programação pede <b>${fmtP(T.pede)}</b>`
+    : `a programação pede <b>${fmtP(T.pede)}</b> da média`;
   return tit+_taktHeroHtml(o.V, { semana:'esta', ate:F.ate, partes:_taktPrecisaPartes(T, o.V) })+_taktAntesAviso(T)
     +_taktFecharHtml(_taktFecharDados(o.V, { semana:'esta', ate:F.ate }))
     +`<div class="uep-sec"><b>DIA A DIA</b> horas de linha · programado × feito<span class="tks-sec-r" title="${e(porT)}">${porR}</span></div><div class="uep-card" id="tks-g-box">${svg}`
-    +`<div class="uep-leg"><span class="tks-lb">programado até 1 dia de linha</span><span class="tks-lx">programado acima de 1 dia</span>${T.dias.some(d=>d.adiUep*UEP_MIN_DIA/T.meta>=0.5) ? '<span class="tks-la">embalou antes (adiantado)</span>' : ''}<span style="--c:var(--tks-feito)">feito na jornada</span><span style="--c:var(--warn)">hora extra</span><span class="tks-lr">1 dia de linha (${_fmtHM(UEP_MIN_DIA)} = média de ${n0(T.meta)} UEP entregues sem hora extra)</span></div></div>`
+    +`<div class="uep-leg"><span class="tks-lb">programado até 1 dia de linha</span><span class="tks-lx">programado acima de 1 dia</span>${T.dias.some(d=>d.adiUep*UEP_MIN_DIA/T.meta>=0.5) ? '<span class="tks-la">embalou antes (adiantado)</span>' : ''}<span style="--c:var(--tks-feito)">feito na jornada</span><span style="--c:var(--warn)">hora extra</span><span class="tks-lr">1 dia de linha (${_fmtHM(UEP_MIN_DIA)} = média de ${n0(T.meta)} UEP entregues sem hora extra)</span>${T.dias.some(d=>d.ritmo!=null) ? '<span class="tks-lt">ritmo: o feito na jornada (azul) contra a média — 100% é a linha branca</span>' : ''}</div></div>`
     +_taktFaixaHtml(_taktFaixa(T, { G }), _taktPorCaixa(T), T)
     +(notas.length ? `<div class="uep-nota">${notas.join(' · ')}</div>` : '');
 }
@@ -12243,7 +12259,11 @@ function _taktSvg(T, largura, opt){
   // programado, com a frase embaixo do dia; o pé do gráfico ganha uma linha para ela
   const ad=d=>fut ? 0 : Math.min(val(d), (d.adiUep||0)*k);
   const ds=T.dias.filter(d=>d.util || (d.feriado && d.dow>=1 && d.dow<=5) || val(d)>0 || fe(d)>0 || he(d)>0);
-  const temAd=ds.some(d=>ad(d)>=0.5), pb=temAd ? 48 : 34;
+  // v7.273.0: o RITMO do dia numa linha própria embaixo da data (na mesma linha
+  // colava no dia vizinho com 6–7 dias); a altura do SVG não muda (o papel segue
+  // numa folha), as barras perdem uma linha
+  const temRit=!fut && ds.some(d=>d.ritmo!=null), dyR=temRit ? 14 : 0;
+  const temAd=ds.some(d=>ad(d)>=0.5), pb=(temAd ? 48 : 34)+dyR;
   const n=Math.max(ds.length, 1), cw=(W-pl-pr)/n, bw=fut ? Math.min(cw*.44, 150) : Math.min(cw*.32, 120);
   const mx=Math.max(UEP_MIN_DIA, ...ds.map(d=>Math.max(val(d), fe(d)+he(d))))*1.22, papel=!!(opt && opt.h);
   const y=v=>pt+(H-pt-pb)*(1-v/mx);
@@ -12256,6 +12276,16 @@ function _taktSvg(T, largura, opt){
   ds.forEach((d, i)=>{
     const cx=pl+i*cw+cw/2, xP=fut ? cx-bw/2 : cx-bw-3, xF=cx+3, dd=d.data.slice(0, 5);
     s+=`<text x="${cx.toFixed(1)}" y="${H-pb+18}" text-anchor="middle" font-size="${FS-2}" fill="${d.hoje ? 'var(--txt)' : 'var(--txt2)'}" font-family="IBM Plex Mono"${d.hoje ? ' font-weight="600"' : ''}>${dd} ${TKS_DOW[d.dow]}${d.hoje ? ' (hoje)' : ''}</text>`;
+    // o ritmo é FATO, em tinta e sem cor: o veredito da tela é o NÃO FECHA / FECHA.
+    // PPCP: "de forma fácil compreensão" → inteiro e com a referência escrita
+    // ("ritmo 110% da média"); o texto mais longo que cabe no dia (no papel e com
+    // 6–7 dias a coluna é estreita: "ritmo 110%"); o decimal fica no title.
+    if(temRit && d.ritmo!=null){
+      const pr=Math.round(d.ritmo)+'%', cabe=t=>t.length*(FS-1)*0.62<=cw-8;
+      const op=[`ritmo ${pr} da média${d.hoje ? ' até agora' : ''}`, `ritmo ${pr}${d.hoje ? ' até agora' : ''}`, `ritmo ${pr}`];
+      const txt=op.find(cabe) || op[op.length-1];
+      s+=`<text x="${cx.toFixed(1)}" y="${H-pb+32}" text-anchor="middle" font-size="${FS-1}" font-weight="600" fill="var(--txt)" font-family="IBM Plex Mono"><title>${_rpEsc(`${dd} · ritmo da linha${d.hoje ? ' até agora' : ''}: ${fmtP(d.ritmo)} da média — ${fmtN(Math.round(d.feito))} UEP na jornada contra ${fmtN(Math.round(d.mediaUep))} da média em ${_fmtHM(d.min)} de jornada; hora extra fora`)}</title>${txt}</text>`;
+    }
     if(d.feriado && !(val(d)>0) && !(fe(d)+he(d)>0)){
       s+=`<text x="${cx.toFixed(1)}" y="${y(0)-10}" text-anchor="middle" font-size="${FS-2}" fill="var(--txt2)" font-family="IBM Plex Mono">${_rpEsc(d.feriado.toUpperCase())}</text>`;
       return;
@@ -12289,7 +12319,7 @@ function _taktSvg(T, largura, opt){
         // encostava no "até agora" do feito, ao lado) e sem encostar no total da barra
         const yH=(y(a)+y(0))/2+FS/2-1;
         if(bw>=hm(a).length*FS*0.62+4 && y(0)-y(a)>FS+10 && (!dentro || yH-FS>y(base)+FS+12)) s+=`<text x="${(xP+bw/2).toFixed(1)}" y="${yH.toFixed(1)}" text-anchor="middle" font-size="${FS}" font-weight="600" fill="var(--txt)" font-family="IBM Plex Mono" ${halo}>${hm(a)}</text>`;
-        s+=`<text x="${cx.toFixed(1)}" y="${H-pb+33}" text-anchor="middle" font-size="${FS-2}" font-weight="600" fill="var(--tks-feito)" font-family="IBM Plex Mono"><title>${tipA}</title>${papel || cw<150 ? `embalou ${hm(a)}` : `embalou ${hm(a)} antes`}</text>`;
+        s+=`<text x="${cx.toFixed(1)}" y="${H-pb+33+dyR}" text-anchor="middle" font-size="${FS-2}" font-weight="600" fill="var(--tks-feito)" font-family="IBM Plex Mono"><title>${tipA}</title>${papel || cw<150 ? `embalou ${hm(a)}` : `embalou ${hm(a)} antes`}</text>`;
       }
       if(dentro) s+=`<text x="${(xP+bw/2).toFixed(1)}" y="${(y(base)+FS+8).toFixed(1)}" text-anchor="middle" font-size="${FS}" fill="var(--tks-base-t)" font-family="IBM Plex Mono">${hm(v)}</text>`;
       if(exc>0) rotF.push({ x:xP+bw/2, topo:y(v), t:'+'+hm(exc), exc:true });

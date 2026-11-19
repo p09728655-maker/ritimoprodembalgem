@@ -11,6 +11,30 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.273.0 — 19/11/2026 · TAKT DA SEMANA: o ritmo da linha de cada dia
+
+O PPCP, com a tela de 19/11: *"como mostrar ritmo da linha"* → *"sim 1"* →
+*"de forma fácil compreensão"*.
+
+- **Embaixo de cada dia do DIA A DIA, o ritmo da linha:** *"ritmo 110% da
+  média"*; hoje, *"ritmo 87% da média até agora"*. É o feito NA JORNADA
+  contra a média de 2.761 UEP no dia (100% = a linha branca); a hora extra não
+  entra. Número inteiro, em tinta, sem cor — o veredito da tela continua sendo
+  o FECHA / NÃO FECHA. Passando o mouse, a conta com o decimal. Na semana de
+  16/11: 110% · 89% · 125%.
+- Onde a coluna do dia é estreita (papel, semana com 6 ou 7 dias): *"ritmo
+  110%"*. A legenda da tela explica o que é o ritmo.
+- **O recado ao lado do título do gráfico** passa a ser o ritmo da semana — o
+  mesmo número do veredito.
+
+**Atenção:** o recado do gráfico muda — antes *"do que não saiu: 17% excesso
+de programação · 83% ritmo da linha"* → agora *"ritmo da linha na semana:
+105,5% da média · a programação pede 120,3%"*. Os dois números do ritmo
+(105,5% no veredito e 83% no recado) pareciam se contradizer: o 83% não é o
+ritmo, é a parte do que não saiu que a conta põe no ritmo. A divisão entre
+excesso de programação e ritmo continua ao passar o mouse no recado e escrita
+no 🖨 TAKT. O 🖨 TAKT segue numa folha (medido: 700 px, igual a antes).
+
 ## v7.272.0 · .gs v5.74 — 19/11/2026 · O cadastro de produtos volta a sair do cache
 
 ⚠ **re-deploy** do `.gs` (colar no editor do Apps Script e reimplantar a

@@ -508,7 +508,9 @@ via Google Apps Script (JSONP).
 - O veredito é em HORAS DE LINHA (UEP × 527 ÷ META UEP), PRECISA × TEM, SEM
   descontar o setup. FALTAM e SOBRAM por extenso, nunca por sinal; a sobra não
   vira crédito para outra semana.
-- O porquê é dia a dia (carga × ritmo), nunca a semana somada. O setup do ⚙
+- O porquê é dia a dia (carga × ritmo), nunca a semana somada. Embaixo de cada
+  dia do DIA A DIA, o RITMO (v7.273.0: feito na jornada ÷ a média, inteiro,
+  *"ritmo 110% da média"*, sem cor); o recado do gráfico é o ritmo da semana. O setup do ⚙
   (`SETUPS_DIA`, `SETUP_MIN`, no domínio do app: trocas inteiras, minutos com 1
   casa) só entra nos SEGUNDOS (takt, TEMPO-ALVO, AGORA). O PPCP digita o mesmo
   no app de cronoanálise — o painel não lê o setup do app; a faixa NA LINHA E NO
