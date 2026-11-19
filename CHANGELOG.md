@@ -22,13 +22,15 @@ para não gerar dúvidas e descrédito"*.
   na jornada de 8h47 = **345 UEP por hora**, contra 314 da média — por isso a
   barra mostra 9h38. Nada na tela dizia isso, e a barra parecia um erro.
 - **Legenda** (tela): *"hora de linha não é hora de relógio: 1 hora de linha =
-  314 UEP, a média em 1 hora — o azul passa da linha branca quando a linha faz
-  mais de 314 UEP por hora na jornada"*.
+  314 UEP, a média em 1 hora — num dia fechado, o azul passa da linha branca
+  quando a linha fez mais de 314 UEP por hora na jornada"*.
 - **Dica da barra** (passar o mouse), com a segunda reconstruída da tela:
   *"16/11 · na jornada: 3.028 UEP em 8h47 = 345 UEP por hora (a média é 314) —
-  equivale a 9h38 de linha, ritmo 109,7% da média"*. A hora extra vai à parte
+  equivale a 9h38 de linha, ritmo 110% da média"*. O ritmo vai inteiro, o
+  mesmo de baixo da barra (345 ÷ 314 dá o % escrito). A hora extra vai à parte
   (*"hora extra: + Xh de linha (N UEP), fora do ritmo"*); hoje, *"até agora …
-  em Xh já lançadas"*.
+  em Xh já lançadas"*. Dia com a META diferente da de hoje (⚙ trocado no meio
+  da semana): *"a média do dia é 288; o gráfico usa a de hoje, 314"*.
 - **Nenhum número muda.** A legenda ganha uma linha (+30 px em 1920, 1366 e
   1280). O 🖨 TAKT não muda (o papel está no limite de uma folha).
 
