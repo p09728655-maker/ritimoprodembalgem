@@ -148,8 +148,9 @@ via Google Apps Script (JSONP).
   O PRODUTO quando ele mudou (por aparelho) → LANÇAMENTO REPETIDO → CONFERIR A
   COR (só com a lista dos próximos dias do `.gs`; TROCAR A COR em destaque, à
   direita).
-- O modal de lançamento não fecha no toque fora (tem dado digitado). O
-  lembrete ⏰ do PC não aparece no GERENCIAL nem na diretoria.
+- O modal de lançamento não fecha no toque fora (tem dado digitado). O PC
+  não tem lembrete ⏰ (saiu da TV, a última, na v7.270.0): o aviso de hora sem
+  lançamento é só no celular (SEM LANÇAMENTO · AINDA ACEITA na lista).
 
 ## Hora extra, meta e o que vai para o HISTORICO → `docs/memoria/hora-extra-e-meta.md`
 - Jornada normal 07:00–17:00 (o almoço fica dentro); fora dela é hora extra.

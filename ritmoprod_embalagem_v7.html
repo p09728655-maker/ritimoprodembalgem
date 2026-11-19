@@ -4314,7 +4314,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.269.0';
+const APP_VER = '7.270.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -5187,7 +5187,6 @@ function processarRespostaSheets(json){
     `📊 ${json.planilha||'Google Sheets'} · ${novos.length} slots · Meta: ${json.metaDia} cx · ${agora}`;
   { const _bp=document.getElementById('btn-pasta'); if(_bp) _bp.textContent='📊 Google Sheets'; }
   renderAll();
-  window.dispatchEvent(new Event('rpe-sheets-loaded'));
 }
 
 async function lerSheets(){
@@ -28200,184 +28199,11 @@ function fecharPreviaParada(){
   renderParadaOverlay();
 }
 
-// ════════════════════════════════════════════════
-// ALERTA DE LANÇAMENTO — a cada hora
-// ════════════════════════════════════════════════
-(function iniciarAlertaLancamento(){
-  // Criar modal de alerta
-  const modal=document.createElement('div');
-  modal.id='alerta-lancamento';
-  modal.style.cssText=`
-    display:none;position:fixed;inset:0;z-index:9999;
-    background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);
-    align-items:center;justify-content:center;
-  `;
-  modal.innerHTML=`
-    <div style="
-      background:#1a1a1a;border:1px solid rgba(245,166,35,0.5);border-radius:8px;
-      padding:32px 40px;max-width:420px;width:90%;text-align:center;
-      box-shadow:0 0 40px rgba(245,166,35,0.2);
-    ">
-      <div style="font-size:36px;margin-bottom:12px;">⏰</div>
-      <div style="
-        font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;
-        color:#FF5C1F;letter-spacing:2px;margin-bottom:8px;
-      ">LEMBRETE DE LANÇAMENTO</div>
-      <div id="alerta-slot-msg" style="
-        font-family:'IBM Plex Mono',monospace;font-size:12px;color:#aaa;
-        margin-bottom:24px;line-height:1.6;
-      ">Atualize o REALIZADO na planilha Google Sheets.</div>
-      <div style="display:flex;gap:10px;justify-content:center;">
-        <button onclick="fecharAlertaLancamento(true)" style="
-          background:#FF5C1F;color:#111;border:none;padding:10px 24px;
-          border-radius:4px;font-family:'Barlow Condensed',sans-serif;
-          font-size:14px;font-weight:700;letter-spacing:1.5px;cursor:pointer;
-        ">✔ JÁ LANCEI</button>
-        <button onclick="fecharAlertaLancamento(false)" style="
-          background:transparent;color:#666;border:1px solid #333;padding:10px 24px;
-          border-radius:4px;font-family:'Barlow Condensed',sans-serif;
-          font-size:14px;font-weight:700;letter-spacing:1.5px;cursor:pointer;
-        ">FECHAR</button>
-      </div>
-      <div style="margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#444;">
-        Este alerta dispara automaticamente a cada hora
-      </div>
-    </div>`;
-  document.body.appendChild(modal);
-
-  // Som de alerta (beep via Web Audio API)
-  function tocarBeep(){
-    try{
-      const ctx=new(window.AudioContext||window.webkitAudioContext)();
-      [0,200,400].forEach(delay=>{
-        const o=ctx.createOscillator();
-        const g=ctx.createGain();
-        o.connect(g); g.connect(ctx.destination);
-        o.frequency.value=880;
-        g.gain.setValueAtTime(0,ctx.currentTime+delay/1000);
-        g.gain.linearRampToValueAtTime(0.4,ctx.currentTime+delay/1000+0.05);
-        g.gain.linearRampToValueAtTime(0,ctx.currentTime+delay/1000+0.25);
-        o.start(ctx.currentTime+delay/1000);
-        o.stop(ctx.currentTime+delay/1000+0.3);
-      });
-    }catch(e){}
-  }
-
-  // Notificação do sistema (se permitido)
-  function notificarSistema(msg){
-    if(!('Notification' in window)) return;
-    if(Notification.permission==='granted'){
-      new Notification(APP_NOME+' ⏰ Lembrete',{
-        body:msg, icon:'', tag:'ritmoprod-lancamento'
-      });
-    } else if(Notification.permission!=='denied'){
-      Notification.requestPermission();
-    }
-  }
-
-  // Verificar slot da hora atual pendente
-  function getSlotPendente(){
-    const agora=new Date();
-    const hh=String(agora.getHours()).padStart(2,'0');
-    const mm=String(agora.getMinutes()).padStart(2,'0');
-    const horaAtual=hh+':'+mm;
-    const toMin=s=>{ const[h,m]=s.split(':').map(Number); return h*60+m; };
-    const minAtual=toMin(horaAtual);
-    const hoje=hojeStr();
-    const allHoje=DADOS.filter(d=>d.data===hoje);
-    if(!allHoje.length) return null;
-
-    // 1. Slot encerrando nos próximos 5 min (aviso antecipado)
-    const aviso=allHoje.find(d=>{
-      if(d.producaoHora!=null) return false;
-      if(!d.slotFim) return false;
-      const diff=toMin(d.slotFim)-minAtual;
-      return diff>=0 && diff<=5;
-    });
-    if(aviso) return {label: aviso.slotLabel||aviso.horario, total:1, tipo:'aviso'};
-
-    // 2. Slots já encerrados sem lançamento
-    const pendentes=allHoje.filter(d=>{
-      if(d.producaoHora!=null) return false;
-      if(!d.slotFim) return false;
-      return toMin(d.slotFim)<=minAtual;
-    });
-    if(!pendentes.length) return null;
-    pendentes.sort((a,b)=>toMin(b.slotFim||'00:00')-toMin(a.slotFim||'00:00'));
-    const p=pendentes[0];
-    return {label: p.slotLabel||p.horario, total: pendentes.length, tipo:'atrasado'};
-  }
-
-  // Controle anti-repetição por slot
-  let _ultimoAlerta='';
-  let _alertaAberto=false;
-
-  window.fecharAlertaLancamento=function(foiLancado){
-    modal.style.display='none';
-    _alertaAberto=false;
-    _ultimoAlerta='';
-    if(foiLancado && CFG.sheetsUrl){ lerSheets(); }
-  };
-
-  function dispararAlerta(){
-    if(_alertaAberto) return; // não empilha alertas
-    // v7.150.1 (PPCP, 20/10/2026: "tira essa lembrete no gerencial"): o gestor
-    // não lança caixa, e o modal com bipe cobria a tela no meio do trabalho. A
-    // tela da diretoria também fica de fora — ninguém lança de lá, e o modal
-    // ficaria aberto na TV da sala. Segue no perfil do operador e na TV.
-    if(PERFIL==='gerencial' || document.documentElement.classList.contains('modo-dir')) return;
-    const agora=new Date();
-    const hh=agora.getHours();
-    const[hIni]=CFG.turnoInicio.split(':').map(Number);
-    const[hFim]=CFG.turnoFim.split(':').map(Number);
-    if(hh<hIni||hh>hFim) return;
-
-    const res=getSlotPendente();
-    if(!res) return;
-
-    const chave=res.label+'|'+res.total;
-    if(chave===_ultimoAlerta) return;
-    _ultimoAlerta=chave;
-    _alertaAberto=true;
-
-    const extra=res.total>1?` <span style="color:#aaa;font-size:10px">(+${res.total-1} sem lançamento)</span>`:'';
-    const isAviso=res.tipo==='aviso';
-    document.getElementById('alerta-slot-msg').innerHTML= isAviso
-      ? `⏰ Slot encerrando em <strong style="color:#FF5C1F">5 minutos</strong>: <strong style="color:#fff">${res.label}</strong><br><br>Preencha o <strong style="color:#fff">REALIZADO</strong> na planilha Google Sheets.`
-      : `⚠ Slot sem lançamento: <strong style="color:#FF5C1F">${res.label}</strong>${extra}<br><br>Preencha o <strong style="color:#fff">REALIZADO</strong> na planilha Google Sheets.`;
-
-    modal.style.display='flex';
-    tocarBeep();
-    notificarSistema(isAviso
-      ? `Slot ${res.label} encerra em 5 min — preencha o REALIZADO.`
-      : `Slot ${res.label} sem lançamento — preencha o REALIZADO na planilha.`);
-  }
-
-  function agendarProximaHora(){
-    const agora=new Date();
-    const prox=new Date(agora);
-    prox.setSeconds(0,0);
-    prox.setMinutes(agora.getMinutes()+1);
-    const ms=prox-agora;
-    setTimeout(()=>{
-      dispararAlerta();
-      setInterval(dispararAlerta,60000);
-    },ms);
-    console.log('[Alerta] Próxima verificação em',Math.round(ms/1000),'s');
-  }
-
-  // Disparar também ao carregar a página (após Sheets responder)
-  window.addEventListener('rpe-sheets-loaded',()=>{
-    setTimeout(dispararAlerta, 2000); // aguarda 2s para DADOS estarem prontos
-  });
-
-  // Solicitar permissão de notificação na inicialização
-  if('Notification' in window && Notification.permission==='default'){
-    Notification.requestPermission();
-  }
-
-  agendarProximaHora();
-})();
+// O LEMBRETE DE LANÇAMENTO (modal ⏰ com bipe) saiu do painel do PC na v7.270.0
+// (PPCP, 19/11/2026: "mensagem na tv que não lançou ainda pode tirar, deixar só
+// no app do operador"). Gerencial e diretoria já não tinham; a TV era a última
+// plateia, e ninguém fecha modal na TV da parede. Quem lança é o celular, e lá a
+// hora mostra SEM LANÇAMENTO · AINDA ACEITA. Não recolocar aqui.
 
 // ─── ANTI-SLEEP v2: mantém tela ativa em TVs LG WebOS ────────────────────────
 // O screensaver do WebOS (relógio) ativa por falta de interação real.
