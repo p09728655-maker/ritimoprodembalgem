@@ -27,6 +27,12 @@ via Google Apps Script (JSONP).
 - **`docs/padrao-codigo.md` é a régua** (regras A1…J; o porquê de cada uma
   está no arquivo do tema, em `docs/memoria/`). Código novo segue o padrão; o que
   está diferente se corrige só na linha que se está mexendo.
+- **Toda mudança leva TESTE DE REGRESSÃO, no mesmo commit** (PPCP, 19/11/2026:
+  *"toda vez criar teste de regressão"*; regras I0–I2 do padrão): defeito
+  corrigido → teste que FALHA com o defeito de volta (conferido desfazendo a
+  correção); conta, regra ou tela nova → teste do comportamento, com um caso
+  real. Sem teste não se entrega; se não der para testar, dizer por quê no
+  commit e na resposta. O `/revisor-codigo` reprova (BLOQUEIA) mudança sem ele.
 - **`node testes.js` antes de todo commit**: as suítes (`*.test.js`, achadas
   sozinhas — suíte nova não se cadastra) e o `lint-js.js`. Sai com 1 se algo
   falhar; `node testes.js uep` roda só as suítes com "uep" no nome.
