@@ -11,6 +11,86 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.273.0 · .gs v5.75 — 19/11/2026 · TAKT DA SEMANA: o ritmo de cada dia e por que venceu
+
+⚠ **re-deploy** do `.gs` (mesma implantação): o lote fechado com X passa a
+mandar o que embalou. Sem ele a divisão sai *"aproximada"* quando há lote com
+X nos dias que passaram.
+
+O PPCP, com a tela de 19/11: *"como mostrar ritmo da linha"* → *"sim 1"* →
+*"de forma fácil compreensão"* → *"passo 2 ok"*.
+
+**Por que venceu** (nova linha, logo abaixo do PARA FECHAR, e no 🖨 TAKT):
+o vencido da semana — o mesmo número da barra PRECISA — dividido em três
+causas, com o tempo de cada uma:
+
+- **excesso de programação**: programado acima de 1 dia de linha;
+- **linha abaixo da média**: a linha fez menos que a média, contando a hora
+  extra (não se chama "ritmo" para não se confundir com o ritmo da semana em %);
+- **sequência**: havia capacidade, mas ela foi para outros lotes — adiantados,
+  atraso de antes da semana ou à espera de peça.
+
+A conta segue os dias **em ordem** (o lote mais antigo primeiro, como o FIFO
+da planilha), com a capacidade de cada dia (jornada + hora extra):
+
+- o que ficou **em aberto** é o que a linha não fez do programado;
+- **excesso** é o que ficaria em aberto MESMO se cada dia útil tivesse rodado
+  pelo menos na média;
+- **abaixo da média** é a diferença: o que a linha deixou de fazer com
+  trabalho na mão (no 06/11, os dias 03/11 e 05/11 abaixo da média);
+- **sequência** é o vencido que sobra: havia capacidade.
+
+Assim a linha rodar pior nunca aumenta o "excesso", e o dia que recupera o
+anterior zera os dois. O programado do dia não conta o que já foi embalado
+antes dele, e o lote fechado com X conta só o que embalou. Embaixo, a
+evidência: *"A linha fez 32h00 de linha (jornada + hora extra) para 27h57
+programadas nos dias que passaram (5h20 delas já embaladas antes); adiantou
+6h23 dos lotes de hoje em diante"* (e o atraso de antes da semana, quando há). Na
+semana de 16/11, as 2h45 vencidas são **sequência** — a tela dizia *"83% ritmo
+da linha"*. O vencido é o mesmo número da barra PRECISA, e as três sempre somam
+ele. Sem o histórico de algum dia que passou, a divisão não sai (a tela diz
+qual dia falta).
+
+**Atenção:** a divisão muda de base. Antes: *"do que não saiu: X% excesso de
+programação · Y% ritmo da linha"*, a falta DE CADA DIA (o total feito contra o
+total pedido no dia, sem a hora extra), em %. Agora: o VENCIDO, em horas, com a
+sequência e a hora extra como capacidade. No retrato de 06/11: antes *"73%
+excesso · 27% ritmo"*; agora *"8h02: excesso 4h05 · abaixo da média 2h21 ·
+sequência 1h36"*. No 🖨 TAKT a frase é curta (*"Venceram 8h02: excesso 4h05 ·
+abaixo da média 2h21 · sequência 1h36"*), as três ficam definidas no rodapé e o
+papel segue numa folha — medido com as fontes reais: 680 / 703 px, os mesmos de
+antes.
+
+**O ritmo de cada dia:**
+
+- **Embaixo de cada dia do DIA A DIA, o ritmo da linha:** *"ritmo 110% da
+  média"*; hoje, *"ritmo 87% da média até agora"*. É o feito NA JORNADA
+  contra a média de 2.761 UEP no dia (no dia fechado, 100% = a linha branca;
+  hoje, a média das horas já lançadas); a hora extra não entra. Número
+  inteiro, em tinta, sem cor — o veredito da tela continua sendo o FECHA /
+  NÃO FECHA. Passando o mouse, a conta com o decimal. Na semana de 16/11:
+  110% · 89% · 125%.
+- Só dia útil: feriado trabalhado (como o 20/11, Consciência Negra) e fim de
+  semana são hora extra e ficam sem ritmo, como na conta da semana.
+- Hoje com caixas de códigos sem UEP: o % com `*` e uma nota (elas ficam
+  fora e o ritmo sai mais baixo), como no gerencial.
+- Onde a coluna do dia é estreita (papel, semana com 6 ou 7 dias): *"ritmo
+  110%"* ou só *"110%"*. A legenda da tela explica o que é o ritmo. O
+  *"embalou Xh antes"* também não passa mais da coluna no papel com 7 dias
+  (antes encostava no dia vizinho).
+- **O recado ao lado do título do gráfico** passa a ser o ritmo da semana — o
+  mesmo número do *"no ritmo atual da linha (N% da média)"* do veredito, agora
+  também quando a META UEP muda no meio da semana (antes o veredito dividia
+  pela META de hoje).
+
+**Atenção:** o recado do gráfico muda — antes *"do que não saiu: 17% excesso
+de programação · 83% ritmo da linha"* → agora *"ritmo da linha na semana:
+105,5% da média · a programação pede 120,3%"*. Os dois números do ritmo
+(105,5% no veredito e 83% no recado) pareciam se contradizer: o 83% não é o
+ritmo, é a parte do que não saiu que a conta põe no ritmo. A divisão entre
+excesso de programação e ritmo continua ao passar o mouse no recado e escrita
+no 🖨 TAKT. O 🖨 TAKT segue numa folha (medido: 700 px, igual a antes).
+
 ## v7.272.0 · .gs v5.74 — 19/11/2026 · O cadastro de produtos volta a sair do cache
 
 ⚠ **re-deploy** do `.gs` (colar no editor do Apps Script e reimplantar a

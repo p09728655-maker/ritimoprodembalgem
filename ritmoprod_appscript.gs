@@ -1,5 +1,14 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.75 — O EMBALADO DO LOTE FECHADO COM X NA SEMANA DO TAKT.
+//               PPCP, 19/11/2026 ("passo 2 ok": o POR QUE VENCEU do TAKT DA
+//               SEMANA, painel v7.273.0). O getProgramacaoSemana manda, em cada
+//               linha ENCERRADA (o X), o `embaladoCx` = o prodConf da linha (o
+//               PRODUZIDO confiável, o mesmo do ATENDIMENTO POR LOTE INTERNO;
+//               null quando a célula não é dela). O X fecha o resto, que não
+//               vence: sem isso o painel contava o lote inteiro como pedido e a
+//               parte nunca embalada virava "falta de capacidade", engolindo a
+//               sequência. Só acrescenta um campo. ⚠ re-deploy manual.
 // Versão: 5.74 — RESPOSTA ACIMA DE 100 KB VAI AO CACHE EM PARTES.
 //               PPCP, 19/11/2026: "trata getProdutos". O CacheService recusa
 //               valor acima de 100 KB, e o getProdutos (431 códigos) tinha
@@ -706,7 +715,7 @@
 
 // A versão deste arquivo, a mesma do cabeçalho (v5.58). Vai no getDados para o
 // rodapé do painel dizer qual .gs está implantado — o GitHub não sabe.
-const GS_VERSAO = '5.74';
+const GS_VERSAO = '5.75';
 
 const SHEET_DADOS     = 'HORA_A_HORA';
 const SHEET_HIST      = 'HISTORICO';
@@ -6832,6 +6841,9 @@ function getProgramacaoSemana(p) {
       encerrada: !!pr.encerrada && !futura && !pr.foraEsteira,
       foraEsteira: !!pr.foraEsteira
     });
+    // v5.75: o que o lote fechado com X EMBALOU (o prodConf — nunca QTDE − SALDO, o
+    // SALDO da encerrada é 0); null = a célula não é da linha. Só na encerrada.
+    if (linhas[linhas.length - 1].encerrada) linhas[linhas.length - 1].embaladoCx = pr.prodConf != null ? pr.prodConf : null;
   });
   linhas.sort(function (a, b) { return (a.dataNum - b.dataNum) || ((a.ordem == null ? 1e9 : a.ordem) - (b.ordem == null ? 1e9 : b.ordem)); });
   // v5.66 — O VENCIDO DE ANTES DA SEMANA (o card ATRASO menos o que venceu nesta

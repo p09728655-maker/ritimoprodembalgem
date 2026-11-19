@@ -508,7 +508,17 @@ via Google Apps Script (JSONP).
 - O veredito é em HORAS DE LINHA (UEP × 527 ÷ META UEP), PRECISA × TEM, SEM
   descontar o setup. FALTAM e SOBRAM por extenso, nunca por sinal; a sobra não
   vira crédito para outra semana.
-- O porquê é dia a dia (carga × ritmo), nunca a semana somada. O setup do ⚙
+- O porquê é dia a dia, nunca a semana somada. Embaixo de cada dia do DIA A
+  DIA, o RITMO (v7.273.0: feito na jornada ÷ a média, só dia útil, inteiro,
+  *"ritmo 110% da média"*, sem cor); o recado do gráfico é o ritmo da semana
+  (o mesmo % do veredito). POR QUE VENCEU (v7.273.0 / `.gs` v5.75): o VENCIDO
+  (o da barra PRECISA) em excesso · linha abaixo da média · SEQUÊNCIA, dia a
+  dia na ordem, pelo "e se a linha rodasse na média": excesso = o que ficaria
+  aberto com cada dia útil pelo menos na META; abaixo da média = o aberto −
+  o excesso; sequência = vencido − o aberto (o pedido sem o já embalado antes;
+  o lote com X pelo embalado). ⚠ Mais capacidade nunca aumenta o excesso (o
+  sorteio da suíte prende). ⚠ O 🖨 TAKT: 703 de 718 px com as
+  duas semanas — texto novo no papel, medir com as fontes reais. O setup do ⚙
   (`SETUPS_DIA`, `SETUP_MIN`, no domínio do app: trocas inteiras, minutos com 1
   casa) só entra nos SEGUNDOS (takt, TEMPO-ALVO, AGORA). O PPCP digita o mesmo
   no app de cronoanálise — o painel não lê o setup do app; a faixa NA LINHA E NO

@@ -202,8 +202,11 @@ console.log('\n── as bordas das partes ──');
 console.log('\n── a versão ──');
 {
   const HTML = fs.readFileSync(path.join(__dirname, 'ritmoprod_embalagem_v7.html'), 'utf8');
-  ok('o cabeçalho do .gs conta a v5.74 e o painel espera a mesma (o trio é conferido no apps-script.test.js)',
-     [/^\/\/ Versão: 5\.74 — RESPOSTA ACIMA DE 100 KB VAI AO CACHE EM PARTES/m.test(GS), /const GS_REPO\s+= '5\.74';/.test(HTML)],
+  // só que a v5.74 fica no histórico do cabeçalho: o trio (cabeçalho, GS_VERSAO, GS_REPO) é conferido no
+  // apps-script.test.js para QUALQUER versão (pinar 5.74 aqui quebrava a cada .gs novo — quebrou na v5.75)
+  ok('a v5.74 (o cache em partes) fica no histórico do cabeçalho do .gs; o painel espera a versão do .gs',
+     [/^\/\/ Versão: 5\.74 — RESPOSTA ACIMA DE 100 KB VAI AO CACHE EM PARTES/m.test(GS),
+      (HTML.match(/const GS_REPO\s+= '([\d.]+)';/) || [])[1] === (GS.match(/const GS_VERSAO = '([\d.]+)';/) || [])[1]],
      [true, true]);
 }
 
