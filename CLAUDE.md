@@ -451,7 +451,7 @@ via Google Apps Script (JSONP).
 - Desde 13/11/2026 o 2.761 é a META oficial (PPCP); ela só é revista quando a
   cronoanálise cobrir os principais. O relatório CAIXAS × PONTOS × UEP, a 📏
   RÉGUAS e o `UEP_REF_STATUS` ainda dizem *referência* — trocar é a fase
-  seguinte (UM NOME POR INDICADOR).
+  seguinte (UM NOME POR INDICADOR). O TAKT já diz *meta* (v7.275.0).
 - Sem UEP no cadastro: `null`, fora da conta e listado — nunca 0, nunca a média.
 - Aba ⚖ UEP em sub-abas (HOJE, PERÍODO, PRÓXIMOS DIAS, POR PRODUTO, RÉGUAS,
   TAKT DA SEMANA) e o cartão ATRASO; `_uepAbaDados` é a montagem única da tela e
@@ -513,18 +513,18 @@ via Google Apps Script (JSONP).
 - O veredito é em HORAS DE LINHA (UEP × 527 ÷ META UEP), PRECISA × TEM, SEM
   descontar o setup. Hora de linha é produção, não relógio (1 h = 314 UEP com a
   META de 2.761): a legenda do DIA A DIA diz isso e o title da barra do feito dá
-  a velocidade do dia × a da média (`velHora`, `velMedia` — v7.274.2). FALTAM
+  a velocidade do dia × a da meta (`velHora`, `velMedia` — v7.274.2). FALTAM
   e SOBRAM por extenso, nunca por sinal; a sobra não vira crédito para outra
   semana.
 - O porquê é dia a dia, nunca a semana somada. Embaixo de cada dia do DIA A
-  DIA, o RITMO (v7.273.0: feito na jornada ÷ a média, só dia útil, inteiro,
-  *"ritmo 110% da média"*, sem cor); o recado do gráfico é o ritmo da semana
+  DIA, o RITMO (v7.273.0: feito na jornada ÷ a meta, só dia útil, inteiro,
+  *"ritmo 110% da meta"*, sem cor); o recado do gráfico é o ritmo da semana
   (o mesmo % do veredito; só a jornada, e o rótulo diz *"(só jornada)"* desde
   a v7.274.1 — o POR QUE VENCEU e as barras contam a hora extra). POR QUE VENCEU (v7.273.0 / `.gs` v5.75): o VENCIDO
-  (o da barra PRECISA) em excesso · linha abaixo da média · SEQUÊNCIA, dia a
-  dia na ordem, pelo "e se a linha rodasse na média": excesso = o que ficaria
-  aberto com cada dia útil pelo menos na META; abaixo da média = o aberto −
-  o excesso; sequência = vencido − o aberto (o pedido sem o já embalado antes;
+  (o da barra PRECISA) em excesso · linha abaixo da meta (*"da média"* até a
+  v7.274.2) · SEQUÊNCIA, dia a dia na ordem, pelo "e se a linha rodasse na
+  meta": excesso = o que ficaria aberto com cada dia útil pelo menos na META;
+  abaixo da meta = o aberto − o excesso; sequência = vencido − o aberto (o pedido sem o já embalado antes;
   o lote com X pelo embalado). ⚠ Mais capacidade nunca aumenta o excesso (o
   sorteio da suíte prende). ⚠ O 🖨 TAKT: 703 de 718 px com as
   duas semanas — texto novo no papel, medir com as fontes reais. O setup do ⚙
@@ -532,6 +532,16 @@ via Google Apps Script (JSONP).
   casa) só entra nos SEGUNDOS (takt, TEMPO-ALVO, AGORA). O PPCP digita o mesmo
   no app de cronoanálise — o painel não lê o setup do app; a faixa NA LINHA E NO
   APP dá os volumes e o takt para levar ao app.
+- **Tela enxuta (v7.275.0**, PPCP: *"tem muita coisa escrita na tela"* → prévia →
+  *"sim"*): número não sai da tela; o que só explica vai para o title ou para o
+  ⓘ COMO LER do DIA A DIA (`_taktComoLerHtml`: hora de linha, ritmo, as causas
+  do POR QUE VENCEU). O POR QUE VENCEU não repete o vencido da barra PRECISA. A
+  suíte tem um TETO de palavras da ESTA SEMANA (`TKS_TELA_PALAVRAS`, 310; era
+  422): texto novo tira outro ou vai para o ⓘ. **"Meta"** no TAKT inteiro (tela
+  e 🖨; era "média"/"referência" para o mesmo 2.761) e o 🖨 sem o
+  `UEP_REF_STATUS`. **Marca de hoje**: o tracejado na meta até a última hora
+  lançada (`marcaMin`), só na tela — ⚠ a hora extra fica em cima do azul e pode
+  cobrir o vão até a marca: compara-se o AZUL (o COMO LER diz).
 - 4 SEMANAS: dia útil sem lote fica fora; lote em sábado ou feriado é hora
   extra já programada; a sugestão de hora extra vai semana a semana (sábado e
   feriado das 05:00 às 11:00, dia útil até 2h, feriado religioso fora).

@@ -11,6 +11,46 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.275.0 — 19/11/2026 · TAKT DA SEMANA: tela enxuta, "meta" e a marca de hoje
+
+O PPCP, com a ESTA SEMANA na tela: *"faz a marca de hoje e rotulo da meta?"* →
+prévia → *"faz os dois"* → *"faça uma revisão tem muita coisa escrita na
+tela"* → prévia da tela enxuta → *"sim, pode implementar e mergear"*.
+
+**Atenção** — nenhum número muda; muda o NOME e onde o texto fica:
+- **"meta" no lugar de "média" e "referência"** no TAKT inteiro (tela e 🖨),
+  para o mesmo 2.761 (a meta oficial desde 13/11): *"ritmo 110% da média"* →
+  *"ritmo 110% da meta"*; *"103,8% da média"* → *"103,8% da meta"*; o botão
+  *"pede 120,3% da referência"* → *"pede 120,3% da meta"*; *"no ritmo atual da
+  linha (N% da média)"* → *"no ritmo atual (N% da meta)"*; *"na média da
+  linha"* → *"no ritmo da meta"* (AVALIAR e 4 SEMANAS); *"linha abaixo da
+  média"* → *"linha abaixo da meta"*. É o nome do HISTÓRICO e do gerencial.
+  O 🖨 TAKT deixa de dizer *"(em avaliação — ainda não é a meta oficial da
+  embalagem)"* ao lado da meta. A RÉGUAS e o 🖨 CAIXAS × PONTOS × UEP ainda
+  dizem *referência* (fase seguinte).
+- **Tela enxuta** (ESTA SEMANA: de ~420 para ~300 palavras; 59 px mais baixa
+  em 1920). Número nenhum sai; o que só explica foi para o mouse ou para o
+  **ⓘ COMO LER** (recolhido, embaixo da legenda):
+  - o NÃO FECHA sem a frase embaixo (ela fica no mouse; as barras PRECISA ×
+    TEM mostram);
+  - *Para fechar:* *"≈ 2h de hora extra da linha inteira, ou o resto passa
+    para a semana que vem"*;
+  - *Por que venceu:* sem repetir o vencido (já está na barra PRECISA) e sem o
+    *"(o que é)"* de cada causa à vista (no mouse e no COMO LER); a prova fica
+    *"Feito 32h00 (jornada + hora extra) para 27h57 programadas até ontem
+    (2h11 já embaladas antes); adiantou 6h23 de hoje em diante"*;
+  - a legenda numa linha (1920): *"1 dia de linha = 8h47 = 2.761 UEP (a meta) ·
+    1 hora de linha = 314 UEP"*; o *"hora de linha não é hora de relógio"* e o
+    *"ritmo: …"* foram para o COMO LER.
+- **Marca de hoje**: um tracejado na barra do feito de hoje, na meta até a
+  última hora lançada (o "ritmo 90% até agora" é contra ela, não contra a linha
+  branca, que é o dia inteiro). ⚠ A hora extra fica em cima do azul e pode
+  cobrir o vão até a marca: compare o azul. Com a linha abaixo da meta e sem
+  hora extra, a marca fica acima da barra e o *"Xh até agora"* sobe para cima
+  dela. Só na tela; o 🖨 não tem.
+- A SIMULAÇÃO da semana que vem: o cenário *"NA REFERÊNCIA"* → *"NA META"*.
+- O 🖨 TAKT segue numa folha (703 de 718 px, medido com as fontes reais).
+
 ## v7.274.2 — 19/11/2026 · TAKT DA SEMANA: hora de linha não é hora de relógio
 
 O PPCP, com a segunda 16/11 na tela: *"seg tem 8h47 como 9h38"* → *"entendi
