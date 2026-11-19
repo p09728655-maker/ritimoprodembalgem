@@ -136,20 +136,29 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     linha (jornada + hora extra) para 27h57 programadas nos dias que passaram e
     o recado dizia *"83% ritmo da linha"* para 2h45 vencidas — ela tinha
     embalado 6h23 dos lotes de 19/11 antes (*"embalou 6h23 antes"*).
-    - A conta (`_taktMontar` → `T.venc`, minutos prontos em `venc.min`),
-      **DIA A DIA** nos dias que passaram (útil ou não): **capacidade** =
-      jornada + hora extra do dia; **falta** = máx(0, pedido − capacidade);
-      **ritmo** = máx(0, mín(pedido, META do dia útil) − capacidade); **excesso**
-      = falta − ritmo; somam-se os resultados. **Sequência** = vencido − Σ falta.
-      Σ falta maior que o vencido (outro dia recuperou o lote; adiantado da
-      semana passada): excesso e ritmo na proporção, até o vencido; sequência 0.
-      Fecha sempre: excesso + ritmo + sequência = vencido (o teste prende).
-    - ⚠ **Dia a dia, nunca a semana somada** (a regra do tema, logo acima). A
-      1ª versão somava a capacidade da semana e o revisor BLOQUEOU antes do
-      merge: o 04/11 acima da média (e com 586,7 de hora extra) apagava o 05/11
-      a 76%, cujos lotes são 69% do vencido — *"ritmo 0h02"*; dia a dia, 2h15
-      (os mesmos 707 UEP do "porquê dia a dia" de antes). A semana de 16/11, o
-      caso mostrado ao PPCP, dá o mesmo nas duas (nenhum dia ficou curto).
+    - A conta (`_taktMontar` → `T.venc`, minutos prontos em `venc.min`): uma
+      **FILA na ordem dos dias** que passaram (o FIFO do `.gs`, o lote mais
+      antigo primeiro). Pedido do dia = o programado SEM o embalado antes dele
+      (`adiUep`) e com o lote do X pelo embalado; a capacidade do dia (jornada
+      + hora extra) vai 1º para a fila, depois para o pedido; o que o dia não
+      faz entra na fila — até o que a fila tomou dele, com a CAUSA da fila (a
+      falta de antes passando para frente); o resto pela régua do dia: **linha
+      abaixo da média** = mín(resto, máx(0, mín(pedido, META do dia útil) −
+      capacidade)), **excesso** = o que passa. **Sequência** = vencido − o que
+      sobrou na fila; a fila maior que o vencido: na proporção, sequência 0.
+      Fecha sempre (o teste prende).
+    - ⚠ **Dia a dia, nunca a semana somada; e em FILA** (duas revisões antes
+      do merge): (1) a 1ª versão somava a capacidade da semana — o 04/11 acima
+      da média apagava o 05/11 a 76% (*"ritmo 0h02"*; certo 2h15). (2) A 2ª,
+      dia a dia SEM a fila, deixava a falta que OUTRO dia recuperou explicar o
+      vencido (seg a 80%, ter recupera com hora extra, qua adianta o lote de
+      quinta → dizia "ritmo" com a evidência dizendo "adiantou") e contava no
+      pedido o que já tinha sido embalado antes do dia (o 16/11 real, com 5h20
+      da semana anterior, inventava excesso e ritmo). Os casos de 06/11 e de
+      16/11 dão o mesmo nas três versões que valem.
+    - **Linha abaixo da média**, nunca "ritmo" (revisão): o recado do gráfico já
+      é o *"ritmo da linha na semana: N%"* — a causa com o mesmo nome repetia a
+      confusão que abriu a v7.273.0.
     - O pedido do lote **fechado com X** é o que ele EMBALOU (`d.pedVenc`, o
       `prodConf` da linha — `embaladoCx` do `getProgramacaoSemana`, `.gs`
       v5.75): o resto o X fechou e não vence; contado inteiro, virava falta de
@@ -169,10 +178,18 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
       adiantado de hoje em diante (`adiFrente` = Σ `adiUep` dos dias ≥ hoje). O
       lote ABERTO por falta de peça antes do X também cai na sequência. Para
       saber QUAL lote: o ATENDIMENTO POR LOTE INTERNO.
-    - Sem o histórico de um dia que passou e tinha jornada OU lote
-      (`semHist`: útil, ou feriado/sábado com lote — revisão: o 20/11 com lote
-      e sem a linha no HISTORICO virava capacidade 0, calado): o vencido sai,
-      a divisão não.
+    - Dia ÚTIL sem histórico (`semHist`): o vencido sai, a divisão não.
+      Feriado ou fim de semana SEM a linha no HISTORICO = não trabalhou (o
+      fechamento só grava com lançamento — `fecharDiaAutomatico`): capacidade
+      0, e o lote dele é excesso de programação (sem META). Com a linha, a hora
+      extra dele conta.
+    - Linha dos dias que passaram SEM saldo confiável (`saldo` null, o extrato
+      do ERP colado por cima): entra no pedido e fica fora do vencido — a
+      divisão sai *"aproximada"* (`semSaldo`), como o X sem o embalado.
+    - Os minutos: o vencido é a parte da barra pela MESMA conta
+      (`_taktPartesMin`, usada também pelo `_taktPrecisaPartes`: com o lote de
+      hoje abaixo de meio minuto a barra fecha a última parte no total e dizia
+      0h11, contra 0h10 aqui).
     - Desenho `_taktVencHtml(T, o)` (`TKS_VENC_CAUSAS`): tela, uma linha
       `.tks-por.tks-pv` entre o PARA FECHAR e o DIA A DIA — *"Por que venceu:
       8h02 vencidos desta semana — …"* (o NOME da barra PRECISA; era "de lotes
@@ -193,23 +210,27 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     - O `T.cas` (o "do que não saiu" por dia, sem a hora extra) SAIU: ninguém
       o lia depois do POR QUE VENCEU (regra B5); o teste do "dia a dia, não a
       semana somada" passou para o `venc`.
-    - Retrato de 06/11: 8h02 = excesso 4h11 + ritmo 2h15 + sequência 1h36 (era
+    - Retrato de 06/11: 8h02 = excesso 4h11 + abaixo da média 2h15 + sequência 1h36 (era
       *"73% excesso · 27% ritmo"*; a 1ª versão, somada, dava 6h24 · 0h02 ·
       1h36 — bloqueada). Semana de 16/11 (barras do print + o HISTORICO): 2h45
       = sequência 2h45, *"fez 32h00 … para 27h57 …; adiantou 6h23"*.
-    - Mutações (antes do merge): a semana somada de volta → 7; o vencido sem o
-      acumulado da barra → 2; as três arredondadas sozinhas → 2; feriado sem
-      histórico calado → 2; o X conta o lote inteiro → 2; os "(o que é)"
-      iguais → 3; sem o atraso de antes na evidência → 2; e as 10 da 1ª
-      versão.
-    - ⚠ **Papel medido (A4 deitada, mídia de impressão, folha de 718)**: com as
-      três causas em nome longo e a definição no rodapé, o 🖨 TAKT foi a 727–740
-      px (2 folhas) com as duas semanas. Ficou: nomes curtos no papel
-      (*"Venceram 8h02: excesso 4h11 · ritmo 2h15 · sequência 1h36"*, o 4º campo
-      de `TKS_VENC_CAUSAS`), o "Por quê" sem o *"que a linha entrega sem hora
-      extra"* (o `td-def` define a média) e o `td-def` mais curto — 682 (só esta
-      semana) · 710 (as duas, com e sem o atraso de antes), contra 686 · 709
-      antes. Texto novo no papel: medir de novo, com as DUAS semanas.
+    - Mutações (antes do merge): sem a fila → 4; o pedido com o adiantado → 3;
+      sem herdar a causa da fila → 9; o vencido fora da conta da barra → 3;
+      saldo null calado → 2; feriado sem histórico escondendo a divisão → 2; o
+      nome do % de volta → 2; o singular errado → 2; a semana somada → 7; as
+      três arredondadas sozinhas → 2; o X inteiro → 2; e as da 1ª versão.
+    - ⚠ **Papel medido (A4 deitada, mídia de impressão, folha de 718, COM AS
+      FONTES REAIS** — o Chromium pelo proxy, `preferCSSPageSize`; sem elas os
+      números saem diferentes e enganam): com as três causas em nome longo e a
+      definição no rodapé, o 🖨 TAKT foi a 2 folhas com as duas semanas. Ficou:
+      nomes curtos no papel (*"Venceram 8h02: excesso 4h11 · abaixo da média
+      2h15 · sequência 1h36"*, o 4º campo de `TKS_VENC_CAUSAS`), o "Por quê"
+      sem o *"que a linha entrega sem hora extra"* (o `td-def` define a média),
+      o `td-def` mais curto e a *Fonte* curta (com PONTOS, a produção, o
+      `td-def` ia a 4 linhas e o papel a 716) — **680 (só esta semana) · 703
+      (as duas, com o atraso de antes, com pontos)**: os mesmos de antes da
+      v7.273.0. Texto novo no papel: medir de novo, com as DUAS semanas, com
+      pontos e com as fontes.
   - **AGORA na MESMA unidade**: takt e referência × UEP/cx do código de agora
     = segundos por caixa; a última hora de jornada FECHADA em s por caixa
     também (só desse produto e cor: as caixas; com outro produto ou cor: o

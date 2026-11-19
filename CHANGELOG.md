@@ -25,13 +25,17 @@ o vencido da semana — o mesmo número da barra PRECISA — dividido em três
 causas, com o tempo de cada uma:
 
 - **excesso de programação**: programado acima de 1 dia de linha;
-- **ritmo da linha**: a linha fez menos que a média, contando a hora extra;
+- **linha abaixo da média**: a linha fez menos que a média, contando a hora
+  extra (não se chama "ritmo" para não se confundir com o ritmo da semana em %);
 - **sequência**: havia capacidade, mas ela foi para outros lotes — adiantados,
   atraso de antes da semana ou à espera de peça.
 
-A conta é **dia a dia**: a capacidade de cada dia (jornada + hora extra) contra
-o programado DAQUELE dia — o dia forte não cobre o fraco. O lote fechado com X
-conta só o que embalou (o X fechou o resto, que não vence). Embaixo, a
+A conta segue os dias **em ordem, como uma fila** (o lote mais antigo primeiro,
+como o FIFO da planilha): a capacidade de cada dia (jornada + hora extra) paga
+primeiro o que ficou dos dias anteriores, com a causa de lá, e depois o
+programado do dia — o dia forte não cobre o fraco, e a falta que outro dia já
+recuperou não explica o vencido. O programado do dia não conta o que já foi
+embalado antes dele, e o lote fechado com X conta só o que embalou. Embaixo, a
 evidência: *"A linha fez 32h00 de linha para 27h57 programadas; adiantou 6h23
 dos lotes de hoje em diante"* (e o atraso de antes da semana, quando há). Na
 semana de 16/11, as 2h45 vencidas são **sequência** — a tela dizia *"83% ritmo
@@ -43,10 +47,11 @@ qual dia falta).
 programação · Y% ritmo da linha"*, a falta DE CADA DIA (o total feito contra o
 total pedido no dia, sem a hora extra), em %. Agora: o VENCIDO, em horas, com a
 sequência e a hora extra como capacidade. No retrato de 06/11: antes *"73%
-excesso · 27% ritmo"*; agora *"8h02: excesso 4h11 · ritmo 2h15 · sequência
-1h36"*. No 🖨 TAKT a frase é curta (*"Venceram 8h02: excesso 4h11 · ritmo 2h15
-· sequência 1h36"*), as três ficam definidas no rodapé e o papel segue numa
-folha (710 px com as duas semanas; eram 709).
+excesso · 27% ritmo"*; agora *"8h02: excesso 4h11 · abaixo da média 2h15 ·
+sequência 1h36"*. No 🖨 TAKT a frase é curta (*"Venceram 8h02: excesso 4h11 ·
+abaixo da média 2h15 · sequência 1h36"*), as três ficam definidas no rodapé e o
+papel segue numa folha — medido com as fontes reais: 680 / 703 px, os mesmos de
+antes.
 
 **O ritmo de cada dia:**
 

@@ -512,10 +512,11 @@ via Google Apps Script (JSONP).
   DIA, o RITMO (v7.273.0: feito na jornada ÷ a média, só dia útil, inteiro,
   *"ritmo 110% da média"*, sem cor); o recado do gráfico é o ritmo da semana
   (o mesmo % do veredito). POR QUE VENCEU (v7.273.0 / `.gs` v5.75): o VENCIDO
-  (o da barra PRECISA) em excesso · ritmo · SEQUÊNCIA, DIA A DIA (a capacidade
-  do dia = jornada + hora extra contra o pedido do dia; o lote com X conta o
-  que embalou; sequência = vencido − Σ falta). ⚠ O 🖨 TAKT fica a 8 px da folha
-  com as duas semanas: texto novo no papel, medir. O setup do ⚙
+  (o da barra PRECISA) em excesso · linha abaixo da média · SEQUÊNCIA, por uma
+  FILA na ordem dos dias (a capacidade do dia paga 1º o mais antigo, com a causa
+  dele; o pedido sem o já embalado antes; o lote com X pelo embalado;
+  sequência = vencido − o que sobrou na fila). ⚠ O 🖨 TAKT: 703 de 718 px com as
+  duas semanas — texto novo no papel, medir com as fontes reais. O setup do ⚙
   (`SETUPS_DIA`, `SETUP_MIN`, no domínio do app: trocas inteiras, minutos com 1
   casa) só entra nos SEGUNDOS (takt, TEMPO-ALVO, AGORA). O PPCP digita o mesmo
   no app de cronoanálise — o painel não lê o setup do app; a faixa NA LINHA E NO
