@@ -86,7 +86,7 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
       caractere): *"ritmo 110% da média"* (hoje *"… até agora"*) → *"ritmo
       110% até agora"* → *"ritmo 110%"* (o papel, 86 px por dia). Inteiro,
       em tinta, sem cor (o veredito é o FECHA / NÃO FECHA); o decimal e a conta
-      no `title`. A legenda da TELA ganha *"ritmo: o feito na jornada (azul)
+      no `title`. ~~A legenda da TELA ganha~~ (v7.275.0: foi para o ⓘ COMO LER) *"ritmo: o feito na jornada (azul)
       contra a média — 100% é a linha branca"* (`.tks-lt`, sem marca); a do
       papel NÃO (o 🖨 iria a 2 folhas).
     - O recado do gráfico (`tks-sec-r`) passa a ser *"ritmo da linha na semana:
@@ -129,7 +129,7 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
         *"até agora, … já lançadas"*, com o `*` das caixas sem UEP; dia sem
         ritmo, só *"N UEP na jornada — equivale a Xh de linha (1 hora de linha =
         314 UEP)"*; sábado só com hora extra, sem *"0 UEP na jornada"*.
-      - Legenda da TELA (`.tks-lh`, texto sem marca, entre a linha branca e o
+      - ~~Legenda da TELA~~ (v7.275.0: o texto foi para o ⓘ COMO LER; na legenda ficou o *"1 hora de linha = 314 UEP"*) (`.tks-lh`, texto sem marca, entre a linha branca e o
         ritmo): *"hora de linha não é hora de relógio: 1 hora de linha = 314
         UEP, a média em 1 hora"* e, com algo feito, *"— num dia fechado, o azul
         passa da linha branca quando a linha fez mais de 314 UEP por hora na
@@ -162,6 +162,73 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
           (1 hora de linha = 314 UEP)"*) e o `*` das caixas sem UEP no title de
           hoje. Mutação das cinco correções: cada uma derruba o teste.
           Medido de novo: a legenda segue em 3 linhas (1920, 1366) e 4 (1280).
+    - **v7.275.0 (19/11/2026) — tela enxuta, "meta" e a marca de hoje.** O
+      PPCP, depois da v7.274.2: *"faz a marca de hoje e rotulo da meta? o que é
+      isso?"* → prévia com a semana de 16/11 (a marca: o laranja da hora extra
+      cobre o vão entre o azul e o tracejado — o assistente recomendou NÃO fazer
+      e disse por quê) → *"faz os dois"* → *"faça uma revisão tem muita coisa
+      escrita na tela"* → prévia da ESTA SEMANA inteira (o caso-base de 06/11:
+      383 → 264 palavras por innerText) → *"sim, pode implementar e mergear"* →
+      *"faça tudo e mergear, segunda eu confiro"*.
+      - Regra: **número não sai da tela**; o que só explica vai para o title ou
+        para o **ⓘ COMO LER** do DIA A DIA (`_taktComoLerHtml(T)`, `<details
+        class="tks-cl">` recolhido embaixo da legenda — `tks-ler` já era a caixa
+        da sugestão do 4 SEMANAS): a hora de linha (o texto da v7.274.2), o
+        ritmo (o `.tks-lt` da v7.273.0) e o *(o que é)* das causas do POR QUE
+        VENCEU (o `<i>` da v7.273.0). Só na tela; o 🖨 tem o `td-def`.
+      - Herói (`_taktHeroHtml`): na tela a frase do veredito (*"o que falta da
+        semana passa da jornada que resta"*) vai para o title do `.tks-hv`; o
+        papel (`papel:true` nas 3 chamadas do 🖨) continua com o `<small>`.
+      - PARA FECHAR (tela): *"≈ Xh de hora extra da linha inteira, ou o resto
+        passa…"*. O papel não muda.
+      - POR QUE VENCEU (tela): sem *"Nh vencidos desta semana —"* (é a parte
+        "vencidos desta semana" da barra PRECISA, logo acima); cada causa com
+        o *(o que é)* no `title` do `<b>`; a evidência *"Feito X (jornada +
+        hora extra) para Y programadas (Z já embaladas antes); adiantou W de hoje
+        em diante"*. O *"(Z já embaladas antes)"* ficou: é o número da 3ª
+        revisão (o programado das barras), e número não sai.
+      - Legenda: *"1 dia de linha = 8h47 = 2.761 UEP (a meta) · 1 hora de linha
+        = 314 UEP"* e *"meta até agora (hoje)"* (`.tks-lm`, tracejada); saíram as
+        duas linhas de texto (`.tks-lh`, `.tks-lt` e o CSS delas).
+      - **"Meta"** no TAKT inteiro, tela e 🖨, para o 2.761 (era "média" e
+        "referência" — UM NOME POR INDICADOR): o ritmo de cada dia, o recado,
+        o title do recado, o herói, o botão da sub-aba (`_uepSubTakt`), os
+        cenários da SIMULAÇÃO, o AVALIAR (*"no ritmo da meta, sem hora extra"*),
+        o 4 SEMANAS (*"no ritmo da meta"*), as causas (`TKS_VENC_CAUSAS`: *linha
+        abaixo da meta*), o title da barra (*"a meta é 314"*), a legenda da
+        SEMANA QUE VEM e o 🖨 (*"pediu N% da meta … a N% dela"*, `td-def`).
+        ⚠ O 🖨 dizia *"(em avaliação — ainda não é a meta oficial da
+        embalagem)"* (`UEP_REF_STATUS`) ao lado da média; ao lado da palavra
+        meta se contradizia (a 2.761 é a meta desde 13/11) — saiu das duas
+        folhas do TAKT; a constante fica para a RÉGUAS e o CAIXAS × PONTOS × UEP
+        (fase seguinte). *"Na média do dia"* (PELO TAKT) e *"o setup na média"*
+        são médias de verdade e ficaram.
+      - **Marca de hoje** (`_taktSvg`): `d.marcaMin` no `_taktMontar` (D1) = a
+        meta até a última hora lançada em minutos de linha (`mediaUep × 527 ÷
+        META de hoje` = os minutos lançados); um tracejado 2,5 px sobre a barra
+        do feito de hoje (6 px para cada lado), com *"meta até agora"* ou
+        *"meta"* ao lado só se couber antes da barra do dia seguinte. ⚠ A hora
+        extra fica EM CIMA do azul e pode cobrir o vão até a marca (a prévia de
+        16/11: azul 7h00, marca 7h47, laranja até 9h20 — de relance "passou");
+        o COMO LER diz *"compare o azul"*. Fora do papel (sem legenda para ela)
+        e fora da SEMANA QUE VEM.
+      - Teste: o **teto de palavras** da ESTA SEMANA (`TKS_TELA_PALAVRAS` =
+        310 no teste, que conta sem o gráfico, os title e o recolhido: v7.274.2
+        = 422, v7.275.0 = 302) — texto novo tira outro ou vai para o ⓘ; o COMO
+        LER (3 itens, 2 sem vencido, nenhum no papel); a marca (240 min → 4h00,
+        na altura 240 ÷ 527 da linha branca; nem no papel, nem na semana que
+        vem, nem sem minuto lançado); "meta" à vista na ESTA SEMANA e na SEMANA
+        QUE VEM; o herói com a frase no title e o papel com ela. ~30 testes
+        antigos com o texto velho atualizados. Mutação: sem a `marcaMin`, a marca
+        no papel, a marca na altura da linha branca, a frase do herói à vista,
+        o vencido repetido, o *(o que é)* de volta, sem o COMO LER, *"da
+        média"* no ritmo, na legenda da semana que vem e o *"em avaliação"* no
+        papel — cada uma derruba o teste.
+      - Medido no Chromium com as fontes reais, o caso-base: a ESTA SEMANA 925
+        → 866 px (1920), 949 → 920 (1366), 962 → 919 (1280); a legenda 3 → 1
+        linha (1920), 3 → 2 (1366, 1280); o COMO LER aberto +128 px; nada passa
+        da largura, sem rolagem lateral. O 🖨 TAKT (as duas semanas): 703 → 703
+        de 718 px, uma folha no PDF.
     - Medido no Chromium (o caso de 03–06/11, 5 e 7 dias): 1920, 1366 e 1280
       sem texto sobre texto, nada passa da largura; a legenda vai a 2 linhas em
       1366 e 1280; o 🖨 TAKT 700 px antes e depois (folha de 718).
