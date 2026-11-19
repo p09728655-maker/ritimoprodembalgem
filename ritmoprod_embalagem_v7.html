@@ -4314,14 +4314,14 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.271.0';
+const APP_VER = '7.272.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
 // .gs v5.57) e o rodapé compara: o GitHub e o editor do Apps Script não se
 // falam, e sem isso ninguém via qual .gs estava rodando. Mudou o .gs? Suba este
 // número junto com o GS_VERSAO de lá (o apps-script.test.js confere).
-const GS_REPO   = '5.73';
+const GS_REPO   = '5.74';
 let GS_IMPL;   // undefined = ainda não leu · null = o .gs implantado não informa (antes da v5.57)
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico e a
@@ -18654,7 +18654,7 @@ function _histCxInfo(dias, heBackendOk){
 // ficam com as caixas de sempre — o nome da coluna diz qual das duas está na
 // tela — e a ANÁLISE POR HORÁRIO, com a média histórica de caixas.
 const HIST_HORAS_TTL=15*60*1000;   // abrir a aba depois disto relê o período (o dia de hoje pode ter fechado)
-const HIST_HORAS_MAX_DIAS=62;      // acima disto a resposta passa dos 100 KB do cache do .gs e demora (F7)
+const HIST_HORAS_MAX_DIAS=62;      // acima disto a resposta demora; até o .gs v5.73 passava também dos 100 KB do cache (desde a v5.74 vai em partes — F7)
 const HIST_HORAS_AMO_MIN=2;        // o horário entra no ranking com 2 dias ou mais (a regra da média de caixas)
 const HIST_HORAS_GUARDA=4;         // quantos períodos ficam guardados (voltar ao período anterior não relê)
 // O log tem de cobrir as caixas do dia para a hora ser julgada: caixa lançada sem

@@ -50,21 +50,22 @@ function montar(abas, meta, hoje, props) {
       getRange: (l, c, nl, nc) => ({
         getValues: () => { const out = []; for (let i = 0; i < (nl || 1); i++) { const r = v[l - 1 + i] || []; const x = []; for (let j = 0; j < (nc || 1); j++) x.push(r[c - 1 + j] === undefined ? '' : r[c - 1 + j]); out.push(x); } return out; },
         getValue: () => { const r = v[l - 1] || []; return r[c - 1] === undefined ? '' : r[c - 1]; },
-        setValue: x => { if (!lockDePe) semLock++; (v[l - 1] = v[l - 1] || [])[c - 1] = x; },
-        setValues: vals => { vals.forEach((r, i) => { const L = v[l - 1 + i] = v[l - 1 + i] || []; r.forEach((x, j) => { L[c - 1 + j] = x; }); }); },
+        setValue: x => { if (!lockDePe) semLock++; (v[l - 1] = v[l - 1] || [])[c - 1] = x; OPS.push('set:' + nome + '|' + l + '|' + c); },
+        setValues: vals => { vals.forEach((r, i) => { const L = v[l - 1 + i] = v[l - 1 + i] || []; r.forEach((x, j) => { L[c - 1 + j] = x; }); }); OPS.push('set:' + nome + '|' + l + '|' + c); },
         setNumberFormat(f) { for (let i = 0; i < (nl || 1); i++) for (let j = 0; j < (nc || 1); j++) FMT[nome + '|' + (l + i) + '|' + (c + j)] = f; return this; },
       }),
-      appendRow: r => { if (!lockDePe) semLock++; v.push(r.slice()); },
+      appendRow: r => { if (!lockDePe) semLock++; v.push(r.slice()); OPS.push('app:' + nome); },
       setFrozenRows: n => { m.frozen = n; },
     };
   }
   const ss = { getSheetByName: aba, insertSheet: nome => { ABAS[nome] = []; META[nome] = { extra: 1000, frozen: 0 }; return aba(nome); }, getName: () => 'teste' };
-  const CACHE = {}, FMT = {};
+  const CACHE = {}, FMT = {}, OPS = [];   // OPS: a ordem das gravações (v5.74: o onEdit renova o cache depois de desfazer)
   let locks = 0, lockDePe = false, semLock = 0;
   const ctx = {
     SpreadsheetApp: { getActiveSpreadsheet: () => ss, flush: () => {} },
     Utilities: { formatDate: (d, tz, f) => (/HH/.test(f) ? HOJE + ' 15:40:00' : HOJE) },
-    CacheService: { getScriptCache: () => ({ get: k => (k in CACHE ? CACHE[k] : null), put: (k, x) => { CACHE[k] = x; }, remove: k => { delete CACHE[k]; } }) },
+    CacheService: { getScriptCache: () => ({ get: k => (k in CACHE ? CACHE[k] : null), put: (k, x) => { CACHE[k] = x; }, remove: k => { delete CACHE[k]; },
+      putAll: o => { Object.keys(o).forEach(k => { CACHE[k] = o[k]; OPS.push('gen:' + k); }); } }) },
     PropertiesService: { getScriptProperties: () => ({ getProperty: k => (k in PROPS ? PROPS[k] : null), setProperty: (k, x) => { PROPS[k] = x; } }) },
     LockService: { getScriptLock: () => ({ waitLock: () => { locks++; lockDePe = true; }, releaseLock: () => { lockDePe = false; } }) },
     Logger: { log: () => {} },
@@ -72,7 +73,7 @@ function montar(abas, meta, hoje, props) {
   vm.createContext(ctx);
   vm.runInContext(GS, ctx);
   const run = code => vm.runInContext('(function(){ _invalidarValores(); ' + code + ' })()', ctx);
-  return { ABAS, run, ctx, FMT, locks: () => locks, semLock: () => semLock };
+  return { ABAS, run, ctx, FMT, OPS, locks: () => locks, semLock: () => semLock };
 }
 
 // O que o painel manda (o _ucvRegMontar): números como o JS escreve, vazio = ''.
@@ -416,13 +417,23 @@ console.log('\n── travado, o GRAVAR UEP não toca e a digitação de UMA cé
       getValue: () => SH.getRange(l, c).getValues()[0][0], setValue: x => SH.getRange(l, c).setValue(x), setNote: x => { notas[l + ',' + c] = x; } };
     P.ctx.onEdit({ range: rg, oldValue: velho, value: String(novo) });
   };
+  P.OPS.length = 0;
   editar(3, 4, 2.4, '1.78');
   ok('digitou 2,4 na UEP de um código travado: volta a 1,78 (o valor da trava) com uma nota; nenhuma versão DIGITADA nova',
      [P.ABAS.PRODUTO_CODIGO[2][3], /travada pelo PPCP/.test(notas['3,4'] || ''), P.ABAS.UEP_VERSOES.length], [1.78, true, 9]);
+  // v5.74 (revisão): o cache de 'cat' é renovado DEPOIS de desfazer — o
+  // desfazer é por script e não troca a geração; um getProdutos no meio (que
+  // desde a v5.74 vai ao cache) guardaria a UEP digitada (2,4) por 5 min.
+  const ultimo = (pre) => P.OPS.map((o, i) => (o.startsWith(pre) ? i : -1)).reduce((a, b) => Math.max(a, b), -1);
+  ok('v5.74: desfeita a UEP travada, a geração de "cat" é trocada DEPOIS do desfazer (não fica o 2,4 no cache)',
+     [ultimo('set:PRODUTO_CODIGO|3|4') > 0, ultimo('gen:rp_gen_cat') > ultimo('set:PRODUTO_CODIGO|3|4')], [true, true]);
   editar(3, 6, '', '26/10/2026 PPCP');
   ok('apagou a UEP_TRAVA de um código: o carimbo volta', P.ABAS.PRODUTO_CODIGO[2][5], '26/10/2026 PPCP');
+  P.OPS.length = 0;
   editar(2, 4, 2.6, '2.5');
   ok('o código NÃO travado segue a regra de sempre: fica, e vira versão DIGITADA', [P.ABAS.PRODUTO_CODIGO[1][3], P.ABAS.UEP_VERSOES.length, P.ABAS.UEP_VERSOES[9][3]], [2.6, 10, 'DIGITADA']);
+  ok('v5.74: gravada a versão DIGITADA (UEP_VERSOES e a vigência), a geração de "cat" é a ÚLTIMA gravação do onEdit',
+     [P.OPS.some(o => /^(set|app):UEP_VERSOES/.test(o)), P.OPS[P.OPS.length - 1]], [true, 'gen:rp_gen_cat']);
   editar(4, 4, 1.9, '1.78');
   delete P.ABAS.UEP_TRAVAS;                     // sem o registro da trava, não há para onde voltar: fica (o painel acusa a diferença)
   editar(5, 4, 1.95, '1.78');

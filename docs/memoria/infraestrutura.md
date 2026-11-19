@@ -131,11 +131,57 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   por ação) com **invalidação por geração**: qualquer gravação (app ou edição
   manual via `onEdit`) troca `rp_gen` e órfã todas as entradas — o operador
   nunca vê dado velho depois de salvar. O `callback` JSONP fica fora da chave;
-  erro não se cacheia; resposta >100KB só deixa de ser cacheada.
+  erro não se cacheia; resposta >100KB só deixava de ser cacheada — desde o
+  `.gs` v5.74 vai em PARTES (ver *Resposta acima de 100 KB vai em partes*, logo
+  abaixo).
   `lerCatalogoProdutos()` é memoizado dentro da execução (o `getPontosDia` lia o
   catálogo 3×). `instalarGatilhoAquecimento()` (rodar 1× no editor) cria gatilho
   de 5 min contra cold start — reduz, não elimina.
   ⚠ Tudo isso só vale **depois de colar no editor do Apps Script e re-deployar**.
+- **Resposta acima de 100 KB vai ao cache em partes** (`.gs` v5.74 / v7.272.0;
+  PPCP, 19/11/2026: *"trata getProdutos"*). O CacheService recusa valor acima de
+  100 KB, e o `getProdutos` (431 códigos) tinha 113,6 KB na planilha de 19/11
+  (107,4 KB antes da largura da v5.73; medido com o `.gs` real e os dados da
+  planilha): NUNCA ia ao cache, e cada abertura do celular e do cadastro do PC
+  relia a PRODUTO_CODIGO inteira. 54,7 KB dos 113,6 são os nomes dos campos
+  repetidos em cada código.
+  - `_cachePutJson`: cabe numa chave → como sempre (nada muda para as leituras
+    pequenas). Não cabe → partes de `CACHE_PARTE_CHARS` (30.000 unidades = no
+    máximo 90 KB em UTF-8 e 60 KB em UTF-16: cabe nos "100 KB" seja qual for a
+    conta do Google, que NÃO é documentada — bytes ou caracteres) em
+    `chave#id#i`, e o marcador `#PARTES:n:tamanho:id` na própria chave POR
+    ÚLTIMO. O id (um por gravação) impede duas gravações cruzadas de se
+    misturarem. Parte não termina no meio de par substituto (o cache guarda em
+    UTF-8: a metade solta voltaria como U+FFFD). Até `CACHE_MAX_PARTES` (10
+    partes = 300.000 caracteres) guarda; acima, não — como antes.
+  - `_cacheGetJson`: junta; parte que sumiu, marcador estragado ou partes que
+    não somam o tamanho = falta no cache (relê a planilha), nunca meia resposta.
+  - A geração por grupo continua valendo: gravar órfã o marcador e as partes.
+  - ⚠ **A chave de leitura passou de `rp:` a `rp2:`** (revisão): o CacheService
+    é do SCRIPT, não da versão — um `.gs` antigo ainda implantado, ou voltar a
+    implantação à v5.73, leria o marcador `#PARTES:…` como se fosse o JSON, e o
+    JSONP quebraria (celular e cadastro em timeout até 5 min). Com o prefixo
+    novo, o código antigo nunca acha o marcador. Mudar o formato do que vai ao
+    cache = trocar o prefixo de novo.
+  - O `onEdit` na PRODUTO_CODIGO renova a geração de `cat` também DEPOIS de
+    desfazer a UEP travada e de gravar a UEP_VERSOES (revisão): o desfazer é
+    por script e não troca a geração, e um `getProdutos` no meio guardaria a
+    UEP digitada por 5 min — até a v5.73 ele nunca ia ao cache e escapava disso.
+  - Leituras que passam a ir ao cache por causa disso: o `getProdutos`, o
+    `getProducaoModeloPeriodo?cxHora=1` de período longo e, talvez (sem medir),
+    `getParadasPeriodo` de 90 dias, `getHistory` e `getCronoRegistros`. Eram
+    sempre frescas POR ACASO; agora valem as regras do cache, inclusive esta:
+    ⚠ correção feita pela API (ou rotina de editor que grava sem invalidar)
+    não passa pelo `onEdit` e não troca a geração — a leitura fica com o dado
+    antigo até o prazo dela (5 min no `getProdutos`). Rodar
+    `invalidarCacheLeitura()` no editor resolve na hora.
+  - O formato que chega aos painéis NÃO muda (nenhuma versão de HTML depende
+    disso). Recusado de propósito: mandar o catálogo em colunas cortaria a
+    metade do que trafega, mas mudaria os dois painéis e pediria os dois
+    formatos na transição — o problema era a releitura, não o tráfego.
+  - Teste: `cache-partes.test.js` (o `doGet` real, com um cache que recusa
+    acima de 100 KB e guarda em UTF-8, como o do Google; o `onEdit` em
+    `crono-registro.test.js`).
 - **Backend v5.1: memo de leitura POR EXECUÇÃO** (`_valores`/`_valoresDaAba`).
   O caro não era uma leitura, era a **mesma aba lida duas vezes na mesma
   chamada**: `getPontosDia` lia `PRODUCAO_PRODUTO` e, na sequência,

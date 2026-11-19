@@ -109,7 +109,7 @@ via Google Apps Script (JSONP).
   nova): trocar nos dois HTMLs **e** na `PAINEL_APPS_SCRIPT_URL` da Vercel do
   app de cronoanálise (`crono-analise`), senão as medições param de chegar
   caladas.
-- 22 suítes `*.test.js` — `node testes.js` roda todas e o `lint-js.js`. O que
+- 23 suítes `*.test.js` — `node testes.js` roda todas e o `lint-js.js`. O que
   cada suíte cobre está no arquivo da memória.
 - `CHANGELOG.md` (uma entrada por publicação; **Atenção** com antes → depois
   quando muda número exibido ou formato) e `docs/glossario.md` (a fórmula de
@@ -522,7 +522,8 @@ via Google Apps Script (JSONP).
 
 ## Leituras, versões e o resto da infraestrutura → `docs/memoria/infraestrutura.md`
 - Apps Script: uma chamada por vez; leitura cara com cache, voo compartilhado e
-  retry em sequência. O `.gs` tem cache por geração (`rp_gen`) e memo por
+  retry em sequência. O `.gs` tem cache por geração (`rp_gen`; resposta acima
+  de 100 KB vai em partes desde a v5.74 — `_cachePutJson`/`_cacheGetJson`) e memo por
   execução (só leitura usa; escrita lê direto); a leitura recortada por data
   (`_valoresPorData`) usa a conversão de data do CHAMADOR. ⚠ O FIFO
   (`lerEmbaladoPorProduto`) lê a produção INTEIRA, e deve — recortar faz a
@@ -551,8 +552,9 @@ via Google Apps Script (JSONP).
   nos 4 manifests (o `deploy.test.js` confere).
 - ⚠ Gravar na planilha pela API (correções à mão): número vai como NÚMERO
   JSON, nunca texto (`"170.578"` vira milhar); fórmula em pt-BR (`;` e
-  vírgula); e a API não passa pelo `onEdit` (não versiona UEP nem desfaz edição
-  de UEP travada).
+  vírgula); e a API não passa pelo `onEdit` (não versiona UEP, não desfaz edição
+  de UEP travada e não renova o cache — depois, `invalidarCacheLeitura()` no
+  editor; desde a v5.74 o `getProdutos` também fica no cache).
 - ⚠ `localStorage['rpe_cfg']` vence a URL do código. As colunas de lançamento
   são `LANÇ 1…10`: o `startsWith('L')` é o que faz o lançamento funcionar — não
   endurecer.

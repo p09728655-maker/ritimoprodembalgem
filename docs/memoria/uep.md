@@ -387,7 +387,8 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     normal. Só o estudo pede (`_uepItensPeriodo`: cache próprio 5 min, voo
     compartilhado, `jsonpFetch` de 60 s); a chave do cache do `.gs` inclui
     `cxHora`. **Campo novo no payload de leitura pesada = conferir o tamanho
-    contra os 100 KB do cache.**
+    contra o cache** (até a v5.73, 100 KB; desde o `.gs` v5.74 a resposta grande
+    vai em partes até 300.000 caracteres — a regra F7).
   - ⚠ **A divisão vale quando o backend MANDA o `cxHora` — basta um item**
     (`_uepTemCxHora`, v7.78.0). Exigir TODOS os itens com `cxHora` preenchido
     fez um único lançamento sem HORA desligar a divisão do período inteiro, em

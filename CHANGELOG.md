@@ -11,6 +11,31 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.272.0 · .gs v5.74 — 19/11/2026 · O cadastro de produtos volta a sair do cache
+
+⚠ **re-deploy** do `.gs` (colar no editor do Apps Script e reimplantar a
+implantação de sempre — a URL `/exec` não muda).
+
+O PPCP: *"trata getProdutos"*.
+
+- O cache do Apps Script recusa resposta acima de 100 KB, e a lista de
+  produtos (431 códigos) tinha 113,6 KB — 107,4 KB já antes da largura da
+  v5.73. Ela nunca ficava no cache: cada abertura do celular, e do cadastro no
+  PC, relia a aba PRODUTO_CODIGO inteira.
+- Agora a resposta grande vai ao cache em partes e volta inteira. Se alguma
+  parte expirou, o `.gs` relê a planilha — nunca manda meia lista. Gravar no
+  cadastro continua renovando a lista na hora.
+- Vale para qualquer leitura acima de 100 KB, não só a lista de produtos.
+- A UEP digitada à mão num código travado é desfeita e não fica no cache: o
+  `.gs` renova a lista depois de desfazer (e depois de gravar a versão da UEP
+  digitada num código não travado).
+- Correção feita na planilha pela API (não pelo app nem à mão) continua sem
+  renovar o cache sozinha — agora também na lista de produtos, por até 5 min.
+  Rodar `invalidarCacheLeitura()` no editor resolve na hora.
+
+**Atenção:** nenhum número muda, e o formato que chega ao PC e ao celular é o
+mesmo. Até o re-deploy, o rodapé do painel fica em âmbar (`gs v5.73`).
+
 ## v7.271.0 · .gs v5.73 — 19/11/2026 · A largura da caixa fechada vai para o vídeo da cronoanálise
 
 ⚠ **re-deploy** do `.gs` (colar no editor do Apps Script e reimplantar a

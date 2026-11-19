@@ -686,8 +686,9 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   `_cicloVoo`. 3 tentativas em sequência só no "sem resposta". Devolve `true`
   quando leu: o `renderHist` se redesenha só nesse caso (sem laço), para o mesmo
   período, com a aba aberta. `_histHorasChave` = null sem as duas datas ou com
-  mais de `HIST_HORAS_MAX_DIAS` (62: acima disso a resposta passa dos 100 KB do
-  cache do `.gs`). Estado para a tela: `_histHorasEstado` (ok · lendo · falha ·
+  mais de `HIST_HORAS_MAX_DIAS` (62: acima disso a resposta demora — e, até o
+  `.gs` v5.73, passava dos 100 KB do cache; desde a v5.74 a resposta grande vai
+  ao cache em partes, e mudar o 62 é decisão do PPCP). Estado para a tela: `_histHorasEstado` (ok · lendo · falha ·
   fora). Sem efeito colateral em estado de outras abas (o
   `lerProducaoModeloPeriodo` troca `PH_UEP_PROD` e `PREP_PERIODO` — não usar).
 - **Sem a leitura, nada some** (*número nunca sai*): as colunas ficam MELHOR H.

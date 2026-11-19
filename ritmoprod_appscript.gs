@@ -1,5 +1,29 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.74 — RESPOSTA ACIMA DE 100 KB VAI AO CACHE EM PARTES.
+//               PPCP, 19/11/2026: "trata getProdutos". O CacheService recusa
+//               valor acima de 100 KB, e o getProdutos (431 códigos) tinha
+//               113,6 KB na planilha de 19/11 (107,4 KB antes da largura da
+//               v5.73): nunca ia ao cache, e cada abertura do celular e do
+//               cadastro do PC relia a PRODUTO_CODIGO inteira. Agora o doGet
+//               guarda pelo _cachePutJson: cabe numa chave → como sempre; não
+//               cabe → em partes de até 30.000 caracteres (≤ 90 KB mesmo com 3
+//               bytes por caractere), as partes primeiro e o marcador
+//               "#PARTES:n" por último; até 10 partes, acima disso não guarda
+//               (como antes). O _cacheGetJson junta; parte que sumiu = falta no
+//               cache (relê a planilha), nunca meia resposta. A geração por
+//               grupo (rp_gen) continua valendo: gravar órfã as partes junto.
+//               O formato que chega aos painéis não muda. ⚠ re-deploy manual.
+//               Revisão: (1) a chave de leitura passa de 'rp:' a 'rp2:' — o
+//               cache é do SCRIPT, não da versão: uma implantação antiga (ou
+//               voltar à v5.73) leria o marcador "#PARTES:…" como resposta e o
+//               JSONP quebraria; com o prefixo novo ela nunca o acha. (2) Cada
+//               gravação em partes leva um id (marcador "#PARTES:n:tam:id",
+//               partes em chave#id#i): duas gravações cruzadas nunca se
+//               misturam. (3) onEdit na PRODUTO_CODIGO renova o cache de 'cat'
+//               DEPOIS de desfazer a UEP travada e de gravar a UEP_VERSOES: uma
+//               leitura no meio guardaria a UEP digitada por 5 min (até a v5.73
+//               o getProdutos nunca ia ao cache, e a janela não pegava ele).
 // Versão: 5.73 — A LARGURA DA CAIXA FECHADA VAI PARA O APP DE CRONOANÁLISE.
 //               PPCP, 19/11/2026: "PARA VIDEO CRONOANALISE VAMOS USAR LARGURA".
 //               A MEDIDA DA CAIXA do cadastro é a caixa ABERTA, do começo da
@@ -682,7 +706,7 @@
 
 // A versão deste arquivo, a mesma do cabeçalho (v5.58). Vai no getDados para o
 // rodapé do painel dizer qual .gs está implantado — o GitHub não sabe.
-const GS_VERSAO = '5.73';
+const GS_VERSAO = '5.74';
 
 const SHEET_DADOS     = 'HORA_A_HORA';
 const SHEET_HIST      = 'HISTORICO';
@@ -1428,8 +1452,9 @@ const PROP_ULTIMA_LEITURA = 'ultimaLeitura';
 //     operador salva e a leitura seguinte já vem fresca.
 //   • O `callback` do JSONP fica FORA da chave (cacheia-se o JSON; o wrapper
 //     é montado por requisição). Respostas com erro não são cacheadas.
-//   • Entrada acima de 100KB o CacheService rejeita — o try/catch só deixa de
-//     cachear, a resposta sai normal.
+//   • Entrada acima de 100KB o CacheService rejeita. Desde a v5.74 ela vai em
+//     PARTES (_cachePutJson / _cacheGetJson); acima de CACHE_MAX_PARTES, ou se
+//     o cache falhar, só deixa de cachear e a resposta sai normal.
 
 const CACHE_TTL_LEITURA = {
   getDados: 30,                    // hora a hora do dia (TV faz poll disso)
@@ -1602,6 +1627,57 @@ function _gruposDaAba(nome) {
   return undefined; // qualquer outra aba invalida tudo
 }
 
+// v5.74 — RESPOSTA GRANDE EM PARTES. O CacheService recusa valor acima de
+// 100 KB: o getProdutos (113,6 KB em 19/11/2026) nunca ia ao cache. Cabe numa
+// chave → como sempre. Não cabe → partes de CACHE_PARTE_CHARS caracteres
+// (30.000 unidades = no máximo 90 KB em UTF-8, com 3 bytes por caractere, e
+// 60 KB em UTF-16: cabe nos "100 KB" seja qual for a conta do Google, que não
+// é documentada), cada uma em `chave#id#i`, e por ÚLTIMO o marcador
+// "#PARTES:n:tamanho:id" na própria chave — quem lê no meio da gravação não
+// acha o marcador e relê a planilha; o id (um por gravação) faz duas gravações
+// cruzadas da mesma chave nunca se misturarem. Uma parte nunca
+// termina no meio de um par substituto (o caractere fora do BMP vira dois).
+// JSON nunca começa com "#".
+const CACHE_PARTE_CHARS = 30000;
+const CACHE_MAX_PARTES = 10;      // 300.000 caracteres; acima, não guarda (como antes da v5.74)
+const CACHE_MARCA_PARTES = '#PARTES:';
+function _cachePutJson(cache, chave, json, ttl) {
+  try { cache.put(chave, json, ttl); return true; } catch (e) { /* > 100 KB: em partes */ }
+  const partes = [];
+  for (let i = 0; i < json.length;) {
+    let f = Math.min(i + CACHE_PARTE_CHARS, json.length);
+    const c = json.charCodeAt(f - 1);
+    if (f < json.length && c >= 0xD800 && c <= 0xDBFF) f--;
+    partes.push(json.slice(i, f));
+    i = f;
+    if (partes.length > CACHE_MAX_PARTES) return false;
+  }
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  try {
+    for (let i = 0; i < partes.length; i++) cache.put(chave + '#' + id + '#' + i, partes[i], ttl);
+    cache.put(chave, CACHE_MARCA_PARTES + partes.length + ':' + json.length + ':' + id, ttl);
+    return true;
+  } catch (e) { return false; }
+}
+// O que está no cache para a chave, com as partes juntas; null se não está
+// (ou se alguma parte já expirou: nunca meia resposta).
+function _cacheGetJson(cache, chave) {
+  const v = cache.get(chave);
+  if (!v || v.indexOf(CACHE_MARCA_PARTES) !== 0) return v || null;
+  const m = /^(\d+):(\d+):([0-9a-z]+)$/.exec(v.slice(CACHE_MARCA_PARTES.length));
+  const n = m ? Number(m[1]) : 0, tam = m ? Number(m[2]) : 0;
+  if (!(n > 0 && n <= CACHE_MAX_PARTES)) return null;
+  const ks = [];
+  for (let i = 0; i < n; i++) ks.push(chave + '#' + m[3] + '#' + i);
+  const achou = cache.getAll(ks);
+  let out = '';
+  for (let i = 0; i < n; i++) {
+    if (typeof achou[ks[i]] !== 'string') return null;
+    out += achou[ks[i]];
+  }
+  return out.length === tam ? out : null;
+}
+
 // Troca a geração → todas as entradas de leitura ficam órfãs (expiram sós).
 function invalidarCacheLeitura(grupos) {
   _invalidarValores(); // o memo da execução também não pode sobreviver a uma gravação
@@ -1664,9 +1740,12 @@ function doGet(e) {
   if (ttl) {
     try {
       cache = CacheService.getScriptCache();
-      cacheKey = 'rp:' + _cacheGens(cache, CACHE_DEP_LEITURA[actEf] || CACHE_GRUPOS) + ':' + actEf + ':' +
+      // v5.74: 'rp2:' (era 'rp:'). O CacheService é do SCRIPT, não da versão:
+      // um .gs antigo ainda implantado (ou a volta à v5.73) leria o marcador
+      // "#PARTES:…" como se fosse o JSON. Com o prefixo novo, nunca o acha.
+      cacheKey = 'rp2:' + _cacheGens(cache, CACHE_DEP_LEITURA[actEf] || CACHE_GRUPOS) + ':' + actEf + ':' +
         ['data', 'de', 'ate', 'codigo', 'modelo', 'cxHora', 'uepVer', 'ptsCad'].map(function (k) { return p[k] || ''; }).join('|');
-      const hit = cache.get(cacheKey);
+      const hit = _cacheGetJson(cache, cacheKey);   // v5.74: junta as partes
       if (hit) { _medirTempo(actEf, t0, true); return _saidaJson(hit, callback); }
     } catch (errCache) { cache = null; }   // cache indisponível → segue sem ele
   }
@@ -1726,7 +1805,7 @@ function doGet(e) {
   //    tempos-alvo com o takt da semana que falhou (semanasErro) — sem isso o
   //    app ficaria 5 min com o takt por volume por causa de uma falha passageira.
   if (cache && result && result.ok !== false && !result.semanasErro) {
-    try { cache.put(cacheKey, json, ttl); } catch (errPut) { /* >100KB: só não cacheia */ }
+    _cachePutJson(cache, cacheKey, json, ttl);   // v5.74: acima de 100 KB, em partes
   }
 
   _medirTempo(actEf, t0, false);
@@ -7282,8 +7361,14 @@ function onEdit(e) {
       // v5.64: UEP travada pelo PPCP não muda pela digitação de uma célula
       let desfez = false;
       try { desfez = _travaDesfazEdicao(e, sh); } catch (errT) { Logger.log('UEP_TRAVA (onEdit) falhou: ' + errT.message); }
-      if (desfez) return;
-      try { _uepVerDaEdicao(e, sh); } catch (errV) { Logger.log('UEP_VERSOES (onEdit) falhou: ' + errV.message); }
+      if (!desfez) {
+        try { _uepVerDaEdicao(e, sh); } catch (errV) { Logger.log('UEP_VERSOES (onEdit) falhou: ' + errV.message); }
+      }
+      // v5.74: de novo DEPOIS de desfazer a UEP travada (o desfazer é por
+      // script e não troca a geração) e de gravar a UEP_VERSOES — uma leitura
+      // no meio guardaria a UEP digitada por 5 min, e desde a v5.74 o
+      // getProdutos também vai ao cache.
+      invalidarCacheLeitura(['cat']);
       return;
     }
     if (sh.getName() !== SHEET_DADOS) return;
