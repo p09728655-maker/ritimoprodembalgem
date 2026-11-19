@@ -48,6 +48,7 @@ META UEP · % DA META · CAIXAS (com a META EM CX embaixo).
 | **PROJEÇÃO · UEP** | UEP feita + a média por minuto × minutos de jornada que faltam (número, sem veredito) | UEP | `rp-core:uepProj` |
 | **PARA A META** | meta − UEP feita (~~em caixas: ÷ UEP por caixa do produto de agora~~ — saiu na v7.259.0 / rp-core 1.21.0: não é a programação); *sai às*: a hora em que a meta sai andando no ritmo da meta pelos minutos de jornada que restam (almoço fora) | UEP | `rp-core:uepGerMontar` (`m.chega`) |
 | **CAIXAS PROGRAMADAS** | a META DO DIA em caixas (a do FECHAR DIA); o % feito é fato, sem cor | cx | `v7:_gerCxCards` · `mobile:_gerCxCardsM` |
+| **JÁ EMBALADAS ANTES** (v7.274.0 · `.gs` v5.76; card CAIXAS PROGRAMADAS do gerencial do PC e embaixo da META DO DIA da Tela B) | dos lotes datados para hoje, as caixas embaladas ANTES de hoje: Σ do crédito do FIFO dos lotes de hoje (`adiantadoHoje`, a mesma conta do ADIANTADO_CX da linha). Estão DENTRO da META DO DIA, que continua cheia (a regra do histórico), e contaram no realizado do dia em que saíram. Fato, sem cor; só hoje; 0 ou backend antigo = não aparece | cx | `.gs:calcularProgramacao` · `v7:_progAdiHoje` |
 | **% DA META** (hora a hora) | UEP da hora ÷ (meta × minutos da hora ÷ 527) — a cor da linha; os minutos pelo fim da hora que o backend manda (16:00-16:59 = 59) | % | `rp-core:uepHorasDia` · `v7:_gerHoraLinha` · `mobile:_gerHoraLinhaM` |
 | **a hora é julgada?** | não: hora extra, a hora de agora, sem lançamento, sem meta, só caixas sem UEP; **fechada em 0 caixas: sim (0%)**, menos nos 15 min em que ela ainda aceita lançamento no app (AINDA ACEITA); parte das caixas sem UEP: o % com `*`, PARTE SEM UEP, sem cor (v7.244.0) | — | `rp-core:uepHoraJulga` |
 | **META UEP da hora no dia passado** | META UEP gravada × minutos da hora ÷ 527; em sábado e domingo **não há** (todo hora extra, v7.248.0) | UEP | `v7:_gerHorasHist` |
@@ -140,7 +141,7 @@ abate o lote aberto **mais antigo** do mesmo código.
 |---|---|---|---|
 | **ATRASO** (atraso vivo) | Σ do saldo dos lotes com data **anterior a hoje** depois do FIFO — cai durante o dia conforme a linha embala | cx | `.gs:3611` |
 | **PROGRAMADO HOJE** (meta do dia) | Σ `QTDE` das linhas datadas para hoje, **arquivadas e encerradas incluídas** | cx | `.gs:3622` |
-| **FALTA P/ ZERAR** | atraso + o que falta das linhas de hoje | cx | `.gs:3654` |
+| **FALTA P/ ZERAR** (Tela C, Tela E e, desde a v7.274.0, o PRODUZIR HOJE P/ ZERAR da Tela A — que mostrava a META cheia) | atraso + o que falta das linhas de hoje, já sem o embalado antes e hoje (FIFO) | cx | `.gs:calcularProgramacao` (`faltaZerar`) · `v7:_progFaltaZerar` |
 | **PRODUÇÃO ADIANTADA** | caixa embalada sem lote aberto vira crédito e abate o próximo lote **do mesmo código** que abrir em até `ANTEC_DIAS_UTEIS` (**2**) dias úteis; depois disso é descartada | cx | `.gs:250`, `.gs:3584` |
 | **DIAS ÚTEIS** | seg–sex depois da data da produção até a data do lote (sexta → segunda = 1); feriado conta como útil | dias | `.gs:3270` |
 | **MESMA DATA** | no empate de data, a linha que já fechou entra primeiro: arquivada → encerrada → aberta (cada grupo na ordem da aba) | — | `.gs:3540` |

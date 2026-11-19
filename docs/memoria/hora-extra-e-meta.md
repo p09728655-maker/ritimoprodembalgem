@@ -746,3 +746,66 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
 - **v5.54** — `saveParadas`, `endParada` e `addHE` sob o lock dos lançamentos
   (`_comLock`); `saveParadas` informa as paradas ignoradas; o arquivamento
   reconfere código, lote e data antes de copiar e de apagar.
+
+## O QUE JÁ FOI EMBALADO ANTES NA META DO DIA (v7.274.0 / `.gs` v5.76)
+- PPCP, 19/11/2026, com a TV e a aba PROGRAMACAO (ADIANTADO_CX 589 e 1.397):
+  *"depois vamos ver isso hoje 4218 mas já embalei ontem"*. A META DO DIA de
+  4.218 = 3.900 dos lotes de hoje (a quantidade cheia, o `programadoHoje`) +
+  318 de atraso (SOMAR ATRASO); das 3.900, ≥ 1.986 tinham saído na véspera — e
+  contaram no realizado da véspera.
+- Mostradas três opções; o PPCP escolheu a **1** (*"1"*):
+  1. **a META fica cheia** e o painel diz ao lado quanto dela já saiu antes;
+  2. ~~descontar o adiantado da META~~ — recusada, com o porquê: com a linha
+     sempre 1.986 à frente e embalando o programado (3.900/dia), a meta de
+     TODO dia viraria 1.914 (+ atraso) e a eficiência ~200% para sempre. Com a
+     meta cheia a distorção é uma vez só (a véspera sobe, o dia cai, a semana
+     fecha certa), e a meta do histórico não muda;
+  3. a TV julgar pela UEP (telas F e G, desligadas) — não escolhida agora.
+  - Dito ao PPCP: com o SOMAR ATRASO, a meta SOMA o que ficou devendo de
+    antes e NÃO desconta o que foi feito antes (assimetria conhecida); quem
+    responde "a linha está no ritmo?" sem a programação é a UEP.
+- **`.gs` v5.76**: o `calcularProgramacao` manda `adiantadoHoje` = Σ
+  `lot.cred` dos lotes com data de hoje (as duas abas): o crédito do FIFO, a
+  produção de ANTES de hoje (a de hoje entra depois da demanda e nunca vira
+  crédito dele) — a mesma conta do ADIANTADO_CX. Nada do que já ia muda; o
+  `getPontosDia` o deixa passar (o teste de "nada interno vai para o painel"
+  tem a lista dos públicos). Teste com o caso de 14–15/10
+  (`programacao.test.js`): 534 das 715 de 15/10 embaladas em 14/10; a META
+  continua 717; programado = adiantado + embalado hoje + o que falta.
+- **Painel (v7.274.0)**, sem cor, só hoje, só com o campo (backend antigo =
+  nada muda), a META e o selo iguais:
+  - gerencial do PC, card CAIXAS PROGRAMADAS: *"3.900 do dia (1.986 já
+    embaladas antes) + 318 de atraso · faltam N para a meta"*; sem atraso,
+    *"caixas programadas (1.986 já embaladas antes) · faltam N para a meta"*
+    (`_metaPartesTxt(p, gap, passado, adi)`; o dia passado não tem o número).
+    O *"para a meta"* só vem com o adiantado (revisão: lido ao lado do "já
+    embaladas", o "faltam" parecia o que falta embalar dos lotes — que é o
+    P/ ZERAR). Singular pelo `plural()` (*"1 já embalada antes"*: o FIFO
+    credita sobras de 1 a 10 cx). O porquê vai no `title`;
+  - Tela B (a que roda), embaixo da META DO DIA: *"CAIXAS · 1.986 JÁ EMBALADAS
+    ANTES"* (`#tvb-meta-unit`, escrito pelo `renderTV`; *"1 JÁ EMBALADA
+    ANTES"*); sábado e domingo, *"CAIXAS"*. Medido com as fontes reais: numa linha a 1920×1080 (termina em
+    1.666 de 1.824) e a 1366×768 (1.219 de 1.298), a linha do card com a mesma
+    altura (203 / 149 px) — até com 12.345;
+  - Tela A, o PRODUZIR HOJE P/ ZERAR do aviso de atraso (`#tv-atraso-meta-val`)
+    mostrava a `metaEfetiva` — a META cheia, com o embalado antes e o de hoje —
+    com o MESMO nome do card da Tela C, que mostra o que falta
+    (`_progFaltaZerar`). Agora os dois leem o `_progFaltaZerar`.
+  - Não mexido: o FALTAM, o % DA META DO DIA, a PROJEÇÃO e o selo (contra a
+    meta cheia, a regra); o celular (o gerencial dele julga pela UEP). Dito ao
+    PPCP na entrega (*"o FALTAM, o % DA META DO DIA e o selo da TV continuam
+    medidos contra a meta cheia"*), sem objeção. ⚠ Na Tela B o FALTAM fica logo
+    abaixo do *"JÁ EMBALADAS ANTES"* e pode ser lido como "falta embalar"
+    (revisão): se o PPCP pedir, a unidade do FALTAM ganha o *"PARA A META"* —
+    medir a 1366 antes (com hora extra ela já é *CAIXAS NA JORNADA*).
+- Testes: `relatorios.test.js` (o `renderTV` real: a unidade, o P/ ZERAR 1.800
+  em vez de 4.218, sábado, backend antigo, o singular; o card do gerencial com
+  o texto e o `title`; o `_metaPartesTxt` com e sem o adiantado, o singular, o
+  ATINGIDA). `programacao.test.js` (revisão — a regra inteira, não só o caso
+  feliz): só os lotes de HOJE (o vencido com crédito fora: 30 de 50, não 130),
+  o de hoje com X conta o crédito dele (60), e o caminho REAL (`rodar()`) com o
+  25300 já na CONCLUIDA no próprio dia continua 534 (as duas abas). Mutações:
+  o P/ ZERAR pela meta cheia → 2; o card sem o adiantado → 3; a TV sem → 2; o
+  sábado com → 2; o `.gs` com a produção do dia (`dia[0]`) → 3; sem o campo →
+  3; `lot.d <= hoje` → 2; sem a CONCLUIDA (`!lot.arq`) → 2; sem a encerrada
+  (`!lot.enc`) → 2; sem o singular → 2 (card e TV); sem o "para a meta" → 3.

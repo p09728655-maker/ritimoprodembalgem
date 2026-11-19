@@ -456,7 +456,7 @@ console.log('\n── nada interno vai para o painel ──');
 {
   const m = montar([{ lote: 'A', data: '09/10/2026', cod: '501061001', qtde: 100 }], []);
   const internos = Object.keys(m.calc()).filter(k => ['lista', 'metaEfetiva', 'programadoHoje', 'atrasoTotal', 'embaladoHoje',
-    'hojeRestante', 'faltaZerar', 'porLote'].indexOf(k) < 0).sort();
+    'hojeRestante', 'faltaZerar', 'adiantadoHoje', 'porLote'].indexOf(k) < 0).sort();
   const i = GS.indexOf('function getPontosDia(');
   const corpo = GS.slice(i, GS.indexOf('\nfunction ', i + 10));
   const apaga = ((corpo.match(/\[([^\]]*)\]\.forEach\(function \(k\) \{ delete programacao\[k\]; \}\)/) || [])[1] || '')
@@ -638,6 +638,56 @@ console.log('\n── ADIANTADO_CX: quantas caixas vieram adiantadas (v5.23) ─
   ok('o CONCLUIDO (ADIANTADO) chega na CONCLUIDA com a quantidade',
      ['501.142.001', '501.142.002'].map(c => campos(A(), linha(A(), '25295', c), ADI)),
      [[65, 'CONCLUIDO (ADIANTADO)', 64], [450, 'CONCLUIDO (ADIANTADO)', 450]]);
+}
+console.log('\n── adiantadoHoje: quanto dos lotes de hoje já foi embalado antes (v5.76) ──');
+{
+  // PPCP, 19/11/2026, com a TV na META DO DIA de 4.218: "hoje 4218 mas já embalei ontem". A META continua
+  // cheia (o programadoHoje); o painel diz ao lado quanto dela saiu antes. O caso de 14–15/10: o 25295 e o
+  // 25300 (15/10) rodaram em 14/10 — 64 + 450 + 20 = 534 das 715 programadas para 15/10.
+  const prog = [
+    { lote: '25291', data: '14/10/2026', cod: '501.060.005', qtde: 80 },
+    { lote: '25295', data: '15/10/2026', cod: '501.142.001', qtde: 65 },
+    { lote: '25295', data: '15/10/2026', cod: '501.142.002', qtde: 450 },
+    { lote: '25300', data: '15/10/2026', cod: '501.153.001', qtde: 200 },
+  ];
+  const log = [['14/10/2026', '501060005', 78], ['14/10/2026', '501142001', 64], ['14/10/2026', '501142002', 450],
+               ['14/10/2026', '501153001', 20]];
+  const m = montar(prog, log, { hoje: '14/10/2026' });
+  const c14 = m.calc();
+  m.setHoje('15/10/2026');
+  const c15 = m.calc();
+  m.ABAS.PRODUCAO_PRODUTO.push(['15/10/2026', '07:00', '501142001', 'X', 1], ['15/10/2026', '07:00', '501153001', 'X', 180]);
+  const c15b = m.calc();
+  const f = c => [c.programadoHoje, c.adiantadoHoje, c.atrasoTotal, c.metaEfetiva, c.hojeRestante, c.faltaZerar];
+  ok('14/10: o lote de hoje feito no próprio dia não é adiantado (0); 15/10 antes de lançar: 534 das 715 já embaladas em 14/10, a META continua 717 (715 + 2 de atraso) e o que falta é 181 + 2; depois das 181 do dia, o adiantado continua 534',
+     [f(c14), f(c15), f(c15b)], [[80, 0, 0, 80, 2, 2], [715, 534, 2, 717, 181, 183], [715, 534, 2, 717, 0, 2]]);
+  ok('a soma fecha: programado de hoje = adiantado + embalado hoje nos lotes de hoje + o que falta deles',
+     c15b.programadoHoje, c15b.adiantadoHoje + 181 + c15b.hojeRestante);
+}
+{
+  // revisão: a regra inteira, não só o caso feliz — (1) SÓ os lotes de hoje: o vencido que também abriu com
+  // crédito fica fora (somado, 130 "já embaladas antes" para 50 programadas); (2) o lote de hoje com X conta o
+  // crédito dele (60 de 14/10; as 30 de hoje não entram na encerrada sem PRODUZIDO); (3) as DUAS abas: no
+  // caminho real o 25300 vai para a CONCLUIDA no próprio dia, depois das 180, e o número não pode cair (514).
+  const venc = montar([{ lote: 'A', data: '14/10/2026', cod: '501.060.005', qtde: 100 }, { lote: 'B', data: '15/10/2026', cod: '501.142.001', qtde: 50 }],
+                      [['13/10/2026', '501060005', 100], ['14/10/2026', '501142001', 30]], { hoje: '15/10/2026' }).calc();
+  const enc = montar([{ lote: 'LX', data: '15/10/2026', cod: '501.153.001', qtde: 100, enc: 'X' }],
+                     [['14/10/2026', '501153001', 60], ['15/10/2026', '501153001', 30]], { hoje: '15/10/2026' }).calc();
+  const prog = [
+    { lote: '25291', data: '14/10/2026', cod: '501.060.005', qtde: 80 },
+    { lote: '25295', data: '15/10/2026', cod: '501.142.001', qtde: 65 },
+    { lote: '25295', data: '15/10/2026', cod: '501.142.002', qtde: 450 },
+    { lote: '25300', data: '15/10/2026', cod: '501.153.001', qtde: 200 },
+  ];
+  const m = montar(prog, [['14/10/2026', '501060005', 78], ['14/10/2026', '501142001', 64], ['14/10/2026', '501142002', 450],
+                          ['14/10/2026', '501153001', 20]], { hoje: '14/10/2026' });
+  m.rodar();
+  m.setHoje('15/10/2026');
+  m.ABAS.PRODUCAO_PRODUTO.push(['15/10/2026', '07:00', '501142001', 'X', 1], ['15/10/2026', '07:00', '501153001', 'X', 180]);
+  const r = m.rodar(), A = m.ABAS.PROGRAMACAO_CONCLUIDA;
+  ok('só os lotes de hoje (o vencido com crédito fora: 30 de 50, não 130); o de hoje com X conta o crédito (60); no caminho real, com o 25300 já na CONCLUIDA, continua 534',
+     [venc.adiantadoHoje, venc.programadoHoje, enc.adiantadoHoje, enc.programadoHoje, r.p.adiantadoHoje, !!linha(A, '25300', '501.153.001')],
+     [30, 50, 60, 100, 534, true]);
 }
 {
   // ENCERRADA: o adiantado nunca passa do que ela produziu
