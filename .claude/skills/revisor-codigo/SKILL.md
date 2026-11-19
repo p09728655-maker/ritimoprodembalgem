@@ -70,8 +70,10 @@ que mais acham defeito neste projeto:
 - **Segredo (G2)**: algum valor sensível (custo-hora, meta de pontos, chave,
   código do PPCP) no código, no teste ou na documentação?
 - **CSS (D3, D5)**: regra nova sem escopo? Hexadecimal no lugar do token?
-- **Teste (I1, I2)**: a conta nova tem teste rodando o código real? A correção
-  tem um teste que falharia com o defeito de volta?
+- **Teste (I0, I1, I2)**: a mudança veio com o seu teste de regressão no mesmo
+  commit (I0 — sem ele, BLOQUEIA)? A conta nova tem teste rodando o código
+  real? A correção tem um teste que falharia com o defeito de volta (confira
+  desfazendo a correção)?
 - **Layout (I4)**: mexeu no que aparece na tela e não há medição de altura e
   largura nas resoluções do padrão?
 

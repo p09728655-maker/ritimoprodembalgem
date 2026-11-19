@@ -158,6 +158,13 @@ diferente se corrige só na linha que você já está mexendo.
 
 ## I. Testes e medição
 
+- **I0.** TODA mudança leva teste de regressão, no MESMO commit (PPCP,
+  19/11/2026: *"colocar no md toda vez criar teste de regressão"*): defeito
+  corrigido, conta, regra, tela ou fluxo novo. O teste prova o EFEITO (o
+  número, a linha que some, o aviso que aparece) — não só que a função foi
+  chamada. Sem teste não se entrega; quando não der para testar (ex.: só o
+  `.gs` em produção), o commit e a resposta dizem por quê e o que foi
+  conferido à mão.
 - **I1.** Conta nova ou mudada: teste que roda o código REAL (extraído do
   HTML ou do `.gs`), com um caso real do dia em que o problema apareceu.
 - **I2.** Correção de defeito: o teste falha com o defeito de volta. Confira
