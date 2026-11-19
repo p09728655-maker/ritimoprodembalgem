@@ -370,8 +370,47 @@ console.log('\n── v7.273.0: o ritmo de cada dia ──');
   ok('em 1200, 700 e 480 px (e no papel), nenhum "ritmo" passa da largura do dia',
      [passa(S1, 1200, 5), passa(_taktSvg(T, 700), 700, 5), passa(SP, 480, 5), passa(_taktSvg(T, 480), 480, 5)], [[], [], [], []]);
   ok('a legenda da TELA diz o que é o ritmo (sem marca); a do papel não cresce (o 🖨 iria a 2 folhas)',
-     [HT.includes('<span class="tks-lt">ritmo: o feito na jornada (azul) contra a média — 100% é a linha branca</span>'), /tks-lt/.test(pega('function _taktDocHtml('))],
+     [HT.includes('<span class="tks-lt">ritmo: o feito na jornada (azul) contra a média do dia — no dia fechado, 100% é a linha branca; hoje, só as horas já lançadas</span>'), /tks-lt/.test(pega('function _taktDocHtml('))],
      [true, false]);
+  // ── revisão do /revisor-codigo (v7.273.0) ──
+  // BLOQUEIA: feriado TRABALHADO (é hora extra; o .gs não o separa) saía com ritmo fora da conta da semana.
+  // Caso: 20/11/2026 (Consciência Negra) com a linha rodando; aqui, 02/11 FINADOS trabalhado e hoje em feriado.
+  const Sfer = Object.assign({}, S, { feriados:S.feriados.concat([{ data:'06/11/2026', desc:'FERIADO TESTE' }]) });
+  const Tf = _taktMontar(Sfer, HIST.concat([{ data:'02/11/2026', uep:1450, uepHe:0, metaUep:2761 }]), HOJE);
+  const pond = X => { const u = X.dias.filter(d => d.ritmo != null); return r1(u.reduce((a, d) => a + d.feito, 0) / u.reduce((a, d) => a + d.mediaUep, 0) * 100); };
+  ok('feriado trabalhado (02/11 FINADOS com 1.450 UEP) e hoje em feriado: sem ritmo — e a média ponderada dos ritmos desenhados = o ritmo da semana',
+     [Tf.dias.find(d => d.data.startsWith('02/11')).ritmo, Tf.dias.find(d => d.hoje).ritmo, pond(Tf), r1(Tf.exec.pct), /ritmo 53%/.test(_taktSvg(Tf, 1200))],
+     [null, null, r1(Tf.exec.pct), r1(Tf.exec.pct), false]);
+  // AJUSTE: com a META trocada no meio da semana, o "no ritmo atual" do veredito e o recado davam números diferentes.
+  const Tm = _taktMontar(S, HIST.map(h => h.data === '03/11/2026' ? Object.assign({}, h, { metaUep:2530 }) : h), HOJE);
+  const csM = _taktCenarios(2761, Tm, null).find(c => c.id === 'sem'), Vm = _taktVeredito(Tm, null, csM.uepDia, csM.pct);
+  ok('META de 03/11 em 2.530: o "no ritmo atual" do veredito é o MESMO % do recado do gráfico (o exec.pct), não o ritmo ÷ a META de hoje',
+     [r1(Vm.ritmo.pct), r1(Tm.exec.pct), _taktHtml(Tm, null, { V:Vm }).includes(`no ritmo atual da linha (${fmtP(Tm.exec.pct)} da média)`),
+      _taktHtml(Tm, null, { V:Vm }).includes(`ritmo da linha na semana: <b>${fmtP(Tm.exec.pct)}</b>`), r1(_taktVeredito(Tm, null, csM.uepDia).ritmo.pct) !== r1(Tm.exec.pct)],
+     [r1(Tm.exec.pct), r1(Tm.exec.pct), true, true, true]);
+  // AJUSTE: o texto nunca sai do SVG nem passa da coluna — com 7 colunas no papel (sábado e domingo com produção)
+  const H7 = HIST.concat([{ data:'07/11/2026', uep:0, uepHe:700, metaUep:0 }, { data:'08/11/2026', uep:0, uepHe:500, metaUep:0 }]);
+  // "hoje" na segunda seguinte: a semana inteira fechada, e o sábado e o domingo com produção (hora extra) entram no gráfico
+  const H7h = H7.concat([{ data:'06/11/2026', uep:2324, uepHe:523.5, metaUep:2761 }]), HOJE7 = Object.assign({}, HOJE, { num:20261109 });
+  const Tad7 = _taktMontar(Object.assign({}, S, { linhas:S.linhas.map(l => l.data === '05/11/2026' ? Object.assign({}, l, { adiantadoCx:l.qtde }) : l) }), H7h, HOJE7);
+  const geo = (svg, W, H) => {
+    const n = (svg.match(/font-family="IBM Plex Mono"(?: font-weight="600")?>\d\d\/\d\d (seg|ter|qua|qui|sex|sáb|dom)/g) || []).length, cw = (W - 50) / n;
+    const linhas = [...svg.matchAll(/y="([\d.]+)" text-anchor="middle" font-size="(1[01])" font-weight="600" fill="var\(--(?:txt|tks-feito)\)" font-family="IBM Plex Mono"><title>[^<]*<\/title>([^<]+)<\/text>/g)];
+    return { n, fora:linhas.filter(m => Number(m[1]) + 3 > H).map(m => m[3]), larga:linhas.filter(m => m[3].length * Number(m[2]) * 0.62 > cw - 8).map(m => m[3]), textos:linhas.map(m => m[3]) };
+  };
+  const Tad5 = _taktMontar(Object.assign({}, S, { linhas:S.linhas.map(l => l.data === '05/11/2026' ? Object.assign({}, l, { adiantadoCx:l.qtde }) : l) }), HIST, HOJE);
+  const g7 = geo(_taktSvg(Tad7, 480, { h:165 }), 480, 165), g5 = geo(_taktSvg(Tad5, 1200), 1200, 240);
+  ok('papel com 7 colunas (61 px): só o % ("97%"), nada passa da coluna nem sai do SVG (y + 3 ≤ altura) — com o "embalou" também',
+     [g7.n, g7.fora, g7.larga, g7.textos.includes('97%'), g5.fora, g5.larga], [7, [], [], true, [], []]);
+  // SUGESTÃO: hoje com caixas de códigos sem UEP — o % com * (a regra do gerencial) e a nota
+  const Tsem = _taktMontar(S, HIST, Object.assign({}, HOJE, { cxSem:120 })), Hsem = _taktHtml(Tsem, null, { V:_taktVeredito(Tsem, null, null) });
+  ok('hoje com 120 cx sem UEP: "ritmo 79%* da média até agora", o title e a nota dizem por quê; os dias fechados sem *',
+     [_taktSvg(Tsem, 1200).includes('>ritmo 79%* da média até agora<'), _taktSvg(Tsem, 1200).includes('* 120 cx de códigos sem UEP ficaram fora'),
+      Hsem.includes('* No ritmo de hoje, 120 cx de códigos sem UEP ficaram fora (o ritmo sai mais baixo).'), _taktSvg(Tsem, 1200).includes('>ritmo 97%* ')],
+     [true, true, true, false]);
+  // o caminho no painel: a ⚖ UEP · HOJE sabe as caixas sem UEP (conf.sem; sem a conferência, as do .gs) e o _taktHoje as leva
+  ok('as caixas de hoje sem UEP chegam ao TAKT: _uepAbaDados as devolve e o _taktHoje as passa',
+     [/cxSem:conf\?conf\.sem:U\.cxSem \};/.test(pega('function _uepAbaDados(')), /cxSem:D\.cxSem\|\|0/.test(pega('function _taktHoje('))], [true, true]);
   // o "embalou antes" desce uma linha quando há o ritmo (os dois não se cobrem)
   const Tad = _taktMontar(Object.assign({}, S, { linhas:S.linhas.map(l => l.data === '05/11/2026' ? Object.assign({}, l, { adiantadoCx:l.qtde }) : l) }), HIST, HOJE);
   const SA = _taktSvg(Tad, 1200), yDe = re => Number((SA.match(re) || [])[1]);
@@ -728,7 +767,7 @@ ok('os detalhes recolhidos lembram se estavam abertos (o refresh da tela redesen
 { const G0 = pega('async function gerarRelatorioTakt(');
   ok('🖨 a janela abre no clique, lê o que faltar (histórico, esta semana, a que vem) e monta com as MESMAS contas da tela; no menu 🖨 IMPRIMIR ▾',
      [G0.indexOf("window.open(") < G0.indexOf('await '), /_taktMontar\(TKS, UEP_HIST, _taktHoje\(D, hojeN\), pts, est\)/.test(G0), /_taktProxMontar\(T1\)/.test(G0),
-      /_taktVeredito\(T0, null, rit\)/.test(G0) && /_taktVeredito\(T1, P1, rit\)/.test(G0),
+      /_taktVeredito\(T0, null, rit, ritPct\)/.test(G0) && /_taktVeredito\(T1, P1, rit, ritPct\)/.test(G0),
       /onclick="_uepImpFecha\(\);gerarRelatorioTakt\(\)"/.test(html), /T=_taktMontar\(TKS, UEP_HIST, _taktHoje\(D, hojeN\), _taktPtsMapa\(_pdiaPcCat\(\)\), _taktEstMapa\(_pdiaPcCat\(\)\)\)/.test(R)],
      [true, true, true, true, true, true]); }
 
@@ -788,7 +827,7 @@ ok('a conta do TAKT na colagem: 14.503,5 UEP em 5 dias → NÃO CABE, faltam 2h1
   global.TKA_TXT = ''; }
 ok('a ligação: 3ª opção ao lado das semanas; o refresh não redesenha com o PCP na caixa; a conta é a do TAKT; o botão diz "avaliação"',
    [_taktSemBotoes(2).includes('class="on" onclick="_taktSemSet(2)">AVALIAR PROGRAMAÇÃO'), /TKS_SEM===2 && document\.activeElement && document\.activeElement\.id==='tka-txt'\) return;/.test(R),
-    /_taktMontar\(/.test(pega('function _tkaMontar(')) && /_taktProxMontar\(T\)/.test(pega('function _tkaMontar(')) && /_taktVeredito\(T, P, rit\)/.test(pega('function _tkaMontar(')),
+    /_taktMontar\(/.test(pega('function _tkaMontar(')) && /_taktProxMontar\(T\)/.test(pega('function _tkaMontar(')) && /_taktVeredito\(T, P, rit, ritPct\)/.test(pega('function _tkaMontar(')),
     _uepSubTakt(null, null, 'avaliação').txt, _uepSubTakt(M42.T, null, 'avaliação').txt, /jsonpFetch|CFG\.|_taktLer/.test(pega('function _tkaLer(') + pega('function _tkaMontar('))],
    [true, true, true, 'cole a programação', 'avaliação: pede ' + fmtP(M42.T.pede), false]);
 

@@ -18,14 +18,23 @@ O PPCP, com a tela de 19/11: *"como mostrar ritmo da linha"* → *"sim 1"* →
 
 - **Embaixo de cada dia do DIA A DIA, o ritmo da linha:** *"ritmo 110% da
   média"*; hoje, *"ritmo 87% da média até agora"*. É o feito NA JORNADA
-  contra a média de 2.761 UEP no dia (100% = a linha branca); a hora extra não
-  entra. Número inteiro, em tinta, sem cor — o veredito da tela continua sendo
-  o FECHA / NÃO FECHA. Passando o mouse, a conta com o decimal. Na semana de
-  16/11: 110% · 89% · 125%.
+  contra a média de 2.761 UEP no dia (no dia fechado, 100% = a linha branca;
+  hoje, a média das horas já lançadas); a hora extra não entra. Número
+  inteiro, em tinta, sem cor — o veredito da tela continua sendo o FECHA /
+  NÃO FECHA. Passando o mouse, a conta com o decimal. Na semana de 16/11:
+  110% · 89% · 125%.
+- Só dia útil: feriado trabalhado (como o 20/11, Consciência Negra) e fim de
+  semana são hora extra e ficam sem ritmo, como na conta da semana.
+- Hoje com caixas de códigos sem UEP: o % com `*` e uma nota (elas ficam
+  fora e o ritmo sai mais baixo), como no gerencial.
 - Onde a coluna do dia é estreita (papel, semana com 6 ou 7 dias): *"ritmo
-  110%"*. A legenda da tela explica o que é o ritmo.
+  110%"* ou só *"110%"*. A legenda da tela explica o que é o ritmo. O
+  *"embalou Xh antes"* também não passa mais da coluna no papel com 7 dias
+  (antes encostava no dia vizinho).
 - **O recado ao lado do título do gráfico** passa a ser o ritmo da semana — o
-  mesmo número do veredito.
+  mesmo número do *"no ritmo atual da linha (N% da média)"* do veredito, agora
+  também quando a META UEP muda no meio da semana (antes o veredito dividia
+  pela META de hoje).
 
 **Atenção:** o recado do gráfico muda — antes *"do que não saiu: 17% excesso
 de programação · 83% ritmo da linha"* → agora *"ritmo da linha na semana:

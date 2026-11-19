@@ -95,6 +95,32 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     - Medido no Chromium (o caso de 03–06/11, 5 e 7 dias): 1920, 1366 e 1280
       sem texto sobre texto, nada passa da largura; a legenda vai a 2 linhas em
       1366 e 1280; o 🖨 TAKT 700 px antes e depois (folha de 718).
+    - **Revisão do `/revisor-codigo` (antes do merge):**
+      - ⚠ **Só dia útil** (`d.util`, o conjunto do `exec`): feriado trabalhado
+        é hora extra (o `.gs` não o separa — `hora-extra-e-meta.md`) e saía com
+        *"ritmo X% da média"* fora da conta da semana; o caso era o 20/11
+        (Consciência Negra) com a sugestão de hora extra do 4 SEMANAS.
+      - O *"no ritmo atual (N% da média)"* do veredito é o `exec.pct` (o
+        `ritPct` do cenário `sem`, passado ao `_taktVeredito` e ao
+        `_tkaMontar`) — o MESMO do recado; era rit ÷ a META de hoje, diferente
+        com a META trocada no meio da semana. As horas seguem pelo rit.
+      - Legenda: *"no dia fechado, 100% é a linha branca; hoje, só as horas já
+        lançadas"* (hoje a barra fica abaixo da linha com 79%). Com a META do
+        dia diferente da de hoje, o dia fechado também não bate com a linha
+        branca (a escala do gráfico é a META de hoje) — anotado, não mexido.
+      - Hoje com caixas sem UEP (`D.cxSem` = `conf.sem` da ⚖ UEP · HOJE → o
+        `_taktHoje` → `d.cxSem`): o % com `*`, o title e a nota (a regra do
+        gerencial).
+      - O texto mais longo que CABE, até só o % (*"97%"* no papel com 7
+        colunas, 61 px); sem caber nada, nada. O *"embalou Xh antes"* ganhou a
+        mesma regra (revoga o "observado e não mexido" da v7.246.1: no papel
+        com 7 dias ele encostava no vizinho); sem caber, fica o listrado.
+      - O teste prende a geometria pelo SVG (y + 3 ≤ altura; o texto na largura
+        da coluna, contando as colunas desenhadas), a média ponderada = o
+        `exec.pct` com feriado trabalhado, e a META variável.
+      - ⚠ O 🖨 TAKT ainda escreve *"Do que não saiu: X% excesso de programação,
+        Y% ritmo da linha"*: a conta muda no passo 2 (aprovado pelo PPCP no
+        mesmo dia: separar a SEQUÊNCIA), que reescreve tela e papel juntos.
     - Na semana de 16/11 (HISTORICO): 3.028,6 → 110% · 2.462,6 → 89% (com 584,2
       de hora extra) · 3.441,6 → 125% (com 543,9). O que não saiu dessa semana
       NÃO veio só do ritmo: em 16 e 18/11 a linha fez mais que o programado do
