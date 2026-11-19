@@ -449,8 +449,9 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     X% da referência", as `semanas` do `getTemposAlvo`) **continua pela UEP**,
     e o TEMPO-ALVO e o PELO TAKT **não se comparam** (a nota da tabela diz).
   - `_temposAlvoMontar` manda por linha `{ rot, uep, esteira, alvo, medida,
-    vel, entre }` (medida/vel/entre só quando todo código da linha tem os
-    mesmos três — senão null, e o app escreve só a esteira) e na `ref`
+    vel, entre, largura }` (medida/vel/entre só quando todo código da linha tem os
+    mesmos três — senão null, e o app escreve só a esteira; a `largura` desde a
+    v5.73, ver *A CAIXA FECHADA DO VÍDEO*) e na `ref`
     `metodo:'esteira'`, `eficiencia`, `eficienciaOrigem`. Jogo = esteira média
     por caixa dos volumes (`_taEsteiraCad`, como o `_cronoUepCad`). Sem medida
     ou velocidade: esteira e alvo null — **nunca a UEP no lugar**.
@@ -521,6 +522,45 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     takt por volume de antes.
   - TAKT POR PRODUTO do painel: o TEMPO-ALVO ganhou o cx/h embaixo (`cxhRef`),
     na régua do PELO TAKT (hora de relógio, o setup na média).
+
+## A CAIXA FECHADA DO VÍDEO: MEDIDA_EXT_LARGURA (v7.271.0 / `.gs` v5.73 / app 2.119.0)
+- PPCP, 19/11/2026: criou na PRODUTO_CODIGO as colunas **`MEDIDA_EXT_ALTURA`,
+  `MEDIDA_EXT_LARGURA`, `MEDIDA_EXT_PROFUDIADE`** (sic — o título veio sem o
+  "N"; só a LARGURA é lida, por prefixo `MEDIDA_EXT_LARG`) com o relatório
+  *MEDIDA EXTERNA* do ERP (Estoque · Lógica, itens ativos) → *"PARA VIDEO
+  CRONOANALISE VAMOS USAR LARGURA"*.
+- Por quê: a **`MEDIDA DA CAIXA` é a caixa ABERTA**, do começo da linha (825 na
+  Mesa Cabeceira Sleep); o vídeo mede na seladora, onde ela passa **FECHADA**
+  (440 = a LARGURA do ERP: o caso real confere). Com a aberta, o entre-peças
+  do vídeo saía metade do real (o aviso *Confira a caixa* do app 2.115.1).
+- O que vale: o `getTemposAlvo` manda `largura` em cada linha (`_taLarguraDe`:
+  a dos códigos que têm largura, quando é uma só; duas diferentes → null; o
+  código em BRANCO não conta — vazio não é outra caixa, como a esteira no
+  `_taEsteiraCad`; vai mesmo sem esteira); o app usa a
+  LARGURA como a caixa do vídeo (o analista ainda troca no quadro). Sem
+  largura no cadastro, o campo fica vazio e pede a medida — **nunca a aberta
+  no lugar**. A `MEDIDA DA CAIXA` (aberta) continua a do tempo-alvo, do teto
+  da esteira e da UEP estimada: nada no painel muda.
+- Preenchimento de 19/11/2026 (pela API, número como número): 417 de 431
+  códigos; 12 fora do relatório do ERP (não ativos lá) e o EXPOSITOR U
+  (501.076.001/002, 0 × 0 × 0 no ERP) ficaram em BRANCO, nunca 0.
+- ⚠ Em 4 códigos a fechada é MAIOR que a aberta (501.081.001 1.770 × 2.565,
+  501.081.002 1.195 × 2.415, 501.129.005/006 530 × 650) — nos outros 412 a
+  aberta é maior. Ou a caixa anda em outro sentido, ou a MEDIDA DA CAIXA está
+  errada (e com ela o tempo-alvo e o teto da esteira): conferir.
+- Revisão (19/11/2026, o `/revisor-codigo`): na 1ª versão, um código em
+  branco tirava a largura da linha inteira — medido com a planilha de 19/11,
+  36 de 171 linhas iam sem largura, entre elas RACK ESTRELA, TOPAZIO e YAN,
+  SAPATEIRA SPAZIO e os volumes do RIPADO SUPREMO 2.3 e do ANTARES 1.8 (a cor
+  fora do ERP em branco). Corrigido antes do merge. O que fica sem largura é o
+  JOGO de volumes diferentes (cada volume tem a sua) e o EXPOSITOR U.
+- ⚠ Medido na mesma data: o `getProdutos` já passava dos 100 KB do
+  CacheService ANTES da largura (112,6 KB; com ela, 113,6 KB) — essa resposta
+  não é guardada no cache e cada chamada relê a PRODUTO_CODIGO. É anterior a
+  esta mudança; fica registrado para quando se mexer no catálogo. O
+  `getTemposAlvo` tem ~23 KB.
+- Teste: `crono-registro.test.js` (*v5.73*); no app, `tempo-alvo.test.js` e o
+  e2e `video-esteira`.
 
 ## A RÉGUA DA CRONOANÁLISE É O SEM AS LACUNAS (v7.200.0 / `.gs` v5.44)
 - PPCP, 04/11/2026, com o PDF da **HOME ANGEL 1.8 · VOL 2/2** na tela (60

@@ -659,7 +659,7 @@ console.log('\n── v5.62/v5.65: o tempo-alvo de cada produto, pela esteira �
        '501149 · MESA CABECEIRA MADERO', '501151 · RACK MOVE 1.6', '501160 · BERCO ALGODAO DOCE', '501160 · BERCO ALGODAO DOCE · VOL 1/2', '501160 · BERCO ALGODAO DOCE · VOL 2/2'],
       1.8, 1.63, 1]);
   ok('o RACK MOVE 1.6 de 12/11: (2076 + 400) mm ÷ 9 m/min = 16,51 s de esteira; ÷ 85% = 19,42 s de alvo (era 32,3 pela UEP); a caixa vai junto para o app escrever a conta',
-     [por['501151 · RACK MOVE 1.6']], [{ rot: '501151 · RACK MOVE 1.6', uep: 3.01, esteira: 16.51, alvo: 19.42, medida: 2076, vel: 9, entre: 400 }]);
+     [por['501151 · RACK MOVE 1.6']], [{ rot: '501151 · RACK MOVE 1.6', uep: 3.01, esteira: 16.51, alvo: 19.42, medida: 2076, vel: 9, entre: 400, largura: null }]);
   ok('o alvo = esteira ÷ 85% (duas casas): STRASS 2/2 e MADERO; o código número (501149001) casa igual',
      [por['501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2'].esteira, por['501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2'].alvo,
       por['501149 · MESA CABECEIRA MADERO'].esteira, por['501149 · MESA CABECEIRA MADERO'].alvo],
@@ -670,7 +670,7 @@ console.log('\n── v5.62/v5.65: o tempo-alvo de cada produto, pela esteira �
      [r2((est(1705) + est(1344)) / 2), r2((est(1705) + est(1344)) / 2 / 0.85), null, null]);
   ok('sem medida, sem alvo — MESMO COM UEP (nunca a UEP no lugar): o BERÇO 1/2 e o jogo dele; o 2/2 tem',
      [por['501160 · BERCO ALGODAO DOCE · VOL 1/2'], por['501160 · BERCO ALGODAO DOCE'].alvo, por['501160 · BERCO ALGODAO DOCE · VOL 2/2'].alvo],
-     [{ rot: '501160 · BERCO ALGODAO DOCE · VOL 1/2', uep: 1.5, esteira: null, alvo: null, medida: null, vel: null, entre: null }, null, r2(est(1673) / 0.85)]);
+     [{ rot: '501160 · BERCO ALGODAO DOCE · VOL 1/2', uep: 1.5, esteira: null, alvo: null, medida: null, vel: null, entre: null, largura: null }, null, r2(est(1673) / 0.85)]);
   ok('a esteira é a do % TETO EST. (3600 ÷ _tetoEsteiraCxH): UMA conta para o painel e o app',
      [P.run("return Math.round(3600 / _tetoEsteiraCxH({ medida: 2076, velocidade: 9, entrePeca: 400 }) * 100) / 100;"),
       /return t > 0 \? 3600 \/ t : null;/.test(GS), /const t = _tetoEsteiraCxH\(c\);/.test(GS)],
@@ -681,6 +681,60 @@ console.log('\n── v5.62/v5.65: o tempo-alvo de cada produto, pela esteira �
   ok('a UEP da lista = o UEP_CADASTRO da medição do app, no volume e no jogo (uma função, _cronoUepCad)',
      [rm.campos.uepCad, rj.campos.uepCad, /const uepCad = _cronoUepCad\(doVol, volSel, nVol\);/.test(GS), /_cronoUepCad\(g\.cods, 0, g\.nVol\)/.test(GS)],
      [por['501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2'].uep, por['501059 · PENTEADEIRA CAMARIM STRASS'].uep, true, true]);
+  // v5.73 — A LARGURA DA CAIXA FECHADA (PPCP, 19/11/2026: "PARA VIDEO
+  // CRONOANALISE VAMOS USAR LARGURA"). A PRODUTO_CODIGO de 19/11 com as colunas
+  // da medida externa do ERP: a MESA CABECEIRA SLEEP tem 825 aberta (MEDIDA DA
+  // CAIXA) e 440 fechada (LARGURA) — a mesma 440 medida na seladora. O título
+  // real da 3ª coluna veio com erro de digitação (PROFUDIADE): só a LARGURA é lida.
+  {
+    const HDL = ['CODIGO', 'DESCRICAO', 'COR', 'MEDIDA DA CAIXA', 'VELOCIDADE', 'ENTRE_PECAS (mm)', 'UEP',
+                 'MEDIDA_EXT_ALTURA', 'MEDIDA_EXT_LARGURA', 'MEDIDA_EXT_PROFUDIADE'];
+    const PL = montar({ PRODUTO_CODIGO: [HDL,
+      ['501.094.001', 'VOL 1/1 MESA CABECEIRA SLEEP', 'BRANCO', 825, 9, 400, 1.13, 120, 440, 405],
+      ['501.094.002', 'VOL 1/1 MESA CABECEIRA SLEEP', 'PRETO ACETINADO', 825, 9, 400, 1.13, 120, 440, 405],
+      // o BERÇO ARCO-ÍRIS: volumes de caixa diferente (920 e 1320) — o jogo, sem largura
+      ['501.041.001', 'VOL 1/2 BERCO ARCO-IRIS', 'BRANCO/AZUL', 1274, 9, 400, 1.57, 97, 920, 710],
+      ['501.041.002', 'VOL 2/2 BERCO ARCO-IRIS', 'BRANCO/AZUL', 1610, 9, 400, 1.84, 70, 1320, 720],
+      // sem velocidade (sem esteira, sem alvo) e com a largura: ela vai mesmo assim
+      ['501.130.001', 'VOL 1/1 MESA LATERAL SEM VEL', 'BRANCO', 600, '', 400, 1, 90, 670, 670],
+      // o EXPOSITOR U: o ERP tem 0 × 0 × 0 — a planilha fica em branco, e a largura, null (nunca 0)
+      ['501.076.001', 'VOL 1/1 EXPOSITOR U', 'PRETO AC', 1770, 9, 400, 2, '', '', ''],
+      // cores com larguras diferentes: a linha do produto não escolhe uma (null); cada volume não existe à parte (1/1)
+      ['501.200.001', 'VOL 1/1 RACK DUAS CAIXAS', 'BRANCO', 1000, 9, 400, 1, 100, 1200, 400],
+      ['501.200.002', 'VOL 1/1 RACK DUAS CAIXAS', 'PRETO', 1000, 9, 400, 1, 100, 1250, 400],
+      // a MESMA caixa, uma cor em número e a outra em texto pt-BR ('1.250', gravada como texto): 1250 (o _numBR),
+      // nunca 1,25 — com Number(), as duas não batiam e a linha ia sem largura
+      ['501.201.001', 'VOL 1/1 RACK TEXTO', 'BRANCO', 1000, 9, 400, 1, 100, 1250, 400],
+      ['501.201.002', 'VOL 1/1 RACK TEXTO', 'PRETO', 1000, 9, 400, 1, 100, '1.250', 400],
+      // o RACK ESTRELA de 19/11: a cor PRETO ACETINADO fora do relatório do ERP (em branco) e as outras com 1640.
+      // Vazio não é outra caixa: a linha vai com 1640 (revisão da v7.271.0: 36 de 171 linhas iam sem largura)
+      ['501.098.001', 'VOL 1/1 RACK ESTRELA', 'PRETO ACETINADO', 1700, 9, 400, 1.5, '', '', ''],
+      ['501.098.002', 'VOL 1/1 RACK ESTRELA', 'OFF WHITE', 1700, 9, 400, 1.5, 100, 1640, 505],
+      ['501.098.004', 'VOL 1/1 RACK ESTRELA', 'NATURE', 1700, 9, 400, 1.5, 100, 1640, 505]] }, null, '19/11/2026');
+    const rl = PL.run('return getTemposAlvo();');
+    const pl = {}; (rl.produtos || []).forEach(x => { pl[x.rot] = x; });
+    const cat = PL.run('return lerCatalogoProdutos();');
+    ok('v5.73: lerCatalogoProdutos lê a MEDIDA_EXT_LARGURA (por prefixo) como `largura`; vazio = 0; a MEDIDA DA CAIXA (aberta) segue igual',
+       [cat.find(c => c.codigo === '501.094.001').largura, cat.find(c => c.codigo === '501.094.001').medida, cat.find(c => c.codigo === '501.076.001').largura],
+       [440, 825, 0]);
+    ok('v5.73: a MESA CABECEIRA SLEEP vai ao app com a largura da caixa fechada (440) e a medida aberta (825) para a conta do alvo',
+       [pl['501094 · MESA CABECEIRA SLEEP'] && [pl['501094 · MESA CABECEIRA SLEEP'].largura, pl['501094 · MESA CABECEIRA SLEEP'].medida]],
+       [[440, 825]]);
+    ok('v5.73: o jogo de volumes de caixa diferente vai sem largura; cada volume, com a sua (920 e 1320)',
+       [pl['501041 · BERCO ARCO-IRIS'].largura, pl['501041 · BERCO ARCO-IRIS · VOL 1/2'].largura, pl['501041 · BERCO ARCO-IRIS · VOL 2/2'].largura],
+       [null, 920, 1320]);
+    ok('v5.73: sem velocidade (sem esteira nem alvo), a largura vai mesmo assim; sem largura no cadastro, null — nunca 0',
+       [pl['501130 · MESA LATERAL SEM VEL'].alvo, pl['501130 · MESA LATERAL SEM VEL'].largura, pl['501076 · EXPOSITOR U'].largura],
+       [null, 670, null]);
+    ok('v5.73: cores com caixas diferentes (1200 e 1250): a linha não escolhe uma — null',
+       [pl['501200 · RACK DUAS CAIXAS'].largura], [null]);
+    ok('v5.73: a mesma caixa em número (1250) e em texto pt-BR ("1.250"): 1250 — o _numBR, nunca 1,25',
+       [pl['501201 · RACK TEXTO'].largura], [1250]);
+    ok('v5.73: o RACK ESTRELA com a cor em branco (fora do ERP): a linha vai com a 1640 das outras — vazio não é outra caixa',
+       [pl['501098 · RACK ESTRELA'] && pl['501098 · RACK ESTRELA'].largura], [1640]);
+    ok('v5.73: o cabeçalho do .gs conta a mudança',
+       [/^\/\/ Versão: 5\.73 — A LARGURA DA CAIXA FECHADA VAI PARA O APP DE CRONOANÁLISE/m.test(GS)], [true]);
+  }
   // sem a CONFIG_PAINEL: a meta padrão, o setup padrão e a eficiência padrão (85), ditos como padrão
   const P0 = montar({ PRODUTO_CODIGO: CAT.PRODUTO_CODIGO }, null, '12/11/2026');
   const r0 = P0.run('return getTemposAlvo();');

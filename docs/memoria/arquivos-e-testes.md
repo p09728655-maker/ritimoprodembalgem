@@ -138,7 +138,10 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   bloqueiam —, a regra refeita contra a planilha, a `UEP_TRAVA` e a
   `UEP_TRAVAS`, o idempotente, o `destravarUep` com motivo, o `trocarUepCrono`
   que sempre recusa, o GRAVAR UEP que pula o travado e o `onEdit` que desfaz a
-  digitação de uma célula): `node crono-registro.test.js`.
+  digitação de uma célula) e o TEMPO-ALVO (v5.62/v5.65: `getTemposAlvo` pela
+  esteira) com a LARGURA DA CAIXA FECHADA (v5.73: a `MEDIDA_EXT_LARGURA` por
+  prefixo, o jogo sem largura, o código em branco que não conta, o texto
+  pt-BR pelo `_numBR`): `node crono-registro.test.js`.
 - `pontos.test.js` — PONTOS do passado congelados (`.gs` v5.40): o dia e o
   período somam o PONTOS gravado no lançamento, não o cadastro de agora. Roda o
   `.gs` inteiro (lançar, trocar o cadastro, lançar de novo):

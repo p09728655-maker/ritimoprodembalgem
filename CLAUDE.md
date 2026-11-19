@@ -473,6 +473,10 @@ via Google Apps Script (JSONP).
 - NA PRODUÇÃO: as horas com o volume sozinho, sem as paradas apontadas, contra a
   MADERO nas mesmas condições (`_ucvRel`). Abaixo da faixa = apontar e medir de
   novo, nunca engordar a UEP.
+- A caixa do VÍDEO é a FECHADA: `MEDIDA_EXT_LARGURA` da PRODUTO_CODIGO (ERP),
+  que o `getTemposAlvo` manda como `largura` (`.gs` v5.73). A `MEDIDA DA
+  CAIXA` é a ABERTA: segue no tempo-alvo e no teto da esteira. Sem largura, o
+  app pede a medida — nunca a aberta no lugar.
 - O QUE MEDIR é a agenda completa (o que está na programação primeiro); a
   classe A dá a cobertura. A CONFERÊNCIA DAS TROCAS só informa.
 - ONDE O TEMPO VAI: estudo × produção × meta; a diferença não é perda.

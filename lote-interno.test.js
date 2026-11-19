@@ -426,9 +426,12 @@ console.log('\n── a leitura do .gs (getAtendimentoLotes, v5.69) ──');
   ok('a ação no doGet, com cache de 120 s que o lançamento invalida (prod) e o cadastro (cat)',
      [/act === 'getAtendimentoLotes'\) result = getAtendimentoLotes\(\);/.test(gs), /getAtendimentoLotes: 120,/.test(gs), /getAtendimentoLotes: \['prod', 'cat'\]/.test(gs)],
      [true, true, true]);
-  ok('o trio da versão do .gs sobe junto (cabeçalho, GS_VERSAO, GS_REPO do painel)',
-     [/^\/\/ Versão: 5\.72 — A COR DO PRODUTO NO ATENDIMENTO POR LOTE INTERNO/m.test(gs), /const GS_VERSAO = '5\.72';/.test(gs), /const GS_REPO   = '5\.72';/.test(JS)],
-     [true, true, true]);
+  // o trio (cabeçalho, GS_VERSAO, GS_REPO) é conferido no apps-script.test.js
+  // para QUALQUER versão; aqui, só que a v5.72 ficou no histórico (v7.271.0:
+  // a pinagem em 5.72 quebrava a cada .gs novo).
+  ok('a v5.72 (a cor do produto no lote interno) fica no histórico do cabeçalho do .gs',
+     [/^\/\/ Versão: 5\.72 — A COR DO PRODUTO NO ATENDIMENTO POR LOTE INTERNO/m.test(gs)],
+     [true]);
 }
 
 console.log('\n── o PC: a mesma marcação na tela e no papel ──');
