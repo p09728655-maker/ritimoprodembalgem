@@ -40,6 +40,11 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
 - Sem os PONTOS (o gerencial tem; a TV fica enxuta — ver *O ATRASO TAMBÉM EM
   PONTOS* em `gerencial.md`). O PRODUZIR HOJE P/ ZERAR e o RITMO P/ ZERAR
   continuam em caixas (é o número de ação do chão: caixas por hora).
+  - O PRODUZIR HOJE P/ ZERAR do aviso de atraso da Tela A mostrava a META
+    cheia (`metaEfetiva`) com o mesmo nome deste card; desde a v7.274.0 os
+    dois leem o `_progFaltaZerar` (*O QUE JÁ FOI EMBALADO ANTES NA META DO DIA*,
+    em `hora-extra-e-meta.md`). Lá também: o *"CAIXAS · N JÁ EMBALADAS ANTES"*
+    embaixo da META DO DIA da Tela B, medido a 1920 e a 1366.
 - Medido no Chromium (TV 1920×1080 e 1366×768, com e sem o cadastro, com um
   código sem UEP): a linha de baixo numa linha só (22 px a 1366). ~~nada
   corta~~ — a medição da v7.258.0 olhou só a largura (o erro da v7.138.0):

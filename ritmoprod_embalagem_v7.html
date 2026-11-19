@@ -3066,7 +3066,7 @@ if (_v7Instalado()) _v7EscondeBotao();
           <div class="tvb2-info">
             <div class="tvb2-lbl">META DO DIA</div>
             <div class="tvb2-val" id="tvb-meta">—</div>
-            <div class="tvb2-unit">CAIXAS</div>
+            <div class="tvb2-unit" id="tvb-meta-unit">CAIXAS</div>
           </div>
           <svg class="tvb2-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg>
         </div>
@@ -4316,14 +4316,14 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.273.0';
+const APP_VER = '7.274.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
 // .gs v5.57) e o rodapé compara: o GitHub e o editor do Apps Script não se
 // falam, e sem isso ninguém via qual .gs estava rodando. Mudou o .gs? Suba este
 // número junto com o GS_VERSAO de lá (o apps-script.test.js confere).
-const GS_REPO   = '5.75';
+const GS_REPO   = '5.76';
 let GS_IMPL;   // undefined = ainda não leu · null = o .gs implantado não informa (antes da v5.57)
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico e a
@@ -5419,12 +5419,14 @@ function _metaDiaAba(){
   DADOS.forEach(d=>{ if(d.data===hoje && !/^HE\b|^HE\d/i.test(String(d.slotLabel||'').trim())) s+=Number(d.metaHora)||0; });
   return s>0?s:null;
 }
-// O texto da linha de apoio do card META DO DIA (hoje e dia passado).
-function _metaPartesTxt(p, gap, passado){
+// O texto da linha de apoio do card META DO DIA (hoje e dia passado). `adi`
+// (só hoje, v7.274.0): quanto do programado do dia já foi embalado antes.
+function _metaPartesTxt(p, gap, passado, adi){
   const falta=gap<=0?'ATINGIDA ✓':(passado?'faltaram ':'faltam ')+fmtN(Math.abs(gap));
+  const ja=!passado && adi>0 ? ` (${fmtN(adi)} já embaladas antes)` : '';
   return (p && p.atraso>0)
-    ? `${fmtN(p.metaDia)} do dia + ${fmtN(p.atraso)} de atraso · ${falta}`
-    : 'caixas programadas · '+falta;
+    ? `${fmtN(p.metaDia)} do dia${ja} + ${fmtN(p.atraso)} de atraso · ${falta}`
+    : 'caixas programadas'+ja+' · '+falta;
 }
 
 async function testarSheets(){
@@ -6000,6 +6002,11 @@ function _fdsNome(data){ const d=parseBR(data); return d&&d.getDay()===0?'DOMING
 // O PROGRAMADO do sábado/domingo: só os lotes datados no dia (sem o atraso, que o
 // SOMAR ATRASO põe na META DO DIA). É fato, sem cor — o dia não tem meta.
 function _progHojeCx(){ const p=PONTOS_DIA.programacao||{}; return Number(p.programadoHoje)||0; }
+// Dos lotes de HOJE, as caixas embaladas ANTES de hoje (.gs v5.76, o crédito do
+// FIFO; PPCP, 19/11/2026: "hoje 4218 mas já embalei ontem"). Estão na META DO DIA
+// — que continua cheia, a regra do histórico — e contaram no realizado do dia em
+// que saíram: o painel só diz quanto, sem cor. Backend antigo (sem o campo): 0.
+function _progAdiHoje(){ const n=Number((PONTOS_DIA.programacao||{}).adiantadoHoje); return n>0?n:0; }
 function _horaEhHE(rotulo, data){
   const str=String(rotulo||'').trim();
   if(/^HE\b/i.test(str)) return true;
@@ -13820,8 +13827,9 @@ function _gerCxCards(k, semUep, velho){
       t:k.nHE?`${plural(k.nHE,'hora','horas')} de hora extra lançada${k.nHE>1?'s':''}`:'' },
     // o selo em caixas julga só a jornada; sem minuto dela lançado, AGUARDANDO (v7.248.0)
     { l:'CAIXAS PROGRAMADAS', v:fmtN(k.meta), c:semUep&&!velho&&k.metaAteAgora>0?sc(k.efRitmo):'',
-      sub:(semUep?`<b>${velho?'DADOS DE '+_horaDe(velho):k.metaAteAgora>0?slRitmo(k.efRitmo):'AGUARDANDO A JORNADA'}</b> · `:'')+`${fmtP(k.efDia)} feito · `+_metaPartesTxt(p, k.gap, false),
+      sub:(semUep?`<b>${velho?'DADOS DE '+_horaDe(velho):k.metaAteAgora>0?slRitmo(k.efRitmo):'AGUARDANDO A JORNADA'}</b> · `:'')+`${fmtP(k.efDia)} feito · `+_metaPartesTxt(p, k.gap, false, _progAdiHoje()),
       t:'A META DO DIA em caixas — a que o FECHAR DIA grava no histórico.'
+        +(_progAdiHoje()>0?' '+fmtN(_progAdiHoje())+' cx dos lotes de hoje já foram embaladas antes de hoje: contaram no realizado do dia em que saíram e continuam na meta de hoje (a meta é a quantidade cheia dos lotes, a regra do histórico).':'')
         +(p.metaDia==null?'':' META DIA (soma das metas por hora da HORA_A_HORA): '+fmtN(p.metaDia)+' cx · ATRASO META: '+fmtN(p.atraso)+' cx'+(p.atraso>0?(CFG.metaComAtraso?' (SOMAR ATRASO ligado).':' (meta ajustada neste computador).'):'.'))
         +(semUep?'':' Sem cor: o veredito do dia é o da UEP (1º card), que desconta o peso de cada caixa.') },
     { l:'RITMO · CX/HORA', v:fmtN(k.ritmo), c:'', sub:'média no turno', t:'caixas ÷ horas lançadas' },
@@ -18178,9 +18186,12 @@ function renderTV(){
     abTV.style.display = _atrasoTV>0 ? 'flex' : 'none';
     const avTV = document.getElementById('tv-atraso-val');
     if(avTV) avTV.textContent = fmtN(_atrasoTV);
-    // Produzir a meta efetiva (programado hoje + atraso) hoje zera o atraso.
+    // O que ainda falta produzir hoje para zerar (o atraso vivo + o resto dos
+    // lotes de hoje) — a MESMA leitura da Tela C, que tem o mesmo nome. Era a
+    // metaEfetiva: o total do dia, com o que já tinha sido embalado antes e hoje
+    // (v7.274.0: a META de 4.218 com 1.986 embaladas na véspera).
     const amvTV = document.getElementById('tv-atraso-meta-val');
-    if(amvTV) amvTV.textContent = fmtN(_progTV.metaEfetiva || 0);
+    if(amvTV) amvTV.textContent = fmtN(_progFaltaZerar(_progTV));
   }
 
   const pe=document.getElementById('tv-prod');
@@ -18240,6 +18251,11 @@ function renderTV(){
   document.getElementById('tv-meta-lbl').textContent=fds?(prFds>0?'PROGRAMADO: '+fmtN(prFds):'SEM META · HORA EXTRA'):'META: '+fmtN(k.meta);
   // a META DO DIA (espelhada na Tela B) não existe no fim de semana
   const md=document.getElementById('tv-meta-dest'); if(md) md.textContent=fds?'—':fmtN(k.meta);
+  // v7.274.0 (PPCP: "hoje 4218 mas já embalei ontem"): embaixo da META DO DIA da
+  // Tela B, quanto dela já foi embalado antes de hoje — fato, sem cor; a meta e o
+  // selo não mudam
+  const adiTV=fds?0:_progAdiHoje(), mu=document.getElementById('tvb-meta-unit');
+  if(mu) mu.textContent=adiTV>0?'CAIXAS · '+fmtN(adiTV)+' JÁ EMBALADAS ANTES':'CAIXAS';
   document.getElementById('tv-ritmo').textContent=fmtN(k.ritmo);
   // NECESSÁRIO: nas horas restantes, mostra o ritmo (cx/hora) p/ bater a meta.
   // Na última hora (sem horas futuras), mostra quanto ainda FALTA para a meta.

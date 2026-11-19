@@ -11,6 +11,31 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.274.0 · .gs v5.76 — 19/11/2026 · META DO DIA: quanto já foi embalado antes
+
+⚠ **re-deploy** do `.gs` (mesma implantação): o cálculo da programação passa a
+mandar quanto dos lotes de hoje já foi embalado antes de hoje. Sem ele o painel
+fica como estava, sem a informação nova.
+
+O PPCP, com a TV na META DO DIA de 4.218: *"hoje 4218 mas já embalei ontem"* →
+opção *"1"*.
+
+- **A META DO DIA não muda:** continua a quantidade cheia dos lotes de hoje
+  (+ o atraso, com o SOMAR ATRASO). Descontar o que já saiu antes faria a
+  eficiência passar de 200% todo dia quando a linha fica sempre um dia à
+  frente; com a meta cheia, a distorção acontece uma vez (a véspera sobe, o dia
+  cai) e a semana fecha certa.
+- **O painel diz quanto dela já saiu antes**, sem cor:
+  - **gerencial do PC**, card CAIXAS PROGRAMADAS: *"3.900 do dia (1.986 já
+    embaladas antes) + 318 de atraso · faltam N"*;
+  - **TV, Tela B**, embaixo da META DO DIA: *"CAIXAS · 1.986 JÁ EMBALADAS
+    ANTES"* (cabe numa linha a 1920×1080 e a 1366×768; a altura não muda).
+
+**Atenção:** o **PRODUZIR HOJE P/ ZERAR** do aviso de atraso da Tela A (o
+layout estreito) mostrava a META cheia (4.218 no caso de 19/11) com o mesmo nome
+do card da Tela C, que mostra o que falta. Agora os dois mostram o que falta
+(atraso + o resto dos lotes de hoje, sem o já embalado).
+
 ## v7.273.0 · .gs v5.75 — 19/11/2026 · TAKT DA SEMANA: o ritmo de cada dia e por que venceu
 
 ⚠ **re-deploy** do `.gs` (mesma implantação): o lote fechado com X passa a

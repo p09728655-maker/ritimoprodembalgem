@@ -195,6 +195,11 @@ via Google Apps Script (JSONP).
 - ⚠ A planilha reparte a meta do dia pelas horas a partir do C3 (dilui a
   jornada com C3 = 5). Não zerar a meta da madrugada sem mexer no `.gs`: o
   `getDados` pula slot com meta 0 e a madrugada sumiria.
+- ⚠ **A META DO DIA é a quantidade CHEIA dos lotes de hoje**, mesmo com parte
+  embalada antes (PPCP, 19/11/2026, opção 1: descontar daria ~200% todo dia com
+  a linha sempre à frente). O painel só diz quanto já saiu antes (*"já embaladas
+  antes"*, `adiantadoHoje` do `.gs` v5.76): o card CAIXAS PROGRAMADAS e a Tela B,
+  sem cor. O PRODUZIR HOJE P/ ZERAR (Tela A e Tela C) é o `_progFaltaZerar`.
 
 ## TV → `docs/memoria/tv.md`
 - A TV é o perfil OPERADOR / `?tv`: fundo preto com tokens próprios, lida a

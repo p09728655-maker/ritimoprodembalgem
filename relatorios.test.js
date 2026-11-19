@@ -3072,7 +3072,7 @@ ok('TV: a Tela B espelha a linha de apoio',
 // do dia é o da UEP; o % da meta em caixas virou fato no card CAIXAS PROGRAMADAS,
 // e só julga quando não há UEP nenhuma (backend ou cadastro).
 ok('gerencial: o % do dia em caixas é fato, sem selo — o selo é o da UEP',
-   [/\$\{fmtP\(k\.efDia\)\} feito · `\+_metaPartesTxt\(p, k\.gap, false\)/.test(_v7),
+   [/\$\{fmtP\(k\.efDia\)\} feito · `\+_metaPartesTxt\(p, k\.gap, false, _progAdiHoje\(\)\)/.test(_v7),
     /l:'CAIXAS PROGRAMADAS', v:fmtN\(k\.meta\), c:semUep&&!velho&&k\.metaAteAgora>0\?sc\(k\.efRitmo\):''/.test(_v7),
     /`<b>\$\{slRitmo\(c\.ef\)\}<\/b> · /.test(_v7), /v:fmtP\(k\.efDia\),\s*sub:slRitmo\(k\.efRitmo\)/.test(_v7)], [true, true, true, false]);
 // celular 1.50.0: a mesma regra do PC — o % do dia em caixas é fato no card CAIXAS
@@ -3115,12 +3115,12 @@ console.log('\n── hora extra sem meta: a CONTA de verdade (calcKPIs do PC e 
     C.DADOS = sl.map(([a, b, m, he]) => ({ data:o.hoje, horario:a, slotFim:b, slotLabel:a + '-' + b,
       producaoHora: C.toMin(a) <= nm && L[a] != null ? L[a] : null, metaHora:m, metaDia:o.meta || 1800, he }));
     C.CFG = { metaDia:o.meta || 1800, turnoInicio:'07:00', turnoFim:'17:00', almocoInicio:'11:00', almocoFim:'12:12', setor:'EMB' };
-    C.MEDIA_HORAS = {}; C.AMOSTRA_HORAS = {}; C.isSheets = true; C.PONTOS_DIA = { programacao:{ programadoHoje:1800 } }; C.TV_TURNO_INFO = null;
+    C.MEDIA_HORAS = {}; C.AMOSTRA_HORAS = {}; C.isSheets = true; C.PONTOS_DIA = { programacao:o.prog || { programadoHoje:1800 } }; C.TV_TURNO_INFO = null;
     const he = o.heModal ? [{ ini:'17:00', fim:'18:00', label:'HE 17:00-18:00', metaHora:150, producaoHora:o.heModal }] : [];
     if (plat === 'pc') {
       C.loadHE = () => he; C.getDadosHoje = () => C.DADOS.filter(d => d.data === o.hoje);
       C.renderParadaOverlay = () => {}; C.salvarDiaSheets = () => {};
-      ['getEffectiveSlots', 'calcMin', 'calcKPIs', 'focoHoraIdx', '_fdsNome', '_progHojeCx', 'renderTV'].forEach(f => vm.runInContext(pgS(_v7, f), C));
+      ['getEffectiveSlots', 'calcMin', 'calcKPIs', 'focoHoraIdx', 'parseBR', '_fdsNome', '_progHojeCx', '_progAdiHoje', '_progFaltaZerar', 'renderTV'].forEach(f => vm.runInContext(pgS(_v7, f), C));
       const k = vm.runInContext('calcKPIs(DADOS.filter(d=>d.producaoHora!=null))', C);
       vm.runInContext('renderTV()', C);
       const g = id => (C.document.M.get(id) || {});
@@ -3129,6 +3129,7 @@ console.log('\n── hora extra sem meta: a CONTA de verdade (calcKPIs do PC e 
                tab:g('tv-tbl-body').innerHTML, ef:g('tv-ef').textContent, pct:g('tv-prog-pct').textContent,
                proj:g('tv-proj').textContent, projU:g('tvb-proj-unit').textContent, faltaB:g('tvb-falta').textContent,
                faltaU:g('tvb-falta-unit').textContent, falta:g('tv-falta').textContent,
+               metaU:g('tvb-meta-unit').textContent, zerar:g('tv-atraso-meta-val').textContent, metaB:g('tv-meta-dest').textContent,
                nec:g('tv-nec').textContent + ' ' + g('tv-nec-unit').textContent };
     }
     C.getSlots = () => sl.filter(x => !x[3]).map(([a, b]) => ({ inicio:a, fim:b, label:a + '-' + b, min:C.toMin(b) - C.toMin(a) }));
@@ -3170,6 +3171,16 @@ console.log('\n── hora extra sem meta: a CONTA de verdade (calcKPIs do PC e 
         m17 = roda('mob', { hoje:D, agora:'16:22', c3:5, meta:1350, lanc:L17 });
   ok('17/11 16:22: a hora em andamento conta só os 22 min que passaram — 1.188 de 1.255 esperadas, ATENÇÃO (era 1.188 de 1.350, ABAIXO DO RITMO)',
      [t17.badge, t17.sub, +t17.k.efRitmo.toFixed(2)], ['● ATENÇÃO', '1.188 DE 1.255 CX ESPERADAS ATÉ AGORA', 94.64]);
+  // v7.274.0 — a Tela B diz embaixo da META DO DIA quanto dela já foi embalado antes de hoje (o adiantadoHoje do
+  // .gs v5.76), sem mudar a meta; e o PRODUZIR HOJE P/ ZERAR da Tela A é o que falta (o da Tela C), não a meta
+  // cheia: com 1.986 já embaladas na véspera, a TV pedia 4.218 "para zerar".
+  { const prog = { programadoHoje:3900, adiantadoHoje:1986, atrasoTotal:318, metaEfetiva:4218, faltaZerar:1800, embaladoHoje:432 };
+    const a = roda('pc', { hoje:D, agora:'13:05', c3:7, lanc:LANC, meta:4218, prog }), v = roda('pc', { hoje:D, agora:'13:05', c3:7, lanc:LANC, meta:4218 }),
+          sab = roda('pc', { hoje:'21/11/2026', agora:'10:05', c3:7, lanc:{ '07:00':100 }, meta:4218, prog }),
+          ant = roda('pc', { hoje:D, agora:'13:05', c3:7, lanc:LANC, meta:4218, prog:{ programadoHoje:3900, atrasoTotal:318, metaEfetiva:4218, embaladoHoje:432 } });
+    ok('TV com 1.986 dos lotes de hoje embaladas na véspera: META 4.218 (a mesma), embaixo "CAIXAS · 1.986 JÁ EMBALADAS ANTES"; P/ ZERAR = 1.800 (era 4.218); sem o adiantado, "CAIXAS"; no sábado, "CAIXAS"; backend antigo: P/ ZERAR pela conta antiga (4.218 − 432)',
+       [a.metaB, a.metaU, a.zerar, a.k.meta, v.metaU, sab.metaU, ant.metaU, ant.zerar],
+       ['4.218', 'CAIXAS · 1.986 JÁ EMBALADAS ANTES', '1.800', 4218, 'CAIXAS', 'CAIXAS', 'CAIXAS', '3.786']); }
   ok('17/11 16:22, celular: o mesmo selo do PC (ritmo e esperado)',
      [+m17.k.efRitmo.toFixed(2), Math.round(m17.k.metaAteAgora)], [94.64, 1255]);
   ok('17/11 16:22: o % da meta, a barra e FALTAM sem a hora extra — 88,0% (era 108,2%), faltam 162; a PRODUÇÃO ACUMULADA segue com ela (1.461)',
@@ -4306,7 +4317,7 @@ ok('o card GAP DA META não existe mais nos dois grids',
 // Desde a v7.202.0 o subtítulo dos dois grids (ao vivo e dia passado) sai do
 // _metaPartesTxt — um texto só, com o "faltam/faltaram" e o ATINGIDA dentro.
 ok('e o que faltava virou o subtítulo da própria meta',
-   [(JS.match(/caixas programadas · /g) || []).length, /'ATINGIDA ✓':\(passado\?'faltaram ':'faltam '\)/.test(pega('function _metaPartesTxt('))], [1, true]);
+   [(JS.match(/caixas programadas(?:'\+ja\+')? · /g) || []).length, /'ATINGIDA ✓':\(passado\?'faltaram ':'faltam '\)/.test(pega('function _metaPartesTxt('))], [1, true]);
 
 // ── UM VEREDITO SÓ para "vamos bater hoje?" ────────────────────────────────
 // A PROJEÇÃO FINAL e o selo do % DA META DO DIA respondiam a MESMA pergunta por
@@ -6188,6 +6199,14 @@ console.log('\n── estudo de UEP ──');
       _metaPartesTxt(null, 0, true), _metaPartesTxt({ metaDia: 1550, atraso: 600 }, 200, true)],
      ['1.550 do dia + 600 de atraso · faltam 1.000', 'caixas programadas · faltam 1.000',
       'caixas programadas · ATINGIDA ✓', '1.550 do dia + 600 de atraso · faltaram 200']);
+  // v7.274.0 (PPCP, 19/11/2026: "hoje 4218 mas já embalei ontem"): a META DO DIA de 4.218 = 3.900 dos lotes de
+  // hoje + 318 de atraso, com 1.986 dos 3.900 embaladas na véspera. A meta não muda; o card diz quanto já saiu
+  // antes — só hoje (o dia passado não tem o número) e sem o adiantado, o texto de sempre.
+  ok('hoje com lotes adiantados: "3.900 do dia (1.986 já embaladas antes) + 318 de atraso"; sem atraso, "caixas programadas (… já embaladas antes)"; no dia passado e sem adiantado, o de sempre',
+     [_metaPartesTxt({ metaDia: 3900, atraso: 318 }, 2218, false, 1986), _metaPartesTxt(_metaPartes(3900, 3900), 1500, false, 1986),
+      _metaPartesTxt({ metaDia: 3900, atraso: 318 }, 200, true, 1986), _metaPartesTxt({ metaDia: 3900, atraso: 318 }, 2218, false, 0)],
+     ['3.900 do dia (1.986 já embaladas antes) + 318 de atraso · faltam 2.218', 'caixas programadas (1.986 já embaladas antes) · faltam 1.500',
+      '3.900 do dia + 318 de atraso · faltaram 200', '3.900 do dia + 318 de atraso · faltam 2.218']);
   ok('as colunas META DIA e ATRASO META só entram quando a META difere da META DIA em algum dia',
      [_histTemMetaComp([{ meta: 1550, metaDia: 1550, atrasoMeta: 0 }, { meta: 1500, metaDia: null, atrasoMeta: null }]),
       _histTemMetaComp([{ meta: 2150, metaDia: 1550, atrasoMeta: 600 }]), _histTemMetaComp([{ meta: 1100, metaDia: 1157, atrasoMeta: 0 }]),
@@ -6197,7 +6216,7 @@ console.log('\n── estudo de UEP ──');
   ok('os cards das caixas programadas (hoje e dia passado, com e sem UEP) passam pelo _metaPartesTxt',
      // v7.248.0: no dia passado, o fim de semana diz "sem meta" no lugar
      [(JS.match(/l:'META DO DIA',\s*v:(meta>0\|\|!fdsDia\?)?fmtN\((k\.)?meta\)(:'—')?,\s*sub:(fdsDia\?semMetaTxt:)?_metaPartesTxt\(/g) || []).length,
-      /l:'CAIXAS PROGRAMADAS', v:fmtN\(k\.meta\)[\s\S]{0,320}_metaPartesTxt\(p, k\.gap, false\)/.test(pega('function _gerCxCards(')),
+      /l:'CAIXAS PROGRAMADAS', v:fmtN\(k\.meta\)[\s\S]{0,320}_metaPartesTxt\(p, k\.gap, false, _progAdiHoje\(\)\)/.test(pega('function _gerCxCards(')),
       /l:'CAIXAS PROGRAMADAS', v:fmtN\(meta\), c:'', sub:`\$\{fmtP\(ef\)\} feito · `\+_metaPartesTxt\(/.test(pega('function renderGerencialHist('))], [1, true, true]);
   ok('o card de hoje lê a META DIA da aba pelo _metaDiaAba (a linha rotulada HE fora, como no .gs)',
      [/_metaPartes\(k\.meta, _metaDiaAba\(\)\)/.test(JS), /\^HE\\b\|\^HE\\d/.test(pega('function _metaDiaAba('))], [true, true]);
@@ -6417,7 +6436,7 @@ console.log('\n── PC: a atualização pela hora marcada e o dado velho sem v
     function hojeStr(){ return '16/11/2026'; } function _gerAtrasoKpi(){ return null; } function _metaDiaAba(){ return 2000; }
     function _progHojeCx(){ return 2000; } function _rpEsc(s){ return String(s); }`, K);
   vm.runInContext(linha(/const _horaDe = [^\n]+/), K);
-  ['function _gerUepCards(', 'function _gerCxCards(', 'function _metaPartes(', 'function _metaPartesTxt(', 'function _gerMinTxt(', 'function _fdsNome(']
+  ['function _gerUepCards(', 'function _gerCxCards(', 'function _metaPartes(', 'function _metaPartesTxt(', 'function _gerMinTxt(', 'function _fdsNome(', 'function _progAdiHoje(']
     .forEach(f => vm.runInContext(pega(f), K));
   K.G = { ok:true, card:{ c:'warn', ef:95.8, esperado:1509, sub:'', t:'' }, feito:1445, meta:2761, he:0, cxSem:0, m:null, proj:null, minRest:300 };
   K.k = { minNorm:288, real:1087, meta:2410, efDia:45.1, gap:1323, metaAteAgora:1500, efRitmo:72, nHE:0, realNormal:1087, realHE:0, ritmo:217 };
@@ -6429,6 +6448,15 @@ console.log('\n── PC: a atualização pela hora marcada e o dado velho sem v
   const cx = (sem, v) => vm.runInContext(`_gerCxCards(k, ${sem}, ${v})`, K).find(c => c.l === 'CAIXAS PROGRAMADAS');
   ok('UEP velha e caixas em dia: as caixas julgam (o selo passa para elas)', [cx(true, 0).c, cx(true, 0).sub.startsWith('<b>ABAIXO DO RITMO</b>')], ['red', true]);
   ok('as duas velhas: ninguém julga — "DADOS DE 13:24", sem cor', [cx(true, 'velho').c, cx(true, 'velho').sub.startsWith('<b>DADOS DE 13:24</b>')], ['', true]);
+  // v7.274.0: com lotes de hoje embalados antes (adiantadoHoje do .gs v5.76), o card CAIXAS PROGRAMADAS diz quanto, e o title explica
+  // por que a meta não desconta; sem o campo (backend antigo), o texto de sempre
+  vm.runInContext('PONTOS_DIA.programacao = { adiantadoHoje:1986 }', K);
+  const ca = cx(false, 0);
+  vm.runInContext('PONTOS_DIA.programacao = {}', K);
+  const cs = cx(false, 0);
+  ok('o card de hoje com 1.986 embaladas antes: "(1.986 já embaladas antes)" na linha de apoio e o porquê no title; sem o campo, nada',
+     [/\(1\.986 já embaladas antes\)/.test(ca.sub), /1\.986 cx dos lotes de hoje já foram embaladas antes de hoje: contaram no realizado do dia em que saíram e continuam na meta de hoje/.test(ca.t),
+      /já embaladas/.test(cs.sub + cs.t), ca.v === cs.v], [true, true, false, true]);
   ok('com a UEP em dia, as caixas seguem sem cor', [cx(false, 0).c, /<b>/.test(cx(false, 0).sub)], ['', false]);
   ok('o renderGerencial passa o dado velho aos dois cards',
      [/const semUep=!G\.ok \|\| !!velhoU;/.test(pega('function renderGerencial(')),
@@ -6602,7 +6630,7 @@ console.log('\n── A UEP NA FRENTE no gerencial do PC (v7.243.0 / v7.244.0) �
    'function _gerHoraJulga(', 'function _gerHoraLinha(', 'function _atrasoVencidoPc(', 'function _gerAtrasoKpi(', 'function _gerUepCards(', 'function _gerCxCards(', 'function _metaPartes(',
    'function _metaPartesTxt(', 'function _gerAnaliseUep(', 'function _gerKpiHtml(', 'function _gerUepModelo(',
    'function _uepCardLeitura(', 'function _tvUepMontar(', 'function _tvUepDoProduto(', 'function _gerHorasHist(', 'function _gerInfoImpressao(',
-   'function parseBR(', 'function _fdsNome(', 'function _progHojeCx(', 'function _gerAnaliseUepHtml(', 'function _taktPtsMapa(']
+   'function parseBR(', 'function _fdsNome(', 'function _progHojeCx(', 'function _progAdiHoje(', 'function _gerAnaliseUepHtml(', 'function _taktPtsMapa(']
     .forEach(f => vm.runInContext(pega(f), C));
   // o "hoje" é FIXO (sexta 13/11/2026, o retrato): desde a v7.248.0 o sábado e o
   // domingo são todo hora extra, e o teste não pode mudar com o dia em que roda

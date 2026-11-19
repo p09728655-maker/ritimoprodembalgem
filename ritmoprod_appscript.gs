@@ -1,5 +1,15 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.76 — QUANTO DOS LOTES DE HOJE JÁ FOI EMBALADO ANTES.
+//               PPCP, 19/11/2026, com a TV na META DO DIA de 4.218: "hoje 4218
+//               mas já embalei ontem" → opção 1 (a meta continua cheia — regra
+//               do programadoHoje, para a meta do histórico não mudar — e o
+//               painel diz ao lado quanto dela já saiu antes). O
+//               calcularProgramacao manda `adiantadoHoje` = Σ do crédito do
+//               FIFO dos lotes datados para hoje: as caixas embaladas ANTES de
+//               hoje que o FIFO deu a eles (a mesma conta do ADIANTADO_CX da
+//               linha). Só acrescenta um campo; nada do que já ia muda.
+//               ⚠ re-deploy manual.
 // Versão: 5.75 — O EMBALADO DO LOTE FECHADO COM X NA SEMANA DO TAKT.
 //               PPCP, 19/11/2026 ("passo 2 ok": o POR QUE VENCEU do TAKT DA
 //               SEMANA, painel v7.273.0). O getProgramacaoSemana manda, em cada
@@ -715,7 +725,7 @@
 
 // A versão deste arquivo, a mesma do cabeçalho (v5.58). Vai no getDados para o
 // rodapé do painel dizer qual .gs está implantado — o GitHub não sabe.
-const GS_VERSAO = '5.75';
+const GS_VERSAO = '5.76';
 
 const SHEET_DADOS     = 'HORA_A_HORA';
 const SHEET_HIST      = 'HISTORICO';
@@ -6399,7 +6409,7 @@ function calcularProgramacao() {
     if (!(k in duMemo)) duMemo[k] = _diasUteisEntre(ld, ed, FER);
     return duMemo[k] <= 1 ? 1 : 2;
   };
-  let totMeta = 0, totProgHoje = 0, totAtraso = 0, totEmbHoje = 0, totHojeRest = 0;
+  let totMeta = 0, totProgHoje = 0, totAtraso = 0, totEmbHoje = 0, totHojeRest = 0, totAdiHoje = 0;
   const loteMap = {}; // v5.8: Tela E por LOTE — ver _somaNoLote()
 
   Object.keys(keys).forEach(key => {
@@ -6522,6 +6532,11 @@ function calcularProgramacao() {
       // O FIFO abate a fila na ordem, então o 1º lote vencido com saldo é ele.
       if (lot.d < hojeNum && lot.rem > 0 && !atrasoDesde) atrasoDesde = lot.d;
       else if (lot.d === hojeNum) hojeRest += lot.rem;
+      // v5.76: o lote de hoje que o FIFO abriu com crédito = caixas embaladas
+      // ANTES de hoje (produção de hoje entra depois da demanda, nunca vira
+      // crédito dele). Conta antes do "nada a mostrar": o código todo
+      // adiantado também está na META.
+      if (lot.d === hojeNum) totAdiHoje += lot.cred;
       const lk = key + '|' + lot.lote + '|' + lot.d;
       saldoLinha[lk] = (saldoLinha[lk] || 0) + lot.rem;
     });
@@ -6561,6 +6576,7 @@ function calcularProgramacao() {
     embaladoHoje: totEmbHoje,
     hojeRestante: totHojeRest,            // quanto da meta de hoje ainda falta
     faltaZerar: totAtraso + totHojeRest,  // total que ainda falta produzir p/ zerar tudo
+    adiantadoHoje: totAdiHoje,            // v5.76: dos lotes de hoje, o que já foi embalado ANTES de hoje (está na META)
     porLote: _fecharLotes(loteMap),        // v5.8: Tela E da TV (uma linha por lote)
     saldoLinha: saldoLinha,               // uso interno do write-back (removido antes de ir p/ o cliente)
     saldoRow: saldoRow,                   // idem, por LINHA da aba (v5.21)

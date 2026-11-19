@@ -320,6 +320,9 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   igual à da linha encerrada). Os 850 cx do 25295 feitos em 14/10 contam no
   realizado de 14/10 e estão na meta de 15/10: a EF de 15/10 só fecha se a
   linha adiantar o lote de 16/10. Não mexido — mudar mudaria a meta histórica.
+  - Confirmado em 19/11/2026 (opção 1, com o porquê em `hora-extra-e-meta.md`,
+    *O QUE JÁ FOI EMBALADO ANTES NA META DO DIA*): a meta fica cheia e o painel
+    diz ao lado quanto dela já saiu antes (`adiantadoHoje`, `.gs` v5.76).
 - ⚠ Mudou o `.gs` → **re-deploy manual**. Antes dele o painel e o app seguem
   como antes (sem o campo, `_cartQtdAberta` devolve a qtde).
 
