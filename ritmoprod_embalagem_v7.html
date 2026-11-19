@@ -11102,10 +11102,12 @@ function _taktMontar(S, hist, H, pts, est){
   //                   semana anterior) e com o lote do X pelo embalado
   //   a capacidade do dia (jornada + hora extra) vai 1º para a fila (o mais
   //   antigo), depois para o pedido do dia
-  //   o que o dia não faz entra na fila: até o que a fila tomou dele, com a
-  //   causa da fila (é a falta de antes passando para frente); o resto pela
-  //   régua do dia — abaixo da média até mín(pedido, META) − capacidade do dia,
-  //   excesso o que passa
+  //   o que o dia não faz entra na fila: 1º o que a linha deixou de fazer com
+  //   trabalho na mão — abaixo da média até mín(pedido + a fila de antes, META)
+  //   − capacidade (3ª revisão: só contra o pedido do dia, o dia leve que
+  //   herdou atraso e rodou a 80% jogava a falta dele na causa de ontem); depois,
+  //   até o que a fila tomou dele, a causa da fila (a falta de antes passando
+  //   para frente); o resto é excesso
   //   sequência = vencido − o que sobrou na fila (havia capacidade e ela foi para
   //   outros lotes); a fila maior que o vencido: na proporção, sequência 0.
   // Dia útil sem histórico: a divisão não sai. Feriado ou fim de semana sem
@@ -11114,6 +11116,7 @@ function _taktMontar(S, hist, H, pts, est){
   const pas=dias.filter(d=>d.passado), fila=[];
   const vDias=pas.map(d=>{
     const p=Math.max(0, d.pedVenc-(Number(d.adiUep)||0)), cap=(Number(d.feito)||0)+(Number(d.he)||0), r=d.util ? Number(d.meta)||0 : 0;
+    const f0=soma(fila, b=>b.carga+b.ritmo);   // o trabalho herdado, antes de o dia pagar a fila
     let c=cap, hc=0, hr=0;
     for(const b of fila){
       const tot=b.carga+b.ritmo;
@@ -11122,16 +11125,19 @@ function _taktMontar(S, hist, H, pts, est){
       const t=Math.min(c, tot), f=t/tot;
       hc+=b.carga*f; hr+=b.ritmo*f; b.carga-=b.carga*f; b.ritmo-=b.ritmo*f; c-=t;
     }
-    const fal=Math.max(0, p-c), her=Math.min(fal, hc+hr), hC=her>0 ? her*hc/(hc+hr) : 0, resto=fal-her;
-    const rD=Math.min(resto, Math.max(0, Math.min(p, r)-cap));
-    const x={ data:d.data, pedido:p, cap, falta:fal, carga:hC+resto-rD, ritmo:her-hC+rD };
+    const fal=Math.max(0, p-c), rD=Math.min(fal, Math.max(0, Math.min(p+f0, r)-cap));
+    const her=Math.min(fal-rD, hc+hr), hC=her>0 ? her*hc/(hc+hr) : 0, resto=fal-rD-her;
+    const x={ data:d.data, pedido:p, cap, falta:fal, carga:hC+resto, ritmo:her-hC+rD };
     if(fal>0) fila.push({ carga:x.carga, ritmo:x.ritmo });
     return x;
   });
   const fC=soma(fila, b=>b.carga), fR=soma(fila, b=>b.ritmo), fT=fC+fR, vUep=Math.max(0, Number(falta.uepVenc)||0);
   const vEsc=fT>vUep && fT>0 ? vUep/fT : 1;
   const venc={ uep:vUep, carga:fC*vEsc, ritmo:fR*vEsc, seq:Math.max(0, vUep-fT),
-    prog:soma(vDias, x=>x.pedido), cap:soma(vDias, x=>x.cap), dias:vDias, adiFrente:soma(dias.filter(d=>d.n>=hojeN), d=>d.adiUep),
+    // prog = o programado das BARRAS (Σ d.uep) e adiAntes = o que dele já tinha sido embalado antes do dia — a
+    // evidência escreve os dois (3ª revisão: o Σ pedido, sem o adiantado, saía como "22h37 programadas" ao lado
+    // de barras que somam 27h57)
+    prog:soma(pas, d=>d.uep), adiAntes:soma(pas, d=>d.adiUep), cap:soma(vDias, x=>x.cap), dias:vDias, adiFrente:soma(dias.filter(d=>d.n>=hojeN), d=>d.adiUep),
     antes:Math.max(0, Number(falta.uepAntes)||0), encSemEmb, semSaldo:semSaldoPas,
     semHist:pas.filter(d=>d.util && d.feito==null).map(d=>d.data) };
   // EM MINUTOS DE LINHA: o vencido é a parte "vencidos desta semana" da barra PRECISA,
@@ -11143,7 +11149,7 @@ function _taktMontar(S, hist, H, pts, est){
   const pm=_taktPartesMin(uA, vUep, uH, Math.max(0, falta.uep-uA-vUep-uH), k, Math.round(falta.uep*k));
   const vencMin=(pm.find(x=>x.k==='venc') || { min:0 }).min, f=vUep>0 ? vencMin/vUep : 0;
   const mC=Math.round(venc.carga*f), mR=Math.round((venc.carga+venc.ritmo)*f)-mC;
-  venc.min={ uep:vencMin, carga:mC, ritmo:mR, seq:vencMin-mC-mR, prog:Math.round(venc.prog*k), cap:Math.round(venc.cap*k),
+  venc.min={ uep:vencMin, carga:mC, ritmo:mR, seq:vencMin-mC-mR, prog:Math.round(venc.prog*k), adiAntes:Math.round(venc.adiAntes*k), cap:Math.round(venc.cap*k),
              adiFrente:Math.round(venc.adiFrente*k), antes:Math.round(venc.antes*k) };
   // o saldo cabe no que resta? hoje até o fim da jornada + os dias úteis que vêm, na referência
   const dHoje=porN[hojeN], futuros=uteis.filter(d=>d.n>hojeN);
@@ -12569,7 +12575,7 @@ function _taktVencHtml(T, o){
   // uma linha e, com as duas semanas, o 🖨 TAKT ia de 709 a 740 px — 2 folhas
   if(op.papel) return ` Venceram <b>${hm(v.min.uep)}</b>: ${semH || cs.map(c=>`<b>${c.curto} ${hm(c.min)}</b>`).join(' · ') || 'menos de 1 min por causa'}${nX ? ' (aproximado)' : ''}.`;
   if(semH) return `<div class="tks-por tks-pv"><b>Por que venceu:</b> ${hm(v.min.uep)} vencidos desta semana — ${semH}.</div>`;
-  const ev=[`a linha fez ${hm(v.min.cap)} de linha (jornada + hora extra) para ${hm(v.min.prog)} programadas nos dias que passaram`,
+  const ev=[`a linha fez ${hm(v.min.cap)} de linha (jornada + hora extra) para ${hm(v.min.prog)} programadas nos dias que passaram${v.min.adiAntes>=1 ? ` (${hm(v.min.adiAntes)} delas já embaladas antes)` : ''}`,
     v.min.adiFrente>=1 ? `adiantou ${hm(v.min.adiFrente)} dos lotes de hoje em diante` : '',
     v.min.antes>=1 ? `há ${hm(v.min.antes)} de atraso de antes de ${_rpEsc(String(T.de||'').slice(0, 5))}, que a linha atende primeiro` : '',
     aprox].filter(Boolean).join('; ');

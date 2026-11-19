@@ -141,21 +141,29 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
       antigo primeiro). Pedido do dia = o programado SEM o embalado antes dele
       (`adiUep`) e com o lote do X pelo embalado; a capacidade do dia (jornada
       + hora extra) vai 1º para a fila, depois para o pedido; o que o dia não
-      faz entra na fila — até o que a fila tomou dele, com a CAUSA da fila (a
-      falta de antes passando para frente); o resto pela régua do dia: **linha
-      abaixo da média** = mín(resto, máx(0, mín(pedido, META do dia útil) −
-      capacidade)), **excesso** = o que passa. **Sequência** = vencido − o que
-      sobrou na fila; a fila maior que o vencido: na proporção, sequência 0.
-      Fecha sempre (o teste prende).
-    - ⚠ **Dia a dia, nunca a semana somada; e em FILA** (duas revisões antes
+      faz entra na fila: 1º **linha abaixo da média** = mín(falta, máx(0,
+      mín(pedido + a fila herdada, META do dia útil) − capacidade)) — o que a
+      linha deixou de fazer com trabalho NA MÃO; depois, até o que a fila tomou
+      dele, a CAUSA da fila (a falta de antes passando para frente); o resto é
+      **excesso**. **Sequência** = vencido − o que sobrou na fila; a fila maior
+      que o vencido: na proporção, sequência 0. Fecha sempre (o teste prende;
+      a 3ª revisão rodou 20.000 semanas aleatórias: a soma fecha, nenhuma causa
+      negativa, a barra igual).
+    - ⚠ **Dia a dia, nunca a semana somada; e em FILA** (três revisões antes
       do merge): (1) a 1ª versão somava a capacidade da semana — o 04/11 acima
-      da média apagava o 05/11 a 76% (*"ritmo 0h02"*; certo 2h15). (2) A 2ª,
+      da média apagava o 05/11 a 76% (*"ritmo 0h02"*; pela regra de hoje,
+      2h21). (2) A 2ª,
       dia a dia SEM a fila, deixava a falta que OUTRO dia recuperou explicar o
       vencido (seg a 80%, ter recupera com hora extra, qua adianta o lote de
       quinta → dizia "ritmo" com a evidência dizendo "adiantou") e contava no
       pedido o que já tinha sido embalado antes do dia (o 16/11 real, com 5h20
-      da semana anterior, inventava excesso e ritmo). Os casos de 06/11 e de
-      16/11 dão o mesmo nas três versões que valem.
+      da semana anterior, inventava excesso e ritmo). (3) A 3ª, em fila, media
+      "abaixo da média" só contra o pedido do próprio dia: o dia LEVE que
+      herdou atraso e rodou a 80% jogava a falta na causa de ontem (seg 3.761,
+      ter 1.761, ter a 80% → "excesso 1h45" com a terça a "ritmo 80%" no
+      gráfico). Agora conta o trabalho que o dia tinha (pedido + fila): o
+      06/11 vai de 4h11 · 2h15 · 1h36 para **4h05 · 2h21 · 1h36** (o 05/11 tinha
+      1.391,3 herdados e rodou a 76%). O 16/11 não muda em nenhuma.
     - **Linha abaixo da média**, nunca "ritmo" (revisão): o recado do gráfico já
       é o *"ritmo da linha na semana: N%"* — a causa com o mesmo nome repetia a
       confusão que abriu a v7.273.0.
@@ -170,8 +178,10 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
       arredonda o acumulado (antes da semana + desta semana, como o
       `_taktPrecisaPartes`); as causas se repartem pelo acumulado e fecham
       nele (cada uma sozinha somava ±1 min — o defeito da v7.242.0).
-    - A hora extra é capacidade NO DIA: ela cobre o próprio dia, nunca o dia
-      fraco de outro (o ritmo de cada dia continua embaixo da barra).
+    - ~~A hora extra é capacidade NO DIA: ela cobre o próprio dia, nunca o dia
+      fraco de outro~~ (revogado na 2ª revisão da v7.273.0: na fila, a hora
+      extra de um dia paga a falta mais antiga — a terça que recupera a
+      segunda). O ritmo de cada dia continua embaixo da barra.
     - ⚠ **A sequência inclui** a capacidade que foi para o atraso de ANTES da
       segunda (o FIFO serve o mais antigo primeiro — é cascata, não erro de
       ordem) e para o que não estava programado. A evidência escrita é só o
@@ -195,36 +205,40 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
       8h02 vencidos desta semana — …"* (o NOME da barra PRECISA; era "de lotes
       da semana em aberto", que no herói é o PRECISA inteiro) —, as causas com
       tempo na ordem do tamanho, o *(o que é)* em tom de apoio (excesso =
-      *programado acima de 1 dia de linha*; ritmo = *a linha fez menos que a
-      média, contando a hora extra*; sequência = *havia capacidade; ela foi
+      *programado acima de 1 dia de linha*; linha abaixo da média = *a linha fez
+      menos que a média, contando a hora extra*; sequência = *havia capacidade; ela foi
       para outros lotes — adiantados, atraso de antes da semana ou à espera de
       peça*; na 1ª versão o do excesso e o do ritmo diziam a mesma coisa) e a
       evidência embaixo (feito × programado, o adiantado de hoje em diante, o
       atraso de antes da semana que a linha atende primeiro, o "aproximado");
-      papel (`papel:true`), uma frase DENTRO do "Por quê" (*"Venceram 8h02:
-      excesso de programação 6h24 · sequência 1h36 · ritmo da linha 0h02."*),
-      no lugar da divisão antiga — como div própria com a evidência o 🖨 ia de
-      700 a 740 px (folha de 718); assim, 700. A definição das três vai no
-      `td-def` do papel (*"Venceram = … excesso … ritmo … sequência …"*). O
-      `title` do recado perdeu a divisão antiga.
+      o *"para N programadas"* é o programado das BARRAS (Σ `d.uep`), com *"(N
+      delas já embaladas antes)"* quando há (3ª revisão: o Σ pedido sem o
+      adiantado saía *"22h37 programadas"* ao lado de barras de 27h57); papel
+      (`papel:true`), uma frase DENTRO do "Por quê" com os nomes curtos
+      (*"Venceram 8h02: excesso 4h05 · abaixo da média 2h21 · sequência
+      1h36."*), no lugar da divisão antiga, e a definição das três no `td-def`
+      (*"Venceram = … excesso … abaixo da média … sequência …"*) — a medição
+      está logo abaixo. O `title` do recado perdeu a divisão antiga.
     - O `T.cas` (o "do que não saiu" por dia, sem a hora extra) SAIU: ninguém
       o lia depois do POR QUE VENCEU (regra B5); o teste do "dia a dia, não a
       semana somada" passou para o `venc`.
-    - Retrato de 06/11: 8h02 = excesso 4h11 + abaixo da média 2h15 + sequência 1h36 (era
-      *"73% excesso · 27% ritmo"*; a 1ª versão, somada, dava 6h24 · 0h02 ·
-      1h36 — bloqueada). Semana de 16/11 (barras do print + o HISTORICO): 2h45
-      = sequência 2h45, *"fez 32h00 … para 27h57 …; adiantou 6h23"*.
+    - Retrato de 06/11: 8h02 = excesso 4h05 + abaixo da média 2h21 +
+      sequência 1h36 (era *"73% excesso · 27% ritmo"*; as versões bloqueadas
+      deram 6h24 · 0h02 · 1h36 e 4h11 · 2h15 · 1h36). Semana de 16/11 (barras
+      do print + o HISTORICO): 2h45 = sequência 2h45, *"fez 32h00 … para 27h57
+      …; adiantou 6h23"*.
     - Mutações (antes do merge): sem a fila → 4; o pedido com o adiantado → 3;
       sem herdar a causa da fila → 9; o vencido fora da conta da barra → 3;
       saldo null calado → 2; feriado sem histórico escondendo a divisão → 2; o
       nome do % de volta → 2; o singular errado → 2; a semana somada → 7; as
-      três arredondadas sozinhas → 2; o X inteiro → 2; e as da 1ª versão.
+      três arredondadas sozinhas → 2; o X inteiro → 2; abaixo da média sem o
+      herdado → 8; "programadas" sem o adiantado → 2; e as da 1ª versão.
     - ⚠ **Papel medido (A4 deitada, mídia de impressão, folha de 718, COM AS
       FONTES REAIS** — o Chromium pelo proxy, `preferCSSPageSize`; sem elas os
       números saem diferentes e enganam): com as três causas em nome longo e a
       definição no rodapé, o 🖨 TAKT foi a 2 folhas com as duas semanas. Ficou:
-      nomes curtos no papel (*"Venceram 8h02: excesso 4h11 · abaixo da média
-      2h15 · sequência 1h36"*, o 4º campo de `TKS_VENC_CAUSAS`), o "Por quê"
+      nomes curtos no papel (*"Venceram 8h02: excesso 4h05 · abaixo da média
+      2h21 · sequência 1h36"*, o 4º campo de `TKS_VENC_CAUSAS`), o "Por quê"
       sem o *"que a linha entrega sem hora extra"* (o `td-def` define a média),
       o `td-def` mais curto e a *Fonte* curta (com PONTOS, a produção, o
       `td-def` ia a 4 linhas e o papel a 716) — **680 (só esta semana) · 703
