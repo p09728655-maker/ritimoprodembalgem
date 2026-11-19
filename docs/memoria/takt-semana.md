@@ -118,9 +118,9 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
       - O teste prende a geometria pelo SVG (y + 3 ≤ altura; o texto na largura
         da coluna, contando as colunas desenhadas), a média ponderada = o
         `exec.pct` com feriado trabalhado, e a META variável.
-      - ⚠ O 🖨 TAKT ainda escreve *"Do que não saiu: X% excesso de programação,
-        Y% ritmo da linha"*: a conta muda no passo 2 (aprovado pelo PPCP no
-        mesmo dia: separar a SEQUÊNCIA), que reescreve tela e papel juntos.
+      - O 🖨 TAKT escrevia *"Do que não saiu: X% excesso de programação, Y%
+        ritmo da linha"*: o passo 2 (POR QUE VENCEU, logo acima) reescreveu
+        tela e papel juntos, na mesma publicação.
     - Na semana de 16/11 (HISTORICO): 3.028,6 → 110% · 2.462,6 → 89% (com 584,2
       de hora extra) · 3.441,6 → 125% (com 543,9). O que não saiu dessa semana
       NÃO veio só do ritmo: em 16 e 18/11 a linha fez mais que o programado do
@@ -128,6 +128,53 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
       dias (*"embalou 6h23 antes"*). É SEQUÊNCIA, que a conta carga × ritmo
       (UEP do dia contra o pedido do dia) não enxerga. Separar a 3ª causa foi
       oferecido ao PPCP (passo 2) e espera o ok — muda a conta.
+  - **POR QUE VENCEU (v7.273.0**, o passo 2 — PPCP 19/11/2026: *"passo 2 ok"*,
+    depois da regra mostrada com a semana de 16/11). O "do que não saiu"
+    (`cas`) dividia a falta de CADA DIA (total feito × total pedido no dia, sem
+    a hora extra) e não via a SEQUÊNCIA: na semana de 16/11 a linha fez ~32h de
+    linha (jornada + hora extra) para 27h57 programadas nos dias que passaram e
+    o recado dizia *"83% ritmo da linha"* para 2h45 vencidas — ela tinha
+    embalado 6h23 dos lotes de 19/11 antes (*"embalou 6h23 antes"*).
+    - A conta (`_taktMontar` → `T.venc`, minutos prontos em `venc.min`):
+      vencido = `falta.uepVenc` (o do veredito); dos dias que passaram,
+      **capacidade** = Σ (jornada + hora extra) — todo dia passado, útil ou
+      não; **falta de capacidade** = máx(0, programado − capacidade);
+      **ritmo** = mín(falta, máx(0, Σ mín(pedido, META do dia útil) −
+      capacidade)) — o mín dia a dia preserva a regra do "porquê dia a dia" (a
+      folga de um dia que pediu menos que a média não vira ritmo); **excesso**
+      = falta − ritmo; **sequência** = vencido − falta. Falta maior que o
+      vencido (lote fechado com X, adiantado da semana passada): excesso e
+      ritmo na proporção, até o vencido; sequência 0. Fecha sempre: excesso +
+      ritmo + sequência = vencido (o teste prende).
+    - A hora extra é capacidade: o dia fraco coberto pela hora extra de outro
+      não vira ritmo NO VENCIDO (o ritmo de cada dia continua embaixo da barra,
+      o "ritmo 76%" de 05/11).
+    - ⚠ **A sequência inclui** a capacidade que foi para o atraso de ANTES da
+      segunda (o FIFO serve o mais antigo primeiro — é cascata, não erro de
+      ordem) e para o que não estava programado. A evidência escrita é só o
+      adiantado de hoje em diante (`adiFrente` = Σ `adiUep` dos dias ≥ hoje). O
+      lote ABERTO por falta de peça antes do X também cai na sequência. Para
+      saber QUAL lote: o ATENDIMENTO POR LOTE INTERNO.
+    - Sem o histórico de algum dia útil que passou (`semHist`): o vencido sai,
+      a divisão não (a capacidade daquele dia não se sabe — o ritmo seria
+      culpado à toa).
+    - Desenho `_taktVencHtml(T, o)` (`TKS_VENC_CAUSAS`): tela, uma linha
+      `.tks-por.tks-pv` entre o PARA FECHAR e o DIA A DIA, as causas com tempo
+      na ordem do tamanho, o *(o que é)* em tom de apoio e a evidência embaixo;
+      papel (`papel:true`), uma frase DENTRO do "Por quê" (*"Venceram 8h02:
+      excesso de programação 6h24 · sequência 1h36 · ritmo da linha 0h02."*),
+      no lugar da divisão antiga — como div própria com a evidência o 🖨 ia de
+      700 a 740 px (folha de 718); assim, 700. O `title` do recado perdeu a
+      divisão antiga.
+    - O `T.cas` segue montado (o teste prende a conta antiga e o fecha-sempre),
+      sem desenho.
+    - Retrato de 06/11: 8h02 = excesso 6h24 + sequência 1h36 + ritmo 0h02 (era
+      *"73% excesso · 27% ritmo"*). Semana de 16/11 (barras do print + o
+      HISTORICO): 2h45 = sequência 2h45, *"fez 32h00 … para 27h57 … adiantou
+      6h23"*. Mutações: 10 de 10 (sem a hora extra na capacidade, sem o mín da
+      média, sem a sequência, sem limitar ao vencido, sem a evidência, dividir
+      sem o histórico, fora da ordem, fora da tela, fora do papel, hoje na
+      conta).
   - **AGORA na MESMA unidade**: takt e referência × UEP/cx do código de agora
     = segundos por caixa; a última hora de jornada FECHADA em s por caixa
     também (só desse produto e cor: as caixas; com outro produto ou cor: o

@@ -627,6 +627,7 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-uep .tks-sec-r b{font-weight:700}
 #sec-uep .tks-por{font-size:14px;color:var(--txt2);line-height:1.5;margin:0 0 4px;padding:0 4px}
 #sec-uep .tks-por b{color:var(--txt);font-weight:600}
+#sec-uep .tks-pv i{font-style:normal;color:var(--txt2)} #sec-uep .tks-pv .tks-pv-e{display:block;font-size:12.5px}   /* v7.273.0: POR QUE VENCEU — o (o que é) e a evidência em tom de apoio */
 #sec-uep .tks-fl{font-size:15px;color:var(--txt);background:var(--elevated);border:1px solid var(--border);border-left:4px solid var(--red);border-radius:7px;padding:9px 14px;margin:0 0 10px}
 #sec-uep .tks-det{margin-top:16px;border-top:1px solid var(--border);padding-top:10px}
 #sec-uep .tks-det>summary{cursor:pointer;font-family:var(--font-d);font-size:10.5px;letter-spacing:1.5px;color:var(--txt2);padding:4px 0;list-style-position:inside}
@@ -11072,6 +11073,36 @@ function _taktMontar(S, hist, H, pts, est){
     cas.pedido+=p; cas.carga+=carga; cas.ritmo+=ritmo; cas.adiant+=adiant; cas.feito+=f; cas.he+=d.he||0;
     cas.dias.push({ data:d.data, pedido:p, feito:f, he:d.he||0, ref:r, carga, ritmo, adiant, pedePct:r>0?p/r*100:null, feitoPct:r>0?f/r*100:null });
   });
+  // v7.273.0 — POR QUE VENCEU (PPCP, 19/11/2026: "passo 2 ok"). O "do que não
+  // saiu" (cas, acima) compara o TOTAL feito com o TOTAL pedido de cada dia:
+  // na semana de 16/11 a linha fez 32h01 de linha (jornada + hora extra) para
+  // 27h57 programadas e ele culpava o ritmo (83%) por 2h45 vencidas — a linha
+  // tinha embalado 6h23 dos lotes de 19/11 antes. Aqui se explica o VENCIDO (o
+  // saldo dos lotes desta semana com data antes de hoje, o do veredito) pela
+  // capacidade dos dias que passaram:
+  //   falta de capacidade = máx(0, programado − (jornada + hora extra))
+  //   ritmo   = a parte em que a capacidade ficou abaixo do que cabia na média,
+  //             DIA A DIA (Σ mín(pedido, META do dia útil); dia que pediu menos
+  //             que a média não empurra folga para o ritmo)
+  //   excesso = o resto da falta (programado acima do que a linha fez)
+  //   sequência = vencido − falta: havia capacidade e a linha embalou outros
+  //             lotes (de hoje e dos próximos dias, de antes da segunda ou fora
+  //             da programação). Falta maior que o vencido (lote fechado com X,
+  //             adiantado da semana passada): excesso e ritmo na proporção, até
+  //             o vencido; sequência 0.
+  // Sem o histórico de algum dia útil que passou: incompleto (a capacidade
+  // sairia menor e o ritmo, culpado à toa).
+  const pas=dias.filter(d=>d.passado);
+  const vProg=soma(pas, d=>d.uep), vMed=soma(pas, d=>Math.min(d.uep, d.util ? Number(d.meta)||0 : 0));
+  const vCap=soma(pas, d=>(Number(d.feito)||0)+(Number(d.he)||0)), vCurto=Math.max(0, vProg-vCap);
+  const vRit=Math.min(vCurto, Math.max(0, vMed-vCap)), vUep=Math.max(0, Number(falta.uepVenc)||0);
+  const vEsc=vCurto>vUep && vCurto>0 ? vUep/vCurto : 1;
+  const venc={ uep:vUep, carga:(vCurto-vRit)*vEsc, ritmo:vRit*vEsc, seq:Math.max(0, vUep-vCurto),
+    prog:vProg, cap:vCap, media:vMed, adiFrente:soma(dias.filter(d=>d.n>=hojeN), d=>d.adiUep),
+    semHist:pas.filter(d=>d.util && d.feito==null).map(d=>d.data) };
+  // em minutos de linha (÷ META UEP × 527, a régua do veredito), arredondados uma vez — o desenho só escreve
+  const vMin=x=>meta>0 ? Math.round(x*UEP_MIN_DIA/meta) : 0;
+  venc.min={ uep:vMin(venc.uep), carga:vMin(venc.carga), ritmo:vMin(venc.ritmo), seq:vMin(venc.seq), prog:vMin(vProg), cap:vMin(vCap), adiFrente:vMin(venc.adiFrente) };
   // o saldo cabe no que resta? hoje até o fim da jornada + os dias úteis que vêm, na referência
   const dHoje=porN[hojeN], futuros=uteis.filter(d=>d.n>hojeN);
   const restHoje=dHoje && dHoje.util ? Math.min(Math.max(0, Number(h.restMin)||0), UEP_MIN_DIA)*meta/UEP_MIN_DIA : 0;
@@ -11087,7 +11118,7 @@ function _taktMontar(S, hist, H, pts, est){
     exec:{ uep:exUep, min:exMin, s:exUep>0 ? exMin*fProd*60/exUep : null, pct:exMeta>0 ? exUep/exMeta*100 : null,
            nFech:ex.filter(d=>d.passado).length, minHoje:dHoje && dHoje.util && ex.indexOf(dHoje)>=0 ? dHoje.min : 0,
            he:heUteis, fora:foraUteis },
-    cas, falta, semDado:dias.filter(d=>d.semDado).map(d=>d.data), adiCampo };
+    cas, venc, falta, semDado:dias.filter(d=>d.semDado).map(d=>d.data), adiCampo };
 }
 // SEMANA QUE VEM: o planejamento (nada foi feito ainda). Pelo SALDO de cada dia
 // útil (futura = a QTDE; o que já foi adiantado sai), contra a referência:
@@ -11387,8 +11418,7 @@ function _taktHtml(T, G, opt){
   // v7.232.0 (PPCP: "tire redundância, deixar enxuta, direta"): sem os cartões em s
   // por UEP, a frase, a cascata e o agora dos DETALHES — repetiam o veredito, o
   // gráfico e a faixa NA LINHA E NO APP. O porquê é o recado do gráfico.
-  const X=T.exec, C=T.cas, F=T.falta;
-  const tot=C.carga+C.ritmo, pc=v=>tot>0 ? Math.round(v/tot*100)+'%' : '—';
+  const X=T.exec, F=T.falta;
   // DIA A DIA
   const svg=_taktSvg(T, o.largura||760);
   const fora=T.progForaUtil>0 ? T.dias.filter(d=>!d.util && d.uep>0).map(d=>`${d.data.slice(0, 5)} ${TKS_DOW[d.dow]}`).join(', ') : '';
@@ -11406,7 +11436,7 @@ function _taktHtml(T, G, opt){
   // a ordem: o veredito e o que fazer, o dia a dia (onde e por quê), o número da linha e do app.
   const porT=`A programação pediu ${fmtP(T.pede)} da média que a linha entrega sem hora extra (${_tkS(T.takt)} contra ${_tkS(T.ref)} s por UEP, sem o setup)`
     +(X.pct!=null ? `, e a linha rodou a ${fmtP(X.pct)} dessa média` : '')
-    +(tot>=1 ? `. Do que não saiu nos dias fechados, ${pc(C.carga)} foi excesso de programação e ${pc(C.ritmo)} ritmo da linha` : '')+'.';
+    +'.';   // v7.273.0: a divisão das causas é o POR QUE VENCEU (do vencido), embaixo do PARA FECHAR
   // v7.273.0 (PPCP: "como mostrar ritmo da linha"): o recado é o RITMO da semana
   // — o mesmo número do "no ritmo atual" do veredito. Era "do que não saiu: 17%
   // excesso de programação · 83% ritmo da linha" ao lado de um veredito que dizia
@@ -11415,7 +11445,7 @@ function _taktHtml(T, G, opt){
   const porR=X.pct!=null ? `ritmo da linha na semana: <b>${fmtP(X.pct)}</b> da média · a programação pede <b>${fmtP(T.pede)}</b>`
     : `a programação pede <b>${fmtP(T.pede)}</b> da média`;
   return tit+_taktHeroHtml(o.V, { semana:'esta', ate:F.ate, partes:_taktPrecisaPartes(T, o.V) })+_taktAntesAviso(T)
-    +_taktFecharHtml(_taktFecharDados(o.V, { semana:'esta', ate:F.ate }))
+    +_taktFecharHtml(_taktFecharDados(o.V, { semana:'esta', ate:F.ate }))+_taktVencHtml(T)
     +`<div class="uep-sec"><b>DIA A DIA</b> horas de linha · programado × feito<span class="tks-sec-r" title="${e(porT)}">${porR}</span></div><div class="uep-card" id="tks-g-box">${svg}`
     +`<div class="uep-leg"><span class="tks-lb">programado até 1 dia de linha</span><span class="tks-lx">programado acima de 1 dia</span>${T.dias.some(d=>d.adiUep*UEP_MIN_DIA/T.meta>=0.5) ? '<span class="tks-la">embalou antes (adiantado)</span>' : ''}<span style="--c:var(--tks-feito)">feito na jornada</span><span style="--c:var(--warn)">hora extra</span><span class="tks-lr">1 dia de linha (${_fmtHM(UEP_MIN_DIA)} = média de ${n0(T.meta)} UEP entregues sem hora extra)</span>${T.dias.some(d=>d.ritmo!=null) ? '<span class="tks-lt">ritmo: o feito na jornada (azul) contra a média do dia — no dia fechado, 100% é a linha branca; hoje, só as horas já lançadas</span>' : ''}</div></div>`
     +_taktFaixaHtml(_taktFaixa(T, { G }), _taktPorCaixa(T), T)
@@ -12461,6 +12491,28 @@ function _taktAntesAviso(T, papel){
   const t=_taktAntesForaTxt(T.falta.antesFora, T.de);
   return papel ? `<div class="tks-por"><b>Atenção:</b> ${t}</div>` : `<div class="uep-nota" style="color:var(--warn);margin:0 0 8px">${t}</div>`;
 }
+// POR QUE VENCEU (v7.273.0) — desenho, sem conta (T.venc). As causas com tempo,
+// na ordem do tamanho; só as que existem. A evidência: o que a linha fez contra o
+// programado nos dias que passaram e o que ela adiantou dos lotes de hoje em
+// diante. Nada vencido (menos de 1 min), nada. o.papel: uma frase curta DENTRO
+// do "Por quê" (no lugar da divisão antiga), sem o "(o que é)" nem a evidência —
+// como div própria o 🖨 TAKT ia de 700 a 740 px e passava da folha (718).
+const TKS_VENC_CAUSAS=[
+  ['carga', 'excesso de programação', 'programado acima do que a linha fez'],
+  ['ritmo', 'ritmo da linha', 'a linha rendeu abaixo do pedido'],
+  ['seq', 'sequência', 'havia capacidade; a linha embalou outros lotes']];
+function _taktVencHtml(T, o){
+  const v=T && T.venc, op=o||{}, hm=_fmtHM;
+  if(!v || !v.min || v.min.uep<1) return '';
+  const semH=v.semHist && v.semHist.length ? `sem o histórico de ${v.semHist.map(x=>_rpEsc(x.slice(0, 5))).join(', ')}, a divisão não sai` : '';
+  const cs=TKS_VENC_CAUSAS.map(([k, nome, dz])=>({ nome, dz, min:v.min[k] })).filter(c=>c.min>=1).sort((a, b)=>b.min-a.min);
+  const lista=cs.map(c=>`<b>${c.nome} ${hm(c.min)}</b>${op.papel ? '' : ` <i>(${c.dz})</i>`}`).join(' · ');
+  if(op.papel) return ` Venceram <b>${hm(v.min.uep)}</b>: ${semH || lista || 'menos de 1 min por causa'}.`;
+  if(semH) return `<div class="tks-por tks-pv"><b>Por que venceu:</b> ${hm(v.min.uep)} de lotes da semana em aberto — ${semH}.</div>`;
+  const ev=`a linha fez ${hm(v.min.cap)} de linha (jornada + hora extra) para ${hm(v.min.prog)} programadas nos dias que passaram`
+    +(v.min.adiFrente>=1 ? ` e adiantou ${hm(v.min.adiFrente)} dos lotes de hoje em diante` : '');
+  return `<div class="tks-por tks-pv"><b>Por que venceu:</b> ${hm(v.min.uep)} de lotes da semana em aberto — ${lista || 'menos de 1 min por causa'}. <span class="tks-pv-e">${ev[0].toUpperCase()+ev.slice(1)}.</span></div>`;
+}
 function _taktHeroHtml(V, o){
   if(!V) return '';
   const esta=o.semana==='esta', hm=_fmtHM, nada=V.uep<1, un=o.unid||'caixas';
@@ -12594,13 +12646,12 @@ function _taktDocHtml(A, ctx){
   // ESTA SEMANA
   let esq;
   if(T && T.takt!=null){
-    const C=T.cas, t2=C.carga+C.ritmo, pc=v=>Math.round(v/t2*100)+'%';
     esq=`<div class="td-h">ESTA SEMANA<small>${per(T)} · até ${e(ctx.hora)}</small></div>`
       +_taktHeroHtml(V0, { semana:'esta', ate:T.falta.ate, partes:_taktPrecisaPartes(T, V0) })+_taktAntesAviso(T, true)
       +_taktFecharHtml(_taktFecharDados(V0, { semana:'esta', ate:T.falta.ate }), { papel:true })
       +`<div class="tks-por"><b>Por quê:</b> a programação pediu <b>${fmtP(T.pede)}</b> da média que a linha entrega sem hora extra`
       +(T.exec.pct!=null ? `, e a linha rodou a <b>${fmtP(T.exec.pct)}</b> dessa média` : '')
-      +(t2>=1 ? `. Do que não saiu: <b>${pc(C.carga)} excesso de programação</b>, <b>${pc(C.ritmo)} ritmo da linha</b>` : '')+'.</div>'
+      +'.'+_taktVencHtml(T, { papel:true })+'</div>'
       +`<div class="td-t">Dia a dia · horas de linha</div>${_taktSvg(T, TKS_DOC_SVG_W, { h:TKS_DOC_SVG_H })}`
       +`<div class="td-leg"><span><i style="background:#A0AEC0"></i>programado</span><span><i style="background:#C62828"></i>acima de 1 dia</span><span><i style="background:#3B7DD8"></i>feito</span><span><i style="background:#B26A00"></i>hora extra</span><span><i style="height:0;border-top:2px solid #1F2328"></i>1 dia de linha (${hm(UEP_MIN_DIA)})</span></div>`;
   } else esq=`<div class="td-h">ESTA SEMANA</div><div class="tks-por">Sem programação lida desta semana.</div>`;
