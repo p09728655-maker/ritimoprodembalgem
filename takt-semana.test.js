@@ -234,8 +234,9 @@ ok('03/11: pediu 3.229, a linha fez 2.686 → 543 em aberto: 75 abaixo da média
   const Sm = { ok:true, de:'09/11/2026', ate:'15/11/2026', hoje:'11/11/2026', feriados:[],
     linhas:[Object.assign(U(2761), { data:'09/11/2026', dataNum:20261109, saldo:552 }), Object.assign(U(3300), { data:'10/11/2026', dataNum:20261110, saldo:0 })] };
   const Tm = _taktMontar(Sm, [{ data:'09/11/2026', uep:2208.8, uepHe:0, metaUep:2761 }, { data:'10/11/2026', uep:3313.2, uepHe:0, metaUep:2761 }], { num:20261111, minNorm:0, restMin:527, uep:0, he:0, meta:2761 });
-  // pela fila: a terça paga 1º os 552 da segunda e fica sem 539 do próprio (herdam "abaixo da média"); ela fez 13
-  // a mais que o pedido + a fila, que podiam ter ido para o lote da segunda — sequência 13
+  // segunda a 2.208,8 (552 abaixo da média, em aberto); a terça, acima da média, fica com 539 em aberto (552 +
+  // 3.300 − 3.313,2) — o excesso pela média é 0, então os 539 são abaixo da média; os 13 que a terça fez a mais
+  // podiam ter ido para o lote da segunda — sequência 13
   ok('o dia forte não paga o fraco: segunda a 80% → abaixo da média 539 (a falta passada para a terça) + sequência 13 (o que a terça fez a mais); nada de excesso',
      [r1(Tm.venc.ritmo), r1(Tm.venc.carga), r1(Tm.venc.seq), Tm.venc.min.uep], [539, 0, 13, 105]); }
 // 2ª revisão (o caso dela): seg a 80% (552), ter pede 2.400 e faz 2.761 + 200 de hora extra (recupera os 552), qua
@@ -434,9 +435,9 @@ console.log('\n── v7.273.0: o ritmo de cada dia ──');
   // ── v7.273.0 — POR QUE VENCEU (PPCP, 19/11/2026: "passo 2 ok") ──
   // O "do que não saiu" dividia a falta de CADA DIA (total feito × total pedido) e não via a sequência:
   // na semana de 16/11 a linha fez 32h de linha para 27h57 programadas e ele culpava o ritmo (83%) pelas
-  // 2h45 vencidas. Aqui: falta de capacidade = programado − (jornada + hora extra) dos dias que passaram;
-  // ritmo = a parte abaixo do que cabia na média, dia a dia (Σ mín(pedido, META)); excesso = o resto da
-  // falta; sequência = vencido − falta (havia capacidade e a linha embalou outros lotes).
+  // 2h45 vencidas. Aqui, dia a dia: ABERTO = máx(0, ABERTO + pedido − capacidade); EXCESSO = máx(0, EXCESSO +
+  // pedido − máx(capacidade, META do dia útil)); abaixo da média = ABERTO − EXCESSO; sequência = vencido −
+  // ABERTO (havia capacidade e a linha embalou outros lotes).
   {
     const v = T.venc;
     ok('03–05/11 (o retrato de 06/11): vencido 2.526,3 UEP (524 + 272 + 1.731 de saldo) = excesso 1.282,9 + abaixo da média 740,8 (75 + 665,8) + sequência 502,6',
