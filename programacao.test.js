@@ -665,6 +665,31 @@ console.log('\n── adiantadoHoje: quanto dos lotes de hoje já foi embalado a
      c15b.programadoHoje, c15b.adiantadoHoje + 181 + c15b.hojeRestante);
 }
 {
+  // revisão: a regra inteira, não só o caso feliz — (1) SÓ os lotes de hoje: o vencido que também abriu com
+  // crédito fica fora (somado, 130 "já embaladas antes" para 50 programadas); (2) o lote de hoje com X conta o
+  // crédito dele (60 de 14/10; as 30 de hoje não entram na encerrada sem PRODUZIDO); (3) as DUAS abas: no
+  // caminho real o 25300 vai para a CONCLUIDA no próprio dia, depois das 180, e o número não pode cair (514).
+  const venc = montar([{ lote: 'A', data: '14/10/2026', cod: '501.060.005', qtde: 100 }, { lote: 'B', data: '15/10/2026', cod: '501.142.001', qtde: 50 }],
+                      [['13/10/2026', '501060005', 100], ['14/10/2026', '501142001', 30]], { hoje: '15/10/2026' }).calc();
+  const enc = montar([{ lote: 'LX', data: '15/10/2026', cod: '501.153.001', qtde: 100, enc: 'X' }],
+                     [['14/10/2026', '501153001', 60], ['15/10/2026', '501153001', 30]], { hoje: '15/10/2026' }).calc();
+  const prog = [
+    { lote: '25291', data: '14/10/2026', cod: '501.060.005', qtde: 80 },
+    { lote: '25295', data: '15/10/2026', cod: '501.142.001', qtde: 65 },
+    { lote: '25295', data: '15/10/2026', cod: '501.142.002', qtde: 450 },
+    { lote: '25300', data: '15/10/2026', cod: '501.153.001', qtde: 200 },
+  ];
+  const m = montar(prog, [['14/10/2026', '501060005', 78], ['14/10/2026', '501142001', 64], ['14/10/2026', '501142002', 450],
+                          ['14/10/2026', '501153001', 20]], { hoje: '14/10/2026' });
+  m.rodar();
+  m.setHoje('15/10/2026');
+  m.ABAS.PRODUCAO_PRODUTO.push(['15/10/2026', '07:00', '501142001', 'X', 1], ['15/10/2026', '07:00', '501153001', 'X', 180]);
+  const r = m.rodar(), A = m.ABAS.PROGRAMACAO_CONCLUIDA;
+  ok('só os lotes de hoje (o vencido com crédito fora: 30 de 50, não 130); o de hoje com X conta o crédito (60); no caminho real, com o 25300 já na CONCLUIDA, continua 534',
+     [venc.adiantadoHoje, venc.programadoHoje, enc.adiantadoHoje, enc.programadoHoje, r.p.adiantadoHoje, !!linha(A, '25300', '501.153.001')],
+     [30, 50, 60, 100, 534, true]);
+}
+{
   // ENCERRADA: o adiantado nunca passa do que ela produziu
   const m = montar([{ lote: 'L1', data: '07/10/2026', cod: '501106005', qtde: 220, enc: 'X' }], [['06/10/2026', '501106005', 219]]);
   m.rodar();

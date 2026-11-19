@@ -5420,10 +5420,12 @@ function _metaDiaAba(){
   return s>0?s:null;
 }
 // O texto da linha de apoio do card META DO DIA (hoje e dia passado). `adi`
-// (só hoje, v7.274.0): quanto do programado do dia já foi embalado antes.
+// (só hoje, v7.274.0): quanto do programado do dia já foi embalado antes — e
+// então o "faltam" diz a base ("para a meta"): lido ao lado do "já embaladas",
+// parecia o que falta embalar dos lotes (revisão).
 function _metaPartesTxt(p, gap, passado, adi){
-  const falta=gap<=0?'ATINGIDA ✓':(passado?'faltaram ':'faltam ')+fmtN(Math.abs(gap));
-  const ja=!passado && adi>0 ? ` (${fmtN(adi)} já embaladas antes)` : '';
+  const ja=!passado && adi>0 ? ` (${plural(adi, 'já embalada antes', 'já embaladas antes')})` : '';
+  const falta=gap<=0?'ATINGIDA ✓':(passado?'faltaram ':'faltam ')+fmtN(Math.abs(gap))+(ja?' para a meta':'');
   return (p && p.atraso>0)
     ? `${fmtN(p.metaDia)} do dia${ja} + ${fmtN(p.atraso)} de atraso · ${falta}`
     : 'caixas programadas'+ja+' · '+falta;
@@ -18255,7 +18257,7 @@ function renderTV(){
   // Tela B, quanto dela já foi embalado antes de hoje — fato, sem cor; a meta e o
   // selo não mudam
   const adiTV=fds?0:_progAdiHoje(), mu=document.getElementById('tvb-meta-unit');
-  if(mu) mu.textContent=adiTV>0?'CAIXAS · '+fmtN(adiTV)+' JÁ EMBALADAS ANTES':'CAIXAS';
+  if(mu) mu.textContent=adiTV>0?'CAIXAS · '+plural(adiTV, 'JÁ EMBALADA ANTES', 'JÁ EMBALADAS ANTES'):'CAIXAS';
   document.getElementById('tv-ritmo').textContent=fmtN(k.ritmo);
   // NECESSÁRIO: nas horas restantes, mostra o ritmo (cx/hora) p/ bater a meta.
   // Na última hora (sem horas futuras), mostra quanto ainda FALTA para a meta.

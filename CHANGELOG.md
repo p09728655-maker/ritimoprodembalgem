@@ -27,7 +27,7 @@ opção *"1"*.
   cai) e a semana fecha certa.
 - **O painel diz quanto dela já saiu antes**, sem cor:
   - **gerencial do PC**, card CAIXAS PROGRAMADAS: *"3.900 do dia (1.986 já
-    embaladas antes) + 318 de atraso · faltam N"*;
+    embaladas antes) + 318 de atraso · faltam N para a meta"*;
   - **TV, Tela B**, embaixo da META DO DIA: *"CAIXAS · 1.986 JÁ EMBALADAS
     ANTES"* (cabe numa linha a 1920×1080 e a 1366×768; a altura não muda).
 

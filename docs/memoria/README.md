@@ -27,6 +27,7 @@ de tema entra aqui também.
 - O que é gravado no HISTORICO tem de fechar consigo mesmo
 - META DO DIA = META DIA + ATRASO META — opção A (v7.202.0 / `.gs` v5.55)
 - SÁBADO E DOMINGO SÃO HORA EXTRA O DIA INTEIRO (`.gs` v5.68 / v7.248.0 / mobile 1.51.0 / rp-core 1.19.0)
+- O QUE JÁ FOI EMBALADO ANTES NA META DO DIA (v7.274.0 / `.gs` v5.76)
 - `.gs` v5.46 a v5.54 — o que mudou de regra (05/11/2026)
 
 ## TV — `tv.md`

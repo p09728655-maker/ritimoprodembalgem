@@ -775,13 +775,16 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
 - **Painel (v7.274.0)**, sem cor, só hoje, só com o campo (backend antigo =
   nada muda), a META e o selo iguais:
   - gerencial do PC, card CAIXAS PROGRAMADAS: *"3.900 do dia (1.986 já
-    embaladas antes) + 318 de atraso · faltam N"*; sem atraso, *"caixas
-    programadas (1.986 já embaladas antes) · faltam N"* (`_metaPartesTxt(p,
-    gap, passado, adi)`; o dia passado não tem o número). O porquê vai no
-    `title`;
+    embaladas antes) + 318 de atraso · faltam N para a meta"*; sem atraso,
+    *"caixas programadas (1.986 já embaladas antes) · faltam N para a meta"*
+    (`_metaPartesTxt(p, gap, passado, adi)`; o dia passado não tem o número).
+    O *"para a meta"* só vem com o adiantado (revisão: lido ao lado do "já
+    embaladas", o "faltam" parecia o que falta embalar dos lotes — que é o
+    P/ ZERAR). Singular pelo `plural()` (*"1 já embalada antes"*: o FIFO
+    credita sobras de 1 a 10 cx). O porquê vai no `title`;
   - Tela B (a que roda), embaixo da META DO DIA: *"CAIXAS · 1.986 JÁ EMBALADAS
-    ANTES"* (`#tvb-meta-unit`, escrito pelo `renderTV`); sábado e domingo,
-    *"CAIXAS"*. Medido com as fontes reais: numa linha a 1920×1080 (termina em
+    ANTES"* (`#tvb-meta-unit`, escrito pelo `renderTV`; *"1 JÁ EMBALADA
+    ANTES"*); sábado e domingo, *"CAIXAS"*. Medido com as fontes reais: numa linha a 1920×1080 (termina em
     1.666 de 1.824) e a 1366×768 (1.219 de 1.298), a linha do card com a mesma
     altura (203 / 149 px) — até com 12.345;
   - Tela A, o PRODUZIR HOJE P/ ZERAR do aviso de atraso (`#tv-atraso-meta-val`)
@@ -789,9 +792,20 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     com o MESMO nome do card da Tela C, que mostra o que falta
     (`_progFaltaZerar`). Agora os dois leem o `_progFaltaZerar`.
   - Não mexido: o FALTAM, o % DA META DO DIA, a PROJEÇÃO e o selo (contra a
-    meta cheia, a regra); o celular (o gerencial dele julga pela UEP).
+    meta cheia, a regra); o celular (o gerencial dele julga pela UEP). Dito ao
+    PPCP na entrega (*"o FALTAM, o % DA META DO DIA e o selo da TV continuam
+    medidos contra a meta cheia"*), sem objeção. ⚠ Na Tela B o FALTAM fica logo
+    abaixo do *"JÁ EMBALADAS ANTES"* e pode ser lido como "falta embalar"
+    (revisão): se o PPCP pedir, a unidade do FALTAM ganha o *"PARA A META"* —
+    medir a 1366 antes (com hora extra ela já é *CAIXAS NA JORNADA*).
 - Testes: `relatorios.test.js` (o `renderTV` real: a unidade, o P/ ZERAR 1.800
-  em vez de 4.218, sábado, backend antigo; o card do gerencial com o texto e o
-  `title`; o `_metaPartesTxt` com e sem o adiantado). Mutações: o P/ ZERAR pela
-  meta cheia → 2; o card sem o adiantado → 3; a TV sem → 2; o sábado com → 2;
-  o `.gs` com a produção do dia (`dia[0]`) → 3; sem o campo → 3.
+  em vez de 4.218, sábado, backend antigo, o singular; o card do gerencial com
+  o texto e o `title`; o `_metaPartesTxt` com e sem o adiantado, o singular, o
+  ATINGIDA). `programacao.test.js` (revisão — a regra inteira, não só o caso
+  feliz): só os lotes de HOJE (o vencido com crédito fora: 30 de 50, não 130),
+  o de hoje com X conta o crédito dele (60), e o caminho REAL (`rodar()`) com o
+  25300 já na CONCLUIDA no próprio dia continua 534 (as duas abas). Mutações:
+  o P/ ZERAR pela meta cheia → 2; o card sem o adiantado → 3; a TV sem → 2; o
+  sábado com → 2; o `.gs` com a produção do dia (`dia[0]`) → 3; sem o campo →
+  3; `lot.d <= hoje` → 2; sem a CONCLUIDA (`!lot.arq`) → 2; sem a encerrada
+  (`!lot.enc`) → 2; sem o singular → 2 (card e TV); sem o "para a meta" → 3.

@@ -3177,10 +3177,11 @@ console.log('\n── hora extra sem meta: a CONTA de verdade (calcKPIs do PC e 
   { const prog = { programadoHoje:3900, adiantadoHoje:1986, atrasoTotal:318, metaEfetiva:4218, faltaZerar:1800, embaladoHoje:432 };
     const a = roda('pc', { hoje:D, agora:'13:05', c3:7, lanc:LANC, meta:4218, prog }), v = roda('pc', { hoje:D, agora:'13:05', c3:7, lanc:LANC, meta:4218 }),
           sab = roda('pc', { hoje:'21/11/2026', agora:'10:05', c3:7, lanc:{ '07:00':100 }, meta:4218, prog }),
-          ant = roda('pc', { hoje:D, agora:'13:05', c3:7, lanc:LANC, meta:4218, prog:{ programadoHoje:3900, atrasoTotal:318, metaEfetiva:4218, embaladoHoje:432 } });
+          ant = roda('pc', { hoje:D, agora:'13:05', c3:7, lanc:LANC, meta:4218, prog:{ programadoHoje:3900, atrasoTotal:318, metaEfetiva:4218, embaladoHoje:432 } }),
+          um = roda('pc', { hoje:D, agora:'13:05', c3:7, lanc:LANC, meta:4218, prog:Object.assign({}, prog, { adiantadoHoje:1 }) });
     ok('TV com 1.986 dos lotes de hoje embaladas na véspera: META 4.218 (a mesma), embaixo "CAIXAS · 1.986 JÁ EMBALADAS ANTES"; P/ ZERAR = 1.800 (era 4.218); sem o adiantado, "CAIXAS"; no sábado, "CAIXAS"; backend antigo: P/ ZERAR pela conta antiga (4.218 − 432)',
-       [a.metaB, a.metaU, a.zerar, a.k.meta, v.metaU, sab.metaU, ant.metaU, ant.zerar],
-       ['4.218', 'CAIXAS · 1.986 JÁ EMBALADAS ANTES', '1.800', 4218, 'CAIXAS', 'CAIXAS', 'CAIXAS', '3.786']); }
+       [a.metaB, a.metaU, a.zerar, a.k.meta, v.metaU, sab.metaU, ant.metaU, ant.zerar, um.metaU],
+       ['4.218', 'CAIXAS · 1.986 JÁ EMBALADAS ANTES', '1.800', 4218, 'CAIXAS', 'CAIXAS', 'CAIXAS', '3.786', 'CAIXAS · 1 JÁ EMBALADA ANTES']); }
   ok('17/11 16:22, celular: o mesmo selo do PC (ritmo e esperado)',
      [+m17.k.efRitmo.toFixed(2), Math.round(m17.k.metaAteAgora)], [94.64, 1255]);
   ok('17/11 16:22: o % da meta, a barra e FALTAM sem a hora extra — 88,0% (era 108,2%), faltam 162; a PRODUÇÃO ACUMULADA segue com ela (1.461)',
@@ -6205,8 +6206,12 @@ console.log('\n── estudo de UEP ──');
   ok('hoje com lotes adiantados: "3.900 do dia (1.986 já embaladas antes) + 318 de atraso"; sem atraso, "caixas programadas (… já embaladas antes)"; no dia passado e sem adiantado, o de sempre',
      [_metaPartesTxt({ metaDia: 3900, atraso: 318 }, 2218, false, 1986), _metaPartesTxt(_metaPartes(3900, 3900), 1500, false, 1986),
       _metaPartesTxt({ metaDia: 3900, atraso: 318 }, 200, true, 1986), _metaPartesTxt({ metaDia: 3900, atraso: 318 }, 2218, false, 0)],
-     ['3.900 do dia (1.986 já embaladas antes) + 318 de atraso · faltam 2.218', 'caixas programadas (1.986 já embaladas antes) · faltam 1.500',
+     ['3.900 do dia (1.986 já embaladas antes) + 318 de atraso · faltam 2.218 para a meta', 'caixas programadas (1.986 já embaladas antes) · faltam 1.500 para a meta',
       '3.900 do dia + 318 de atraso · faltaram 200', '3.900 do dia + 318 de atraso · faltam 2.218']);
+  // revisão: uma sobra de 1 cx que o FIFO credita (a memória registra sobras de 1 a 10) — o singular; e com a meta batida, ATINGIDA
+  ok('1 caixa embalada antes: "(1 já embalada antes)"; com a meta batida, "ATINGIDA ✓" sem o "para a meta"',
+     [_metaPartesTxt({ metaDia: 3900, atraso: 0 }, 2218, false, 1), _metaPartesTxt({ metaDia: 3900, atraso: 318 }, 0, false, 1986)],
+     ['caixas programadas (1 já embalada antes) · faltam 2.218 para a meta', '3.900 do dia (1.986 já embaladas antes) + 318 de atraso · ATINGIDA ✓']);
   ok('as colunas META DIA e ATRASO META só entram quando a META difere da META DIA em algum dia',
      [_histTemMetaComp([{ meta: 1550, metaDia: 1550, atrasoMeta: 0 }, { meta: 1500, metaDia: null, atrasoMeta: null }]),
       _histTemMetaComp([{ meta: 2150, metaDia: 1550, atrasoMeta: 600 }]), _histTemMetaComp([{ meta: 1100, metaDia: 1157, atrasoMeta: 0 }]),
