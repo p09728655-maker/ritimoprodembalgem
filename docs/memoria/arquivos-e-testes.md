@@ -220,6 +220,14 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
     - o escape, o papel e o app.
     - O FIFO real fica no `programacao.test.js`.
     - Pegou 20 de 20 mutações: `node lote-interno.test.js`.
+- `cache-partes.test.js` — RESPOSTA ACIMA DE 100 KB VAI AO CACHE EM PARTES
+  (`.gs` v5.74): o `doGet` real numa vm, com um CacheService que RECUSA valor
+  acima de 100 KB (como o do Google) e 431 códigos no formato da PRODUTO_CODIGO
+  de 19/11. Confere: a 2ª chamada sai do cache sem ler a planilha; parte que
+  sumiu relê e devolve a resposta inteira; gravar (geração nova) relê; o que
+  cabe numa chave segue igual; par substituto na fronteira, 3 bytes por
+  caractere, acima de 10 partes e marcador que não soma o tamanho. Pegou 5 de
+  5 mutações: `node cache-partes.test.js`.
 - `testes.js` — **`node testes.js`: todas as suítes + o lint**, uma de cada vez,
   com o resumo; sai com 1 se algo falhar; suíte que passa de 2 min reprova
   (v7.248.2).

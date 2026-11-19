@@ -131,7 +131,31 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   por ação) com **invalidação por geração**: qualquer gravação (app ou edição
   manual via `onEdit`) troca `rp_gen` e órfã todas as entradas — o operador
   nunca vê dado velho depois de salvar. O `callback` JSONP fica fora da chave;
-  erro não se cacheia; resposta >100KB só deixa de ser cacheada.
+  erro não se cacheia; resposta >100KB só deixava de ser cacheada — desde o
+  `.gs` v5.74 vai em PARTES (ver *Resposta acima de 100 KB vai em partes*, logo
+  abaixo).
+- **Resposta acima de 100 KB vai ao cache em partes** (`.gs` v5.74 / v7.272.0;
+  PPCP, 19/11/2026: *"trata getProdutos"*). O CacheService recusa valor acima de
+  100 KB, e o `getProdutos` (431 códigos) tinha 113,6 KB na planilha de 19/11
+  (107,4 KB antes da largura da v5.73; medido com o `.gs` real e os dados da
+  planilha): NUNCA ia ao cache, e cada abertura do celular e do cadastro do PC
+  relia a PRODUTO_CODIGO inteira. 54,7 KB dos 113,6 são os nomes dos campos
+  repetidos em cada código.
+  - `_cachePutJson`: cabe numa chave → como sempre (nada muda para as leituras
+    pequenas). Não cabe → partes de `CACHE_PARTE_CHARS` (30.000 caracteres = no
+    máximo 90 KB mesmo com 3 bytes por caractere; o limite é em bytes) em
+    `chave#i`, e o marcador `#PARTES:n:tamanho` na própria chave POR ÚLTIMO.
+    Parte não termina no meio de par substituto. Acima de `CACHE_MAX_PARTES`
+    (10), não guarda — como antes.
+  - `_cacheGetJson`: junta; parte que sumiu, marcador estragado ou partes que
+    não somam o tamanho = falta no cache (relê a planilha), nunca meia resposta.
+  - A geração por grupo continua valendo: gravar órfã o marcador e as partes.
+  - O formato que chega aos painéis NÃO muda (nenhuma versão de HTML depende
+    disso). Recusado de propósito: mandar o catálogo em colunas cortaria a
+    metade do que trafega, mas mudaria os dois painéis e pediria os dois
+    formatos na transição — o problema era a releitura, não o tráfego.
+  - Teste: `cache-partes.test.js` (o `doGet` real, com um cache que recusa
+    acima de 100 KB como o do Google; 5 de 5 mutações).
   `lerCatalogoProdutos()` é memoizado dentro da execução (o `getPontosDia` lia o
   catálogo 3×). `instalarGatilhoAquecimento()` (rodar 1× no editor) cria gatilho
   de 5 min contra cold start — reduz, não elimina.

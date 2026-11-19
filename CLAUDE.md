@@ -109,7 +109,7 @@ via Google Apps Script (JSONP).
   nova): trocar nos dois HTMLs **e** na `PAINEL_APPS_SCRIPT_URL` da Vercel do
   app de cronoanálise (`crono-analise`), senão as medições param de chegar
   caladas.
-- 22 suítes `*.test.js` — `node testes.js` roda todas e o `lint-js.js`. O que
+- 23 suítes `*.test.js` — `node testes.js` roda todas e o `lint-js.js`. O que
   cada suíte cobre está no arquivo da memória.
 - `CHANGELOG.md` (uma entrada por publicação; **Atenção** com antes → depois
   quando muda número exibido ou formato) e `docs/glossario.md` (a fórmula de
@@ -522,7 +522,8 @@ via Google Apps Script (JSONP).
 
 ## Leituras, versões e o resto da infraestrutura → `docs/memoria/infraestrutura.md`
 - Apps Script: uma chamada por vez; leitura cara com cache, voo compartilhado e
-  retry em sequência. O `.gs` tem cache por geração (`rp_gen`) e memo por
+  retry em sequência. O `.gs` tem cache por geração (`rp_gen`; resposta acima
+  de 100 KB vai em partes desde a v5.74 — `_cachePutJson`/`_cacheGetJson`) e memo por
   execução (só leitura usa; escrita lê direto); a leitura recortada por data
   (`_valoresPorData`) usa a conversão de data do CHAMADOR. ⚠ O FIFO
   (`lerEmbaladoPorProduto`) lê a produção INTEIRA, e deve — recortar faz a

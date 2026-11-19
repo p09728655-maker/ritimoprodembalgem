@@ -554,11 +554,11 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
   SAPATEIRA SPAZIO e os volumes do RIPADO SUPREMO 2.3 e do ANTARES 1.8 (a cor
   fora do ERP em branco). Corrigido antes do merge. O que fica sem largura é o
   JOGO de volumes diferentes (cada volume tem a sua) e o EXPOSITOR U.
-- ⚠ Medido na mesma data: o `getProdutos` já passava dos 100 KB do
-  CacheService ANTES da largura (112,6 KB; com ela, 113,6 KB) — essa resposta
-  não é guardada no cache e cada chamada relê a PRODUTO_CODIGO. É anterior a
-  esta mudança; fica registrado para quando se mexer no catálogo. O
-  `getTemposAlvo` tem ~23 KB.
+- Medido na mesma data: o `getProdutos` já passava dos 100 KB do
+  CacheService ANTES da largura (107,4 KB; com ela, 113,6 KB — a 1ª nota dizia
+  112,6, medida com a chave `largura: 0` ainda na resposta). Era anterior a
+  esta mudança; **tratado no `.gs` v5.74** (a resposta grande vai ao cache em
+  partes — `infraestrutura.md`). O `getTemposAlvo` tem ~23 KB.
 - Teste: `crono-registro.test.js` (*v5.73*); no app, `tempo-alvo.test.js` e o
   e2e `video-esteira`.
 
