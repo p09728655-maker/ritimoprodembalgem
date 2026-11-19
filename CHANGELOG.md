@@ -37,15 +37,18 @@ tela"* → prévia da tela enxuta → *"sim, pode implementar e mergear"*.
     para a semana que vem"*;
   - *Por que venceu:* sem repetir o vencido (já está na barra PRECISA) e sem o
     *"(o que é)"* de cada causa à vista (no mouse e no COMO LER); a prova fica
-    *"Feito 32h00 (jornada + hora extra) para 27h57 programadas (2h11 já
-    embaladas antes); adiantou 6h23 de hoje em diante"*;
+    *"Feito 32h00 (jornada + hora extra) para 27h57 programadas até ontem
+    (2h11 já embaladas antes); adiantou 6h23 de hoje em diante"*;
   - a legenda numa linha (1920): *"1 dia de linha = 8h47 = 2.761 UEP (a meta) ·
     1 hora de linha = 314 UEP"*; o *"hora de linha não é hora de relógio"* e o
     *"ritmo: …"* foram para o COMO LER.
 - **Marca de hoje**: um tracejado na barra do feito de hoje, na meta até a
   última hora lançada (o "ritmo 90% até agora" é contra ela, não contra a linha
   branca, que é o dia inteiro). ⚠ A hora extra fica em cima do azul e pode
-  cobrir o vão até a marca: compare o azul. Só na tela; o 🖨 não tem.
+  cobrir o vão até a marca: compare o azul. Com a linha abaixo da meta e sem
+  hora extra, a marca fica acima da barra e o *"Xh até agora"* sobe para cima
+  dela. Só na tela; o 🖨 não tem.
+- A SIMULAÇÃO da semana que vem: o cenário *"NA REFERÊNCIA"* → *"NA META"*.
 - O 🖨 TAKT segue numa folha (703 de 718 px, medido com as fontes reais).
 
 ## v7.274.2 — 19/11/2026 · TAKT DA SEMANA: hora de linha não é hora de relógio

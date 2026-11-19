@@ -229,6 +229,28 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
         linha (1920), 3 → 2 (1366, 1280); o COMO LER aberto +128 px; nada passa
         da largura, sem rolagem lateral. O 🖨 TAKT (as duas semanas): 703 → 703
         de 718 px, uma folha no PDF.
+      - **Revisão do `/revisor-codigo` (subagente, antes do merge):**
+        - ⚠ **BLOQUEIA — o rótulo de hoje em cima da marca.** Sem hora extra e
+          com o ritmo abaixo de 100%, a marca fica ACIMA do topo da barra; o
+          *"Xh até agora"* (em y(topo) − 7) caía nela: o tracejado sumia e
+          lia-se *"4h18 até agora meta"* (a semana de 16/11 a 80%). A minha
+          medição só tinha o caso-base, COM hora extra (a marca dentro do
+          laranja). Correção: o rótulo sobe para `mín(y(topo), y(marca) − 4)`
+          — a base 11 px acima do tracejado, acima do nome dela. Teste: 80% sem
+          hora extra e 79% com, em 1200 e 700 px; medido no Chromium (1920,
+          1366, 1280): nada se cruza. ⚠ Desenho novo perto de um rótulo:
+          medir com e SEM hora extra, abaixo e acima de 100%.
+        - O cenário da SIMULAÇÃO *"NA REFERÊNCIA"* → *"NA META"* e o title do
+          botão 🖨 (*"a meta"*); o teste da SEMANA QUE VEM pega *REFERÊNCIA*.
+        - O 4 SEMANAS (*"no ritmo da meta"*, *"N% da meta"*) ganhou teste —
+          voltar o texto antigo passava.
+        - Os comentários do POR QUE VENCEU e do *"Por quê"* do 🖨 diziam a
+          tela de antes (B4); o glossário e o CLAUDE.md com os nomes de hoje
+          (*linha abaixo da meta*, *"a meta é 314"*).
+        - O COMO LER só fala do tracejado quando ele está na tela (antes do 1º
+          lançamento: *"hoje, só as horas já lançadas"*); a evidência diz
+          *"programadas até ontem"* (as barras ao lado têm o programado de
+          hoje — 42h17 com o 14h20 na semana de 16/11).
     - Medido no Chromium (o caso de 03–06/11, 5 e 7 dias): 1920, 1366 e 1280
       sem texto sobre texto, nada passa da largura; a legenda vai a 2 linhas em
       1366 e 1280; o 🖨 TAKT 700 px antes e depois (folha de 718).

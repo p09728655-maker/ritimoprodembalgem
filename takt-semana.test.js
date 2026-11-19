@@ -456,7 +456,7 @@ console.log('\n── v7.275.0: a tela enxuta, "meta" e a marca de hoje ──')
   ok('a marca de hoje: marcaMin = os minutos de jornada já lançados (240 → 4h00 de linha), só hoje; o tracejado na tela, com o nome ao lado; 240 ÷ 527 da altura da linha branca',
      [dH.marcaMin, T.dias.filter(d => d.marcaMin != null).length, (SVt.match(/stroke-dasharray="6 3"/g) || []).length,
       SVt.includes('<title>06/11 · meta até agora: 4h00 de linha (as 4h00 de jornada já lançadas) — o azul abaixo dela é o ritmo abaixo de 100%</title>'),
-      />meta até agora<\/text>|>meta<\/text>/.test(SVt), Math.abs((240 - (240 - 0)) + 0) === 0 && yM != null && yL != null],
+      />meta até agora<\/text>|>meta<\/text>/.test(SVt), yM != null && yL != null],
      [240, 1, 1, true, true, true]);
   { const y0 = Number((SVt.match(/<text x="34" y="([\d.]+)"[^>]*>0h</) || [])[1]) - 4, ym = Number(yM), yl = Number(yL);
     ok('a marca na altura certa: (y0 − y marca) ÷ (y0 − y linha branca) = 240 ÷ 527', Math.round((y0 - ym) / (y0 - yl) * 527), 240); }
@@ -465,6 +465,20 @@ console.log('\n── v7.275.0: a tela enxuta, "meta" e a marca de hoje ──')
       (h => [/stroke-dasharray="6 3"/.test(_taktSvg(h, 1200)), _taktHtml(h, null, {}).includes('tks-lm')])(_taktMontar(S, HIST, Object.assign({}, HOJE, { minNorm:0, uep:0 }))),
       HT.includes('<span class="tks-lm">meta até agora (hoje)</span>')],
      [false, false, [false, false], true]);
+  // revisão do /revisor-codigo (v7.275.0, BLOQUEIA): sem hora extra e com o ritmo abaixo de 100%, a marca fica ACIMA
+  // do topo da barra e o rótulo "Xh até agora" (em y(topo) − 7) caía em cima dela: o tracejado sumia e lia-se "4h18
+  // até agora meta" (a semana de 16/11, hoje a 80%). O rótulo sobe acima da marca. Caso: hoje 1.006 UEP em 240 min, 80%.
+  { const pos = svg => ({ m:Number((svg.match(/y1="([\d.]+)" y2="[\d.]+" stroke="var\(--txt\)" stroke-width="2\.5" stroke-dasharray="6 3">/) || [])[1]),
+      r:Number((svg.match(/y="([\d.]+)" text-anchor="middle" font-size="16" font-weight="700" fill="var\(--txt\)" font-family="Barlow Condensed"[^>]*>\d+h\d\d<tspan[^>]*> até agora/) || [])[1]),
+      n:Number((svg.match(/y="([\d.]+)" font-size="11" font-weight="600" fill="var\(--txt\)" font-family="IBM Plex Mono"[^>]*>meta(?: até agora)?<\/text>/) || [])[1]) });
+    const T80 = _taktMontar(S, HIST, Object.assign({}, HOJE, { uep:1006, he:0 }));
+    const casos = [[T80, 1200], [T80, 700], [T, 1200], [T, 700]].map(([X, W]) => pos(_taktSvg(X, W)));
+    ok('v7.275.0 (revisão): hoje a 80% sem hora extra (a marca acima da barra) e a 79% com hora extra (a marca dentro do laranja), em 1200 e 700 px: a base do rótulo "Xh até agora" fica pelo menos 11 px acima do tracejado e acima do topo do nome da marca — nada um sobre o outro',
+       [r1(T80.dias.find(d => d.hoje).ritmo), casos.map(c => [c.m - c.r >= 11, isNaN(c.n) || c.r <= c.n - 14])],   // sem lugar para o nome (700 px, última coluna): ele não sai
+       [80, [[true, true], [true, true], [true, true], [true, true]]]); }
+  // ⓘ COMO LER sem a marca (antes do 1º lançamento de hoje): não fala do tracejado que não está na tela
+  ok('v7.275.0 (revisão): sem minuto lançado hoje, o COMO LER diz "hoje, só as horas já lançadas" (não fala do tracejado)',
+     (h => [h.includes('hoje, só as horas já lançadas'), h.includes('tracejado')])(_taktComoLerHtml(_taktMontar(S, HIST, Object.assign({}, HOJE, { minNorm:0, uep:0 })))), [true, false]);
   // "meta" no lugar de "média"/"referência" — a mesma palavra do HISTÓRICO e do gerencial (UM NOME POR INDICADOR)
   const semTitle = h => h.replace(/ title="[^"]*"/g, '').replace(/<title>[\s\S]*?<\/title>/g, '');
   ok('"meta" na ESTA SEMANA: nada de "da média", "dessa média", "na média da linha" ou "da referência" à vista; o recado, o veredito e o ritmo de cada dia dizem meta',
@@ -560,7 +574,7 @@ console.log('\n── v7.273.0: o ritmo de cada dia ──');
     ok('em horas de linha (o que a tela escreve): excesso 4h05 + abaixo da meta 2h21 + sequência 1h36 (somam os 8h02 da barra PRECISA), na ordem do tamanho, com o "(o que é)" de cada um no title; a evidência: 26h12 feitas para 32h38 e o aproximado (8 lotes com X lidos sem o embalado)',
        [v.min.uep, v.min.carga, v.min.ritmo, v.min.seq, v.min.carga + v.min.ritmo + v.min.seq,
         _taktVencHtml(T).includes('<b>Por que venceu:</b> <b title="programado acima de 1 dia de linha">excesso de programação 4h05</b> · <b title="a linha fez menos que a meta, contando a hora extra">linha abaixo da meta 2h21</b> · <b title="havia capacidade; ela foi para outros lotes — adiantados, atraso de antes da semana ou à espera de peça">sequência 1h36</b>.'),
-        _taktVencHtml(T).includes('Feito 26h12 (jornada + hora extra) para 32h38 programadas; divisão aproximada: 8 lotes fechados com X sem o embalado na planilha contam inteiros.'),
+        _taktVencHtml(T).includes('Feito 26h12 (jornada + hora extra) para 32h38 programadas até ontem; divisão aproximada: 8 lotes fechados com X sem o embalado na planilha contam inteiros.'),
         /vencidos desta semana|<i>\(/.test(_taktVencHtml(T))],
        [482, 245, 141, 96, 482, true, true, false]);
     // A semana do print de 19/11 13:35: programado (barras) 9h06 · 8h58 · 9h53 e 14h20 hoje, com 6h23 embaladas antes;
@@ -574,7 +588,7 @@ console.log('\n── v7.273.0: o ritmo de cada dia ──');
     ok('a semana de 16/11: a linha fez 32h00 (jornada + hora extra) para 27h57 programadas — nenhuma falta de capacidade: as 2h45 vencidas são SEQUÊNCIA (era "83% ritmo da linha"); a evidência, 6h23 dos lotes de hoje embaladas antes',
        [T16.venc.min.uep, T16.venc.min.prog, T16.venc.min.cap, T16.venc.min.carga, T16.venc.min.ritmo, T16.venc.min.seq, T16.venc.min.adiFrente,
         _taktVencHtml(T16).includes('<b>Por que venceu:</b> <b title="havia capacidade; ela foi para outros lotes — adiantados, atraso de antes da semana ou à espera de peça">sequência 2h45</b>.'),
-        _taktVencHtml(T16).includes('Feito 32h00 (jornada + hora extra) para 27h57 programadas (5h20 já embaladas antes); adiantou 6h23 de hoje em diante.'),
+        _taktVencHtml(T16).includes('Feito 32h00 (jornada + hora extra) para 27h57 programadas até ontem (5h20 já embaladas antes); adiantou 6h23 de hoje em diante.'),
         /excesso de programação|ritmo da linha/.test(_taktVencHtml(T16))],
        [165, 1677, 1920, 0, 0, 165, 383, true, true, false]);
     // a falta de capacidade MAIOR que o vencido (lote fechado com X, adiantado da semana passada): excesso e ritmo na proporção, até o vencido
@@ -688,7 +702,7 @@ console.log('\n── v7.273.0: o ritmo de cada dia ──');
       const Tq = _taktMontar(Sq, [{ data:'16/11/2026', uep:2462.6, uepHe:0, metaUep:2761 }], { num:20261117, minNorm:0, restMin:527, uep:0, he:0, meta:2761 }), hq = _taktVencHtml(Tq);
       ok('16/11 com 1.676 já embaladas antes: "sequência 0h57"; a evidência diz o programado das barras e quanto dele já tinha sido embalado antes',
          [hq.includes('<b>Por que venceu:</b> <b title="havia capacidade; ela foi para outros lotes — adiantados, atraso de antes da semana ou à espera de peça">sequência 0h57</b>'), /excesso de programação|linha abaixo da meta/.test(hq),
-          hq.includes('para ' + _fmtHM(Math.round(3161 * 527 / 2761)) + ' programadas (' + _fmtHM(Math.round(1676 * 527 / 2761)) + ' já embaladas antes)')],
+          hq.includes('para ' + _fmtHM(Math.round(3161 * 527 / 2761)) + ' programadas até ontem (' + _fmtHM(Math.round(1676 * 527 / 2761)) + ' já embaladas antes)')],
          [true, false, true]); }
     // 4ª revisão (BLOQUEIA): em fila com a causa herdada, a linha rodar PIOR aumentava o excesso. Seg programada
     // 4.500 (a linha a 100%: 2.761), ter 800 — 5.300 para 5.522 de capacidade na média: com a terça na média nada
@@ -1058,9 +1072,11 @@ console.log('\n── v7.222.0: PARA FECHAR, o que vem desta semana e onde está
       HP2.includes('<b>Dia a dia:</b>'), / · [\d.]+ caixas programadas/.test(HP2)], [true, true, false, false]);
   // v7.275.0: "meta" também na SEMANA QUE VEM (a legenda e os cenários da SIMULAÇÃO), à vista e sem title
   ok('v7.275.0: a SEMANA QUE VEM diz meta — a legenda "1 dia de linha = 8h47 = 2.761 UEP (a meta)" e os cenários "N% da meta"; nada de "da média"/"da referência" à vista',
-     [/da média|dessa média|na média da linha|da referência/.test(HP2.replace(/ title="[^"]*"/g, '').replace(/<title>[\s\S]*?<\/title>/g, '')),
-      HP2.includes('<span class="tks-lr">1 dia de linha = ' + _fmtHM(527) + ' = 2.761 UEP (a meta)</span>'), /UEP\/dia · [\d,]+% da meta/.test(HP2)],
-     [false, true, true]); }
+     [/da média|dessa média|na média da linha|da referência|REFERÊNCIA/.test(HP2.replace(/ title="[^"]*"/g, '').replace(/<title>[\s\S]*?<\/title>/g, '')),
+      HP2.includes('<span class="tks-lr">1 dia de linha = ' + _fmtHM(527) + ' = 2.761 UEP (a meta)</span>'), /UEP\/dia · [\d,]+% da meta/.test(HP2),
+      // revisão: o cenário da SIMULAÇÃO dizia "NA REFERÊNCIA" e o title do botão 🖨 "a referência"
+      HP2.includes('NA META'), /gerarRelatorioTakt\(\)" title="[^"]*o takt que a programação pede, a meta,/.test(html)],
+     [false, true, true, true, true]); }
 { const Vc = _taktVeredito(T1, Object.assign({}, P1, { uep:10000, minPede:10000 * K, saldoMin:Math.round(10000 * K) - 2635, passa:10000 - 13805 }), RIT);
   const Hs = { num:20261107, minNorm:300, restMin:200, uep:500, he:40, meta:2761, fim:'17:00' };
   const Vs = _taktVeredito(_taktMontar(S, HIST.concat([{ data:'06/11/2026', uep:2400, uepHe:600, metaUep:2761 }]), Hs), null, RIT);
@@ -1671,6 +1687,11 @@ eval.call(global, pega('function _tkaVencidoAntes('));
       H.indexOf('tks4-sug') > H.indexOf('Hora extra até') && H.indexOf('tks4-sug') < H.indexOf('<table'), H.includes('sugestão: sábado 21/11 das 05:00 às 07:52'), H.includes('sugestão: sábado 14/11 das 05:00 às 11:00'),
       /CLT|não cabe|ainda faltam|Nem assim|≈/.test((H.match(/tks4-sug[^]*?<\/div>/) || [''])[0])],
      [true, true, true, true, false]);
+  // v7.275.0 (revisão: a troca não tinha teste — voltar o texto antigo passava): o veredito do 4 SEMANAS diz "no ritmo
+  // da meta" e "No ritmo atual (N% da meta)" (era "na média da linha" e "N% da média")
+  ok('v7.275.0: o 4 SEMANAS diz "no ritmo da meta" e "No ritmo atual (N% da meta)"; nada de "na média da linha" ou "% da média"',
+     [H.includes(', no ritmo da meta.'), H.includes(' No ritmo atual (' + fmtP(C4.ritPct) + ' da meta): '), /na média da linha|% da média/.test(H)],
+     [true, true, false]);
   // revisão da v7.240.0: o atraso que CRESCE semana a semana — a taxa única largava a 1ª semana e o "ainda faltam" saía inflado
   const dts = [['09/11', '13/11'], ['16/11', '20/11'], ['23/11', '27/11'], ['30/11', '04/12']];
   const sem5 = (At, sab) => At.map((a, i) => ({ i, conta:true, atraso:a, ext:sab ? [{ data:'s' + i, dow:6, livre:360, ini:300 }] : [], nUtFut:5, uIniFut:dts[i][0], uFimFut:dts[i][1] }));

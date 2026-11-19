@@ -3560,7 +3560,7 @@ if (_v7Instalado()) _v7EscondeBotao();
           <button class="btn btn-ghost" onclick="_uepImpFecha();gerarRelatorioUepAba()" title="Versão executiva: o resultado de hoje e do período na folha 1; próximos dias, mix e origem da UEP na folha 2">🖨 VERSÃO EXECUTIVA<small>hoje e o período; próximos dias, mix e origem</small></button>
           <button class="btn btn-ghost" onclick="_uepImpFecha();gerarRelatorioUepPadrao()" title="O POR PRODUTO em folha deitada: o resumo por produto e o dia a dia de todos os produtos do período">🖨 PADRÃO × REALIZADO<small>por produto, dia a dia</small></button>
           <button class="btn btn-ghost" onclick="_uepImpFecha();gerarRelatorioFilaCrono()" title="A mesma lista da sub-aba O QUE MEDIR da ⏱ CRONOANÁLISE, para levar à linha: o que falta medir, o programado primeiro (hoje e atraso, depois a data), depois o que rodou nos últimos dias, com uma coluna para anotar quando e quem mediu">🖨 AGENDA DA CRONOANÁLISE<small>o que falta medir, na ordem da programação</small></button>
-          <button class="btn btn-ghost" onclick="_uepImpFecha();gerarRelatorioTakt()" title="Para a diretoria: esta semana e a semana que vem — o takt que a programação pede, a referência, o que a linha fez, por que não acompanhou e a simulação do que não cabe">🖨 TAKT DA SEMANA<small>a programação cabe na linha? esta semana e a que vem</small></button>
+          <button class="btn btn-ghost" onclick="_uepImpFecha();gerarRelatorioTakt()" title="Para a diretoria: esta semana e a semana que vem — o takt que a programação pede, a meta, o que a linha fez, por que não acompanhou e a simulação do que não cabe">🖨 TAKT DA SEMANA<small>a programação cabe na linha? esta semana e a que vem</small></button>
           <button class="btn btn-ghost" onclick="_uepImpFecha();gerarRelatorio4Semanas()" title="O quadro 4 SEMANAS do TAKT DA SEMANA: esta semana e as 3 seguintes, o atraso que passa de uma para a outra e o dia a dia de todas, em dias úteis">🖨 4 SEMANAS<small>o atraso semana a semana, dia a dia</small></button>
           <button class="btn btn-ghost" onclick="_uepImpFecha();gerarRelatorioAvaliacao()" title="A programação colada em TAKT DA SEMANA → AVALIAR PROGRAMAÇÃO: cabe ou não, o dia a dia e o saldo de horas de hoje até ela">🖨 AVALIAÇÃO DA PROGRAMAÇÃO<small>a colada no TAKT, com o saldo de horas</small></button>
           <button class="btn btn-ghost" onclick="_uepImpFecha();gerarRelatorioCxUep(_regN())" title="O relatório de quatro folhas (resumo · capacidade · desvios · dados), com os dias escolhidos na sub-aba RÉGUAS">🖨 CAIXAS × PONTOS × UEP<small>as três réguas, com os dias da sub-aba RÉGUAS</small></button>
@@ -11522,14 +11522,14 @@ function _taktHtml(T, G, opt){
 function _taktComoLerHtml(T){
   const n0=v=>fmtN(Math.round(Number(v)||0)), it=[
     `<b>Hora de linha não é hora de relógio:</b> 1 hora de linha = ${n0(T.horaLinha)} UEP, a meta em 1 hora. Num dia fechado, o azul passa da linha branca quando a linha fez mais de ${n0(T.horaLinha)} UEP por hora na jornada; o mouse na barra dá a conta do dia.`,
-    T.dias.some(d=>d.ritmo!=null) ? `<b>Ritmo</b>, embaixo de cada dia: o feito na jornada (azul) contra a meta, sem a hora extra. No dia fechado, 100% é a linha branca; hoje, o tracejado — a meta até a última hora lançada. Compare o azul: a hora extra (laranja) fica em cima dele.` : '',
+    T.dias.some(d=>d.ritmo!=null) ? `<b>Ritmo</b>, embaixo de cada dia: o feito na jornada (azul) contra a meta, sem a hora extra. No dia fechado, 100% é a linha branca; hoje, ${T.dias.some(d=>d.marcaMin!=null) ? 'o tracejado — a meta até a última hora lançada' : 'só as horas já lançadas'}. Compare o azul: a hora extra (laranja) fica em cima dele.` : '',
     T.venc && T.venc.min && T.venc.min.uep>=1 ? `<b>Por que venceu:</b> ${TKS_VENC_CAUSAS.map(c=>`<b>${c[1]}</b> = ${c[2]}`).join('; ')}.` : ''
   ].filter(Boolean);
   return `<details class="tks-cl"><summary>ⓘ COMO LER</summary><ul>${it.map(x=>`<li>${x}</li>`).join('')}</ul></details>`;
 }
 // O nome e o ritmo de cada cenário (desenho).
 function _taktCenRot(c){
-  return c.id==='ref' ? { rot:'NA REFERÊNCIA', sub:`${fmtN(Math.round(c.uepDia))} UEP/dia · a META DIA (UEP) do ⚙` }
+  return c.id==='ref' ? { rot:'NA META', sub:`${fmtN(Math.round(c.uepDia))} UEP/dia · a META DIA (UEP) do ⚙` }
     : c.id==='sem' ? { rot:'NO RITMO DESTA SEMANA', sub:`${fmtN(Math.round(c.uepDia))} UEP/dia · ${fmtP(c.pct)} da meta` }
     : { rot:'NA MÉDIA DO PERÍODO', sub:`${fmtN(Math.round(c.uepDia))} UEP/dia · ${plural(c.n, 'dia fechado', 'dias fechados')}` };
 }
@@ -12466,7 +12466,11 @@ function _taktSvg(T, largura, opt){
         const tm=['meta até agora', 'meta'].find(t=>t.length*(FS-1)*0.62<=livre);
         if(tm) marca.push(`<text x="${xr.toFixed(1)}" y="${(ym+4).toFixed(1)}" font-size="${FS-1}" font-weight="600" fill="var(--txt)" font-family="IBM Plex Mono" ${halo}>${tm}</text>`);
       }
-      rotF.push({ x:xF+bw/2, topo:y(f+h), t:hm(f+h)+(d.hoje ? `<tspan font-size="${FS}" font-weight="500"> até agora</tspan>` : ''), feito:true });
+      // v7.275.0 (revisão, BLOQUEIA): com a marca de hoje ACIMA do topo da barra (sem hora extra, ritmo abaixo de
+      // 100%) o rótulo caía em cima dela — o tracejado sumia e lia-se "4h18 até agora meta". Ele sobe acima da
+      // marca (base 11 px acima do tracejado; o nome dela, ao lado, começa 8 px acima)
+      const topoF=d.marcaMin!=null && !papel ? Math.min(y(f+h), y(d.marcaMin)-4) : y(f+h);
+      rotF.push({ x:xF+bw/2, topo:topoF, t:hm(f+h)+(d.hoje ? `<tspan font-size="${FS}" font-weight="500"> até agora</tspan>` : ''), feito:true });
     }
   });
   s+=`<line x1="${pl}" x2="${W-pr}" y1="${y(UEP_MIN_DIA).toFixed(1)}" y2="${y(UEP_MIN_DIA).toFixed(1)}" stroke="var(--txt)" stroke-width="2"><title>1 dia de linha: ${hm(UEP_MIN_DIA)} de jornada = a meta de ${fmtN(T.meta)} UEP, sem hora extra</title></line>`;
@@ -12584,11 +12588,14 @@ function _taktAntesAviso(T, papel){
   const t=_taktAntesForaTxt(T.falta.antesFora, T.de);
   return papel ? `<div class="tks-por"><b>Atenção:</b> ${t}</div>` : `<div class="uep-nota" style="color:var(--warn);margin:0 0 8px">${t}</div>`;
 }
-// POR QUE VENCEU (v7.273.0) — desenho, sem conta (T.venc, minutos prontos). O
-// vencido com o NOME da barra PRECISA ("vencidos desta semana") e as causas com
-// tempo, na ordem do tamanho, só as que existem; o "(o que é)" de cada uma diz o
-// que a separa das outras (a média). A evidência: o que a linha fez contra o
-// programado nos dias que passaram, o que ela adiantou de hoje em diante e o
+// POR QUE VENCEU (v7.273.0) — desenho, sem conta (T.venc, minutos prontos). As
+// causas com tempo, na ordem do tamanho, só as que existem; até a v7.274.2 a
+// linha começava pelo vencido ("Nh vencidos desta semana —", o NOME da barra
+// PRECISA) e trazia o "(o que é)" de cada causa à vista; desde a v7.275.0 o
+// vencido fica só na barra PRECISA e o "(o que é)" (o que separa as causas: a
+// meta, a hora extra, para onde foi a capacidade) vai para o title e para o ⓘ
+// COMO LER. A evidência: o que a linha fez contra o programado nos dias que
+// passaram (até ontem), o que ela adiantou de hoje em diante e o
 // atraso de antes da semana (a linha atende o mais antigo primeiro — é para lá
 // que vai parte da capacidade). Nada vencido (menos de 1 min), nada.
 // o.papel: uma frase curta DENTRO do "Por quê" (no lugar da divisão antiga), sem
@@ -12616,7 +12623,7 @@ function _taktVencHtml(T, o){
   // semana" da barra PRECISA, logo acima); o (o que é) de cada causa vai para o title e para o ⓘ COMO LER;
   // a evidência fica mais curta, com os mesmos números
   if(semH) return `<div class="tks-por tks-pv"><b>Por que venceu:</b> ${semH}.</div>`;
-  const ev=[`feito ${hm(v.min.cap)} (jornada + hora extra) para ${hm(v.min.prog)} programadas${v.min.adiAntes>=1 ? ` (${hm(v.min.adiAntes)} já embaladas antes)` : ''}`,
+  const ev=[`feito ${hm(v.min.cap)} (jornada + hora extra) para ${hm(v.min.prog)} programadas até ontem${v.min.adiAntes>=1 ? ` (${hm(v.min.adiAntes)} já embaladas antes)` : ''}`,
     v.min.adiFrente>=1 ? `adiantou ${hm(v.min.adiFrente)} de hoje em diante` : '',
     v.min.antes>=1 ? `há ${hm(v.min.antes)} de atraso de antes de ${_rpEsc(String(T.de||'').slice(0, 5))}, que a linha atende primeiro` : '',
     aprox].filter(Boolean).join('; ');
@@ -12761,7 +12768,7 @@ function _taktDocHtml(A, ctx){
     esq=`<div class="td-h">ESTA SEMANA<small>${per(T)} · até ${e(ctx.hora)}</small></div>`
       +_taktHeroHtml(V0, { semana:'esta', ate:T.falta.ate, partes:_taktPrecisaPartes(T, V0), papel:true })+_taktAntesAviso(T, true)
       +_taktFecharHtml(_taktFecharDados(V0, { semana:'esta', ate:T.falta.ate }), { papel:true })
-      // "a média" é a do td-def (a que a linha entrega sem hora extra) — repetida aqui, o "Por quê" ganhava
+      // "a meta" é a do td-def (a que a linha entrega sem hora extra; "a média" até a v7.274.2) — repetida aqui, o "Por quê" ganhava
       // uma linha e o 🖨 TAKT ia a 2 folhas com as três causas do POR QUE VENCEU (v7.273.0)
       +`<div class="tks-por"><b>Por quê:</b> a programação pediu <b>${fmtP(T.pede)}</b> da meta`
       +(T.exec.pct!=null ? `, e a linha rodou a <b>${fmtP(T.exec.pct)}</b> dela` : '')
