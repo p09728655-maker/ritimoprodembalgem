@@ -977,6 +977,7 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-uep .uep-leg .tks-lr::before{height:0;border-top:2px solid var(--txt);width:14px;background:none;vertical-align:3px}
 #sec-uep .uep-leg .tks-la::before{background:repeating-linear-gradient(135deg,var(--tks-feito) 0 2.5px,var(--tks-base) 2.5px 5px)}   /* v7.246.0: embalou antes (o listrado da barra) */
 #sec-uep .uep-leg .tks-lt::before{display:none}   /* v7.273.0: o que é o "ritmo N% da média" embaixo de cada dia (texto, sem marca) */
+#sec-uep .uep-leg .tks-lh::before{display:none}   /* v7.274.2: hora de linha não é hora de relógio (texto, sem marca) */
 .pg-sim-wrap .pg-sim{border:1px solid var(--border);border-radius:8px;padding:13px 15px;background:var(--surface)}
 .pg-sim-wrap .pg-sim-tag{font-family:var(--font-d);font-size:9.5px;font-weight:700;letter-spacing:1px;color:var(--warn);border:1px solid var(--warn);border-radius:3px;padding:1px 5px;margin-left:8px;vertical-align:1px}
 .pg-sim-wrap .pg-sim-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:18px}
@@ -4316,7 +4317,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER = '7.274.1';
+const APP_VER = '7.274.2';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -11071,9 +11072,22 @@ function _taktMontar(S, hist, H, pts, est){
   // null, nunca 0. Revisão: o 20/11 (Consciência Negra) com a linha rodando
   // saía "ritmo X% da média até agora" fora da conta da semana.
   // mediaUep = a média nos minutos do dia (o title do gráfico diz a conta).
+  // v7.274.2 (PPCP, 19/11/2026, com a segunda 16/11 na tela: "seg tem 8h47 como
+  // 9h38" → "tem que ser com fácil compreensão para não gerar dúvidas e
+  // descrédito"): a barra do feito em horas de linha passa da jornada de relógio
+  // quando a linha roda acima da média. A explicação é a VELOCIDADE: velHora =
+  // UEP por hora de jornada do dia; velMedia = a média do dia por hora (META UEP
+  // ÷ 527 × 60, a régua do ritmo). 3.028 UEP em 8h47 = 345 por hora contra 314.
+  // horaLinha = 1 hora de linha em UEP pela META de hoje — a escala do gráfico.
+  // velOutra (revisão): a média do dia ≠ a de hoje (META trocada no meio da
+  // semana) — o title diz as duas réguas, senão a conta lida não fecha (E4).
+  const horaLinha=meta*60/UEP_MIN_DIA;
   dias.forEach(d=>{
     d.mediaUep=d.util && d.feito!=null && d.meta>0 && d.min>0 ? d.meta*d.min/UEP_MIN_DIA : null;
     d.ritmo=d.mediaUep ? d.feito/d.mediaUep*100 : null;
+    d.velHora=d.ritmo!=null ? d.feito/d.min*60 : null;
+    d.velMedia=d.ritmo!=null ? d.meta*60/UEP_MIN_DIA : null;
+    d.velOutra=d.velMedia!=null && Math.round(d.velMedia)!==Math.round(horaLinha);
   });
   // EXECUTADO: só a jornada dos dias úteis (hora extra e dia não útil à parte)
   const ex=uteis.filter(d=>d.feito!=null && d.min>0);
@@ -11144,7 +11158,8 @@ function _taktMontar(S, hist, H, pts, est){
   falta.capRest=restHoje+futuros.length*meta;
   falta.ate=futuros.length ? futuros[futuros.length-1].data.slice(0, 5) : (h.fim || null);
   falta.passa=falta.uep-falta.capRest;
-  return { de:S.de, ate:S.ate, hojeN, dias, nUteis, progCx, progUep, meta, takt, porDia, prods:Object.values(prods),
+  // horaLinha (v7.274.2): 1 hora de linha em UEP — a média em 1 hora de jornada (a legenda do gráfico)
+  return { de:S.de, ate:S.ate, hojeN, dias, nUteis, progCx, progUep, meta, horaLinha, takt, porDia, prods:Object.values(prods),
     ef:Number(h.ef)>0 && Number(h.ef)<=100 ? Number(h.ef) : EF_EMB_PADRAO,   // v7.235.0: a régua do TEMPO-ALVO (esteira ÷ ef); quem chama passa o _efEmb()
     setup:SU, setupDia:minProd<UEP_MIN_DIA ? setupDia : 0, minProd,
     ref:minProd*60/meta, pede:porDia!=null ? porDia/meta*100 : null,
@@ -11492,7 +11507,7 @@ function _taktHtml(T, G, opt){
   return tit+_taktHeroHtml(o.V, { semana:'esta', ate:F.ate, partes:_taktPrecisaPartes(T, o.V) })+_taktAntesAviso(T)
     +_taktFecharHtml(_taktFecharDados(o.V, { semana:'esta', ate:F.ate }))+_taktVencHtml(T)
     +`<div class="uep-sec"><b>DIA A DIA</b> horas de linha · programado × feito<span class="tks-sec-r" title="${e(porT)}">${porR}</span></div><div class="uep-card" id="tks-g-box">${svg}`
-    +`<div class="uep-leg"><span class="tks-lb">programado até 1 dia de linha</span><span class="tks-lx">programado acima de 1 dia</span>${T.dias.some(d=>d.adiUep*UEP_MIN_DIA/T.meta>=0.5) ? '<span class="tks-la">embalou antes (adiantado)</span>' : ''}<span style="--c:var(--tks-feito)">feito na jornada</span><span style="--c:var(--warn)">hora extra</span><span class="tks-lr">1 dia de linha (${_fmtHM(UEP_MIN_DIA)} = média de ${n0(T.meta)} UEP entregues sem hora extra)</span>${T.dias.some(d=>d.ritmo!=null) ? '<span class="tks-lt">ritmo: o feito na jornada (azul) contra a média do dia — no dia fechado, 100% é a linha branca; hoje, só as horas já lançadas</span>' : ''}</div></div>`
+    +`<div class="uep-leg"><span class="tks-lb">programado até 1 dia de linha</span><span class="tks-lx">programado acima de 1 dia</span>${T.dias.some(d=>d.adiUep*UEP_MIN_DIA/T.meta>=0.5) ? '<span class="tks-la">embalou antes (adiantado)</span>' : ''}<span style="--c:var(--tks-feito)">feito na jornada</span><span style="--c:var(--warn)">hora extra</span><span class="tks-lr">1 dia de linha (${_fmtHM(UEP_MIN_DIA)} = média de ${n0(T.meta)} UEP entregues sem hora extra)</span><span class="tks-lh">hora de linha não é hora de relógio: 1 hora de linha = ${n0(T.horaLinha)} UEP, a média em 1 hora${T.dias.some(d=>d.feito>0) ? ` — num dia fechado, o azul passa da linha branca quando a linha fez mais de ${n0(T.horaLinha)} UEP por hora na jornada` : ''}</span>${T.dias.some(d=>d.ritmo!=null) ? '<span class="tks-lt">ritmo: o feito na jornada (azul) contra a média do dia — no dia fechado, 100% é a linha branca; hoje, só as horas já lançadas</span>' : ''}</div></div>`
     +_taktFaixaHtml(_taktFaixa(T, { G }), _taktPorCaixa(T), T)
     +(notas.length ? `<div class="uep-nota">${notas.join(' · ')}</div>` : '');
 }
@@ -12416,7 +12431,13 @@ function _taktSvg(T, largura, opt){
     }
     if(d.feito!=null || he(d)>0){
       const f=fe(d), h=he(d), op=d.hoje ? ' opacity=".6"' : '';
-      const tip=_rpEsc(`${dd} · ${d.hoje ? 'até agora: ' : ''}${hm(f)} de linha na jornada${h>0 ? ` + ${hm(h)} em hora extra` : ''} (${fmtN(Math.round(d.feito||0))} UEP)`);
+      // v7.274.2 (PPCP: "seg tem 8h47 como 9h38"): o title diz por que a barra passa da jornada de
+      // relógio — a velocidade do dia contra a da média (velHora × velMedia, prontas no _taktMontar);
+      // o ritmo inteiro, o mesmo de baixo da barra (com o decimal, 345 ÷ 314 não dava o % escrito)
+      const nf=v=>fmtN(Math.round(v)), sem=d.hoje && d.cxSem>0 ? ` (* ${nf(d.cxSem)} cx de códigos sem UEP ficaram fora)` : '';
+      const jor=d.velHora!=null ? `${d.hoje ? 'até agora, ' : ''}na jornada: ${nf(d.feito)} UEP em ${_fmtHM(d.min)}${d.hoje ? ' já lançadas' : ''} = ${nf(d.velHora)} UEP por hora (${d.velOutra ? `a média do dia é ${nf(d.velMedia)}; o gráfico usa a de hoje, ${nf(T.horaLinha)}` : `a média é ${nf(d.velMedia)}`}) — equivale a ${hm(f)} de linha, ritmo ${Math.round(d.ritmo)}% da média${sem}`
+        : d.feito>0 ? `${d.hoje ? 'até agora: ' : ''}${nf(d.feito)} UEP na jornada — equivale a ${hm(f)} de linha (1 hora de linha = ${nf(T.horaLinha)} UEP)` : '';
+      const tip=_rpEsc(`${dd} · ${[jor, h>0 ? `hora extra: + ${hm(h)} de linha (${nf(d.he)} UEP), fora do ritmo` : ''].filter(Boolean).join(' · ')}`);
       if(f>0) s+=`<rect x="${xF.toFixed(1)}" y="${y(f).toFixed(1)}" width="${bw.toFixed(1)}" height="${(y(0)-y(f)).toFixed(1)}" rx="2" fill="var(--tks-feito)"${op}><title>${tip}</title></rect>`;
       if(h>0) s+=`<rect x="${xF.toFixed(1)}" y="${y(f+h).toFixed(1)}" width="${bw.toFixed(1)}" height="${(y(f)-y(f+h)).toFixed(1)}" rx="2" fill="var(--warn)"${op}><title>${tip}</title></rect>`;
       rotF.push({ x:xF+bw/2, topo:y(f+h), t:hm(f+h)+(d.hoje ? `<tspan font-size="${FS}" font-weight="500"> até agora</tspan>` : ''), feito:true });

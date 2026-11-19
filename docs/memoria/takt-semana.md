@@ -109,6 +109,59 @@ que vale, atualize também a linha do resumo no `CLAUDE.md`.
       fontes reais: o recado vai de 469 a 547 px, numa linha em 1920, 1366 e
       1280. Teste: +1.000 UEP de hora extra em 04/11 não mexe no % (mutação:
       somar o `d.he` no `exUep` derruba o teste).
+    - **v7.274.2 (19/11/2026) — hora de linha não é hora de relógio.** O PPCP,
+      com a segunda 16/11 na tela (barra do feito 9h38, ritmo 110%): *"seg tem
+      8h47 como 9h38"* → (a explicação: ~3.028 UEP na jornada ÷ 314 UEP por hora
+      de linha) → *"entendi que dizer que fez mais de 314 uep hora"* → *"faz 1 e
+      2"* (legenda e title) → *"tem que ser com fácil compreensão para não gerar
+      dúvidas e descrédito"*. A barra do feito em horas de linha passa da
+      jornada de relógio quando a linha roda acima da média, e nada dizia por
+      quê — lia-se como erro do painel.
+      - Conta (`_taktMontar`, D1 — o desenho só lê): `d.velHora` = feito na
+        jornada ÷ `d.min` × 60 e `d.velMedia` = META UEP do dia × 60 ÷ 527, só
+        com `d.ritmo` (dia útil com minuto; senão null); `T.horaLinha` = META ×
+        60 ÷ 527 (314,3 com 2.761). velHora ÷ velMedia = o ritmo (o teste
+        prende). Nomes novos: `uepHora` e `uepPorHora` já existiam (a UEP por
+        slot do `.gs` e a função do rp-core).
+      - Title da barra do feito (`_taktSvg`): *"03/11 · na jornada: 3.028 UEP em
+        8h47 = 345 UEP por hora (a média é 314) — equivale a 9h38 de linha,
+        ritmo 110% da média"*; hora extra à parte, *"fora do ritmo"*; hoje,
+        *"até agora, … já lançadas"*, com o `*` das caixas sem UEP; dia sem
+        ritmo, só *"N UEP na jornada — equivale a Xh de linha (1 hora de linha =
+        314 UEP)"*; sábado só com hora extra, sem *"0 UEP na jornada"*.
+      - Legenda da TELA (`.tks-lh`, texto sem marca, entre a linha branca e o
+        ritmo): *"hora de linha não é hora de relógio: 1 hora de linha = 314
+        UEP, a média em 1 hora"* e, com algo feito, *"— num dia fechado, o azul
+        passa da linha branca quando a linha fez mais de 314 UEP por hora na
+        jornada"*. Ficou
+        "média" (a palavra da tela) — o "META" é a fase UM NOME POR INDICADOR.
+        A do papel NÃO (703 de 718 px).
+      - Medido no Chromium com as fontes reais (o pior caso, com o *embalou
+        antes* na legenda): 1920 e 1366 de 2 para 3 linhas (44 → 74 px), 1280
+        de 3 para 4 (74 → 104 px); nada passa da largura, sem rolagem lateral.
+      - Teste: o caso da segunda (3.028 UEP), o 04/11 com hora extra, o hoje
+        (997 UEP em 4h00), o sábado só com hora extra e a legenda com e sem
+        feito. Mutação: sem o `velHora`, o title antigo, a legenda sem a
+        `.tks-lh` e o *"0 UEP na jornada"* no sábado derrubam o teste.
+      - **Revisão do `/revisor-codigo` (subagente, antes do merge):**
+        - ⚠ **META do dia ≠ a de hoje** (o ⚙ trocado no meio da semana, ou linha
+          do HISTORICO sem META UEP → `UEP_META_PADRAO`): o title dizia *"a média
+          é 288 — equivale a 9h38"* e quem dividia 3.028 ÷ 288 achava 10h31 — o
+          descrédito que o PPCP pediu para evitar. As horas são pela META de hoje
+          (a escala do gráfico) e a velocidade pela do dia: `d.velOutra` (as duas
+          arredondadas diferentes) → *"a média do dia é 288; o gráfico usa a de
+          hoje, 314"*. É a forma escrita do limite *"o dia fechado também não
+          bate com a linha branca"* (v7.273.0, anotado e não mexido).
+        - O ritmo no title vai INTEIRO, o de baixo da barra: com o decimal,
+          *"345 … (a média é 314) … 109,7%"* — quem divide os números exibidos
+          achava 109,9% (E4).
+        - A legenda diz *"num dia fechado"*: a barra de hoje é parcial (1.400 UEP
+          em 3h00 = 467 por hora e a barra em 4h27, abaixo da linha branca).
+        - Testes dos ramos que ninguém prendia: o feriado trabalhado sem ritmo
+          (02/11 com 2.000 UEP: *"2.000 UEP na jornada — equivale a 6h22 de linha
+          (1 hora de linha = 314 UEP)"*) e o `*` das caixas sem UEP no title de
+          hoje. Mutação das cinco correções: cada uma derruba o teste.
+          Medido de novo: a legenda segue em 3 linhas (1920, 1366) e 4 (1280).
     - Medido no Chromium (o caso de 03–06/11, 5 e 7 dias): 1920, 1366 e 1280
       sem texto sobre texto, nada passa da largura; a legenda vai a 2 linhas em
       1366 e 1280; o 🖨 TAKT 700 px antes e depois (folha de 718).

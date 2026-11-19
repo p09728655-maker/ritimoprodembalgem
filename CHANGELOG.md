@@ -11,6 +11,29 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.274.2 — 19/11/2026 · TAKT DA SEMANA: hora de linha não é hora de relógio
+
+O PPCP, com a segunda 16/11 na tela: *"seg tem 8h47 como 9h38"* → *"entendi
+que dizer que fez mais de 314 uep hora"* → *"tem que ser com fácil compreensão
+para não gerar dúvidas e descrédito"*.
+
+- A barra do feito no DIA A DIA é em **horas de linha**: produção convertida
+  no ritmo da média, não tempo de relógio. Na segunda a linha fez ~3.028 UEP
+  na jornada de 8h47 = **345 UEP por hora**, contra 314 da média — por isso a
+  barra mostra 9h38. Nada na tela dizia isso, e a barra parecia um erro.
+- **Legenda** (tela): *"hora de linha não é hora de relógio: 1 hora de linha =
+  314 UEP, a média em 1 hora — num dia fechado, o azul passa da linha branca
+  quando a linha fez mais de 314 UEP por hora na jornada"*.
+- **Dica da barra** (passar o mouse), com a segunda reconstruída da tela:
+  *"16/11 · na jornada: 3.028 UEP em 8h47 = 345 UEP por hora (a média é 314) —
+  equivale a 9h38 de linha, ritmo 110% da média"*. O ritmo vai inteiro, o
+  mesmo de baixo da barra (345 ÷ 314 dá o % escrito). A hora extra vai à parte
+  (*"hora extra: + Xh de linha (N UEP), fora do ritmo"*); hoje, *"até agora …
+  em Xh já lançadas"*. Dia com a META diferente da de hoje (⚙ trocado no meio
+  da semana): *"a média do dia é 288; o gráfico usa a de hoje, 314"*.
+- **Nenhum número muda.** A legenda ganha uma linha (+30 px em 1920, 1366 e
+  1280). O 🖨 TAKT não muda (o papel está no limite de uma folha).
+
 ## v7.274.1 — 19/11/2026 · TAKT DA SEMANA: o ritmo da semana diz que é só a jornada
 
 O PPCP, com a semana de 16/11 na tela: *"ritimo da linha na semana jornada

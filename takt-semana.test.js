@@ -366,6 +366,54 @@ ok('a ordem do olhar: título → veredito → para fechar → dia a dia (com o 
       r1(Th.exec.pct) === r1(T.exec.pct), r1(Th.exec.he) === r1(T.exec.he + 1000),
       Hh.includes('ritmo da linha na semana (só jornada): <b>' + fmtP(T.exec.pct) + '</b>')],
      [true, false, true, true, true]); }
+// v7.274.2 (PPCP, 19/11/2026, com a segunda 16/11 na tela: "seg tem 8h47 como 9h38" → "tem que ser com fácil
+// compreensão para não gerar dúvidas e descrédito"): a barra do feito, em horas de linha, passa da jornada de
+// relógio quando a linha roda acima da média, e nada na tela dizia por quê. A legenda diz que hora de linha não é
+// hora de relógio (1 hora de linha = 314 UEP, a média em 1 hora); o title da barra dá a velocidade do dia contra a
+// da média. Caso da tela: a segunda fez ~3.028 UEP na jornada (reconstruído do 9h38 e do ritmo 110%) = 345 por hora.
+{
+  const sv = (X, W) => _taktSvg(X, W || 1200);
+  const T16 = _taktMontar(S, HIST.map(h => h.data === '03/11/2026' ? Object.assign({}, h, { uep:3028 }) : h), HOJE);
+  const d16 = T16.dias.find(d => d.data.startsWith('03/11'));
+  ok('v7.274.2: a velocidade do dia vem pronta da conta — 3.028 UEP em 527 min = 344,7 UEP por hora; a média 2.761 ÷ 527 × 60 = 314,3; 1 hora de linha = 314,3 UEP; dia sem ritmo (feriado, fim de semana): null',
+     [r1(d16.velHora), r1(d16.velMedia), r1(T16.horaLinha), r1(d16.velHora / d16.velMedia * 100) === r1(d16.ritmo),
+      T16.dias.find(d => d.data.startsWith('02/11')).velHora, T16.dias.find(d => d.data.startsWith('07/11')).velMedia],
+     [344.7, 314.3, 314.3, true, null, null]);
+  // o ritmo inteiro, o mesmo de baixo da barra: quem divide os números exibidos (345 ÷ 314) acha o % escrito
+  ok('v7.274.2: o title da barra do feito diz por que 9h38 cabem numa jornada de 8h47 — o caso da segunda 16/11',
+     sv(T16).includes('<title>03/11 · na jornada: 3.028 UEP em ' + _fmtHM(527) + ' = 345 UEP por hora (a média é 314) — equivale a 9h38 de linha, ritmo 110% da média</title>'), true);
+  const S1 = sv(T);
+  ok('v7.274.2: com hora extra, ela vai à parte e fora do ritmo (04/11); hoje, pelos minutos já lançados (06/11: 997 UEP em 4h00)',
+     [S1.includes('<title>04/11 · na jornada: 2.869 UEP em ' + _fmtHM(527) + ' = 327 UEP por hora (a média é 314) — equivale a 9h08 de linha, ritmo 104% da média · hora extra: + 1h52 de linha (587 UEP), fora do ritmo</title>'),
+      S1.includes('<title>06/11 · até agora, na jornada: 997 UEP em 4h00 já lançadas = 249 UEP por hora (a média é 314) — equivale a 3h10 de linha, ritmo 79% da média · hora extra: + 1h40 de linha (524 UEP), fora do ritmo</title>'),
+      / de linha na jornada \+ /.test(S1)],
+     [true, true, false]);
+  const T7 = _taktMontar(S, HIST.concat([{ data:'06/11/2026', uep:2324, uepHe:523.5, metaUep:2761 }, { data:'07/11/2026', uep:0, uepHe:700, metaUep:0 }]), Object.assign({}, HOJE, { num:20261109 }));
+  ok('v7.274.2: sábado só com hora extra — o title não diz "0 UEP na jornada", só a hora extra',
+     [sv(T7).includes('<title>07/11 · hora extra: + 2h14 de linha (700 UEP), fora do ritmo</title>'), /07\/11 · [^<]*0 UEP na jornada/.test(sv(T7))], [true, false]);
+  // revisão do /revisor-codigo (v7.274.2): META do dia ≠ a de hoje (o ⚙ trocado no meio da semana) — o title dizia
+  // "a média é 288 — equivale a 9h38" e quem dividia 3.028 ÷ 288 achava 10h31: as duas réguas por extenso
+  const Tm2 = _taktMontar(S, HIST.map(h => h.data === '03/11/2026' ? Object.assign({}, h, { uep:3028, metaUep:2530 }) : h), HOJE), Sm2 = sv(Tm2);
+  ok('v7.274.2 (revisão): META de 03/11 em 2.530 — o title diz a média do dia e a do gráfico; os dias com a META de hoje seguem com uma só',
+     [Sm2.includes('<title>03/11 · na jornada: 3.028 UEP em ' + _fmtHM(527) + ' = 345 UEP por hora (a média do dia é 288; o gráfico usa a de hoje, 314) — equivale a 9h38 de linha, ritmo 120% da média</title>'),
+      Sm2.includes('<title>04/11 · na jornada: 2.869 UEP em ' + _fmtHM(527) + ' = 327 UEP por hora (a média é 314) — equivale'),
+      Tm2.dias.filter(d => d.velOutra).map(d => d.data.slice(0, 5))],
+     [true, true, ['03/11']]);
+  // revisão: os dois ramos que nenhum teste prendia — o dia sem ritmo (feriado trabalhado, o caso do 20/11 Consciência
+  // Negra) e o * das caixas sem UEP no title de hoje
+  const Tfe = _taktMontar(S, HIST.concat([{ data:'02/11/2026', uep:2000, uepHe:0, metaUep:2761 }]), Object.assign({}, HOJE, { cxSem:120 })), Sfe = sv(Tfe);
+  ok('v7.274.2 (revisão): feriado trabalhado sem ritmo — só as UEP e a conversão; hoje com caixas sem UEP — o * no title',
+     [Sfe.includes('<title>02/11 · 2.000 UEP na jornada — equivale a 6h22 de linha (1 hora de linha = 314 UEP)</title>'),
+      Sfe.includes('ritmo 79% da média (* 120 cx de códigos sem UEP ficaram fora) · hora extra: + 1h40 de linha (524 UEP), fora do ritmo</title>')],
+     [true, true]);
+  const LH = '<span class="tks-lh">hora de linha não é hora de relógio: 1 hora de linha = 314 UEP, a média em 1 hora';
+  const H0 = _taktHtml(_taktMontar(S, [], Object.assign({}, HOJE, { num:20261103, uep:0, he:0, minNorm:0 })), null, {});
+  ok('v7.274.2: a legenda da TELA diz que hora de linha não é hora de relógio e quando o azul passa da linha branca; sem nada feito, só a conversão; o papel não cresce (o 🖨 TAKT está em 703 de 718 px)',
+     [HT.includes(LH + ' — num dia fechado, o azul passa da linha branca quando a linha fez mais de 314 UEP por hora na jornada</span>'),
+      H0.includes(LH + '</span>'), /tks-lh|hora de relógio/.test(pega('function _taktDocHtml(')),
+      /#sec-uep \.uep-leg \.tks-lh::before\{display:none\}/.test(html)],
+     [true, true, false, true]);
+}
 ok('v7.232.0: o PARA FECHAR numa linha logo depois do veredito, sem repetir as caixas dele (eram dois cartões com os mesmos números)',
    [HT.includes('<div class="tks-por tks-fl"><b>Para fechar:</b> hora extra de ≈ 11h30 da linha inteira, ou o que não couber passa para a semana que vem.</div>'),
     (h => h.slice(h.indexOf('tks-fl'), h.indexOf('</div>', h.indexOf('tks-fl'))))(HT).includes('caixas'),

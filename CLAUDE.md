@@ -511,8 +511,11 @@ via Google Apps Script (JSONP).
   PROGRAMAÇÃO. A leitura é o `getProgramacaoSemana` (as duas abas, o saldo da
   própria linha, o `vencidoAntes`, o `adiantadoCx`).
 - O veredito é em HORAS DE LINHA (UEP × 527 ÷ META UEP), PRECISA × TEM, SEM
-  descontar o setup. FALTAM e SOBRAM por extenso, nunca por sinal; a sobra não
-  vira crédito para outra semana.
+  descontar o setup. Hora de linha é produção, não relógio (1 h = 314 UEP com a
+  META de 2.761): a legenda do DIA A DIA diz isso e o title da barra do feito dá
+  a velocidade do dia × a da média (`velHora`, `velMedia` — v7.274.2). FALTAM
+  e SOBRAM por extenso, nunca por sinal; a sobra não vira crédito para outra
+  semana.
 - O porquê é dia a dia, nunca a semana somada. Embaixo de cada dia do DIA A
   DIA, o RITMO (v7.273.0: feito na jornada ÷ a média, só dia útil, inteiro,
   *"ritmo 110% da média"*, sem cor); o recado do gráfico é o ritmo da semana
